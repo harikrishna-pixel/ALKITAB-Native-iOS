@@ -1,0 +1,18 @@
+{
+  "" : {
+    "diagnostics" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/NKJV Bible.build/Debug-iphoneos/Notification.build/Objects-normal/arm64/Notification-master.dia",
+    "emit-module-dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/NKJV Bible.build/Debug-iphoneos/Notification.build/Objects-normal/arm64/Notification-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/NKJV Bible.build/Debug-iphoneos/Notification.build/Objects-normal/arm64/Notification-master-emit-module.dia",
+    "swift-dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/NKJV Bible.build/Debug-iphoneos/Notification.build/Objects-normal/arm64/Notification-master.swiftdeps"
+  },
+  "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/Notification/NotificationService.swift" : {
+    "const-values" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/NKJV Bible.build/Debug-iphoneos/Notification.build/Objects-normal/arm64/NotificationService.swiftconstvalues",
+    "dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/NKJV Bible.build/Debug-iphoneos/Notification.build/Objects-normal/arm64/NotificationService.d",
+    "diagnostics" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/NKJV Bible.build/Debug-iphoneos/Notification.build/Objects-normal/arm64/NotificationService.dia",
+    "index-unit-output-path" : "/NKJV Bible.build/Debug-iphoneos/Notification.build/Objects-normal/arm64/NotificationService.o",
+    "llvm-bc" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/NKJV Bible.build/Debug-iphoneos/Notification.build/Objects-normal/arm64/NotificationService.bc",
+    "object" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/NKJV Bible.build/Debug-iphoneos/Notification.build/Objects-normal/arm64/NotificationService.o",
+    "swift-dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/NKJV Bible.build/Debug-iphoneos/Notification.build/Objects-normal/arm64/NotificationService.swiftdeps",
+    "swiftmodule" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/NKJV Bible.build/Debug-iphoneos/Notification.build/Objects-normal/arm64/NotificationService~partial.swiftmodule"
+  }
+}

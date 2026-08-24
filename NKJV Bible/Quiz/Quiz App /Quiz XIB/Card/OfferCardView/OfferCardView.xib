@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="21701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21678"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" id="gTV-IL-0wX" customClass="OfferCardView" customModule="General_Quiz" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="200" height="200"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
+                <rect key="frame" x="0.0" y="0.0" width="200" height="200"/>
+                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                <subviews>
+                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Offers.png" translatesAutoresizingMaskIntoConstraints="NO" id="YOL-Sc-z3E">
+                        <rect key="frame" x="5" y="5" width="190" height="190"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="190" id="EUw-Tl-CZn"/>
+                            <constraint firstAttribute="width" constant="190" id="HUj-4d-Ciw"/>
+                        </constraints>
+                    </imageView>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="50:50" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="UpP-XL-o0M">
+                        <rect key="frame" x="5" y="86" width="190" height="28.333333333333329"/>
+                        <color key="backgroundColor" red="0.41960784313725491" green="0.10588235294117647" blue="0.074509803921568626" alpha="1" colorSpace="calibratedRGB"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="190" id="LiU-Y1-AGV"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" name="ChalkboardSE-Bold" family="Chalkboard SE" pointSize="20"/>
+                        <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Super!" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="2s1-le-l6S">
+                        <rect key="frame" x="10" y="10" width="180" height="30"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="180" id="eEJ-gu-pVk"/>
+                            <constraint firstAttribute="height" constant="30" id="wcm-ZE-npv"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" name="ChalkboardSE-Bold" family="Chalkboard SE" pointSize="21"/>
+                        <nil key="textColor"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                </subviews>
+            </view>
+            <viewLayoutGuide key="safeArea" id="ZTg-uK-7eu"/>
+            <constraints>
+                <constraint firstItem="UpP-XL-o0M" firstAttribute="centerY" secondItem="YOL-Sc-z3E" secondAttribute="centerY" id="0CG-Ix-gWV"/>
+                <constraint firstItem="YOL-Sc-z3E" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" constant="5" id="7LU-eI-uBK"/>
+                <constraint firstItem="2s1-le-l6S" firstAttribute="centerX" secondItem="gTV-IL-0wX" secondAttribute="centerX" id="A79-Du-wcR"/>
+                <constraint firstItem="YOL-Sc-z3E" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" constant="5" id="DNa-B2-Ugt"/>
+                <constraint firstItem="UpP-XL-o0M" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" constant="5" id="OBB-Jq-uwo"/>
+                <constraint firstItem="UpP-XL-o0M" firstAttribute="centerX" secondItem="2s1-le-l6S" secondAttribute="centerX" id="Zaw-dh-yeY"/>
+                <constraint firstItem="UpP-XL-o0M" firstAttribute="leading" secondItem="YOL-Sc-z3E" secondAttribute="leading" id="fS0-7q-2ry"/>
+                <constraint firstItem="2s1-le-l6S" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" constant="10" id="qmD-J5-hRh"/>
+            </constraints>
+            <connections>
+                <outlet property="CardType" destination="UpP-XL-o0M" id="TQi-ZQ-6Sr"/>
+                <outlet property="CardTypeHeight" destination="wcm-ZE-npv" id="CJg-TE-22Q"/>
+                <outlet property="CardTypeWidth" destination="LiU-Y1-AGV" id="drj-vL-KPc"/>
+                <outlet property="ImageFrameHeight" destination="EUw-Tl-CZn" id="2q5-cz-OAg"/>
+                <outlet property="ImageFramewidth" destination="HUj-4d-Ciw" id="dU0-CZ-Uca"/>
+                <outlet property="StatusWidth" destination="eEJ-gu-pVk" id="F7e-4y-3FT"/>
+            </connections>
+            <point key="canvasLocation" x="106.87022900763358" y="19.718309859154932"/>
+        </collectionViewCell>
+    </objects>
+    <resources>
+        <image name="Offers.png" width="954" height="956"/>
+    </resources>
+</document>

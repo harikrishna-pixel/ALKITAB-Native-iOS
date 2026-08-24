@@ -1,0 +1,73 @@
+PODS:
+  - Alamofire (5.9.1)
+  - CircleProgressView (1.2.0)
+  - FBAEMKit (17.0.2):
+    - FBSDKCoreKit_Basics (= 17.0.2)
+  - FBSDKCoreKit (17.0.2):
+    - FBAEMKit (= 17.0.2)
+    - FBSDKCoreKit_Basics (= 17.0.2)
+  - FBSDKCoreKit_Basics (17.0.2)
+  - FBSDKShareKit (17.0.2):
+    - FBSDKCoreKit (= 17.0.2)
+  - Flurry-iOS-SDK/CrashReporter (12.1.4)
+  - Flurry-iOS-SDK/FlurrySDK (12.1.4):
+    - Flurry-iOS-SDK/CrashReporter
+  - GoogleUserMessagingPlatform (2.4.0)
+  - IQKeyboardManager (6.5.19)
+  - IronSourceSDK (8.1.0.0)
+  - ReachabilitySwift (5.2.3)
+  - SDWebImage (5.19.2):
+    - SDWebImage/Core (= 5.19.2)
+  - SDWebImage/Core (5.19.2)
+  - Toast-Swift (5.1.1)
+  - Zip (2.1.2)
+
+DEPENDENCIES:
+  - Alamofire
+  - CircleProgressView (~> 1.0)
+  - FBSDKShareKit
+  - Flurry-iOS-SDK/FlurrySDK (~> 12.1.1)
+  - GoogleUserMessagingPlatform
+  - IQKeyboardManager
+  - IronSourceSDK
+  - ReachabilitySwift
+  - SDWebImage
+  - Toast-Swift
+  - Zip (~> 2.1)
+
+SPEC REPOS:
+  trunk:
+    - Alamofire
+    - CircleProgressView
+    - FBAEMKit
+    - FBSDKCoreKit
+    - FBSDKCoreKit_Basics
+    - FBSDKShareKit
+    - Flurry-iOS-SDK
+    - GoogleUserMessagingPlatform
+    - IQKeyboardManager
+    - IronSourceSDK
+    - ReachabilitySwift
+    - SDWebImage
+    - Toast-Swift
+    - Zip
+
+SPEC CHECKSUMS:
+  Alamofire: f36a35757af4587d8e4f4bfa223ad10be2422b8c
+  CircleProgressView: 6b5b091d59dc5e5d2fda84e637a40498cdc39937
+  FBAEMKit: 619f96ea65427e8afca240d5b0f4703738dfdf5c
+  FBSDKCoreKit: a5f384db2e9ee84e98494fed8f983d2bd79accff
+  FBSDKCoreKit_Basics: d35c775aaf243a2d731dfae7be3a74b1987285ab
+  FBSDKShareKit: e7ec3bed8e82dabc04e56f3cf44ef99a1864309e
+  Flurry-iOS-SDK: 8e6d7d9323ad24da06f24943ed738e36039631e9
+  GoogleUserMessagingPlatform: f131fa7978d2ba88d7426702b057c2cc318e6595
+  IQKeyboardManager: c8665b3396bd0b79402b4c573eac345a31c7d485
+  IronSourceSDK: f4380fe08a2bfa1cd37c26948fcfd2585a0493a2
+  ReachabilitySwift: 7f151ff156cea1481a8411701195ac6a984f4979
+  SDWebImage: dfe95b2466a9823cf9f0c6d01217c06550d7b29a
+  Toast-Swift: 7a03a532afe3a560d4044bc7c237e2864d295173
+  Zip: b3fef584b147b6e582b2256a9815c897d60ddc67
+
+PODFILE CHECKSUM: 9067d0fe4d95977a6f6b797aa1c580f8c2c0d568
+
+COCOAPODS: 1.15.2

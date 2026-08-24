@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="21701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21678"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" restorationIdentifier="CardView" reuseIdentifier="CardView" id="gTV-IL-0wX" customClass="CardView" customModule="NKJV_Bible" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="200" height="200"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
+                <rect key="frame" x="0.0" y="0.0" width="200" height="200"/>
+                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                <subviews>
+                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="kxL-qm-Wh4">
+                        <rect key="frame" x="2" y="0.0" width="196" height="196"/>
+                        <subviews>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="CoinPic.png" translatesAutoresizingMaskIntoConstraints="NO" id="kKp-Ag-gNS">
+                                <rect key="frame" x="5" y="5" width="186" height="186"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="186" id="8pQ-Zo-6OG"/>
+                                    <constraint firstAttribute="height" constant="186" id="nzs-Ia-7bB"/>
+                                </constraints>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                        <integer key="value" value="20"/>
+                                    </userDefinedRuntimeAttribute>
+                                </userDefinedRuntimeAttributes>
+                            </imageView>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Congratulations!!" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="L98-8I-pMA">
+                                <rect key="frame" x="15" y="22" width="166" height="25.666666666666671"/>
+                                <fontDescription key="fontDescription" name="ChalkboardSE-Bold" family="Chalkboard SE" pointSize="18"/>
+                                <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Collected 100 Coins" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="fx3-p4-9rS">
+                                <rect key="frame" x="15" y="152.66666666666666" width="166" height="21.333333333333343"/>
+                                <fontDescription key="fontDescription" name="ChalkboardSE-Bold" family="Chalkboard SE" pointSize="15"/>
+                                <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstAttribute="trailing" secondItem="fx3-p4-9rS" secondAttribute="trailing" constant="15" id="2iL-fl-w4L"/>
+                            <constraint firstItem="kKp-Ag-gNS" firstAttribute="centerY" secondItem="kxL-qm-Wh4" secondAttribute="centerY" id="C8U-39-hMM"/>
+                            <constraint firstItem="fx3-p4-9rS" firstAttribute="leading" secondItem="kxL-qm-Wh4" secondAttribute="leading" constant="15" id="Yie-jr-jW9"/>
+                            <constraint firstAttribute="width" constant="196" id="b3a-2l-LDg"/>
+                            <constraint firstAttribute="bottom" secondItem="fx3-p4-9rS" secondAttribute="bottom" constant="22" id="cPf-cf-EgW"/>
+                            <constraint firstItem="L98-8I-pMA" firstAttribute="top" secondItem="kxL-qm-Wh4" secondAttribute="top" constant="22" id="cYt-9Y-lno"/>
+                            <constraint firstItem="L98-8I-pMA" firstAttribute="leading" secondItem="kxL-qm-Wh4" secondAttribute="leading" constant="15" id="etD-jm-ziv"/>
+                            <constraint firstAttribute="height" constant="196" id="vMi-fa-0wh"/>
+                            <constraint firstAttribute="trailing" secondItem="L98-8I-pMA" secondAttribute="trailing" constant="15" id="wlJ-oc-ogb"/>
+                            <constraint firstItem="kKp-Ag-gNS" firstAttribute="centerX" secondItem="kxL-qm-Wh4" secondAttribute="centerX" id="xec-0Y-pvx"/>
+                        </constraints>
+                    </view>
+                </subviews>
+            </view>
+            <viewLayoutGuide key="safeArea" id="ZTg-uK-7eu"/>
+            <constraints>
+                <constraint firstAttribute="bottom" secondItem="kxL-qm-Wh4" secondAttribute="bottom" constant="2" id="5Yy-Zd-4My"/>
+                <constraint firstItem="kxL-qm-Wh4" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" constant="2" id="6AC-fa-V3K"/>
+                <constraint firstAttribute="trailing" secondItem="kxL-qm-Wh4" secondAttribute="trailing" id="8BW-Tn-U9g"/>
+                <constraint firstAttribute="trailing" secondItem="kxL-qm-Wh4" secondAttribute="trailing" constant="2" id="9Wd-dS-pqA"/>
+                <constraint firstItem="kxL-qm-Wh4" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="I0u-2h-wqQ"/>
+                <constraint firstItem="kxL-qm-Wh4" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" id="pb0-Fr-TiV"/>
+                <constraint firstItem="kxL-qm-Wh4" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" constant="2" id="pb8-XG-bKu"/>
+                <constraint firstAttribute="bottom" secondItem="kxL-qm-Wh4" secondAttribute="bottom" id="xwx-P0-AiB"/>
+            </constraints>
+            <size key="customSize" width="195" height="180"/>
+            <connections>
+                <outlet property="CoinLbl" destination="fx3-p4-9rS" id="Slu-Qa-yfJ"/>
+                <outlet property="ImageFrameHeight" destination="nzs-Ia-7bB" id="UbE-4h-HvG"/>
+                <outlet property="ImageFramewidth" destination="8pQ-Zo-6OG" id="gVl-8x-29q"/>
+                <outlet property="ViewFrameHeight" destination="vMi-fa-0wh" id="4Jp-36-86h"/>
+                <outlet property="ViewFramewidth" destination="b3a-2l-LDg" id="THG-GO-GAh"/>
+            </connections>
+            <point key="canvasLocation" x="248.85496183206106" y="65.492957746478879"/>
+        </collectionViewCell>
+    </objects>
+    <resources>
+        <image name="CoinPic.png" width="1014" height="1014"/>
+    </resources>
+</document>

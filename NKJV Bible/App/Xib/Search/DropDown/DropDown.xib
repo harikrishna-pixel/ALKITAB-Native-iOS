@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="19455" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_1" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="19454"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view contentMode="scaleToFill" restorationIdentifier="DropDown" id="iN0-l3-epB" customClass="DropDown" customModule="Catholic_Bible" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="414" height="539"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="60" translatesAutoresizingMaskIntoConstraints="NO" id="out-Dp-qhK">
+                    <rect key="frame" x="15" y="0.0" width="384" height="200"/>
+                    <subviews>
+                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="SqP-uT-zVo">
+                            <rect key="frame" x="0.0" y="0.0" width="162" height="200"/>
+                            <subviews>
+                                <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="ssY-Oa-a5l">
+                                    <rect key="frame" x="5" y="0.0" width="152" height="132"/>
+                                    <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    <color key="sectionIndexBackgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    <connections>
+                                        <outlet property="dataSource" destination="-1" id="r5D-2R-NUb"/>
+                                        <outlet property="delegate" destination="-1" id="al0-9G-sZn"/>
+                                    </connections>
+                                </tableView>
+                            </subviews>
+                            <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                            <constraints>
+                                <constraint firstItem="ssY-Oa-a5l" firstAttribute="top" secondItem="SqP-uT-zVo" secondAttribute="top" id="4Mn-C7-7H8"/>
+                                <constraint firstAttribute="bottom" secondItem="ssY-Oa-a5l" secondAttribute="bottom" constant="68" id="7Pn-Uo-N03"/>
+                                <constraint firstAttribute="trailing" secondItem="ssY-Oa-a5l" secondAttribute="trailing" constant="5" id="Fih-uK-CFr"/>
+                                <constraint firstItem="ssY-Oa-a5l" firstAttribute="leading" secondItem="SqP-uT-zVo" secondAttribute="leading" constant="5" id="o3Y-dk-p7M"/>
+                            </constraints>
+                        </view>
+                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="OAW-cz-Vch">
+                            <rect key="frame" x="222" y="0.0" width="162" height="200"/>
+                            <subviews>
+                                <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="jjc-Ca-ZN1">
+                                    <rect key="frame" x="5" y="0.0" width="152" height="200"/>
+                                    <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                                    <connections>
+                                        <outlet property="dataSource" destination="-1" id="FoJ-EC-D4d"/>
+                                        <outlet property="delegate" destination="-1" id="UKq-bx-Pu4"/>
+                                    </connections>
+                                </tableView>
+                            </subviews>
+                            <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                            <constraints>
+                                <constraint firstItem="jjc-Ca-ZN1" firstAttribute="top" secondItem="OAW-cz-Vch" secondAttribute="top" id="FzY-Pm-EqS"/>
+                                <constraint firstItem="jjc-Ca-ZN1" firstAttribute="leading" secondItem="OAW-cz-Vch" secondAttribute="leading" constant="5" id="Nqx-EF-dG4"/>
+                                <constraint firstAttribute="trailing" secondItem="jjc-Ca-ZN1" secondAttribute="trailing" constant="5" id="Ysd-9u-D8T"/>
+                                <constraint firstAttribute="bottom" secondItem="jjc-Ca-ZN1" secondAttribute="bottom" id="bLI-kV-etZ"/>
+                            </constraints>
+                        </view>
+                    </subviews>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="200" id="4y5-Qh-rl1"/>
+                    </constraints>
+                </stackView>
+            </subviews>
+            <viewLayoutGuide key="safeArea" id="vUN-kp-3ea"/>
+            <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+            <constraints>
+                <constraint firstItem="vUN-kp-3ea" firstAttribute="trailing" secondItem="out-Dp-qhK" secondAttribute="trailing" constant="15" id="Jru-La-HxO"/>
+                <constraint firstItem="out-Dp-qhK" firstAttribute="leading" secondItem="vUN-kp-3ea" secondAttribute="leading" constant="15" id="bMA-cs-Kps"/>
+                <constraint firstItem="out-Dp-qhK" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" id="k00-m6-TCq"/>
+            </constraints>
+            <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+            <connections>
+                <outlet property="BookTable" destination="jjc-Ca-ZN1" id="YUr-Q5-F0w"/>
+                <outlet property="BookViewFrame" destination="OAW-cz-Vch" id="jMi-xT-OdJ"/>
+                <outlet property="OTViewFrame" destination="SqP-uT-zVo" id="fme-aT-xbK"/>
+                <outlet property="TestamentTable" destination="ssY-Oa-a5l" id="3Mq-RX-CwL"/>
+            </connections>
+            <point key="canvasLocation" x="139.13043478260872" y="380.69196428571428"/>
+        </view>
+    </objects>
+    <resources>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
+</document>

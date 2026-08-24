@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="21701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_1" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21678"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="collection view cell content view" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" reuseIdentifier="AdFrameCollectionViewCell" id="GtZ-m9-xRg" customClass="AdFrameCollectionViewCell" customModule="NKJV_Bible" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="379" height="88"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="GJo-hC-o5r">
+                <rect key="frame" x="0.0" y="0.0" width="379" height="88"/>
+                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                <subviews>
+                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="yst-cr-lp1" customClass="AdFrameCollectionViewCell" customModule="NKJV_Bible" customModuleProvider="target">
+                        <rect key="frame" x="10" y="70" width="359" height="8"/>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <connections>
+                            <outlet property="ADView" destination="GJo-hC-o5r" id="kKb-l8-LWt"/>
+                        </connections>
+                    </view>
+                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Woi-t2-Bmy">
+                        <rect key="frame" x="89.5" y="18" width="200" height="40"/>
+                        <color key="backgroundColor" systemColor="systemGray6Color"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="40" id="n0E-f5-9Xo"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="boldSystem" pointSize="15"/>
+                        <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                        <state key="normal" title="Mark as Read"/>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                <integer key="value" value="20"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
+                    </button>
+                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Summary-Btn-001">
+                        <rect key="frame" x="89.5" y="18" width="180" height="40"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="40" id="Summary-Height"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="boldSystem" pointSize="15"/>
+                        <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                        <state key="normal" title="Get Summary">
+                            <color key="titleColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        </state>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="boolean" keyPath="clipsToBounds" value="YES"/>
+                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                <integer key="value" value="20"/>
+                            </userDefinedRuntimeAttribute>
+                            <userDefinedRuntimeAttribute type="number" keyPath="layer.borderWidth">
+                                <real key="value" value="1"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
+                    </button>
+                </subviews>
+                <constraints>
+                    <constraint firstItem="Woi-t2-Bmy" firstAttribute="leading" secondItem="GJo-hC-o5r" secondAttribute="leading" constant="18" id="MarkAsRead-Leading"/>
+                    <constraint firstItem="Woi-t2-Bmy" firstAttribute="top" secondItem="GJo-hC-o5r" secondAttribute="top" constant="18" id="SPg-Id-i0s"/>
+                    <constraint firstItem="Summary-Btn-001" firstAttribute="leading" secondItem="Woi-t2-Bmy" secondAttribute="trailing" constant="16" id="Summary-Leading"/>
+                    <constraint firstItem="Summary-Btn-001" firstAttribute="top" secondItem="GJo-hC-o5r" secondAttribute="top" constant="18" id="Summary-Top"/>
+                    <constraint firstAttribute="trailing" secondItem="Summary-Btn-001" secondAttribute="trailing" constant="16.5" id="Summary-Trailing"/>
+                    <constraint firstItem="Summary-Btn-001" firstAttribute="width" secondItem="Woi-t2-Bmy" secondAttribute="width" id="Equal-Width"/>
+                    <constraint firstAttribute="bottom" secondItem="yst-cr-lp1" secondAttribute="bottom" constant="10" id="Ff6-xQ-aqL"/>
+                    <constraint firstItem="yst-cr-lp1" firstAttribute="top" secondItem="GJo-hC-o5r" secondAttribute="top" constant="70" id="IFy-pe-4eN"/>
+                    <constraint firstItem="yst-cr-lp1" firstAttribute="leading" secondItem="GJo-hC-o5r" secondAttribute="leading" constant="10" id="MWq-pr-Fcu"/>
+                    <constraint firstAttribute="trailing" secondItem="yst-cr-lp1" secondAttribute="trailing" constant="10" id="sBz-zL-MOc"/>
+                </constraints>
+            </collectionViewCellContentView>
+            <size key="customSize" width="379" height="88"/>
+            <connections>
+                <outlet property="ADView" destination="yst-cr-lp1" id="NIo-I8-pAx"/>
+                <outlet property="MarkAsReadBtn" destination="Woi-t2-Bmy" id="4Lu-kf-QvA"/>
+                <outlet property="SummaryButton" destination="Summary-Btn-001" id="Summary-Outlet"/>
+            </connections>
+            <point key="canvasLocation" x="147.10144927536234" y="-61.607142857142854"/>
+        </collectionViewCell>
+    </objects>
+    <resources>
+        <systemColor name="systemGray6Color">
+            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+    </resources>
+</document>

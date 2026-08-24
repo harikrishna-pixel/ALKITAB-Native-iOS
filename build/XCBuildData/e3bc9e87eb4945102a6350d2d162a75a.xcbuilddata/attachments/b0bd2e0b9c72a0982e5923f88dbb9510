@@ -1,0 +1,5 @@
+ extern const unsigned char Pods_NKJV_BibleVersionString[];
+ extern const double Pods_NKJV_BibleVersionNumber;
+
+ const unsigned char Pods_NKJV_BibleVersionString[] __attribute__ ((used)) = "@(#)PROGRAM:Pods_NKJV_Bible  PROJECT:Pods-1" "\n";
+ const double Pods_NKJV_BibleVersionNumber __attribute__ ((used)) = (double)1.;

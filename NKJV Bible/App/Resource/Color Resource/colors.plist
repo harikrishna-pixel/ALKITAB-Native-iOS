@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>colors</key>
+	<array>
+		<dict>
+			<key>hash</key>
+			<string>#0048ba</string>
+			<key>name</key>
+			<string>Absolute Zero</string>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>Main</string>
+			<key>hash</key>
+			<string>#316867</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#c46210</string>
+			<key>name</key>
+			<string>Alloy Orange</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#64609A</string>
+			<key>name</key>
+			<string>Amethyst</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#87a96b</string>
+			<key>name</key>
+			<string>Asparagus</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#9c2542</string>
+			<key>name</key>
+			<string>Big Dip O Ruby</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#bf4f51</string>
+			<key>name</key>
+			<string>Bittersweet Shimmer</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#54626f</string>
+			<key>name</key>
+			<string>Black Coral Pearl</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#a57164</string>
+			<key>name</key>
+			<string>Blast Off Bronze</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#1f75fe</string>
+			<key>name</key>
+			<string>Blue</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#0d98ba</string>
+			<key>name</key>
+			<string>Blue Green</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#dd4492</string>
+			<key>name</key>
+			<string>Cerise</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#6d9bc3</string>
+			<key>name</key>
+			<string>Cerulean Frost</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#da2647</string>
+			<key>name</key>
+			<string>Cherry</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#933709</string>
+			<key>name</key>
+			<string>Citrine</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#2e2d88</string>
+			<key>name</key>
+			<string>Cosmic Cobalt</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#58427c</string>
+			<key>name</key>
+			<string>Cyber Grape</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#4a646c</string>
+			<key>name</key>
+			<string>Deep Space Sparkle</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#2b6cc4</string>
+			<key>name</key>
+			<string>Denim</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#14A989</string>
+			<key>name</key>
+			<string>Emerald</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#6f2da8</string>
+			<key>name</key>
+			<string>Grape</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#3cb88a</string>
+			<key>name</key>
+			<string>Grape</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#0898ec</string>
+			<key>name</key>
+			<string>Grape</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#8e4749</string>
+			<key>name</key>
+			<string>Grape</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#ee1a62</string>
+			<key>name</key>
+			<string>Grape</string>
+		</dict>
+		<dict>
+			<key>hash</key>
+			<string>#353f45</string>
+			<key>name</key>
+			<string>Grape</string>
+		</dict>
+	</array>
+</dict>
+</plist>

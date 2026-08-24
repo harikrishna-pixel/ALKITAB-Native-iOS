@@ -1,0 +1,23 @@
+{
+  'version': 0,
+  'use-external-names': 'false',
+  'case-sensitive': 'false',
+  'roots': [{
+    'type': 'directory',
+    'name': "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Debug-iphoneos/Toast-Swift/Toast_Swift.framework/Modules"
+    'contents': [{
+      'type': 'file',
+      'name': "module.modulemap",
+      'external-contents': "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/unextended-module.modulemap",
+    }]
+    },
+    {
+    'type': 'directory',
+    'name': "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Debug-iphoneos/Toast-Swift/Toast_Swift.framework/Headers"
+    'contents': [{
+      'type': 'file',
+      'name': "Toast_Swift-Swift.h",
+      'external-contents': "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/unextended-interface-header.h",
+    }]
+    }]
+}

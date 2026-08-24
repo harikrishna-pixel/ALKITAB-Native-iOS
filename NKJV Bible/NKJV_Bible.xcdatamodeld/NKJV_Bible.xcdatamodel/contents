@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22522" systemVersion="23C64" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="BookListAPI" representedClassName="BookListAPI" syncable="YES" codeGenerationType="class">
+        <attribute name="ads_google_banner_id_ios" optional="YES" attributeType="String"/>
+        <attribute name="ads_google_interstitial_id_ios" optional="YES" attributeType="String"/>
+        <attribute name="ads_google_openApp_id_ios" optional="YES" attributeType="String"/>
+        <attribute name="ads_google_reward_id_ios" optional="YES" attributeType="String"/>
+        <attribute name="ads_Type" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="app_Audio_Basepath" optional="YES" attributeType="String"/>
+        <attribute name="app_Audio_Basepath_Type" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="bibleCategoryId" optional="YES" attributeType="String"/>
+        <attribute name="bibleContentURL" optional="YES" attributeType="String"/>
+        <attribute name="biblename" optional="YES" attributeType="String"/>
+        <attribute name="copyright_name" optional="YES" attributeType="String"/>
+        <attribute name="copyright_url" optional="YES" attributeType="String"/>
+        <attribute name="is_voice_speech_audio_available" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isShowMP3Audio" optional="YES" attributeType="String"/>
+        <attribute name="language_code" optional="YES" attributeType="String"/>
+        <attribute name="language_name" optional="YES" attributeType="String"/>
+        <attribute name="speech_identifier" optional="YES" attributeType="String"/>
+        <attribute name="sub_identifier_lifetime" optional="YES" attributeType="String"/>
+        <attribute name="sub_identifier_oneyear" optional="YES" attributeType="String"/>
+        <attribute name="sub_sharedsecret" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="BookSavedInfo" representedClassName="BookSavedInfo" syncable="YES" codeGenerationType="class">
+        <attribute name="bookMarked" optional="YES" attributeType="String"/>
+        <attribute name="bookVerse" optional="YES" attributeType="String"/>
+        <attribute name="color_id" optional="YES" attributeType="String"/>
+        <attribute name="note" optional="YES" attributeType="String"/>
+        <attribute name="underLine" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="verse" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="CardList" representedClassName="CardList" syncable="YES" codeGenerationType="class">
+        <attribute name="cardCoins" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="cartType" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="DailyVerses" representedClassName="DailyVerses" syncable="YES" codeGenerationType="class">
+        <attribute name="book" optional="YES" attributeType="String"/>
+        <attribute name="verse" optional="YES" attributeType="String"/>
+        <attribute name="verseDate" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="GetAppInfos" representedClassName="GetAppInfos" syncable="YES" codeGenerationType="class">
+        <attribute name="image_available" optional="YES" attributeType="String"/>
+        <attribute name="multicategory_available" optional="YES" attributeType="String"/>
+        <attribute name="quote_available" optional="YES" attributeType="String"/>
+        <attribute name="show_MP3_Audio" optional="YES" attributeType="String"/>
+        <attribute name="video_app" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="GetAudioSpeech" representedClassName="GetAudioSpeech" syncable="YES" codeGenerationType="class">
+        <attribute name="is_show_MP3_Audio" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="is_text_to_speech_available_ios" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="text_to_speech_identifier_ios" optional="YES" attributeType="String"/>
+        <attribute name="text_to_speech_language_code_ios" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="MarkAsRead" representedClassName="MarkAsRead" syncable="YES" codeGenerationType="class">
+        <attribute name="veresInfo" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="MoreAppApi" representedClassName="MoreAppApi" syncable="YES" codeGenerationType="class">
+        <attribute name="appId" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="appName" optional="YES" attributeType="String"/>
+        <attribute name="apptype" optional="YES" attributeType="String"/>
+        <attribute name="appurl" optional="YES" attributeType="String"/>
+        <attribute name="developed_by" optional="YES" attributeType="String"/>
+        <attribute name="thumburl" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="MoreBookApi" representedClassName="MoreBookApi" syncable="YES" codeGenerationType="class">
+        <attribute name="book_age" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="book_description" optional="YES" attributeType="String"/>
+        <attribute name="book_id" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="book_name" optional="YES" attributeType="String"/>
+        <attribute name="book_published_by" optional="YES" attributeType="String"/>
+        <attribute name="book_url" optional="YES" attributeType="String"/>
+        <attribute name="bookThumbURL" optional="YES" attributeType="String"/>
+        <attribute name="storeTitle" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="Paymentdate" representedClassName="Paymentdate" syncable="YES" codeGenerationType="class">
+        <attribute name="endDate" optional="YES" attributeType="String"/>
+        <attribute name="productId" optional="YES" attributeType="String"/>
+        <attribute name="startDate" optional="YES" attributeType="String"/>
+        <attribute name="transactionId" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="SpeechSetting" representedClassName="SpeechSetting" syncable="YES" codeGenerationType="class">
+        <attribute name="langID" optional="YES" attributeType="String"/>
+        <attribute name="langName" optional="YES" attributeType="String"/>
+        <attribute name="langPitch" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="langRate" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="VerseExplanation" representedClassName="VerseExplanation" syncable="YES" codeGenerationType="class">
+        <attribute name="bibleVersion" optional="YES" attributeType="String"/>
+        <attribute name="bookVerse" optional="YES" attributeType="String"/>
+        <attribute name="explanationText" optional="YES" attributeType="String"/>
+        <attribute name="savedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="verse" optional="YES" attributeType="String"/>
+    </entity>
+</model>

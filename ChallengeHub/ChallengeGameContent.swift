@@ -1,0 +1,326 @@
+//
+//  ChallengeGameContent.swift
+//  NKJV Bible
+//
+
+import Foundation
+
+enum ChallengeKind: String, CaseIterable, Identifiable {
+    case quickQuiz
+    case fillVerse
+    case verseMatch
+    case trueFalse
+    case wordSearch
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .quickQuiz: return "Quick Quiz"
+        case .fillVerse: return "Fill the Verse"
+        case .verseMatch: return "Verse Match"
+        case .trueFalse: return "True or False"
+        case .wordSearch: return "Word Search"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .quickQuiz: return "5 Questions"
+        case .fillVerse: return "Fill in the missing words"
+        case .verseMatch: return "Match verse with reference"
+        case .trueFalse: return "Test your knowledge"
+        case .wordSearch: return "Find hidden Bible words"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .quickQuiz: return "brain.head.profile"
+        case .fillVerse: return "square.and.pencil"
+        case .verseMatch: return "arrow.left.arrow.right"
+        case .trueFalse: return "bolt.fill"
+        case .wordSearch: return "magnifyingglass"
+        }
+    }
+
+    var iconTintHex: String {
+        switch self {
+        case .quickQuiz: return "E85D4C"
+        case .fillVerse: return "34C759"
+        case .verseMatch: return "7B61FF"
+        case .trueFalse: return "1C46B2"
+        case .wordSearch: return "1C46B2"
+        }
+    }
+
+    var iconBgHex: String {
+        switch self {
+        case .quickQuiz: return "FDECE9"
+        case .fillVerse: return "E8F8EE"
+        case .verseMatch: return "EEE8FF"
+        case .trueFalse: return "E8EEFF"
+        case .wordSearch: return "E8EEFF"
+        }
+    }
+
+    var isPremium: Bool {
+        switch self {
+        case .quickQuiz, .fillVerse: return false
+        case .verseMatch, .trueFalse, .wordSearch: return true
+        }
+    }
+}
+
+struct ChallengeVerseContext {
+    let reference: String
+    let text: String
+
+    static func loadToday() -> ChallengeVerseContext {
+        let snap = DailyVerseSnapshot.loadCurrent()
+        return ChallengeVerseContext(reference: snap.reference, text: snap.text)
+    }
+
+    var words: [String] {
+        text
+            .replacingOccurrences(of: "\n", with: " ")
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { $0.count >= 3 }
+    }
+
+    var significantWords: [String] {
+        let stop: Set<String> = [
+            "the", "and", "for", "that", "with", "from", "this", "have", "will",
+            "shall", "unto", "they", "them", "their", "your", "you", "are", "was",
+            "were", "been", "being", "not", "but", "his", "her", "him", "she", "who"
+        ]
+        return words.filter { !stop.contains($0.lowercased()) }
+    }
+}
+
+struct QuickQuizQuestion: Identifiable {
+    let id = UUID()
+    let prompt: String
+    let options: [String]
+    let correctIndex: Int
+}
+
+struct TrueFalseQuestion: Identifiable {
+    let id = UUID()
+    let statement: String
+    let isTrue: Bool
+}
+
+struct VerseMatchPair: Identifiable {
+    let id = UUID()
+    let verse: String
+    let reference: String
+}
+
+enum ChallengeGameFactory {
+
+    static var hasPremiumAccess: Bool {
+        // paymentInfo() == false means subscribed / ads off
+        !PaymentHistory.sharedInstance.paymentInfo()
+    }
+
+    static func quickQuiz(from ctx: ChallengeVerseContext) -> [QuickQuizQuestion] {
+        let book = ctx.reference.components(separatedBy: " ").first ?? ctx.reference
+        let words = Array(ctx.significantWords.prefix(8))
+        let keyWord = words.first ?? "faith"
+        let distractors = ["Moses", "Aaron", "Joshua", "David", "Peter", "Paul", "John", "Abraham"]
+
+        var questions: [QuickQuizQuestion] = []
+
+        questions.append(
+            QuickQuizQuestion(
+                prompt: "Which book does today's verse come from?",
+                options: uniqueOptions(
+                    correct: book.isEmpty ? "Bible" : book,
+                    pool: localizedBookNames(excluding: book) + [book]
+                ),
+                correctIndex: 0
+            )
+        )
+
+        questions.append(
+            QuickQuizQuestion(
+                prompt: "What is today's verse reference?",
+                options: uniqueOptions(
+                    correct: ctx.reference,
+                    pool: localizedReferencePool(excluding: ctx.reference) + [ctx.reference]
+                ),
+                correctIndex: 0
+            )
+        )
+
+        questions.append(
+            QuickQuizQuestion(
+                prompt: "Which word appears in today's verse?",
+                options: uniqueOptions(correct: keyWord.capitalized, pool: distractors + [keyWord.capitalized]),
+                correctIndex: 0
+            )
+        )
+
+        questions.append(
+            QuickQuizQuestion(
+                prompt: "Today's verse encourages us to grow in God's Word. What should we do?",
+                options: [
+                    "Read and reflect on Scripture",
+                    "Ignore the verse",
+                    "Skip reading today",
+                    "Avoid prayer"
+                ],
+                correctIndex: 0
+            )
+        )
+
+        let snippet = String(ctx.text.prefix(60))
+        let wrongSnippets = [
+            localizedVerseSnippet(bookId: 1, chapter: 1, verse: 1),
+            localizedVerseSnippet(bookId: 19, chapter: 23, verse: 1),
+            localizedVerseSnippet(bookId: 43, chapter: 3, verse: 16)
+        ].filter { !$0.isEmpty }
+        questions.append(
+            QuickQuizQuestion(
+                prompt: "Which line matches today's verse?",
+                options: uniqueOptions(
+                    correct: snippet.isEmpty ? ctx.text : snippet + (ctx.text.count > 60 ? "…" : ""),
+                    pool: [
+                        snippet.isEmpty ? ctx.text : snippet + (ctx.text.count > 60 ? "…" : ""),
+                    ] + wrongSnippets
+                ),
+                correctIndex: 0
+            )
+        )
+
+        return Array(questions.prefix(5)).map { q in
+            let shuffled = q.options.shuffled()
+            let idx = shuffled.firstIndex(of: q.options[q.correctIndex]) ?? 0
+            return QuickQuizQuestion(prompt: q.prompt, options: shuffled, correctIndex: idx)
+        }
+    }
+
+    static func trueFalse(from ctx: ChallengeVerseContext) -> [TrueFalseQuestion] {
+        let book = ctx.reference.components(separatedBy: " ").first ?? ""
+        return [
+            TrueFalseQuestion(statement: "Today's verse is from \(ctx.reference).", isTrue: true),
+            TrueFalseQuestion(statement: "Today's verse text is empty.", isTrue: ctx.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty),
+            TrueFalseQuestion(statement: "This verse is from the book of \(book.isEmpty ? "Scripture" : book).", isTrue: true),
+            TrueFalseQuestion(statement: "Today's verse is from Revelation 99:99.", isTrue: false),
+            TrueFalseQuestion(statement: "Reading Scripture helps us grow in God's Word.", isTrue: true)
+        ]
+    }
+
+    static func matchPairs(from ctx: ChallengeVerseContext) -> [VerseMatchPair] {
+        let extras: [(String, String)] = [
+            ("God is love.", "1 John 4:8"),
+            ("I can do all things through Christ who strengthens me.", "Philippians 4:13"),
+            ("The Lord is my shepherd.", "Psalm 23:1")
+        ]
+        var pairs = [VerseMatchPair(verse: shortVerse(ctx.text), reference: ctx.reference)]
+        for e in extras where e.1 != ctx.reference {
+            pairs.append(VerseMatchPair(verse: e.0, reference: e.1))
+            if pairs.count == 3 { break }
+        }
+        return pairs
+    }
+
+    static func fillChallenge(from ctx: ChallengeVerseContext) -> (tokens: [String], blankIndices: [Int], bank: [String]) {
+        let tokens = ctx.text
+            .replacingOccurrences(of: "\n", with: " ")
+            .components(separatedBy: " ")
+            .filter { !$0.isEmpty }
+        let candidates = tokens.enumerated().compactMap { idx, word -> Int? in
+            let clean = word.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+            return clean.count >= 4 ? idx : nil
+        }
+        let blanks = Array(candidates.shuffled().prefix(min(2, candidates.count))).sorted()
+        var bank = blanks.map { tokens[$0].trimmingCharacters(in: CharacterSet.alphanumerics.inverted) }
+        let distractors = ["strength", "fear", "guide", "hope", "faith", "peace"]
+            .filter { d in !bank.contains(where: { $0.caseInsensitiveCompare(d) == .orderedSame }) }
+        bank.append(contentsOf: distractors.prefix(max(0, 6 - bank.count)))
+        return (tokens, blanks, bank.shuffled())
+    }
+
+    static func wordSearchWords(from ctx: ChallengeVerseContext) -> [String] {
+        let defaults = ["FAITH", "GRACE", "LOVE", "PEACE", "HOPE"]
+        var picked = ctx.significantWords
+            .map { $0.uppercased().trimmingCharacters(in: CharacterSet.alphanumerics.inverted) }
+            .filter { (4...8).contains($0.count) }
+        picked = Array(Set(picked)).prefix(5).map { $0 }
+        if picked.count < 5 {
+            for d in defaults where !picked.contains(d) {
+                picked.append(d)
+                if picked.count == 5 { break }
+            }
+        }
+        return Array(picked.prefix(5))
+    }
+
+    private static func shortVerse(_ text: String) -> String {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.count <= 70 { return t }
+        return String(t.prefix(67)) + "…"
+    }
+
+    private static func localizedBookNames(excluding: String? = nil) -> [String] {
+        BibleContent.sharedInstance.BookToPosition()
+            .map { $0.components(separatedBy: "-")[0] }
+            .filter { name in
+                guard let excluding = excluding else { return true }
+                return name.caseInsensitiveCompare(excluding) != .orderedSame
+            }
+    }
+
+    private static func localizedReference(bookId: Int, chapter: Int, verse: Int) -> String? {
+        let books = BibleContent.sharedInstance.BookToPosition()
+        let idx = bookId - 1
+        guard idx >= 0, idx < books.count else { return nil }
+        let name = books[idx].components(separatedBy: "-")[0]
+        return "\(name) \(chapter):\(verse)"
+    }
+
+    private static func localizedReferencePool(excluding: String) -> [String] {
+        let samples: [(Int, Int, Int)] = [
+            (1, 1, 1),
+            (19, 23, 1),
+            (43, 3, 16),
+            (50, 4, 13),
+            (45, 8, 28)
+        ]
+        return samples.compactMap { localizedReference(bookId: $0.0, chapter: $0.1, verse: $0.2) }
+            .filter { $0.caseInsensitiveCompare(excluding) != .orderedSame }
+    }
+
+    private static func localizedVerseSnippet(bookId: Int, chapter: Int, verse: Int) -> String {
+        let books = BibleContent.sharedInstance.BookToPosition()
+        let idx = bookId - 1
+        guard idx >= 0, idx < books.count else { return "" }
+        let name = books[idx].components(separatedBy: "-")[0]
+        let verses = BibleContent.sharedInstance.AudioBibleList(
+            selecterBookName: name,
+            selectedId: max(0, chapter - 1)
+        )
+        let vIdx = max(0, verse - 1)
+        guard vIdx < verses.count else { return "" }
+        let text = verses[vIdx].trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.count <= 60 { return text }
+        return String(text.prefix(60)) + "…"
+    }
+
+    private static func uniqueOptions(correct: String, pool: [String]) -> [String] {
+        var result = [correct]
+        for item in pool where item.caseInsensitiveCompare(correct) != .orderedSame {
+            if !result.contains(where: { $0.caseInsensitiveCompare(item) == .orderedSame }) {
+                result.append(item)
+            }
+            if result.count == 4 { break }
+        }
+        while result.count < 4 {
+            result.append("Option \(result.count + 1)")
+        }
+        return result
+    }
+}

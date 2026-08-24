@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="21701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21678"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view contentMode="scaleToFill" restorationIdentifier="FAQVu" id="iN0-l3-epB" customClass="FAQVu" customModule="NKJV_Bible" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" bounces="NO" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" bouncesZoom="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WfX-uV-BBX">
+                    <rect key="frame" x="20" y="89" width="353" height="733"/>
+                    <subviews>
+                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Cah-VM-WcP">
+                            <rect key="frame" x="0.0" y="-6" width="353" height="900"/>
+                            <subviews>
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="knd-gw-Ez1">
+                                    <rect key="frame" x="313" y="20" width="20" height="20"/>
+                                    <constraints>
+                                        <constraint firstAttribute="height" constant="20" id="kgM-P8-4m3"/>
+                                        <constraint firstAttribute="width" constant="20" id="yfw-KJ-SPM"/>
+                                    </constraints>
+                                    <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                    <state key="normal" image="closeGray"/>
+                                    <connections>
+                                        <action selector="Close_Action:" destination="iN0-l3-epB" eventType="touchUpInside" id="b6B-an-rtp"/>
+                                    </connections>
+                                </button>
+                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text=" Frequently Asked Questions" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="SF9-1w-PKd">
+                                    <rect key="frame" x="20" y="60" width="313" height="24"/>
+                                    <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="20"/>
+                                    <nil key="textColor"/>
+                                    <nil key="highlightedColor"/>
+                                </label>
+                            </subviews>
+                            <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                            <constraints>
+                                <constraint firstItem="SF9-1w-PKd" firstAttribute="top" secondItem="Cah-VM-WcP" secondAttribute="top" constant="60" id="1nd-Os-Lja"/>
+                                <constraint firstAttribute="height" constant="900" id="Aie-yz-OIU"/>
+                                <constraint firstItem="knd-gw-Ez1" firstAttribute="top" secondItem="Cah-VM-WcP" secondAttribute="top" constant="20" id="B5h-Al-pnz"/>
+                                <constraint firstAttribute="trailing" secondItem="SF9-1w-PKd" secondAttribute="trailing" constant="20" id="MI2-ul-ekh"/>
+                                <constraint firstAttribute="trailing" secondItem="knd-gw-Ez1" secondAttribute="trailing" constant="20" id="clq-Mi-PU9"/>
+                                <constraint firstItem="SF9-1w-PKd" firstAttribute="leading" secondItem="Cah-VM-WcP" secondAttribute="leading" constant="20" id="o2u-fW-lCr"/>
+                            </constraints>
+                            <userDefinedRuntimeAttributes>
+                                <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                    <integer key="value" value="20"/>
+                                </userDefinedRuntimeAttribute>
+                            </userDefinedRuntimeAttributes>
+                        </view>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="1. Are these real coins?" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1Rh-iR-c87">
+                            <rect key="frame" x="20" y="100" width="313" height="21"/>
+                            <fontDescription key="fontDescription" name="ArialRoundedMTBold" family="Arial Rounded MT Bold" pointSize="18"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Coin" translatesAutoresizingMaskIntoConstraints="NO" id="Uku-3r-NWP">
+                            <rect key="frame" x="20" y="141" width="16" height="16"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="16" id="5Gv-NX-2ZM"/>
+                                <constraint firstAttribute="width" constant="16" id="Qxb-qA-Iam"/>
+                            </constraints>
+                        </imageView>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="No, these are virtual coins." textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="5Nr-0h-Ysd">
+                            <rect key="frame" x="44" y="141" width="289" height="18"/>
+                            <fontDescription key="fontDescription" name="ArialMT" family="Arial" pointSize="16"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="2. How can I earn virtual coins?" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Ysb-od-E4l">
+                            <rect key="frame" x="20" y="187" width="313" height="21"/>
+                            <fontDescription key="fontDescription" name="ArialRoundedMTBold" family="Arial Rounded MT Bold" pointSize="18"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Coin" translatesAutoresizingMaskIntoConstraints="NO" id="M5F-Yl-m7u">
+                            <rect key="frame" x="20" y="228" width="16" height="16"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="16" id="Hup-8C-N3h"/>
+                                <constraint firstAttribute="width" constant="16" id="xC9-Go-lEg"/>
+                            </constraints>
+                        </imageView>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Three gift cards per day as rewards in certain time intervals with Skip option to collect coins instantly." textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="RFg-bA-gVR">
+                            <rect key="frame" x="44" y="228" width="289" height="53.666666666666686"/>
+                            <fontDescription key="fontDescription" name="ArialMT" family="Arial" pointSize="16"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Coin" translatesAutoresizingMaskIntoConstraints="NO" id="cxG-ML-GvK">
+                            <rect key="frame" x="20" y="301.66666666666669" width="16" height="16"/>
+                            <constraints>
+                                <constraint firstAttribute="width" constant="16" id="93u-bW-Fup"/>
+                                <constraint firstAttribute="height" constant="16" id="gbr-bo-Y0k"/>
+                            </constraints>
+                        </imageView>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Waiting time coins claim option." textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="qTN-Hd-Qt9">
+                            <rect key="frame" x="44" y="301.66666666666669" width="289" height="18"/>
+                            <fontDescription key="fontDescription" name="ArialMT" family="Arial" pointSize="16"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Coin" translatesAutoresizingMaskIntoConstraints="NO" id="p9c-hL-UdC">
+                            <rect key="frame" x="20" y="339.66666666666669" width="16" height="16"/>
+                            <constraints>
+                                <constraint firstAttribute="width" constant="16" id="T9Q-w5-XFF"/>
+                                <constraint firstAttribute="height" constant="16" id="yeb-FL-D37"/>
+                            </constraints>
+                        </imageView>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Various coin packages and allow to purchase coins with real money through in-app purchases." textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="eOn-k5-gqJ">
+                            <rect key="frame" x="44" y="339.66666666666669" width="289" height="53.666666666666686"/>
+                            <fontDescription key="fontDescription" name="ArialMT" family="Arial" pointSize="16"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Coin" translatesAutoresizingMaskIntoConstraints="NO" id="yBu-Jh-HHb">
+                            <rect key="frame" x="20" y="413.33333333333331" width="16" height="16"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="16" id="iZQ-XY-Ie2"/>
+                                <constraint firstAttribute="width" constant="16" id="pec-qO-ras"/>
+                            </constraints>
+                        </imageView>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Option to watch short video ads in exchange for coins." textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="5vN-LH-KL5">
+                            <rect key="frame" x="44" y="413.33333333333331" width="289" height="36"/>
+                            <fontDescription key="fontDescription" name="ArialMT" family="Arial" pointSize="16"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="3. Where can I use virtual coins in this game?" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wmx-bk-N9g">
+                            <rect key="frame" x="20" y="479.33333333333337" width="313" height="41.666666666666629"/>
+                            <fontDescription key="fontDescription" name="ArialRoundedMTBold" family="Arial Rounded MT Bold" pointSize="18"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Coin" translatesAutoresizingMaskIntoConstraints="NO" id="DYn-f5-07c">
+                            <rect key="frame" x="20" y="541" width="16" height="16"/>
+                            <constraints>
+                                <constraint firstAttribute="width" constant="16" id="53H-8i-j8p"/>
+                                <constraint firstAttribute="height" constant="16" id="Cgi-wB-b6X"/>
+                            </constraints>
+                        </imageView>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="50-50: to eliminate half of the answer choices" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="BAq-5Q-KLN">
+                            <rect key="frame" x="44" y="541" width="289" height="36"/>
+                            <fontDescription key="fontDescription" name="ArialMT" family="Arial" pointSize="16"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Coin" translatesAutoresizingMaskIntoConstraints="NO" id="oiu-Ql-T7U">
+                            <rect key="frame" x="20" y="597" width="16" height="16"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="16" id="ZpQ-9Q-O7V"/>
+                                <constraint firstAttribute="width" constant="16" id="ei6-2N-M2s"/>
+                            </constraints>
+                        </imageView>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Hint: to get clues for difficult questions" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="40e-0S-Zad">
+                            <rect key="frame" x="44" y="597" width="289" height="18"/>
+                            <fontDescription key="fontDescription" name="ArialMT" family="Arial" pointSize="16"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Coin" translatesAutoresizingMaskIntoConstraints="NO" id="w9z-Sv-QeE">
+                            <rect key="frame" x="20" y="635" width="16" height="16"/>
+                            <constraints>
+                                <constraint firstAttribute="width" constant="16" id="N2M-Tb-3Ph"/>
+                                <constraint firstAttribute="height" constant="16" id="SdF-wy-xsg"/>
+                            </constraints>
+                        </imageView>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" verticalCompressionResistancePriority="749" text="Show Answers: to reveal the correct answer for challenging questions" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="dNM-kB-QPv">
+                            <rect key="frame" x="44" y="635" width="289" height="36"/>
+                            <fontDescription key="fontDescription" name="ArialMT" family="Arial" pointSize="16"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S64-cK-4Oa">
+                            <rect key="frame" x="20" y="691" width="313" height="89.666666666666629"/>
+                            <string key="text">Overall, we aim to strike a balance between challenging players to think critically and providing support when they encounter hurdles to enhance the engagement in this Bible Quiz journey.</string>
+                            <fontDescription key="fontDescription" name="ArialMT" family="Arial" pointSize="16"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                    </subviews>
+                    <constraints>
+                        <constraint firstItem="Cah-VM-WcP" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" id="0Uq-T1-e0i"/>
+                        <constraint firstAttribute="trailing" secondItem="eOn-k5-gqJ" secondAttribute="trailing" constant="20" id="0b8-z3-k5L"/>
+                        <constraint firstItem="Ysb-od-E4l" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" constant="20" id="2Ia-Na-IQn"/>
+                        <constraint firstItem="5vN-LH-KL5" firstAttribute="top" secondItem="eOn-k5-gqJ" secondAttribute="bottom" constant="20" id="2pf-8b-N6U"/>
+                        <constraint firstItem="w9z-Sv-QeE" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" constant="20" id="382-rt-aVe"/>
+                        <constraint firstAttribute="trailing" secondItem="RFg-bA-gVR" secondAttribute="trailing" constant="20" id="3Ok-b9-JLE"/>
+                        <constraint firstItem="S64-cK-4Oa" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" constant="20" id="3hA-KI-c0W"/>
+                        <constraint firstItem="M5F-Yl-m7u" firstAttribute="top" secondItem="RFg-bA-gVR" secondAttribute="top" id="4CG-wJ-6ZC"/>
+                        <constraint firstItem="Cah-VM-WcP" firstAttribute="width" secondItem="WfX-uV-BBX" secondAttribute="width" id="4k3-Yj-t0S"/>
+                        <constraint firstAttribute="trailing" secondItem="S64-cK-4Oa" secondAttribute="trailing" constant="20" id="69H-CQ-CiO"/>
+                        <constraint firstItem="dNM-kB-QPv" firstAttribute="leading" secondItem="w9z-Sv-QeE" secondAttribute="trailing" constant="8" symbolic="YES" id="6S3-EN-WNm"/>
+                        <constraint firstItem="1Rh-iR-c87" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" constant="20" id="71n-ot-zJ3"/>
+                        <constraint firstAttribute="trailing" secondItem="5vN-LH-KL5" secondAttribute="trailing" constant="20" id="AAn-sD-wiB"/>
+                        <constraint firstItem="yBu-Jh-HHb" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" constant="20" id="AR8-JN-DEU"/>
+                        <constraint firstAttribute="trailing" secondItem="Cah-VM-WcP" secondAttribute="trailing" id="DLr-iw-vnG"/>
+                        <constraint firstItem="oiu-Ql-T7U" firstAttribute="top" secondItem="40e-0S-Zad" secondAttribute="top" id="Dha-v1-QzL"/>
+                        <constraint firstAttribute="trailing" secondItem="dNM-kB-QPv" secondAttribute="trailing" constant="20" id="Dld-7p-p9k"/>
+                        <constraint firstAttribute="trailing" secondItem="wmx-bk-N9g" secondAttribute="trailing" constant="20" id="Hl8-fi-kD6"/>
+                        <constraint firstItem="5vN-LH-KL5" firstAttribute="leading" secondItem="yBu-Jh-HHb" secondAttribute="trailing" constant="8" symbolic="YES" id="HlL-c2-j2h"/>
+                        <constraint firstAttribute="trailing" secondItem="40e-0S-Zad" secondAttribute="trailing" constant="20" id="Iie-g6-76p"/>
+                        <constraint firstItem="qTN-Hd-Qt9" firstAttribute="top" secondItem="RFg-bA-gVR" secondAttribute="bottom" constant="20" id="KQE-AT-bNh"/>
+                        <constraint firstItem="RFg-bA-gVR" firstAttribute="leading" secondItem="M5F-Yl-m7u" secondAttribute="trailing" constant="8" symbolic="YES" id="Nj3-hV-PqB"/>
+                        <constraint firstItem="5Nr-0h-Ysd" firstAttribute="leading" secondItem="Uku-3r-NWP" secondAttribute="trailing" constant="8" symbolic="YES" id="OB2-pz-gaD"/>
+                        <constraint firstItem="yBu-Jh-HHb" firstAttribute="top" secondItem="5vN-LH-KL5" secondAttribute="top" id="Obq-dG-dh0"/>
+                        <constraint firstItem="Cah-VM-WcP" firstAttribute="top" secondItem="WfX-uV-BBX" secondAttribute="top" constant="-6" id="Oes-zm-ugw"/>
+                        <constraint firstItem="S64-cK-4Oa" firstAttribute="top" secondItem="dNM-kB-QPv" secondAttribute="bottom" constant="20" id="RE9-2U-Wn8"/>
+                        <constraint firstItem="M5F-Yl-m7u" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" constant="20" id="Slc-i1-E70"/>
+                        <constraint firstAttribute="trailing" secondItem="Cah-VM-WcP" secondAttribute="trailing" id="UYu-Ii-Tx0"/>
+                        <constraint firstItem="RFg-bA-gVR" firstAttribute="top" secondItem="Ysb-od-E4l" secondAttribute="bottom" constant="20" id="Vor-Je-RD8"/>
+                        <constraint firstItem="wmx-bk-N9g" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" constant="20" id="VzJ-nh-5SL"/>
+                        <constraint firstItem="5Nr-0h-Ysd" firstAttribute="top" secondItem="1Rh-iR-c87" secondAttribute="bottom" constant="20" id="Wo0-hY-u5O"/>
+                        <constraint firstItem="w9z-Sv-QeE" firstAttribute="top" secondItem="dNM-kB-QPv" secondAttribute="top" id="WsH-wf-MfI"/>
+                        <constraint firstItem="40e-0S-Zad" firstAttribute="top" secondItem="BAq-5Q-KLN" secondAttribute="bottom" constant="20" id="ami-j4-OS9"/>
+                        <constraint firstAttribute="trailing" secondItem="Ysb-od-E4l" secondAttribute="trailing" constant="20" id="cHi-fe-43k"/>
+                        <constraint firstItem="eOn-k5-gqJ" firstAttribute="top" secondItem="qTN-Hd-Qt9" secondAttribute="bottom" constant="20" id="cTC-0O-uMb"/>
+                        <constraint firstItem="1Rh-iR-c87" firstAttribute="top" secondItem="WfX-uV-BBX" secondAttribute="top" constant="100" id="eRe-oE-xy9"/>
+                        <constraint firstAttribute="trailing" secondItem="BAq-5Q-KLN" secondAttribute="trailing" constant="20" id="fGc-lr-t38"/>
+                        <constraint firstItem="p9c-hL-UdC" firstAttribute="top" secondItem="eOn-k5-gqJ" secondAttribute="top" id="g3d-n6-WaL"/>
+                        <constraint firstItem="BAq-5Q-KLN" firstAttribute="leading" secondItem="DYn-f5-07c" secondAttribute="trailing" constant="8" symbolic="YES" id="gDj-Bd-y5o"/>
+                        <constraint firstItem="Ysb-od-E4l" firstAttribute="top" secondItem="Uku-3r-NWP" secondAttribute="bottom" constant="30" id="iiX-1l-ZQh"/>
+                        <constraint firstAttribute="trailing" secondItem="1Rh-iR-c87" secondAttribute="trailing" constant="20" id="isV-qq-jph"/>
+                        <constraint firstItem="qTN-Hd-Qt9" firstAttribute="leading" secondItem="cxG-ML-GvK" secondAttribute="trailing" constant="8" symbolic="YES" id="l4n-5c-YkP"/>
+                        <constraint firstItem="eOn-k5-gqJ" firstAttribute="leading" secondItem="p9c-hL-UdC" secondAttribute="trailing" constant="8" symbolic="YES" id="lT2-uh-u0o"/>
+                        <constraint firstItem="cxG-ML-GvK" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" constant="20" id="nvM-tp-vPM"/>
+                        <constraint firstItem="DYn-f5-07c" firstAttribute="top" secondItem="BAq-5Q-KLN" secondAttribute="top" id="pMo-sY-T68"/>
+                        <constraint firstAttribute="bottom" secondItem="Cah-VM-WcP" secondAttribute="bottom" constant="-30" id="pPf-M9-TYe"/>
+                        <constraint firstItem="40e-0S-Zad" firstAttribute="leading" secondItem="oiu-Ql-T7U" secondAttribute="trailing" constant="8" symbolic="YES" id="paX-ar-HBm"/>
+                        <constraint firstItem="dNM-kB-QPv" firstAttribute="top" secondItem="40e-0S-Zad" secondAttribute="bottom" constant="20" id="pqU-Di-Dde"/>
+                        <constraint firstItem="DYn-f5-07c" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" constant="20" id="vRz-TE-iyh"/>
+                        <constraint firstItem="wmx-bk-N9g" firstAttribute="top" secondItem="5vN-LH-KL5" secondAttribute="bottom" constant="30" id="vcb-Zd-HfM"/>
+                        <constraint firstAttribute="trailing" secondItem="qTN-Hd-Qt9" secondAttribute="trailing" constant="20" id="vni-T7-MGp"/>
+                        <constraint firstItem="p9c-hL-UdC" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" constant="20" id="vsS-7F-ZXZ"/>
+                        <constraint firstItem="Uku-3r-NWP" firstAttribute="top" secondItem="5Nr-0h-Ysd" secondAttribute="top" id="vub-n5-xlD"/>
+                        <constraint firstAttribute="trailing" secondItem="5Nr-0h-Ysd" secondAttribute="trailing" constant="20" id="wWx-HG-aiE"/>
+                        <constraint firstItem="5Nr-0h-Ysd" firstAttribute="leading" secondItem="Uku-3r-NWP" secondAttribute="trailing" constant="8" symbolic="YES" id="xpC-Tj-zpg"/>
+                        <constraint firstItem="Uku-3r-NWP" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" constant="20" id="yKu-rC-o2i"/>
+                        <constraint firstItem="BAq-5Q-KLN" firstAttribute="top" secondItem="wmx-bk-N9g" secondAttribute="bottom" constant="20" id="ycT-Je-AHE"/>
+                        <constraint firstItem="cxG-ML-GvK" firstAttribute="top" secondItem="qTN-Hd-Qt9" secondAttribute="top" id="zFg-wh-Wud"/>
+                        <constraint firstItem="oiu-Ql-T7U" firstAttribute="leading" secondItem="WfX-uV-BBX" secondAttribute="leading" constant="20" id="zRn-dm-zfN"/>
+                    </constraints>
+                </scrollView>
+            </subviews>
+            <viewLayoutGuide key="safeArea" id="vUN-kp-3ea"/>
+            <color key="backgroundColor" white="0.0" alpha="0.40000000000000002" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+            <constraints>
+                <constraint firstAttribute="trailing" secondItem="WfX-uV-BBX" secondAttribute="trailing" constant="20" id="0xq-ja-Ixq"/>
+                <constraint firstItem="WfX-uV-BBX" firstAttribute="leading" secondItem="vUN-kp-3ea" secondAttribute="leading" constant="20" id="g6O-TT-JTg"/>
+                <constraint firstAttribute="bottom" secondItem="WfX-uV-BBX" secondAttribute="bottom" constant="30" id="sJO-hY-Rsg"/>
+                <constraint firstItem="WfX-uV-BBX" firstAttribute="top" secondItem="vUN-kp-3ea" secondAttribute="top" constant="30" id="vG1-H1-k8r"/>
+            </constraints>
+            <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+            <connections>
+                <outlet property="MainFrame" destination="WfX-uV-BBX" id="lng-5t-INr"/>
+            </connections>
+            <point key="canvasLocation" x="78.625954198473281" y="202.11267605633805"/>
+        </view>
+    </objects>
+    <resources>
+        <image name="Coin" width="128" height="125"/>
+        <image name="closeGray" width="128" height="128"/>
+    </resources>
+</document>

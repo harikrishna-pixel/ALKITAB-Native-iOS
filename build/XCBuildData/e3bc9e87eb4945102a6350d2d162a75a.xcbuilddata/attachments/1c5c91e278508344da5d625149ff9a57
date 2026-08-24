@@ -1,0 +1,38 @@
+{
+  "" : {
+    "diagnostics" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/Zip-master.dia",
+    "emit-module-dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/Zip-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/Zip-master-emit-module.dia",
+    "swift-dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/Zip-master.swiftdeps"
+  },
+  "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/Pods/Zip/Zip/QuickZip.swift" : {
+    "const-values" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/QuickZip.swiftconstvalues",
+    "dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/QuickZip.d",
+    "diagnostics" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/QuickZip.dia",
+    "index-unit-output-path" : "/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/QuickZip.o",
+    "llvm-bc" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/QuickZip.bc",
+    "object" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/QuickZip.o",
+    "swift-dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/QuickZip.swiftdeps",
+    "swiftmodule" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/QuickZip~partial.swiftmodule"
+  },
+  "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/Pods/Zip/Zip/Zip.swift" : {
+    "const-values" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/Zip-0d3d5366263c4d956495a475d9e6fc91.swiftconstvalues",
+    "dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/Zip-0d3d5366263c4d956495a475d9e6fc91.d",
+    "diagnostics" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/Zip-0d3d5366263c4d956495a475d9e6fc91.dia",
+    "index-unit-output-path" : "/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/Zip-0d3d5366263c4d956495a475d9e6fc91.o",
+    "llvm-bc" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/Zip-0d3d5366263c4d956495a475d9e6fc91.bc",
+    "object" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/Zip-0d3d5366263c4d956495a475d9e6fc91.o",
+    "swift-dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/Zip-0d3d5366263c4d956495a475d9e6fc91.swiftdeps",
+    "swiftmodule" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/Zip-0d3d5366263c4d956495a475d9e6fc91~partial.swiftmodule"
+  },
+  "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/Pods/Zip/Zip/ZipUtilities.swift" : {
+    "const-values" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/ZipUtilities.swiftconstvalues",
+    "dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/ZipUtilities.d",
+    "diagnostics" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/ZipUtilities.dia",
+    "index-unit-output-path" : "/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/ZipUtilities.o",
+    "llvm-bc" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/ZipUtilities.bc",
+    "object" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/ZipUtilities.o",
+    "swift-dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/ZipUtilities.swiftdeps",
+    "swiftmodule" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Zip.build/Objects-normal/arm64/ZipUtilities~partial.swiftmodule"
+  }
+}

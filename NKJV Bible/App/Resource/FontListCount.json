@@ -1,0 +1,269 @@
+
+
+[
+ {
+    "Language": "GillSans-Light",
+    "SecondaryLang": "Kailasa",
+ },
+ {
+    "Language": "Kailasa",
+    "SecondaryLang": "HelveticaNeue-LightItalic",
+ },
+ {
+    "Language": "Euphemia UCAS",
+    "SecondaryLang": "Playfair Display",
+ },
+ {
+    "Language": "Charter-Roman",
+    "SecondaryLang": "Chalkduster",
+ },
+ {
+    "Language": "HelveticaNeue-LightItalic",
+    "SecondaryLang": "Chalkduster",
+ },
+ {
+    "Language": "Verdana",
+    "SecondaryLang": "Playfair Display",
+ },
+ {
+    "Language": "MalayalamSangamMN",
+    "SecondaryLang": "Thonburi",
+ },
+ {
+    "Language": "IowanOldStyle-Italic",
+    "SecondaryLang": "Arial",
+ },
+ {
+    "Language": "TimesNewRomanPS-BoldMT",
+    "SecondaryLang": "Helvetica",
+ },
+ {
+    "Language": "Thonburi",
+    "SecondaryLang": "GillSans-Light",
+ },
+ {
+    "Language": "Palatino-Roman",
+    "SecondaryLang": "Futura",
+ },
+ {
+    "Language": "Courier",
+    "SecondaryLang": "Verdana",
+ },
+ {
+    "Language": "OTHER FONTS",
+    "SecondaryLang": "OTHER FONTS",
+ },
+ {
+    "Language": "Academy Engraved LET",
+    "SecondaryLang": "Arial",
+ },
+ {
+    "Language": "American Typewriter",
+    "SecondaryLang": "Verdana",
+ },
+ {
+    "Language": "Al Nile",
+    "SecondaryLang": "Cochin",
+ },
+ {
+    "Language": "Apple Color Emoji",
+    "SecondaryLang": "Arial",
+ },
+ {
+    "Language": "Apple SD Gothic Neo",
+    "SecondaryLang": "Helvetica",
+ },
+ {
+    "Language": "Avenir",
+    "SecondaryLang": "Arial Rounded MT Bold",
+ },
+ {
+    "Language": "Arial",
+    "SecondaryLang": "Bradley Hand",
+ },
+ {
+    "Language": "Arial Hebrew",
+    "SecondaryLang": "Bodoni 72",
+ },
+ {
+    "Language": "Arial Rounded MT Bold",
+    "SecondaryLang": "Bodoni 72 Oldstyle",
+ },
+ {
+    "Language": "Bangla Sangam MN",
+    "SecondaryLang": "Arial Rounded MT Bold",
+ },
+ {
+    "Language": "Baskerville",
+    "SecondaryLang": "Arial",
+ },
+ {
+    "Language": "Bodoni 72",
+    "SecondaryLang": "Helvetica",
+ },
+ {
+    "Language": "Bodoni 72 Oldstyle",
+    "SecondaryLang": "Helvetica",
+ },
+ {
+    "Language": "Bodoni 72 Smallcaps",
+    "SecondaryLang": "Helvetica",
+ },
+ {
+    "Language": "Bradley Hand",
+    "SecondaryLang": "Chalkboard SE",
+ },
+ {
+    "Language": "Chalkduster",
+    "SecondaryLang": "Bodoni 72",
+ },
+ {
+    "Language": "Chalkboard SE",
+    "SecondaryLang": "Arial",
+ },
+ {
+    "Language": "Cochin",
+    "SecondaryLang": "Avenir",
+ },
+ {
+    "Language": "Copperplate",
+    "SecondaryLang": "Cochin",
+ },
+ {
+    "Language": "Courier New",
+    "SecondaryLang": "Helvetica",
+ },
+ {
+    "Language": "Devanagari Sangam MN",
+    "SecondaryLang": "Copperplate",
+ },
+ {
+    "Language": "Didot",
+    "SecondaryLang": "Verdana",
+ },
+ {
+    "Language": "Futura",
+    "SecondaryLang": "Chalkduster",
+ },
+ {
+    "Language": "Geeza Pro",
+    "SecondaryLang": "Playfair Display",
+ },
+ {
+    "Language": "Georgia",
+    "SecondaryLang": "Arial",
+ },
+ {
+    "Language": "Gill Sans",
+    "SecondaryLang": "Kailasa",
+ },
+ {
+    "Language": "Heiti SC",
+    "SecondaryLang": "Futura",
+ },
+ {
+    "Language": "Heiti TC",
+    "SecondaryLang": "Futura",
+ },
+ {
+    "Language": "Helvetica",
+    "SecondaryLang": "Noteworthy",
+ },
+ {
+    "Language": "Hiragino Mincho ProN",
+    "SecondaryLang": "Verdana",
+ },
+ {
+    "Language": "Hiragino Sans",
+    "SecondaryLang": "Futura",
+ },
+ {
+    "Language": "Hoefler Text",
+    "SecondaryLang": "Verdana",
+ },
+ {
+    "Language": "Iowan Old Style",
+    "SecondaryLang": "Helvetica",
+ },
+ {
+    "Language": "Khmer Sangam MN",
+    "SecondaryLang": "Copperplate",
+ },
+ {
+    "Language": "Kohinoor Bangla",
+    "SecondaryLang": "Copperplate",
+ },
+ {
+    "Language": "Kohinoor Devanagari",
+    "SecondaryLang": "Marker Felt",
+ },
+
+  {
+    "Language": "Kohinoor Telugu",
+    "SecondaryLang": "Futura",
+ },
+  {
+    "Language": "Lao Sangam MN",
+    "SecondaryLang": "Marker Felt",
+ },
+  {
+    "Language": "Marker Felt",
+    "SecondaryLang": "Noteworthy",
+ },
+  {
+    "Language": "Menlo",
+    "SecondaryLang": "Arial",
+ },
+
+  {
+    "Language": "Noteworthy",
+    "SecondaryLang": "Marker Felt",
+ },
+  {
+    "Language": "Papyrus",
+    "SecondaryLang": "Arial",
+ },
+  {
+    "Language": "Party LET",
+    "SecondaryLang": "Verdana",
+ },
+  {
+    "Language": "PingFang HK",
+    "SecondaryLang": "Chalkduster",
+ },
+  {
+    "Language": "Savoye LET",
+    "SecondaryLang": "Verdana",
+ },
+  {
+    "Language": "Sinhala Sangam MN",
+    "SecondaryLang": "Copperplate",
+ },
+ {
+    "Language": "Tamil Sangam MN",
+    "SecondaryLang": "Courier",
+ },
+  {
+    "Language": "Trebuchet MS",
+    "SecondaryLang": "Baskerville",
+ },
+  {
+    "Language": "Zapf Dingbats",
+    "SecondaryLang": "Chalkboard SE",
+ },
+ 
+ ]
+
+
+
+                                                                            
+ 
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="21507" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_1" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21505"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" restorationIdentifier="ChapterCell" reuseIdentifier="ChapterCell" id="gTV-IL-0wX" customClass="ChapterCell" customModule="NKJV_Bible" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
+                <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
+                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                <subviews>
+                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="FN9-wO-Cvh">
+                        <rect key="frame" x="0.0" y="6" width="50" height="38"/>
+                        <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="1" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="GnQ-cp-Tue">
+                                <rect key="frame" x="5" y="5" width="40" height="28"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="24"/>
+                                <color key="textColor" red="0.93333333330000001" green="0.93333333330000001" blue="0.93333333330000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstAttribute="trailing" secondItem="GnQ-cp-Tue" secondAttribute="trailing" constant="5" id="3kL-QG-Stp"/>
+                            <constraint firstItem="GnQ-cp-Tue" firstAttribute="leading" secondItem="FN9-wO-Cvh" secondAttribute="leading" constant="5" id="Az0-LL-9i1"/>
+                            <constraint firstItem="GnQ-cp-Tue" firstAttribute="top" secondItem="FN9-wO-Cvh" secondAttribute="top" constant="5" id="dQc-05-Zjq"/>
+                            <constraint firstAttribute="bottom" secondItem="GnQ-cp-Tue" secondAttribute="bottom" constant="5" id="nxX-Vf-Hrw"/>
+                        </constraints>
+                    </view>
+                </subviews>
+            </view>
+            <viewLayoutGuide key="safeArea" id="ZTg-uK-7eu"/>
+            <constraints>
+                <constraint firstItem="FN9-wO-Cvh" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" id="LQF-Gy-MJS"/>
+                <constraint firstItem="FN9-wO-Cvh" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" constant="6" id="a9c-vM-LUH"/>
+                <constraint firstAttribute="bottom" secondItem="FN9-wO-Cvh" secondAttribute="bottom" constant="6" id="cha-Md-2UK"/>
+                <constraint firstAttribute="trailing" secondItem="FN9-wO-Cvh" secondAttribute="trailing" id="ihC-q0-ghH"/>
+            </constraints>
+            <size key="customSize" width="53" height="58"/>
+            <connections>
+                <outlet property="CountTxt" destination="GnQ-cp-Tue" id="hvV-c1-1gW"/>
+                <outlet property="mainVu" destination="FN9-wO-Cvh" id="jYN-qF-IG6"/>
+            </connections>
+            <point key="canvasLocation" x="139.13043478260872" y="74.330357142857139"/>
+        </collectionViewCell>
+    </objects>
+</document>

@@ -1,0 +1,6 @@
+framework module Pods_NKJV_Bible {
+  umbrella header "Pods-NKJV Bible-umbrella.h"
+
+  export *
+  module * { export * }
+}

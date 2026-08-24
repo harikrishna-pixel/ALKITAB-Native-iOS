@@ -1,0 +1,18 @@
+{
+  "" : {
+    "diagnostics" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/Objects-normal/arm64/Toast-Swift-master.dia",
+    "emit-module-dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/Objects-normal/arm64/Toast-Swift-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/Objects-normal/arm64/Toast-Swift-master-emit-module.dia",
+    "swift-dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/Objects-normal/arm64/Toast-Swift-master.swiftdeps"
+  },
+  "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/Pods/Toast-Swift/Toast/Toast.swift" : {
+    "const-values" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/Objects-normal/arm64/Toast.swiftconstvalues",
+    "dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/Objects-normal/arm64/Toast.d",
+    "diagnostics" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/Objects-normal/arm64/Toast.dia",
+    "index-unit-output-path" : "/Pods.build/Debug-iphoneos/Toast-Swift.build/Objects-normal/arm64/Toast.o",
+    "llvm-bc" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/Objects-normal/arm64/Toast.bc",
+    "object" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/Objects-normal/arm64/Toast.o",
+    "swift-dependencies" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/Objects-normal/arm64/Toast.swiftdeps",
+    "swiftmodule" : "/Users/ajayprasanth/Desktop/NKJV Bible New/Light Bible /Version 2/Bug fix/New Bible ui/With Google /Bible ad/With ironsource/New/BIBLE without google/build/Pods.build/Debug-iphoneos/Toast-Swift.build/Objects-normal/arm64/Toast~partial.swiftmodule"
+  }
+}
