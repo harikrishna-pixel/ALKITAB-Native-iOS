@@ -13,6 +13,7 @@ struct DailyJourneyHomeView: View {
     @State private var showMemory = false
     @State private var showReflection = false
     @State private var showStreak = false
+    @State private var showCalendar = false
     @State private var didAutoPresentStreak = false
 
     var onContinueReading: () -> Void
@@ -41,6 +42,22 @@ struct DailyJourneyHomeView: View {
         if hour < 12 { return "Good Morning" }
         if hour < 17 { return "Good Afternoon" }
         return "Good Evening"
+    }
+
+    private var userDisplayName: String {
+        let saved = UserDefaults.standard.string(forKey: "OnboardingUserName")?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !saved.isEmpty { return saved }
+        let email = UserDefaults.standard.string(forKey: "OnboardingUserEmail") ?? ""
+        if let at = email.firstIndex(of: "@") {
+            return String(email[..<at])
+        }
+        return ""
+    }
+
+    private var greetingTitle: String {
+        let name = userDisplayName
+        return name.isEmpty ? "\(greeting) 👋" : "\(greeting), \(name) 👋"
     }
 
     var body: some View {
@@ -89,6 +106,21 @@ struct DailyJourneyHomeView: View {
             }
             .navigationViewStyle(StackNavigationViewStyle())
         }
+        .sheet(isPresented: $showCalendar) {
+            NavigationView {
+                StreakCalendarView(store: store)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button(action: { showCalendar = false }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.black)
+                            }
+                        }
+                    }
+            }
+            .navigationViewStyle(StackNavigationViewStyle())
+        }
         .onAppear {
             store.reload()
             var loaded = DailyVerseSnapshot.loadCurrent()
@@ -114,7 +146,7 @@ struct DailyJourneyHomeView: View {
     private var header: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(greeting) 👋")
+                Text(greetingTitle)
                     .font(.system(size: 26, weight: .bold))
                     .foregroundColor(.black)
                 Text("Ready for today's Scripture journey?")
@@ -142,9 +174,9 @@ struct DailyJourneyHomeView: View {
     }
 
     private var streakSummaryCard: some View {
-        Button(action: { showStreak = true }) {
-            HStack {
-                VStack(alignment: .leading, spacing: 8) {
+        HStack {
+            VStack(alignment: .leading, spacing: 8) {
+                Button(action: { showStreak = true }) {
                     HStack(spacing: 6) {
                         Image(systemName: "flame.fill")
                             .foregroundColor(Color(hex: "FF9F0A"))
@@ -152,11 +184,18 @@ struct DailyJourneyHomeView: View {
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
                     }
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                Button(action: { showCalendar = true }) {
                     Text("View Calendar >")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                 }
-                Spacer()
+                .buttonStyle(PlainButtonStyle())
+            }
+            Spacer()
+            Button(action: { showStreak = true }) {
                 VStack(spacing: 2) {
                     Text("\(max(store.streakCount, 1))")
                         .font(.system(size: 36, weight: .bold))
@@ -166,19 +205,19 @@ struct DailyJourneyHomeView: View {
                         .foregroundColor(.white.opacity(0.7))
                 }
             }
-            .padding(18)
-            .background(
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(Color(hex: "0B1B3A"))
-            )
+            .buttonStyle(PlainButtonStyle())
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color(hex: "0B1B3A"))
+        )
     }
 
     private var todaysVerseCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
-                Text("TODAY'S VERSE • 1/4")
+                Text("TODAY'S VERSE")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(Color.black.opacity(0.45))
                 Spacer(minLength: 8)
@@ -305,19 +344,6 @@ struct DailyJourneyHomeView: View {
                     icon: "pencil",
                     done: store.reflectionCompleted,
                     action: { showReflection = true }
-                )
-                Divider().padding(.leading, 52)
-                journeyRow(
-                    title: store.allStepsComplete ? "Streak Complete" : "Keep Your Streak",
-                    subtitle: store.allStepsComplete ? "Great job! Keep it up!" : "Finish today's journey & keep your streak!",
-                    icon: "flame.fill",
-                    done: store.allStepsComplete,
-                    iconTint: Color(hex: "FF9F0A"),
-                    action: {
-                        if store.allStepsComplete {
-                            showStreak = true
-                        }
-                    }
                 )
             }
             .background(Color.white)

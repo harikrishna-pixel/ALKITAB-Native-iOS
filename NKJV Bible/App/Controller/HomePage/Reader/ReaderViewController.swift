@@ -1493,13 +1493,20 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                 
                 alert.view.tintColor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
                 
+                self.showMoreMenuDimOverlay()
+                let dismissDim: () -> Void = { [weak self] in
+                    self?.hideMoreMenuDimOverlay()
+                }
+                
                 
                     let area = UIAlertAction(title: "Recent Arrivals", style: .default, handler: { action in
+                        dismissDim()
                         let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "BookAdListViewController") as! BookAdListViewController
                             self.navigationController?.pushViewController(vc, animated: true)
                     })
                    
                    let project = UIAlertAction(title: "More Apps", style: .default, handler: { action in
+                       dismissDim()
                        if CoreDataModel.sharedInstance.GetAppImageSave(entity: CDMoreAppApi).count > 0 {
                            let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "MoreAppsViewController") as! MoreAppsViewController
                            self.navigationController?.pushViewController(vc, animated: true)
@@ -1522,6 +1529,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                 
                 
                     let Setting = UIAlertAction(title: "Settings", style: .default, handler: { action in
+                        dismissDim()
                         let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "SettingsViewController") as! SettingsViewController
                         self.navigationController?.pushViewController(vc, animated: true)
                     })
@@ -1550,12 +1558,30 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                    alert.addAction(project)
                    alert.addAction(Setting)
                 
-                   alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+                   alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in
+                       dismissDim()
+                   }))
                    alert.popoverPresentationController?.sourceView = self.view
                    self.present(alert, animated: true, completion: nil)
                 
                 
             }
+    
+    private let moreMenuDimTag = 8822001
+    
+    private func showMoreMenuDimOverlay() {
+        hideMoreMenuDimOverlay()
+        let dim = UIView(frame: view.bounds)
+        dim.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        dim.backgroundColor = UIColor.black.withAlphaComponent(0.45)
+        dim.tag = moreMenuDimTag
+        dim.isUserInteractionEnabled = false
+        view.addSubview(dim)
+    }
+    
+    private func hideMoreMenuDimOverlay() {
+        view.viewWithTag(moreMenuDimTag)?.removeFromSuperview()
+    }
     
     
     
@@ -1706,6 +1732,13 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             self?.CloseView()
         }
         self.myView!.addSubview(explanationView)
+
+        // Highlight the selected verse on the reading screen behind the sheet.
+        let readReference = "\(BookName) \(Pageindex-1):\(VersePosition)"
+        UserDefaults.standard.set(readReference, forKey: "readdata")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            App_Protocol.delegateReaderSource?.navigateToSelectedVerse()
+        }
     }
 
     func ChapterSummaryNib(BookName: String, Pageindex: Int, BookVerse: Array<String>) {
@@ -1725,6 +1758,13 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             self?.CloseView()
         }
         self.myView!.addSubview(explanationView)
+
+        // Keep chapter 1 focused behind the summary sheet.
+        let readReference = "\(BookName) \(Pageindex):1"
+        UserDefaults.standard.set(readReference, forKey: "readdata")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            App_Protocol.delegateReaderSource?.navigateToSelectedVerse()
+        }
     }
 
     func ShowSavedExplanation(dataString: String) {

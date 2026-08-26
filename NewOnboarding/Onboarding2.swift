@@ -51,14 +51,14 @@ struct Onboarding2: View {
                                     .frame(width: cardWidth, height: cardHeight)
 
                                 VStack(spacing: 8) {
-                                    Text("For I can do everything through Christ, who gives me strength.")
+                                    Text(OnboardingBibleVerse.text)
                                         .font(.system(size: 17, weight: .regular, design: .serif))
                                         .foregroundColor(.black)
                                         .multilineTextAlignment(.center)
                                         .lineSpacing(2)
                                         .fixedSize(horizontal: false, vertical: true)
 
-                                    Text("Philippians 4:13")
+                                    Text(OnboardingBibleVerse.reference)
                                         .font(.system(size: 14, weight: .regular, design: .serif))
                                         .foregroundColor(.black.opacity(0.72))
                                         .multilineTextAlignment(.center)

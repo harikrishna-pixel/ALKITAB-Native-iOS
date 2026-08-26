@@ -59,6 +59,7 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
     var status: PHAuthorizationStatus?
     
     let Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
+    private let pageControl = UIPageControl()
     
     
     override func draw(_ rect: CGRect) {
@@ -109,10 +110,13 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
 //            BookArrayTitle =  String(format: "%@ %@ %@", BookArray[0],BookArray[1],BookArray[2])
 //        }
         
+        setupPageControl()
+        
         DispatchQueue.main.async {
             self.WallPaperCollection.isPagingEnabled = false
             self.WallPaperCollection.scrollToItem(at: indexPath, at: UICollectionView.ScrollPosition.centeredHorizontally, animated: false)
             self.WallPaperCollection.isPagingEnabled = true
+            self.updatePageControl()
           }
         
         
@@ -426,10 +430,38 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
         scrollView.setContentOffset(CGPoint(x: CGFloat(newTargetOffset), y: 0), animated: true)
                   
         self.SelectedPath = Int((newTargetOffset / pageWidth)+0.01)
+        self.updatePageControl()
         
        }
     
     
+    private func setupPageControl() {
+        guard pageControl.superview == nil else {
+            updatePageControl()
+            return
+        }
+        
+        pageControl.translatesAutoresizingMaskIntoConstraints = false
+        pageControl.hidesForSinglePage = false
+        pageControl.isUserInteractionEnabled = false
+        pageControl.currentPageIndicatorTintColor = Themecolor
+        pageControl.pageIndicatorTintColor = UIColor.lightGray.withAlphaComponent(0.55)
+        MainCollectionView.addSubview(pageControl)
+        
+        NSLayoutConstraint.activate([
+            pageControl.centerXAnchor.constraint(equalTo: MainCollectionView.centerXAnchor),
+            pageControl.bottomAnchor.constraint(equalTo: WallPaperCollection.bottomAnchor, constant: -4),
+            pageControl.heightAnchor.constraint(equalToConstant: 20)
+        ])
+        updatePageControl()
+    }
+    
+    private func updatePageControl() {
+        let count = max(VerseArray.count, 1)
+        pageControl.numberOfPages = count
+        pageControl.currentPage = min(max(SelectedPath, 0), count - 1)
+        pageControl.isHidden = count <= 1
+    }
     
 
 

@@ -43,7 +43,7 @@ class NotificationList_data: NSObject {
         let diff = Date().interval(ofComponent: .day, fromDate: Date1)
         
         
-        if diff > 1 {
+        if diff >= 1 {
             
             let ti:TimeInterval = 24*60*60 //one day
             let dateFrom = Date.yesterday

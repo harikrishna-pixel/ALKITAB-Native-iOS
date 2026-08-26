@@ -225,26 +225,29 @@ final class CreatePrayerViewController: UIViewController, UITextFieldDelegate, U
             return
         }
 
-        submitButton.isEnabled = false
-        activityIndicator.startAnimating()
-
-        PrayerWallService.shared.createPrayer(
-            title: title,
-            description: description,
-            category: category,
-            durationDays: duration,
-            userName: userName,
-            isAnonymous: anonymousSwitch.isOn
-        ) { [weak self] result in
+        PrayerWallLoginGate.requireLogin(from: self) { [weak self] in
             guard let self = self else { return }
-            self.submitButton.isEnabled = true
-            self.activityIndicator.stopAnimating()
-            switch result {
-            case .success:
-                self.onPrayerCreated?()
-                self.navigationController?.popViewController(animated: true)
-            case .failure(let error):
-                self.view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+            self.submitButton.isEnabled = false
+            self.activityIndicator.startAnimating()
+
+            PrayerWallService.shared.createPrayer(
+                title: title,
+                description: description,
+                category: category,
+                durationDays: duration,
+                userName: userName,
+                isAnonymous: self.anonymousSwitch.isOn
+            ) { [weak self] result in
+                guard let self = self else { return }
+                self.submitButton.isEnabled = true
+                self.activityIndicator.stopAnimating()
+                switch result {
+                case .success:
+                    self.onPrayerCreated?()
+                    self.navigationController?.popViewController(animated: true)
+                case .failure(let error):
+                    self.view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+                }
             }
         }
     }

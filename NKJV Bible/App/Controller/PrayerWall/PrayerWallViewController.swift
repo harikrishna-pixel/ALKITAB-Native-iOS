@@ -165,15 +165,18 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
     }
 
     @objc private func addTapped() {
-        if !NetworkManager.sharedInstance.isConnectedToInternet() {
-            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
-            return
+        PrayerWallLoginGate.requireLogin(from: self) { [weak self] in
+            guard let self = self else { return }
+            if !NetworkManager.sharedInstance.isConnectedToInternet() {
+                self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                return
+            }
+            let vc = CreatePrayerViewController()
+            vc.onPrayerCreated = { [weak self] in
+                self?.loadPrayers(showLoader: false)
+            }
+            self.navigationController?.pushViewController(vc, animated: true)
         }
-        let vc = CreatePrayerViewController()
-        vc.onPrayerCreated = { [weak self] in
-            self?.loadPrayers(showLoader: false)
-        }
-        navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc private func refreshPulled() {

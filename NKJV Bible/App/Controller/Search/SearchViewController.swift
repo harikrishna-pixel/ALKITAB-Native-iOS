@@ -79,8 +79,6 @@ class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDa
         
         let Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
         
-        self.Booklist.append("All Chapter")
-        
         self.BookLbl.textColor = Themecolor
         self.TestamentLbl.textColor = Themecolor
         
@@ -127,7 +125,6 @@ class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDa
         
         let BoolCount = BibleContent.sharedInstance.BookToPosition()
         self.Booklist.removeAll()
-        self.Booklist.append("All Chapter")
         
         if self.TestamentLbl.text! == "OT" {
             for i in 0 ..< 39 {

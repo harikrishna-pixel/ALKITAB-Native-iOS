@@ -36,6 +36,90 @@ enum OnboardingProgress {
     }
 }
 
+/// Philippians 4:13 from the installed Bible (Alkitab / current translation).
+enum OnboardingBibleVerse {
+    private static let fallbackText = "For I can do everything through Christ, who gives me strength."
+    private static let fallbackReference = "Philippians 4:13"
+    private static let fallbackOptions = ["strength", "hope", "peace"]
+    private static let fallbackBlank = "For I can do everything through Christ, who gives me ________."
+
+    private static var cachedLanguage: String?
+    private static var cachedPayload: (text: String, reference: String, blankPrompt: String, options: [String])?
+
+    static var text: String { payload.text }
+    static var reference: String { payload.reference }
+    static var blankPrompt: String { payload.blankPrompt }
+    static var options: [String] { payload.options }
+    static var correctOptionIndex: Int { 0 }
+
+    private static var payload: (text: String, reference: String, blankPrompt: String, options: [String]) {
+        let language = UserDefaults.standard.string(forKey: "SelectedLanguage")
+        if let cachedPayload, cachedLanguage == language {
+            return cachedPayload
+        }
+
+        let built = buildVerse(language: language)
+        cachedLanguage = language
+        cachedPayload = built
+        return built
+    }
+
+    private static func buildVerse(language: String?) -> (text: String, reference: String, blankPrompt: String, options: [String]) {
+        guard language != nil else {
+            return (fallbackText, fallbackReference, fallbackBlank, fallbackOptions)
+        }
+
+        let books = BibleContent.sharedInstance.BookToPosition()
+        let bookIndex = 49
+        guard bookIndex < books.count else {
+            return (fallbackText, fallbackReference, fallbackBlank, fallbackOptions)
+        }
+
+        let bookName = books[bookIndex].components(separatedBy: "-")[0]
+        let verses = BibleContent.sharedInstance.AudioBibleList(selecterBookName: bookName, selectedId: 3)
+        let verseIndex = 12
+        guard verseIndex < verses.count else {
+            return (fallbackText, fallbackReference, fallbackBlank, fallbackOptions)
+        }
+
+        let text = verses[verseIndex].trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            return (fallbackText, fallbackReference, fallbackBlank, fallbackOptions)
+        }
+
+        let words = text.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        let answer = (words.last ?? fallbackOptions[0])
+            .trimmingCharacters(in: CharacterSet.punctuationCharacters)
+        let blankPrompt: String
+        if words.count > 1 {
+            blankPrompt = words.dropLast().joined(separator: " ") + " ________."
+        } else {
+            blankPrompt = fallbackBlank
+        }
+
+        var extras: [String] = []
+        for word in words.dropLast() {
+            let cleaned = word.trimmingCharacters(in: CharacterSet.punctuationCharacters)
+            guard cleaned.count >= 4, cleaned.caseInsensitiveCompare(answer) != .orderedSame else { continue }
+            if !extras.contains(where: { $0.caseInsensitiveCompare(cleaned) == .orderedSame }) {
+                extras.append(cleaned)
+            }
+            if extras.count == 2 { break }
+        }
+        while extras.count < 2 {
+            let filler = fallbackOptions[extras.count + 1]
+            if extras.contains(where: { $0.caseInsensitiveCompare(filler) == .orderedSame }) == false,
+               filler.caseInsensitiveCompare(answer) != .orderedSame {
+                extras.append(filler)
+            } else {
+                extras.append(filler)
+            }
+        }
+
+        return (text, "\(bookName) 4:13", blankPrompt, [answer] + extras)
+    }
+}
+
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)

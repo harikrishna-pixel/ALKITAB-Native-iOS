@@ -35,28 +35,25 @@ class DropDown: UIView, UITableViewDelegate, UITableViewDataSource {
         self.TestamentTable.delegate = self
         self.TestamentTable.dataSource = self
         
-        self.Booklist.append("All Chapter")
+        self.Booklist.removeAll()
         
         let BoolCount = BibleContent.sharedInstance.BookToPosition()
         
-        if OldSelect != testamentSelect {
-            if testamentSelect == "OT" {
-                for i in 0 ..< 40 {
-                    
-                    self.Booklist.append(BibleContent.sharedInstance.BookToPosition()[i].components(separatedBy: "-")[0])
-                }
-                
-            } else if testamentSelect == "NT" {
-                for i in 40 ..< BoolCount.count {
-                    self.Booklist.append(BibleContent.sharedInstance.BookToPosition()[i].components(separatedBy: "-")[0])
-                }
-                
-            } else {
-                for i in 0 ..< BoolCount.count {
-                    self.Booklist.append(BibleContent.sharedInstance.BookToPosition()[i].components(separatedBy: "-")[0])
-                }
+        if testamentSelect == "OT" {
+            for i in 0 ..< 40 {
+                self.Booklist.append(BibleContent.sharedInstance.BookToPosition()[i].components(separatedBy: "-")[0])
+            }
+        } else if testamentSelect == "NT" {
+            for i in 40 ..< BoolCount.count {
+                self.Booklist.append(BibleContent.sharedInstance.BookToPosition()[i].components(separatedBy: "-")[0])
+            }
+        } else {
+            for i in 0 ..< BoolCount.count {
+                self.Booklist.append(BibleContent.sharedInstance.BookToPosition()[i].components(separatedBy: "-")[0])
             }
         }
+        
+        OldSelect = testamentSelect
         
        
         

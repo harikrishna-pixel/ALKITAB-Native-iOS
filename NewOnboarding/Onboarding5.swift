@@ -61,15 +61,7 @@ struct Onboarding5: View {
                                             Text(day)
                                                 .font(.system(size: 11, weight: .medium))
                                                 .foregroundColor(.white.opacity(0.7))
-                                            if index >= 6 {
-                                                Circle()
-                                                    .stroke(Color(hex: "C9A227").opacity(0.85), lineWidth: 1.5)
-                                                    .frame(width: 22, height: 22)
-                                            } else {
-                                                Image(systemName: "checkmark.circle.fill")
-                                                    .font(.system(size: 22))
-                                                    .foregroundColor(Color(hex: "34C759"))
-                                            }
+                                            streakCompletionIndicator(done: index < 6, pending: index == 6)
                                         }
                                         .frame(maxWidth: .infinity)
                                     }
@@ -92,7 +84,7 @@ struct Onboarding5: View {
                         }
                     }
 
-                    OnboardingPrimaryLink(title: "Build My Bible Habit", destination: OnboardingNotificationView())
+                    OnboardingPrimaryLink(title: "Build My Bible Habit", destination: OnboardingCreateAccountView())
                         .padding(.horizontal, 24)
 
                     OnboardingPageDots(current: 4, total: 5)
@@ -118,10 +110,23 @@ struct Onboarding5: View {
 
             Spacer()
 
+            streakCompletionIndicator(done: done)
+        }
+    }
+
+    private func streakCompletionIndicator(done: Bool, pending: Bool = false) -> some View {
+        ZStack {
             if done {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 22))
-                    .foregroundColor(Color(hex: "34C759"))
+                Circle()
+                    .fill(Color(hex: "34C759"))
+                    .frame(width: 22, height: 22)
+                Image(systemName: "checkmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.white)
+            } else if pending {
+                Circle()
+                    .stroke(Color(hex: "C9A227").opacity(0.85), lineWidth: 1.5)
+                    .frame(width: 22, height: 22)
             } else {
                 Circle()
                     .stroke(Color.white.opacity(0.35), lineWidth: 1.5)

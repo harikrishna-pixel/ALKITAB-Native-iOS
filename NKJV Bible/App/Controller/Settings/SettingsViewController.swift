@@ -89,7 +89,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   
   func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
       
-        if indexPath.section == 1 || indexPath.section == 3 || indexPath.section == 6 || indexPath.section == 8 {
+        if indexPath.section == 1 || indexPath.section == 3 || indexPath.section == 6 || indexPath.section == 9 {
             return 38
         } else {
             return 44
@@ -97,7 +97,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   }
   
   func numberOfSections(in tableView: UITableView) -> Int {
-          return 14
+          return 16
   }
   
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -107,6 +107,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             } else {
                 return 0
             }
+        } else if section == 15 {
+            return UserDefaults.standard.bool(forKey: "OnboardingLoggedIn") ? 1 : 0
+        } else if section == 8 {
+            // Open Chat hidden from Settings
+            return 0
         } else if section == 7 {
             return 1
         } else {
@@ -204,8 +209,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           ImageTint.sharedInstance.imageTintcolorMethod(img: self.SettingsCell!.arrow2!, colorVu: (Themecolor == BGNightMode ? .white:.gray))
           
           return self.SettingsCell!
+
+//      case 8:
+//          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as! SettingsTableCell?)
+//          self.SettingsCell!.Feedback.text = "Open Chat"
+//          self.SettingsCell!.Feedback.textColor = (Themecolor == BGNightMode ? .white:.black)
+//          ImageTint.sharedInstance.imageTintcolorMethod(img: self.SettingsCell!.arrow2!, colorVu: (Themecolor == BGNightMode ? .white:.gray))
+//          return self.SettingsCell!
       
-      case 8:
+      case 9:
           self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "empty2") as! SettingsTableCell?)
           self.SettingsCell!.selectionStyle = UITableViewCell.SelectionStyle.none
           self.SettingsCell!.Support.text = "ABOUT & SUPPORT"
@@ -213,32 +225,39 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           self.SettingsCell!.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
           return self.SettingsCell!
 
-      case 9:
+      case 10:
           self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as! SettingsTableCell?)
           self.SettingsCell!.Feedback.text = "Feedback"
           self.SettingsCell!.Feedback.textColor = (Themecolor == BGNightMode ? .white:.black)
           ImageTint.sharedInstance.imageTintcolorMethod(img: self.SettingsCell!.arrow2!, colorVu: (Themecolor == BGNightMode ? .white:.gray))
           return self.SettingsCell!
               
-      case 10:
+      case 11:
           self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "About") as! SettingsTableCell?)
           self.SettingsCell!.AboutUs.textColor = (Themecolor == BGNightMode ? .white:.black)
           ImageTint.sharedInstance.imageTintcolorMethod(img: self.SettingsCell!.arrow3!, colorVu: (Themecolor == BGNightMode ? .white:.gray))
           return self.SettingsCell!
           
-      case 11:
+      case 12:
           self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "Rateus") as! SettingsTableCell?)
           self.SettingsCell!.RateUs.textColor = (Themecolor == BGNightMode ? .white:.black)
           return self.SettingsCell!
           
-      case 12:
+      case 13:
           self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "moreApp") as! SettingsTableCell?)
           self.SettingsCell!.MoreApp.textColor = (Themecolor == BGNightMode ? .white:.black)
           return self.SettingsCell!
       
-      case 13:
+      case 14:
           self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "Help") as! SettingsTableCell?)
           self.SettingsCell!.Help.textColor = (Themecolor == BGNightMode ? .white:.black)
+          return self.SettingsCell!
+
+      case 15:
+          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as! SettingsTableCell?)
+          self.SettingsCell!.Feedback.text = "Log Out"
+          self.SettingsCell!.Feedback.textColor = (Themecolor == BGNightMode ? .white:.black)
+          ImageTint.sharedInstance.imageTintcolorMethod(img: self.SettingsCell!.arrow2!, colorVu: (Themecolor == BGNightMode ? .white:.gray))
           return self.SettingsCell!
                   
       default: break
@@ -267,17 +286,19 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           App_Protocol.delegateReader?.hideBottomMenu(Status: true)
       case 7:
           self.openAIChat()
-      case 9:
+//      case 8:
+//          self.openOpenChat()
+      case 10:
           if NetworkManager.sharedInstance.isConnectedToInternet() {
               let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "FeedbackViewController") as! FeedbackViewController
               self.navigationController?.pushViewController(vc, animated: true)
           } else {
               self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
           }
-      case 10:
+      case 11:
           self.AboutUsNavigate()
           App_Protocol.delegateReader?.hideBottomMenu(Status: true)
-      case 11:
+      case 12:
 
           if NetworkManager.sharedInstance.isConnectedToInternet() {
               SKStoreReviewController.requestReviewInCurrentScene()
@@ -285,7 +306,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                      self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
                  }
                     
-      case 12:
+      case 13:
           if CoreDataModel.sharedInstance.GetAppImageSave(entity: CDMoreAppApi).count > 0 {
               let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "MoreAppsViewController") as! MoreAppsViewController
               self.navigationController?.pushViewController(vc, animated: true)
@@ -304,7 +325,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                      }
               
           }
-      case 13:
+      case 14:
           if NetworkManager.sharedInstance.isConnectedToInternet() {
                      if let url = URL(string: FAQ), UIApplication.shared.canOpenURL(url) {
                          UIApplication.shared.open(url, options: [:]) { success in
@@ -317,6 +338,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                  } else {
                      self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
                  }
+
+      case 15:
+          self.confirmLogOut()
           
       default:
         break
@@ -446,6 +470,30 @@ extension SettingsViewController {
         } else {
             self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
         }
+    }
+
+    @objc func openOpenChat() {
+        if NetworkManager.sharedInstance.isConnectedToInternet() {
+            let vc = OpenChatViewController()
+            self.navigationController?.pushViewController(vc, animated: true)
+        } else {
+            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+        }
+    }
+
+    @objc func confirmLogOut() {
+        let alert = UIAlertController(
+            title: "Log Out",
+            message: "Are you sure you want to log out?",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Log Out", style: .destructive, handler: { [weak self] _ in
+            OnboardingAuthManager.logOut()
+            self?.SettingsTable.reloadData()
+            self?.view.makeToast("Logout successfully", duration: 2.0, position: .bottom)
+        }))
+        present(alert, animated: true)
     }
     
     @objc func openPrayerWall() {

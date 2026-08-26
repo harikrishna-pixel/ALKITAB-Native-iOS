@@ -30,15 +30,19 @@ struct ChallengeFillVerseView: View {
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                         ForEach(Array(bank.enumerated()), id: \.offset) { _, word in
+                            let wrongChip = isWrongBankWord(word)
                             Button(action: { pick(word) }) {
                                 Text(word)
                                     .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(Color(hex: "0B1B3A"))
+                                    .foregroundColor(wrongChip ? Color(hex: "D70015") : Color(hex: "0B1B3A"))
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 12)
-                                    .background(Color.white)
+                                    .background(wrongChip ? Color(hex: "FDECEC") : Color.white)
                                     .cornerRadius(12)
-                                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black.opacity(0.1), lineWidth: 1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(wrongChip ? Color(hex: "D70015") : Color.black.opacity(0.1), lineWidth: 1)
+                                    )
                             }
                             .buttonStyle(PlainButtonStyle())
                             .disabled(correct)
@@ -86,10 +90,11 @@ struct ChallengeFillVerseView: View {
         return LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
             ForEach(Array(tokens.enumerated()), id: \.offset) { index, token in
                 if blanks.contains(index) {
+                    let wrong = isWrongFill(index)
                     Button(action: { selectedBlank = index }) {
                         Text(filled[index] ?? "______")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(Color(hex: "1C46B2"))
+                            .foregroundColor(wrong ? Color(hex: "D70015") : Color(hex: "1C46B2"))
                             .underline()
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -100,6 +105,25 @@ struct ChallengeFillVerseView: View {
                         .foregroundColor(Color(hex: "0B1B3A"))
                 }
             }
+        }
+    }
+
+    private var showingWrongState: Bool {
+        !correct && (feedback?.hasPrefix("Not quite") == true)
+    }
+
+    private func isWrongFill(_ index: Int) -> Bool {
+        guard showingWrongState, let filledWord = filled[index] else { return false }
+        let a = filledWord.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        let b = tokens[index].trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        return a.caseInsensitiveCompare(b) != .orderedSame
+    }
+
+    private func isWrongBankWord(_ word: String) -> Bool {
+        guard showingWrongState else { return false }
+        return blanks.contains { idx in
+            guard isWrongFill(idx), let filledWord = filled[idx] else { return false }
+            return filledWord.caseInsensitiveCompare(word) == .orderedSame
         }
     }
 
@@ -115,9 +139,18 @@ struct ChallengeFillVerseView: View {
     }
 
     private func pick(_ word: String) {
-        guard let target = selectedBlank ?? blanks.first(where: { filled[$0] == nil }) else { return }
+        let target: Int?
+        if let selectedBlank {
+            target = selectedBlank
+        } else if let empty = blanks.first(where: { filled[$0] == nil }) {
+            target = empty
+        } else {
+            // All blanks filled (e.g. after a wrong check) — replace the first blank immediately.
+            target = blanks.first
+        }
+        guard let target else { return }
         filled[target] = word
-        selectedBlank = blanks.first(where: { filled[$0] == nil })
+        selectedBlank = blanks.first(where: { filled[$0] == nil }) ?? target
         feedback = nil
     }
 
@@ -137,6 +170,9 @@ struct ChallengeFillVerseView: View {
         }
         correct = ok
         feedback = ok ? "Correct! Great job." : "Not quite — try again."
+        if !ok {
+            selectedBlank = blanks.first
+        }
     }
 
     private func hint() {

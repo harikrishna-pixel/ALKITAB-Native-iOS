@@ -9,4 +9,5 @@ import Foundation
 
 enum Secrets {
     static let geminiAPIKey = "YOUR_API_KEY_HERE"
+    static let openChatAuthorization = "YOUR_OPEN_CHAT_AUTHORIZATION_HERE"
 }

@@ -100,6 +100,9 @@ class ImageGalleryViewController: UIViewController, UICollectionViewDelegate, UI
                     cell.ImageFramewidth.constant = (self.view.bounds.width/2)-20
                 }
                 cell.ImageFrame.layer.masksToBounds = true
+                cell.ImageVu.contentMode = .scaleAspectFit
+                cell.ImageVu.clipsToBounds = true
+                cell.ImageVu.backgroundColor = UIColor(white: 0.96, alpha: 1)
                 cell.ImageVu!.image = CustomPhotoAlbum.sharedInstance.images[indexPath.row]
                 cell.ImageFrame!.addSubview(cell.ImageVu!)
             }

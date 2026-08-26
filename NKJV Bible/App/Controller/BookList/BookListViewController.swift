@@ -74,7 +74,6 @@ class BookListViewController: UIViewController, UITableViewDelegate, UITableView
         
         self.ScrollCollectionView(BookIntex: self.BibleBooks.firstIndex(of: getBook)!)
         
-        
         AudioBookTableView.reloadData()
         App_Protocol.delegateBook = self
         // Do any additional setup after loading the view.
@@ -83,9 +82,10 @@ class BookListViewController: UIViewController, UITableViewDelegate, UITableView
     
     
     func ScrollCollectionView(BookIntex:Int) {
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.5) {
+        DispatchQueue.main.async {
             let indexPath = IndexPath(row: BookIntex, section: 0)
-            self.AudioBookTableView.scrollToRow(at: indexPath, at: .middle, animated: true)
+            self.AudioBookTableView.layoutIfNeeded()
+            self.AudioBookTableView.scrollToRow(at: indexPath, at: .middle, animated: false)
          }
     }
     

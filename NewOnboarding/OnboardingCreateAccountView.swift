@@ -6,6 +6,8 @@
 import SwiftUI
 
 struct OnboardingCreateAccountView: View {
+    @StateObject private var auth = OnboardingAuthManager()
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -39,20 +41,34 @@ struct OnboardingCreateAccountView: View {
                         socialButton(title: "Continue with Apple", fill: .black, textColor: .white) {
                             Image(systemName: "apple.logo")
                                 .font(.system(size: 18, weight: .semibold))
+                        } action: {
+                            auth.signInWithApple()
                         }
                         socialButton(title: "Continue with Google", fill: .white, textColor: .black, bordered: true) {
                             Image("google_logo")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 22, height: 22)
-                        }
-                        socialButton(title: "Continue with Email", fill: .white, textColor: .black, bordered: true) {
-                            Image(systemName: "envelope.fill")
-                                .font(.system(size: 16, weight: .semibold))
+                        } action: {
+                            auth.signInWithGoogle()
                         }
                     }
                     .padding(.horizontal, 28)
                     .padding(.top, 8)
+                    .disabled(auth.isBusy)
+                    .opacity(auth.isBusy ? 0.6 : 1)
+
+                    if auth.isBusy {
+                        SwiftUI.ProgressView()
+                    }
+
+                    if let errorMessage = auth.errorMessage, !errorMessage.isEmpty {
+                        Text(errorMessage)
+                            .font(.system(size: 13))
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 28)
+                    }
 
                     Button(action: {
                         UIKitNavigationHelper.navigateToIAPView()
@@ -62,6 +78,7 @@ struct OnboardingCreateAccountView: View {
                             .foregroundColor(OnboardingTheme.textSecondary)
                     }
                     .padding(.top, 8)
+                    .disabled(auth.isBusy)
 
                     Spacer()
                 }
@@ -75,12 +92,10 @@ struct OnboardingCreateAccountView: View {
         fill: Color,
         textColor: Color,
         bordered: Bool = false,
-        @ViewBuilder icon: () -> Icon
+        @ViewBuilder icon: () -> Icon,
+        action: @escaping () -> Void
     ) -> some View {
-        Button(action: {
-            // UI only — continue to existing IAP flow
-            UIKitNavigationHelper.navigateToIAPView()
-        }) {
+        Button(action: action) {
             HStack(spacing: 12) {
                 icon()
                     .frame(width: 22, height: 22)

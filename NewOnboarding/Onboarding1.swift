@@ -38,7 +38,7 @@ struct Onboarding1: View {
 
                 VStack(spacing: 0) {
                     OnboardingBrandHeader(lightContent: true)
-                        .padding(.top, max(geometry.safeAreaInsets.top, 20) + 12)
+                        .padding(.top, max(geometry.safeAreaInsets.top, 20) + 32)
                         .padding(.horizontal, 24)
 
                     Spacer(minLength: geometry.size.height * 0.04)

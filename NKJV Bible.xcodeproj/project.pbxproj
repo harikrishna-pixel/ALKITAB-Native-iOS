@@ -243,6 +243,7 @@
 		014F136F2A42FDD70032F205 /* CustomLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 014F136E2A42FDD70032F205 /* CustomLabel.swift */; };
 		01547AD12F13E3240097A8E3 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 01547AD02F13E3240097A8E3 /* FirebaseCore */; };
 		01547AD32F13E3240097A8E3 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 01547AD22F13E3240097A8E3 /* FirebaseCrashlytics */; };
+		01547AD52F13E3240097A8E3 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 01547AD42F13E3240097A8E3 /* FirebaseAuth */; };
 		015D07A129436D04004C5661 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 015D07A029436D04004C5661 /* SettingsViewController.swift */; };
 		015D07A329436D68004C5661 /* SettingsTableCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 015D07A229436D67004C5661 /* SettingsTableCell.swift */; };
 		015D5FF82AC463A0008EEECC /* NewPaymentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 015D5FF72AC4639F008EEECC /* NewPaymentViewController.swift */; };
@@ -466,6 +467,7 @@
 		01ABE27529517B9F00B71FAD /* DateConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01ABE27429517B9F00B71FAD /* DateConfig.swift */; };
 		01AIC30129FBD2210006BD21 /* OpenAIChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AIC10129FBD2210006BD01 /* OpenAIChatService.swift */; };
 		01AIC30229FBD2210006BD22 /* AIChatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AIC10229FBD2210006BD02 /* AIChatViewController.swift */; };
+		01AIC30329FBD2210006BD23 /* OpenAIExplanationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AIC10329FBD2210006BD03 /* OpenAIExplanationService.swift */; };
 		01B1277E2948488E00D95467 /* FontStyleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B1277D2948488E00D95467 /* FontStyleViewController.swift */; };
 		01B12782294848B800D95467 /* FontCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 01B12780294848B800D95467 /* FontCell.xib */; };
 		01B12783294848B800D95467 /* FontCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B12781294848B800D95467 /* FontCell.swift */; };
@@ -514,7 +516,6 @@
 		01BF1ED229D5746000A5F933 /* VerseListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01BF1ED129D5746000A5F933 /* VerseListView.swift */; };
 		01BF1ED429D5746C00A5F933 /* VerseListView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 01BF1ED329D5746C00A5F933 /* VerseListView.xib */; };
 		01C13DCB297BEB23006C122C /* SaveImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01C13DCA297BEB23006C122C /* SaveImage.swift */; };
-		01C67BAE2F1401B2000BE28E /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 01C67BAD2F1401B2000BE28E /* GoogleService-Info.plist */; };
 		01C989D3295D52D9000CE52A /* headphone-white.png in Resources */ = {isa = PBXBuildFile; fileRef = 01C989D2295D52D9000CE52A /* headphone-white.png */; };
 		01CA638E297E4F2E0030E93C /* AppConstrains.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01CA638D297E4F2E0030E93C /* AppConstrains.swift */; };
 		01CA6390297E52F90030E93C /* MainIpad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 01CA638F297E52F80030E93C /* MainIpad.storyboard */; };
@@ -588,11 +589,15 @@
 		01GEM02329FBD2210006BD23 /* GeminiKeyProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01GEM00329FBD2210006BD03 /* GeminiKeyProvider.swift */; };
 		01GEM02429FBD2210006BD24 /* GeminiExplanationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01GEM00429FBD2210006BD04 /* GeminiExplanationService.swift */; };
 		01GEM02529FBD2210006BD25 /* VerseExplanationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01GEM00529FBD2210006BD05 /* VerseExplanationView.swift */; };
+		01OPC30129FBD2210006BD31 /* OpenChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01OPC10129FBD2210006BD11 /* OpenChatService.swift */; };
+		01OPC30229FBD2210006BD32 /* OpenChatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01OPC10229FBD2210006BD12 /* OpenChatViewController.swift */; };
 		01PRW30129FBD2210006BD31 /* PrayerWallModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10129FBD2210006BD11 /* PrayerWallModels.swift */; };
 		01PRW30229FBD2210006BD32 /* PrayerWallService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10229FBD2210006BD12 /* PrayerWallService.swift */; };
 		01PRW30329FBD2210006BD33 /* PrayerWallViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10329FBD2210006BD13 /* PrayerWallViewController.swift */; };
 		01PRW30429FBD2210006BD34 /* CreatePrayerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10429FBD2210006BD14 /* CreatePrayerViewController.swift */; };
 		01PRW30529FBD2210006BD35 /* PrayerDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10529FBD2210006BD15 /* PrayerDetailViewController.swift */; };
+		01PRW30629FBD2210006BD36 /* PrayerWallLoginGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10629FBD2210006BD16 /* PrayerWallLoginGate.swift */; };
+		01PRW30729FBD2210006BD37 /* PrayerWallLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10729FBD2210006BD17 /* PrayerWallLoginView.swift */; };
 		6F9FDDDC2EEFFEA600CE0114 /* Onboarding3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDDA2EEFFEA600CE0114 /* Onboarding3.swift */; };
 		6F9FDDDD2EEFFEA600CE0114 /* Onboarding4.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDDB2EEFFEA600CE0114 /* Onboarding4.swift */; };
 		6F9FDDDE2EEFFEA600CE0114 /* Onboarding2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDD92EEFFEA600CE0114 /* Onboarding2.swift */; };
@@ -604,6 +609,9 @@
 		A1B2C3D42F46A10100000002 /* Onboarding5.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000012 /* Onboarding5.swift */; };
 		A1B2C3D42F46A10100000003 /* OnboardingNotificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */; };
 		A1B2C3D42F46A10100000004 /* OnboardingCreateAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000014 /* OnboardingCreateAccountView.swift */; };
+		A1B2C3D42F46A10100000005 /* OnboardingAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000015 /* OnboardingAuthManager.swift */; };
+		A2G00A032F13E3240097A8E3 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = A2G00A022F13E3240097A8E3 /* GoogleSignIn */; };
+		B18CE61E303DAE26001FA16C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */; };
 		B2C3D4E52F46B20100000001 /* DailyJourneyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000011 /* DailyJourneyStore.swift */; };
 		B2C3D4E52F46B20100000002 /* DailyJourneyHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000012 /* DailyJourneyHomeView.swift */; };
 		B2C3D4E52F46B20100000003 /* MemoryChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000013 /* MemoryChallengeView.swift */; };
@@ -611,6 +619,8 @@
 		B2C3D4E52F46B20100000005 /* StreakCompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000015 /* StreakCompleteView.swift */; };
 		B2C3D4E52F46B20100000006 /* DailyJourneyHomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000016 /* DailyJourneyHomeViewController.swift */; };
 		B2C3D4E52F46B20100000007 /* DailyJourneyVerseActionsBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000017 /* DailyJourneyVerseActionsBar.swift */; };
+		B2C3D4E52F46B20100000008 /* StreakCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000018 /* StreakCalendarView.swift */; };
+		BFB65A5D50D4E04587173B1F /* Pods_NKJV_Bible.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5684D797A8C667919AB63043 /* Pods_NKJV_Bible.framework */; };
 		C3D4E5F62F46C30100000001 /* ChallengeGameContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000011 /* ChallengeGameContent.swift */; };
 		C3D4E5F62F46C30100000002 /* ChallengeHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000012 /* ChallengeHubView.swift */; };
 		C3D4E5F62F46C30100000003 /* ChallengeHubViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000013 /* ChallengeHubViewController.swift */; };
@@ -619,7 +629,6 @@
 		C3D4E5F62F46C30100000006 /* ChallengeVerseMatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000016 /* ChallengeVerseMatchView.swift */; };
 		C3D4E5F62F46C30100000007 /* ChallengeTrueFalseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000017 /* ChallengeTrueFalseView.swift */; };
 		C3D4E5F62F46C30100000008 /* ChallengeWordSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000018 /* ChallengeWordSearchView.swift */; };
-		BFB65A5D50D4E04587173B1F /* Pods_NKJV_Bible.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5684D797A8C667919AB63043 /* Pods_NKJV_Bible.framework */; };
 		D42E2B172BF79432006D4D18 /* puzzal Notification in Resources */ = {isa = PBXBuildFile; fileRef = D42E2B162BF79432006D4D18 /* puzzal Notification */; };
 /* End PBXBuildFile section */
 
@@ -1119,6 +1128,7 @@
 		01ABE27429517B9F00B71FAD /* DateConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateConfig.swift; sourceTree = "<group>"; };
 		01AIC10129FBD2210006BD01 /* OpenAIChatService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenAIChatService.swift; sourceTree = "<group>"; };
 		01AIC10229FBD2210006BD02 /* AIChatViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AIChatViewController.swift; sourceTree = "<group>"; };
+		01AIC10329FBD2210006BD03 /* OpenAIExplanationService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenAIExplanationService.swift; sourceTree = "<group>"; };
 		01B1277D2948488E00D95467 /* FontStyleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontStyleViewController.swift; sourceTree = "<group>"; };
 		01B12780294848B800D95467 /* FontCell.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = FontCell.xib; sourceTree = "<group>"; };
 		01B12781294848B800D95467 /* FontCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FontCell.swift; sourceTree = "<group>"; };
@@ -1168,7 +1178,6 @@
 		01BF1ED129D5746000A5F933 /* VerseListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerseListView.swift; sourceTree = "<group>"; };
 		01BF1ED329D5746C00A5F933 /* VerseListView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = VerseListView.xib; sourceTree = "<group>"; };
 		01C13DCA297BEB23006C122C /* SaveImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveImage.swift; sourceTree = "<group>"; };
-		01C67BAD2F1401B2000BE28E /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		01C989D2295D52D9000CE52A /* headphone-white.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "headphone-white.png"; sourceTree = "<group>"; };
 		01CA638D297E4F2E0030E93C /* AppConstrains.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstrains.swift; sourceTree = "<group>"; };
 		01CA638F297E52F80030E93C /* MainIpad.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = MainIpad.storyboard; sourceTree = "<group>"; };
@@ -1238,11 +1247,15 @@
 		01GEM00329FBD2210006BD03 /* GeminiKeyProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeminiKeyProvider.swift; sourceTree = "<group>"; };
 		01GEM00429FBD2210006BD04 /* GeminiExplanationService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeminiExplanationService.swift; sourceTree = "<group>"; };
 		01GEM00529FBD2210006BD05 /* VerseExplanationView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VerseExplanationView.swift; sourceTree = "<group>"; };
+		01OPC10129FBD2210006BD11 /* OpenChatService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenChatService.swift; sourceTree = "<group>"; };
+		01OPC10229FBD2210006BD12 /* OpenChatViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenChatViewController.swift; sourceTree = "<group>"; };
 		01PRW10129FBD2210006BD11 /* PrayerWallModels.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerWallModels.swift; sourceTree = "<group>"; };
 		01PRW10229FBD2210006BD12 /* PrayerWallService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerWallService.swift; sourceTree = "<group>"; };
 		01PRW10329FBD2210006BD13 /* PrayerWallViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerWallViewController.swift; sourceTree = "<group>"; };
 		01PRW10429FBD2210006BD14 /* CreatePrayerViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreatePrayerViewController.swift; sourceTree = "<group>"; };
 		01PRW10529FBD2210006BD15 /* PrayerDetailViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerDetailViewController.swift; sourceTree = "<group>"; };
+		01PRW10629FBD2210006BD16 /* PrayerWallLoginGate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerWallLoginGate.swift; sourceTree = "<group>"; };
+		01PRW10729FBD2210006BD17 /* PrayerWallLoginView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerWallLoginView.swift; sourceTree = "<group>"; };
 		5684D797A8C667919AB63043 /* Pods_NKJV_Bible.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_NKJV_Bible.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6415B4B174ADEF152243C01E /* Pods-NKJV Bible.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NKJV Bible.release.xcconfig"; path = "Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible.release.xcconfig"; sourceTree = "<group>"; };
 		6F9FDDD82EEFFEA600CE0114 /* Onboarding1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding1.swift; sourceTree = "<group>"; };
@@ -1256,6 +1269,9 @@
 		A1B2C3D42F46A10100000012 /* Onboarding5.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding5.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingNotificationView.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000014 /* OnboardingCreateAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCreateAccountView.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000015 /* OnboardingAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAuthManager.swift; sourceTree = "<group>"; };
+		B13B6D6A8DF1821F657CBFAA /* Pods-NKJV Bible.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NKJV Bible.debug.xcconfig"; path = "Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible.debug.xcconfig"; sourceTree = "<group>"; };
+		B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		B2C3D4E52F46B20100000011 /* DailyJourneyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyJourneyStore.swift; sourceTree = "<group>"; };
 		B2C3D4E52F46B20100000012 /* DailyJourneyHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyJourneyHomeView.swift; sourceTree = "<group>"; };
 		B2C3D4E52F46B20100000013 /* MemoryChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryChallengeView.swift; sourceTree = "<group>"; };
@@ -1263,6 +1279,7 @@
 		B2C3D4E52F46B20100000015 /* StreakCompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakCompleteView.swift; sourceTree = "<group>"; };
 		B2C3D4E52F46B20100000016 /* DailyJourneyHomeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyJourneyHomeViewController.swift; sourceTree = "<group>"; };
 		B2C3D4E52F46B20100000017 /* DailyJourneyVerseActionsBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyJourneyVerseActionsBar.swift; sourceTree = "<group>"; };
+		B2C3D4E52F46B20100000018 /* StreakCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakCalendarView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000011 /* ChallengeGameContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeGameContent.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000012 /* ChallengeHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000013 /* ChallengeHubViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubViewController.swift; sourceTree = "<group>"; };
@@ -1271,7 +1288,6 @@
 		C3D4E5F62F46C30100000016 /* ChallengeVerseMatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseMatchView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000017 /* ChallengeTrueFalseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeTrueFalseView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000018 /* ChallengeWordSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeWordSearchView.swift; sourceTree = "<group>"; };
-		B13B6D6A8DF1821F657CBFAA /* Pods-NKJV Bible.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NKJV Bible.debug.xcconfig"; path = "Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible.debug.xcconfig"; sourceTree = "<group>"; };
 		D42E2B162BF79432006D4D18 /* puzzal Notification */ = {isa = PBXFileReference; lastKnownFileType = file; path = "puzzal Notification"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1288,6 +1304,8 @@
 				BFB65A5D50D4E04587173B1F /* Pods_NKJV_Bible.framework in Frameworks */,
 				01547AD32F13E3240097A8E3 /* FirebaseCrashlytics in Frameworks */,
 				01547AD12F13E3240097A8E3 /* FirebaseCore in Frameworks */,
+				01547AD52F13E3240097A8E3 /* FirebaseAuth in Frameworks */,
+				A2G00A032F13E3240097A8E3 /* GoogleSignIn in Frameworks */,
 				01DAC3E229696079008D51BB /* AdSupport.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1409,6 +1427,7 @@
 				01D3956E29ED1231002281C1 /* HexColorConvert.swift */,
 				01GEM01029FBD2210006BD10 /* Gemini */,
 				01AIC20129FBD2210006BD11 /* OpenAIChat */,
+				01OPC20129FBD2210006BD21 /* OpenChat */,
 				01PRW20129FBD2210006BD21 /* PrayerWall */,
 			);
 			path = Support;
@@ -1492,7 +1511,6 @@
 				015D5FF72AC4639F008EEECC /* NewPaymentViewController.swift */,
 				0147564A2A84B76400583E4B /* ShimmerView.swift */,
 				014DCD3A2B724D6200B53C85 /* KeychainService.swift */,
-				01C67BAD2F1401B2000BE28E /* GoogleService-Info.plist */,
 				013420202A58178200193659 /* OpenVC.swift */,
 				016DF59F2A5C0D7C000DDE01 /* AdmobManager.swift */,
 				014DCD382B724BD700B53C85 /* RestoreClass.swift */,
@@ -1507,6 +1525,7 @@
 				01370BDA2941E68C0042B718 /* Products */,
 				F2A8816BC7DD130E668A70D4 /* Pods */,
 				EFB127088675B0D9FB9CCA36 /* Frameworks */,
+				B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -2872,6 +2891,7 @@
 			isa = PBXGroup;
 			children = (
 				01AIC10129FBD2210006BD01 /* OpenAIChatService.swift */,
+				01AIC10329FBD2210006BD03 /* OpenAIExplanationService.swift */,
 			);
 			path = OpenAIChat;
 			sourceTree = "<group>";
@@ -3143,6 +3163,7 @@
 				017E93CB294B069500DF9D8B /* Daily Verese */,
 				0180DDEF2949B50900F0C508 /* Ad_Toast */,
 				01AIC20229FBD2210006BD12 /* AIChat */,
+				01OPC20229FBD2210006BD22 /* OpenChat */,
 				01PRW20229FBD2210006BD22 /* PrayerWall */,
 				015D079F29436CE4004C5661 /* Settings */,
 				015D079C2943688F004C5661 /* MyLibrary */,
@@ -3441,6 +3462,22 @@
 			path = VerseExplanation;
 			sourceTree = "<group>";
 		};
+		01OPC20129FBD2210006BD21 /* OpenChat */ = {
+			isa = PBXGroup;
+			children = (
+				01OPC10129FBD2210006BD11 /* OpenChatService.swift */,
+			);
+			path = OpenChat;
+			sourceTree = "<group>";
+		};
+		01OPC20229FBD2210006BD22 /* OpenChat */ = {
+			isa = PBXGroup;
+			children = (
+				01OPC10229FBD2210006BD12 /* OpenChatViewController.swift */,
+			);
+			path = OpenChat;
+			sourceTree = "<group>";
+		};
 		01PRW20129FBD2210006BD21 /* PrayerWall */ = {
 			isa = PBXGroup;
 			children = (
@@ -3456,8 +3493,51 @@
 				01PRW10329FBD2210006BD13 /* PrayerWallViewController.swift */,
 				01PRW10429FBD2210006BD14 /* CreatePrayerViewController.swift */,
 				01PRW10529FBD2210006BD15 /* PrayerDetailViewController.swift */,
+				01PRW10629FBD2210006BD16 /* PrayerWallLoginGate.swift */,
+				01PRW10729FBD2210006BD17 /* PrayerWallLoginView.swift */,
 			);
 			path = PrayerWall;
+			sourceTree = "<group>";
+		};
+		6F9FDDD72EEFFE6000CE0114 /* NewOnboarding */ = {
+			isa = PBXGroup;
+			children = (
+				6F9FDDD82EEFFEA600CE0114 /* Onboarding1.swift */,
+				6F9FDDD92EEFFEA600CE0114 /* Onboarding2.swift */,
+				6F9FDDDA2EEFFEA600CE0114 /* Onboarding3.swift */,
+				6F9FDDDB2EEFFEA600CE0114 /* Onboarding4.swift */,
+				A1B2C3D42F46A10100000012 /* Onboarding5.swift */,
+				A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */,
+				A1B2C3D42F46A10100000014 /* OnboardingCreateAccountView.swift */,
+				A1B2C3D42F46A10100000015 /* OnboardingAuthManager.swift */,
+				A1B2C3D42F46A10100000011 /* OnboardingShared.swift */,
+				6F9FDDE02EEFFEDD00CE0114 /* BibleSubscriptionView.swift */,
+				6F9FDDE22EEFFF2400CE0114 /* StoreManager.swift */,
+			);
+			path = NewOnboarding;
+			sourceTree = "<group>";
+		};
+		6FC2A3AF2F05260000E2331E /* BibleHiPromotion */ = {
+			isa = PBXGroup;
+			children = (
+				6FC2A3AE2F05260000E2331E /* BibleHiPromotionView.swift */,
+			);
+			path = BibleHiPromotion;
+			sourceTree = "<group>";
+		};
+		B2C3D4E52F46B20100000020 /* DailyJourney */ = {
+			isa = PBXGroup;
+			children = (
+				B2C3D4E52F46B20100000011 /* DailyJourneyStore.swift */,
+				B2C3D4E52F46B20100000012 /* DailyJourneyHomeView.swift */,
+				B2C3D4E52F46B20100000013 /* MemoryChallengeView.swift */,
+				B2C3D4E52F46B20100000014 /* ReflectionView.swift */,
+				B2C3D4E52F46B20100000015 /* StreakCompleteView.swift */,
+				B2C3D4E52F46B20100000016 /* DailyJourneyHomeViewController.swift */,
+				B2C3D4E52F46B20100000017 /* DailyJourneyVerseActionsBar.swift */,
+				B2C3D4E52F46B20100000018 /* StreakCalendarView.swift */,
+			);
+			path = DailyJourney;
 			sourceTree = "<group>";
 		};
 		C3D4E5F62F46C30100000020 /* ChallengeHub */ = {
@@ -3473,45 +3553,6 @@
 				C3D4E5F62F46C30100000018 /* ChallengeWordSearchView.swift */,
 			);
 			path = ChallengeHub;
-			sourceTree = "<group>";
-		};
-		B2C3D4E52F46B20100000020 /* DailyJourney */ = {
-			isa = PBXGroup;
-			children = (
-				B2C3D4E52F46B20100000011 /* DailyJourneyStore.swift */,
-				B2C3D4E52F46B20100000012 /* DailyJourneyHomeView.swift */,
-				B2C3D4E52F46B20100000013 /* MemoryChallengeView.swift */,
-				B2C3D4E52F46B20100000014 /* ReflectionView.swift */,
-				B2C3D4E52F46B20100000015 /* StreakCompleteView.swift */,
-				B2C3D4E52F46B20100000016 /* DailyJourneyHomeViewController.swift */,
-				B2C3D4E52F46B20100000017 /* DailyJourneyVerseActionsBar.swift */,
-			);
-			path = DailyJourney;
-			sourceTree = "<group>";
-		};
-		6F9FDDD72EEFFE6000CE0114 /* NewOnboarding */ = {
-			isa = PBXGroup;
-			children = (
-				6F9FDDD82EEFFEA600CE0114 /* Onboarding1.swift */,
-				6F9FDDD92EEFFEA600CE0114 /* Onboarding2.swift */,
-				6F9FDDDA2EEFFEA600CE0114 /* Onboarding3.swift */,
-				6F9FDDDB2EEFFEA600CE0114 /* Onboarding4.swift */,
-				A1B2C3D42F46A10100000012 /* Onboarding5.swift */,
-				A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */,
-				A1B2C3D42F46A10100000014 /* OnboardingCreateAccountView.swift */,
-				A1B2C3D42F46A10100000011 /* OnboardingShared.swift */,
-				6F9FDDE02EEFFEDD00CE0114 /* BibleSubscriptionView.swift */,
-				6F9FDDE22EEFFF2400CE0114 /* StoreManager.swift */,
-			);
-			path = NewOnboarding;
-			sourceTree = "<group>";
-		};
-		6FC2A3AF2F05260000E2331E /* BibleHiPromotion */ = {
-			isa = PBXGroup;
-			children = (
-				6FC2A3AE2F05260000E2331E /* BibleHiPromotionView.swift */,
-			);
-			path = BibleHiPromotion;
 			sourceTree = "<group>";
 		};
 		EFB127088675B0D9FB9CCA36 /* Frameworks */ = {
@@ -3560,6 +3601,12 @@
 				B1A9DAC330381F560007DC37 /* Onboarding_bg */,
 			);
 			name = "NKJV Bible";
+			packageProductDependencies = (
+				01547AD02F13E3240097A8E3 /* FirebaseCore */,
+				01547AD22F13E3240097A8E3 /* FirebaseCrashlytics */,
+				01547AD42F13E3240097A8E3 /* FirebaseAuth */,
+				A2G00A022F13E3240097A8E3 /* GoogleSignIn */,
+			);
 			productName = "NKJV Bible";
 			productReference = 01370BD92941E68C0042B718 /* NKJV Bible.app */;
 			productType = "com.apple.product-type.application";
@@ -3632,6 +3679,7 @@
 			mainGroup = 01370BD02941E68C0042B718;
 			packageReferences = (
 				01547ACF2F13E3240097A8E3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				A2G00A012F13E3240097A8E3 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			productRefGroup = 01370BDA2941E68C0042B718 /* Products */;
 			projectDirPath = "";
@@ -3651,6 +3699,7 @@
 			files = (
 				0144EEC22A90CD530022EABF /* fontAlign.xib in Resources */,
 				017C398F2A40401C004C64FA /* gift-card.png in Resources */,
+				B18CE61E303DAE26001FA16C /* GoogleService-Info.plist in Resources */,
 				0144EEB02A90CD530022EABF /* colour.png in Resources */,
 				014A0D162955BE3C008CC1AB /* SpeechframeCell.xib in Resources */,
 				0180DDE329499F6B00F0C508 /* Cera Pro Black Italic.otf in Resources */,
@@ -3714,7 +3763,6 @@
 				017C396A2A40401C004C64FA /* Q_Free Coin-Ad.png in Resources */,
 				01B54C06296EB2530017CD03 /* NativeAdView.xib in Resources */,
 				0144EF242A90CD530022EABF /* RUNAWAY.otf in Resources */,
-				01C67BAE2F1401B2000BE28E /* GoogleService-Info.plist in Resources */,
 				0144EF422A90CD530022EABF /* check-2.png in Resources */,
 				0144EF212A90CD530022EABF /* Hurry Loves.otf in Resources */,
 				017C39622A40401C004C64FA /* wrongAnswer.wav in Resources */,
@@ -4212,6 +4260,7 @@
 				A1B2C3D42F46A10100000002 /* Onboarding5.swift in Sources */,
 				A1B2C3D42F46A10100000003 /* OnboardingNotificationView.swift in Sources */,
 				A1B2C3D42F46A10100000004 /* OnboardingCreateAccountView.swift in Sources */,
+				A1B2C3D42F46A10100000005 /* OnboardingAuthManager.swift in Sources */,
 				B2C3D4E52F46B20100000001 /* DailyJourneyStore.swift in Sources */,
 				B2C3D4E52F46B20100000002 /* DailyJourneyHomeView.swift in Sources */,
 				B2C3D4E52F46B20100000003 /* MemoryChallengeView.swift in Sources */,
@@ -4219,6 +4268,7 @@
 				B2C3D4E52F46B20100000005 /* StreakCompleteView.swift in Sources */,
 				B2C3D4E52F46B20100000006 /* DailyJourneyHomeViewController.swift in Sources */,
 				B2C3D4E52F46B20100000007 /* DailyJourneyVerseActionsBar.swift in Sources */,
+				B2C3D4E52F46B20100000008 /* StreakCalendarView.swift in Sources */,
 				C3D4E5F62F46C30100000001 /* ChallengeGameContent.swift in Sources */,
 				C3D4E5F62F46C30100000002 /* ChallengeHubView.swift in Sources */,
 				C3D4E5F62F46C30100000003 /* ChallengeHubViewController.swift in Sources */,
@@ -4276,12 +4326,17 @@
 				01GEM02429FBD2210006BD24 /* GeminiExplanationService.swift in Sources */,
 				01GEM02529FBD2210006BD25 /* VerseExplanationView.swift in Sources */,
 				01AIC30129FBD2210006BD21 /* OpenAIChatService.swift in Sources */,
+				01AIC30329FBD2210006BD23 /* OpenAIExplanationService.swift in Sources */,
 				01AIC30229FBD2210006BD22 /* AIChatViewController.swift in Sources */,
+				01OPC30129FBD2210006BD31 /* OpenChatService.swift in Sources */,
+				01OPC30229FBD2210006BD32 /* OpenChatViewController.swift in Sources */,
 				01PRW30129FBD2210006BD31 /* PrayerWallModels.swift in Sources */,
 				01PRW30229FBD2210006BD32 /* PrayerWallService.swift in Sources */,
 				01PRW30329FBD2210006BD33 /* PrayerWallViewController.swift in Sources */,
 				01PRW30429FBD2210006BD34 /* CreatePrayerViewController.swift in Sources */,
 				01PRW30529FBD2210006BD35 /* PrayerDetailViewController.swift in Sources */,
+				01PRW30629FBD2210006BD36 /* PrayerWallLoginGate.swift in Sources */,
+				01PRW30729FBD2210006BD37 /* PrayerWallLoginView.swift in Sources */,
 				0139432A2A2471D400DF2434 /* RateUsViewController.swift in Sources */,
 				0144EEAF2A90CD530022EABF /* ImageSliderVu.swift in Sources */,
 				01B127B329487B2800D95467 /* DropDown.swift in Sources */,
@@ -4546,7 +4601,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -4588,7 +4643,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -4784,6 +4839,14 @@
 				minimumVersion = 12.7.0;
 			};
 		};
+		A2G00A012F13E3240097A8E3 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -4796,6 +4859,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 01547ACF2F13E3240097A8E3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCrashlytics;
+		};
+		01547AD42F13E3240097A8E3 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 01547ACF2F13E3240097A8E3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		A2G00A022F13E3240097A8E3 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2G00A012F13E3240097A8E3 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
 		};
 /* End XCSwiftPackageProductDependency section */
 

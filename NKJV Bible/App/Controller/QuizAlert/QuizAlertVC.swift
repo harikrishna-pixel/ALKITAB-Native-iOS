@@ -40,6 +40,8 @@ class QuizAlertVC: UIViewController, QuizAlert {
         ShowDate.text = Date().string(format: "dd/MM/yyy")
         AskQuiz.text = Quiztxt
 
+        ImageTint.sharedInstance.imageTintcolorMethod(img: self.LogoImage!, colorVu: Themecolor)
+
         Ch_Count = BibleContent.sharedInstance.AudioBibleListCount(
             selecterBookName: UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
         )

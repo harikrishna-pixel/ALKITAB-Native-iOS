@@ -241,19 +241,22 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
     }
 
     @objc private func likeTapped() {
-        if !NetworkManager.sharedInstance.isConnectedToInternet() {
-            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
-            return
-        }
-
-        likeButton.isEnabled = false
-        if isLiked {
-            PrayerWallService.shared.deleteLike(prayerId: prayer.id) { [weak self] result in
-                self?.handleLikeResult(result, liked: false)
+        PrayerWallLoginGate.requireLogin(from: self) { [weak self] in
+            guard let self = self else { return }
+            if !NetworkManager.sharedInstance.isConnectedToInternet() {
+                self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                return
             }
-        } else {
-            PrayerWallService.shared.createLike(prayerId: prayer.id) { [weak self] result in
-                self?.handleLikeResult(result, liked: true)
+
+            self.likeButton.isEnabled = false
+            if self.isLiked {
+                PrayerWallService.shared.deleteLike(prayerId: self.prayer.id) { [weak self] result in
+                    self?.handleLikeResult(result, liked: false)
+                }
+            } else {
+                PrayerWallService.shared.createLike(prayerId: self.prayer.id) { [weak self] result in
+                    self?.handleLikeResult(result, liked: true)
+                }
             }
         }
     }
@@ -278,27 +281,31 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
             return
         }
         guard !isSubmittingComment else { return }
-        if !NetworkManager.sharedInstance.isConnectedToInternet() {
-            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
-            return
-        }
 
-        isSubmittingComment = true
-        sendCommentButton.isEnabled = false
-
-        PrayerWallService.shared.createComment(prayerId: prayer.id, text: text, isAnonymous: true) { [weak self] result in
+        PrayerWallLoginGate.requireLogin(from: self) { [weak self] in
             guard let self = self else { return }
-            self.isSubmittingComment = false
-            self.sendCommentButton.isEnabled = true
-            switch result {
-            case .success(let comment):
-                self.commentField.text = ""
-                self.comments.insert(comment, at: 0)
-                self.tableView.reloadData()
-                self.updateTableHeight()
-                self.onUpdated?()
-            case .failure(let error):
-                self.view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+            if !NetworkManager.sharedInstance.isConnectedToInternet() {
+                self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                return
+            }
+
+            self.isSubmittingComment = true
+            self.sendCommentButton.isEnabled = false
+
+            PrayerWallService.shared.createComment(prayerId: self.prayer.id, text: text, isAnonymous: true) { [weak self] result in
+                guard let self = self else { return }
+                self.isSubmittingComment = false
+                self.sendCommentButton.isEnabled = true
+                switch result {
+                case .success(let comment):
+                    self.commentField.text = ""
+                    self.comments.insert(comment, at: 0)
+                    self.tableView.reloadData()
+                    self.updateTableHeight()
+                    self.onUpdated?()
+                case .failure(let error):
+                    self.view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+                }
             }
         }
     }

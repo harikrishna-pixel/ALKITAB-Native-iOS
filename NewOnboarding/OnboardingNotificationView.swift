@@ -66,7 +66,7 @@ struct OnboardingNotificationView: View {
                         }
                         .padding(.top, 8)
 
-                        NavigationLink(destination: OnboardingCreateAccountView()) {
+                        NavigationLink(destination: Onboarding4()) {
                             Text("Maybe Later")
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundColor(.white.opacity(0.9))
@@ -91,7 +91,7 @@ struct OnboardingNotificationView: View {
         .navigationBarHidden(true)
         .background(
             NavigationLink(
-                destination: OnboardingCreateAccountView(),
+                destination: Onboarding4(),
                 isActive: $navigateForward,
                 label: { EmptyView() }
             )
@@ -111,10 +111,39 @@ struct OnboardingNotificationView: View {
     }
 
     private func requestNotificationsThenContinue() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
             DispatchQueue.main.async {
+                if granted {
+                    enableAllNotificationShifts()
+                    UIApplication.shared.registerForRemoteNotifications()
+                    if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
+                        appDelegate.onRegisterPushNotification()
+                    }
+                }
                 navigateForward = true
             }
+        }
+    }
+
+    private func enableAllNotificationShifts() {
+        UserDefaults.standard.set("1", forKey: "NotifiStatue")
+        UserDefaults.standard.setValue(4, forKey: "PerDay")
+        UserDefaults.standard.setValue(true, forKey: "Shift1ON")
+        UserDefaults.standard.setValue(true, forKey: "Shift2ON")
+        UserDefaults.standard.setValue(true, forKey: "Shift3ON")
+        UserDefaults.standard.setValue(true, forKey: "Shift4ON")
+
+        if UserDefaults.standard.string(forKey: "Shift 1") == nil {
+            UserDefaults.standard.set("08:00", forKey: "Shift 1")
+        }
+        if UserDefaults.standard.string(forKey: "Shift 2") == nil {
+            UserDefaults.standard.set("16:00", forKey: "Shift 2")
+        }
+        if UserDefaults.standard.string(forKey: "Shift 3") == nil {
+            UserDefaults.standard.set("20:00", forKey: "Shift 3")
+        }
+        if UserDefaults.standard.string(forKey: "Shift 4") == nil {
+            UserDefaults.standard.set("14:00", forKey: "Shift 4")
         }
     }
 }

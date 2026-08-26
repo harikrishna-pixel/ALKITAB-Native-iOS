@@ -61,6 +61,7 @@ struct BibleSubscriptionView: View {
                         
                         if showCloseButton {
                                      HStack {
+                                         Spacer()
                                          Button(action: {
                                              // Try to sync exit offer price from shared instance if local is empty
                                              if storeManager.exitOfferPrice.isEmpty && StoreManager.shared.isExitOfferProductLoaded {
@@ -98,15 +99,13 @@ struct BibleSubscriptionView: View {
                                              }
                                          }) {
                                              Image(systemName: "xmark")
-                                                 .font(.system(size: 14, weight: .medium))
-                                                 .foregroundColor(.white.opacity(0.5))
-                                                 .frame(width: 28, height: 28)
-                                                 .background(.black.opacity(0.2))
+                                                 .font(.system(size: 14, weight: .semibold))
+                                                 .foregroundColor(Color(hex: "333333"))
+                                                 .frame(width: 32, height: 32)
+                                                 .background(Color.black.opacity(0.08))
                                                  .clipShape(Circle())
                                          }
-                                         .padding(.leading, 20)
-                                         
-                                         Spacer()
+                                         .padding(.trailing, 20)
                                      }
                                      .transition(.opacity)
                                  }

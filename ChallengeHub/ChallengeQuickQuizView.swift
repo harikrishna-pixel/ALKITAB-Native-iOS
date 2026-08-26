@@ -114,8 +114,8 @@ struct ChallengeQuickQuizView: View {
         let showWrong = selected != nil && isSelected && i != correct
         return Button(action: { if selected == nil { selected = i } }) {
             HStack(spacing: 12) {
-                Image(systemName: isSelected || showCorrect ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(showCorrect || (isSelected && i == correct) ? Color(hex: "34C759") : (showWrong ? Color(hex: "D70015") : Color.black.opacity(0.25)))
+                Image(systemName: showCorrect ? "checkmark.circle.fill" : (showWrong ? "xmark.circle.fill" : "circle"))
+                    .foregroundColor(showCorrect ? Color(hex: "34C759") : (showWrong ? Color(hex: "D70015") : Color.black.opacity(0.25)))
                 Text(option)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(Color(hex: "0B1B3A"))
@@ -124,6 +124,9 @@ struct ChallengeQuickQuizView: View {
                 if showCorrect {
                     Image(systemName: "checkmark")
                         .foregroundColor(Color(hex: "34C759"))
+                } else if showWrong {
+                    Image(systemName: "xmark")
+                        .foregroundColor(Color(hex: "D70015"))
                 }
             }
             .padding(14)

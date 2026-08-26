@@ -13,6 +13,7 @@ import Flurry_iOS_SDK
 import IQKeyboardManager
 import AppTrackingTransparency
 import Firebase
+import GoogleSignIn
 
 
 @main
@@ -67,38 +68,90 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         if UserDefaults.standard.integer(forKey: "Verses")+6 >= UserDefaults.standard.integer(forKey: "NotifiVerses") {
             UserDefaults.standard.set(UserDefaults.standard.integer(forKey: "Verses"), forKey: "NotifiVerses")
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.0) {
-                AppDelegate().onRegisterPushNotification()
+            let skipLaunchPrompt = (UserDefaults.standard.string(forKey: "AppOpenFirst") ?? "0") == "0"
+                || OnboardingProgress.shouldShow
+            if !skipLaunchPrompt {
+                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.0) {
+                    AppDelegate().onRegisterPushNotification()
+                }
             }
         }
-        
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            
-            if let error = error {
-                print("error : \(error.localizedDescription)")
-            } else {
-                DispatchQueue.main.async {
-                    application.registerForRemoteNotifications()
-                    if UserDefaults.standard.string(forKey: "AppOpenFirst") ?? "0" == "0" {
-                        UserDefaults.standard.setValue(Date().OneDay.string(format: "dd-MM-yyyy"), forKey: "RateDate")
-                        
-                        UserDefaults.standard.set("1", forKey: "NotifiStatue")
-                        UserDefaults.standard.setValue(4, forKey: "PerDay")
-                        
-                        UserDefaults.standard.setValue(true, forKey: "Shift1ON")
-                        UserDefaults.standard.setValue(true, forKey: "Shift2ON")
-                        UserDefaults.standard.setValue(true, forKey: "Shift3ON")
-                        UserDefaults.standard.setValue(true, forKey: "Shift4ON")
-                        
-                        AppDelegate().onRegisterPushNotification()
-                        
-                            if UserDefaults.standard.bool(forKey: "LoadData") == false {
-                                App_Protocol.DelegateSplash?.LoadData()
-                                UserDefaults.standard.setValue(true, forKey: "LoadData")
+
+        let isFirstOpen = UserDefaults.standard.string(forKey: "AppOpenFirst") ?? "0" == "0"
+        let deferNotificationPrompt = isFirstOpen || OnboardingProgress.shouldShow
+
+        if deferNotificationPrompt {
+            DispatchQueue.main.async {
+                if isFirstOpen {
+                    UserDefaults.standard.setValue(Date().OneDay.string(format: "dd-MM-yyyy"), forKey: "RateDate")
+                    UserDefaults.standard.set("1", forKey: "NotifiStatue")
+                    UserDefaults.standard.setValue(4, forKey: "PerDay")
+                    UserDefaults.standard.setValue(true, forKey: "Shift1ON")
+                    UserDefaults.standard.setValue(true, forKey: "Shift2ON")
+                    UserDefaults.standard.setValue(true, forKey: "Shift3ON")
+                    UserDefaults.standard.setValue(true, forKey: "Shift4ON")
+                    if UserDefaults.standard.string(forKey: "Shift 1") == nil {
+                        UserDefaults.standard.set("08:00", forKey: "Shift 1")
+                    }
+                    if UserDefaults.standard.string(forKey: "Shift 2") == nil {
+                        UserDefaults.standard.set("16:00", forKey: "Shift 2")
+                    }
+                    if UserDefaults.standard.string(forKey: "Shift 3") == nil {
+                        UserDefaults.standard.set("20:00", forKey: "Shift 3")
+                    }
+                    if UserDefaults.standard.string(forKey: "Shift 4") == nil {
+                        UserDefaults.standard.set("14:00", forKey: "Shift 4")
+                    }
+
+                    if UserDefaults.standard.bool(forKey: "LoadData") == false {
+                        App_Protocol.DelegateSplash?.LoadData()
+                        UserDefaults.standard.setValue(true, forKey: "LoadData")
+                    }
+
+                    self.app_INfo()
+                }
+            }
+        } else {
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+                
+                if let error = error {
+                    print("error : \(error.localizedDescription)")
+                } else {
+                    DispatchQueue.main.async {
+                        application.registerForRemoteNotifications()
+                        if UserDefaults.standard.string(forKey: "AppOpenFirst") ?? "0" == "0" {
+                            UserDefaults.standard.setValue(Date().OneDay.string(format: "dd-MM-yyyy"), forKey: "RateDate")
+                            
+                            UserDefaults.standard.set("1", forKey: "NotifiStatue")
+                            UserDefaults.standard.setValue(4, forKey: "PerDay")
+                            
+                            UserDefaults.standard.setValue(true, forKey: "Shift1ON")
+                            UserDefaults.standard.setValue(true, forKey: "Shift2ON")
+                            UserDefaults.standard.setValue(true, forKey: "Shift3ON")
+                            UserDefaults.standard.setValue(true, forKey: "Shift4ON")
+                            if UserDefaults.standard.string(forKey: "Shift 1") == nil {
+                                UserDefaults.standard.set("08:00", forKey: "Shift 1")
                             }
-                        
-                        self.app_INfo()
-                        
+                            if UserDefaults.standard.string(forKey: "Shift 2") == nil {
+                                UserDefaults.standard.set("16:00", forKey: "Shift 2")
+                            }
+                            if UserDefaults.standard.string(forKey: "Shift 3") == nil {
+                                UserDefaults.standard.set("20:00", forKey: "Shift 3")
+                            }
+                            if UserDefaults.standard.string(forKey: "Shift 4") == nil {
+                                UserDefaults.standard.set("14:00", forKey: "Shift 4")
+                            }
+                            
+                            AppDelegate().onRegisterPushNotification()
+                            
+                                if UserDefaults.standard.bool(forKey: "LoadData") == false {
+                                    App_Protocol.DelegateSplash?.LoadData()
+                                    UserDefaults.standard.setValue(true, forKey: "LoadData")
+                                }
+                            
+                            self.app_INfo()
+                            
+                        }
                     }
                 }
             }
@@ -234,6 +287,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     
     
+    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        return GIDSignIn.sharedInstance.handle(url)
+    }
+
     // MARK: UISceneSession Lifecycle
 
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
@@ -673,60 +730,37 @@ extension AppDelegate {
     }
     
     func onLoadNotificationContent() {
-        
-        var ShiftTime:String = ""
-
-        
-        
         DispatchQueue.main.async {
-            
-            
-            if UserDefaults.standard.bool(forKey: "Shift1ON") {
-                UserDefaults.standard.set(0.0, forKey: "LastNotificationTime")
-                ShiftTime = UserDefaults.standard.string(forKey: "Shift 1") ?? "08:00"
-                for _ in 0 ..< 5 {
-                    self.delay(0.2) {
-                        self.NotificationCall(ShiftTm: ShiftTime)
-                    }
-                }
-            }
-        
-            
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.5) {
-                if UserDefaults.standard.bool(forKey: "Shift2ON") {
-                    UserDefaults.standard.set(0.0, forKey: "LastNotificationTime")
-                    ShiftTime = UserDefaults.standard.string(forKey: "Shift 2") ?? "16:00"
-                    for _ in 0 ..< 5 {
-                        self.delay(0.2) {
-                            self.NotificationCall(ShiftTm: ShiftTime)
-                        }
-                    }
-                }
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+1.0) {
-                if UserDefaults.standard.bool(forKey: "Shift3ON") {
-                    UserDefaults.standard.set(0.0, forKey: "LastNotificationTime")
-                    ShiftTime = UserDefaults.standard.string(forKey: "Shift 3") ?? "20:00"
-                    for _ in 0 ..< 5 {
-                        self.delay(0.2) {
-                            self.NotificationCall(ShiftTm: ShiftTime)
-                        }
-                    }
-                }
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+1.5) {
-                if UserDefaults.standard.bool(forKey: "Shift4ON") {
-                    UserDefaults.standard.set(0.0, forKey: "LastNotificationTime")
-                    ShiftTime = UserDefaults.standard.string(forKey: "Shift 4") ?? "14:00"
-                    for _ in 0 ..< 5 {
-                        self.delay(0.2) {
-                            self.NotificationCall(ShiftTm: ShiftTime, QuizTime:true)
-                        }
-                    }
-                }
-            }
+            // Schedule each enabled shift sequentially so LastNotificationTimeN advances
+            // day-by-day (parallel delay races caused only one slot per shift to stick).
+            self.scheduleShiftIfEnabled(
+                enabledKey: "Shift1ON",
+                timeKey: "Shift 1",
+                defaultTime: "08:00",
+                lastTimeKey: "LastNotificationTime1",
+                quizTime: false
+            )
+            self.scheduleShiftIfEnabled(
+                enabledKey: "Shift2ON",
+                timeKey: "Shift 2",
+                defaultTime: "16:00",
+                lastTimeKey: "LastNotificationTime2",
+                quizTime: false
+            )
+            self.scheduleShiftIfEnabled(
+                enabledKey: "Shift3ON",
+                timeKey: "Shift 3",
+                defaultTime: "20:00",
+                lastTimeKey: "LastNotificationTime3",
+                quizTime: false
+            )
+            self.scheduleShiftIfEnabled(
+                enabledKey: "Shift4ON",
+                timeKey: "Shift 4",
+                defaultTime: "14:00",
+                lastTimeKey: "LastNotificationTime4",
+                quizTime: true
+            )
             
           
             
@@ -855,7 +889,26 @@ extension AppDelegate {
     
     
     
-    func NotificationCall(ShiftTm:String, QuizTime:Bool = false) {
+
+    private func scheduleShiftIfEnabled(
+        enabledKey: String,
+        timeKey: String,
+        defaultTime: String,
+        lastTimeKey: String,
+        quizTime: Bool
+    ) {
+        guard UserDefaults.standard.bool(forKey: enabledKey) else { return }
+        if UserDefaults.standard.string(forKey: timeKey) == nil {
+            UserDefaults.standard.set(defaultTime, forKey: timeKey)
+        }
+        UserDefaults.standard.set(0.0, forKey: lastTimeKey)
+        let shiftTime = UserDefaults.standard.string(forKey: timeKey) ?? defaultTime
+        for _ in 0..<5 {
+            NotificationCall(ShiftTm: shiftTime, QuizTime: quizTime, lastTimeKey: lastTimeKey)
+        }
+    }
+
+    func NotificationCall(ShiftTm:String, QuizTime:Bool = false, lastTimeKey: String = "LastNotificationTime") {
         var ShiftTime = ShiftTm
         
         if ShiftTime.count != 5 {
@@ -866,13 +919,13 @@ extension AppDelegate {
         let hour : Int? = Int(ShiftTime.components(separatedBy: ":")[0])
         let min : Int? = Int(ShiftTime.components(separatedBy: ":")[1])
         
-        var lastNotificationTime = Date(timeIntervalSince1970: UserDefaults.standard.double(forKey: "LastNotificationTime"))
+        var lastNotificationTime = Date(timeIntervalSince1970: UserDefaults.standard.double(forKey: lastTimeKey))
 
 
 
         
         
-        if (UserDefaults.standard.double(forKey: "LastNotificationTime") == 0) {
+        if (UserDefaults.standard.double(forKey: lastTimeKey) == 0) {
             
             let gregorian = NSCalendar(calendarIdentifier: NSCalendar.Identifier.gregorian)!
             let now = NSDate()
@@ -918,15 +971,15 @@ extension AppDelegate {
             let gregorian = NSCalendar(calendarIdentifier: NSCalendar.Identifier.gregorian)!
             let components = gregorian.components([.year, .month, .day, .hour, .minute, .second], from: nextDate as Date)
             let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-            let request = UNNotificationRequest(identifier: "DailyNotification\(lastNotificationTime)", content: content, trigger: trigger)
+            let request = UNNotificationRequest(identifier: "\(lastTimeKey)_\(nextDate.timeIntervalSince1970)", content: content, trigger: trigger)
+            // Advance synchronously so the next day-slot in this shift does not race/overwrite.
+            UserDefaults.standard.set(nextDate.timeIntervalSince1970, forKey: lastTimeKey)
             UNUserNotificationCenter.current().add(request, withCompletionHandler: { (error) in
                 if error != nil {
                     print("SOMETHING WENT WRONG")
                 }
                 else
                 {
-                    UserDefaults.standard.set(nextDate.timeIntervalSince1970, forKey: "LastNotificationTime")
-                    
                     print("\(content.title) \(content.body)")
                     
                                                      

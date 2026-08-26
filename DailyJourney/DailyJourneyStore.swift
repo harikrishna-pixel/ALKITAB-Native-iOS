@@ -56,8 +56,7 @@ final class DailyJourneyStore: ObservableObject {
 
     var journeyProgressLabel: String {
         let done = [verseCompleted, memoryCompleted, reflectionCompleted].filter { $0 }.count
-        let streakDone = allStepsComplete ? 1 : 0
-        return "\(done + streakDone) of 4 complete"
+        return "\(done) of 3 complete"
     }
 
     func reload() {
@@ -108,7 +107,7 @@ final class DailyJourneyStore: ObservableObject {
         streakDates.contains(dayKey)
     }
 
-    /// yyyy-MM-dd for a Mon…Sun display index (0…6) in the current week.
+    /// yyyy-MM-dd for a Sun…Sat display index (0…6) in the current week.
     func dayKeyForWeekdayDisplayIndex(_ displayIndex: Int) -> String? {
         let calendar = Calendar.current
         let today = Date()
@@ -210,9 +209,10 @@ final class DailyJourneyStore: ObservableObject {
         return f.string(from: date)
     }
 
+    /// Week row is Sun…Sat → 0…6
     private func weekdayDisplayIndex(for date: Date) -> Int {
         let weekday = Calendar.current.component(.weekday, from: date) // 1=Sun … 7=Sat
-        return weekday == 1 ? 6 : weekday - 2
+        return weekday - 1
     }
 }
 

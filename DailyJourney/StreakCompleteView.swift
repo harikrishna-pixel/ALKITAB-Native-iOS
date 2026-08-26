@@ -9,8 +9,11 @@ struct StreakCompleteView: View {
     @ObservedObject var store: DailyJourneyStore
     var onDone: () -> Void
 
+    @State private var showCalendar = false
+
     private var days: Int { max(store.streakCount, 1) }
-    private let weekdays = ["M", "T", "W", "T", "F", "S", "S"]
+    /// Fixed Sun → Sat week order (calendar date aligned).
+    private let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -42,9 +45,12 @@ struct StreakCompleteView: View {
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.white)
                             Spacer()
-                            Text("View Calendar >")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.white.opacity(0.65))
+                            Button(action: { showCalendar = true }) {
+                                Text("View Calendar >")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.65))
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
 
                         HStack {
@@ -75,22 +81,7 @@ struct StreakCompleteView: View {
                             streakRow(icon: "book.fill", title: "Today's Verse", done: store.verseCompleted)
                             streakRow(icon: "brain.head.profile", title: "Memory Challenge", done: store.memoryCompleted)
                             streakRow(icon: "pencil", title: "Reflection", done: store.reflectionCompleted)
-                            streakRow(icon: "flame.fill", title: "Streak Complete", done: store.allStepsComplete)
                         }
-
-                        HStack {
-                            Spacer()
-                            VStack(spacing: 2) {
-                                Text("\(days)")
-                                    .font(.system(size: 40, weight: .bold))
-                                    .foregroundColor(.white)
-                                Text("Days")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(.white.opacity(0.65))
-                            }
-                            Spacer()
-                        }
-                        .padding(.top, 4)
                     }
                     .padding(20)
                     .background(
@@ -129,6 +120,18 @@ struct StreakCompleteView: View {
         }
         .background(Color(hex: "F7F8FC").ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            // Refresh day-scoped flags so a new day starts unchecked until activities are completed.
+            store.reload()
+        }
+        .background(
+            NavigationLink(
+                destination: StreakCalendarView(store: store),
+                isActive: $showCalendar,
+                label: { EmptyView() }
+            )
+            .hidden()
+        )
     }
 
     private func streakRow(icon: String, title: String, done: Bool) -> some View {
@@ -148,31 +151,9 @@ struct StreakCompleteView: View {
         }
     }
 
-    /// Prefer locally saved streak days; fall back to count-from-today for older data.
+    /// Only mark days that were actually saved as completed streak days (never invent today's mark).
     private func isWeekdayFilled(at displayIndex: Int) -> Bool {
-        if let dayKey = store.dayKeyForWeekdayDisplayIndex(displayIndex),
-           store.hasSavedStreak(on: dayKey) {
-            return true
-        }
-
-        let calendar = Calendar.current
-        let today = Date()
-        let streakLength = min(days, 7)
-        guard streakLength > 0 else { return false }
-
-        for offset in 0..<streakLength {
-            guard let date = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
-            if calendar.isDate(date, equalTo: today, toGranularity: .weekOfYear),
-               weekdayDisplayIndex(for: date) == displayIndex {
-                return true
-            }
-        }
-        return false
-    }
-
-    /// Week row is Mon…Sun → 0…6
-    private func weekdayDisplayIndex(for date: Date) -> Int {
-        let weekday = Calendar.current.component(.weekday, from: date) // 1=Sun … 7=Sat
-        return weekday == 1 ? 6 : weekday - 2
+        guard let dayKey = store.dayKeyForWeekdayDisplayIndex(displayIndex) else { return false }
+        return store.hasSavedStreak(on: dayKey)
     }
 }

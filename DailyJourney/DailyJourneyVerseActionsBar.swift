@@ -59,7 +59,7 @@ final class VerseActionsContainer: UIView {
         isUserInteractionEnabled = true
         backgroundColor = .clear
         configure(shareButton, systemName: "square.and.arrow.up")
-        configure(bookmarkButton, systemName: "bookmark.fill")
+        configure(bookmarkButton, systemName: "photo.fill")
         addSubview(shareButton)
         addSubview(bookmarkButton)
     }

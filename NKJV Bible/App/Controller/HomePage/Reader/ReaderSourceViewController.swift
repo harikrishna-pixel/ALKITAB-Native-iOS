@@ -484,7 +484,7 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
             
             App_Protocol.delegateReader?.HomePageCall(Status: true)
             
-            // Already on this chapter (e.g. Explain → Read on same verse): skip reload/highlight flash.
+            // Already on this chapter (e.g. Explain → Read on same verse): scroll and flash highlight.
             if currentBook == targetBook && currentChapter == targetPage {
                 self.Pageindex = targetPage
                 self.Book = targetBook
@@ -495,6 +495,14 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
                         self.BibleCollectionView.scrollToItem(at: indexPath, at: .centeredVertically, animated: true)
                     }
                     App_Protocol.delegateReader?.PageConfig()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        let cell = self.BibleCollectionView.cellForItem(at: indexPath) as? BibleVerseCC
+                        cell?.backgroundColor = (self.Themecolor == BGNightMode ? UIColor.white.withAlphaComponent(0.5) : self.Themecolor?.withAlphaComponent(0.5))
+                        UIView.animate(withDuration: 1.0) {
+                            cell?.backgroundColor = (self.Themecolor == BGNightMode ? UIColor.white.withAlphaComponent(0.0) : self.Themecolor?.withAlphaComponent(0.0))
+                            self.view.layoutIfNeeded()
+                        }
+                    }
                 }
                 return
             }

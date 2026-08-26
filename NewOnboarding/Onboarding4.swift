@@ -93,9 +93,6 @@ struct Onboarding4: View {
             }
 
             Spacer(minLength: 8)
-
-            Image(systemName: "chevron.right")
-                .foregroundColor(.gray)
         }
         .padding(16)
         .background(

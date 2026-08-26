@@ -68,26 +68,22 @@ final class VerseExplanationView: UIView {
         addSubview(cardView)
 
         closeButton.translatesAutoresizingMaskIntoConstraints = false
-        closeButton.setImage(UIImage(named: "PopupClose.png")?.withRenderingMode(.alwaysOriginal), for: .normal)
-        closeButton.imageView?.contentMode = .scaleAspectFit
-        closeButton.imageView?.clipsToBounds = true
-        closeButton.contentHorizontalAlignment = .fill
-        closeButton.contentVerticalAlignment = .fill
+        let closeConfig = UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
+        closeButton.setImage(UIImage(systemName: "xmark", withConfiguration: closeConfig), for: .normal)
+        closeButton.tintColor = UIColor.gray
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         cardView.addSubview(closeButton)
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = UIFont(name: UserDefaults.standard.string(forKey: "FontName") ?? "", size: 15)
-            ?? UIFont.systemFont(ofSize: 15, weight: .semibold)
+        titleLabel.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
         titleLabel.textColor = themeColor == BGNightMode ? .white : themeColor
         titleLabel.textAlignment = .center
         titleLabel.numberOfLines = 2
         cardView.addSubview(titleLabel)
 
         verseLabel.translatesAutoresizingMaskIntoConstraints = false
-        verseLabel.font = UIFont(name: UserDefaults.standard.string(forKey: "FontName") ?? "", size: 15)
-            ?? UIFont.systemFont(ofSize: 15)
-        verseLabel.textColor = themeColor == BGNightMode ? .white : .darkGray
+        verseLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+        verseLabel.textColor = themeColor == BGNightMode ? UIColor.white.withAlphaComponent(0.75) : UIColor.darkGray
         verseLabel.numberOfLines = 0
         cardView.addSubview(verseLabel)
 
@@ -96,8 +92,7 @@ final class VerseExplanationView: UIView {
         cardView.addSubview(scrollView)
 
         contentLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentLabel.font = UIFont(name: UserDefaults.standard.string(forKey: "FontName") ?? "", size: 15)
-            ?? UIFont.systemFont(ofSize: 15)
+        contentLabel.font = UIFont.systemFont(ofSize: 15, weight: .regular)
         contentLabel.textColor = themeColor == BGNightMode ? .white : .black
         contentLabel.numberOfLines = 0
         scrollView.addSubview(contentLabel)
@@ -153,23 +148,23 @@ final class VerseExplanationView: UIView {
             cardBottomConstraint!,
             cardView.heightAnchor.constraint(lessThanOrEqualTo: heightAnchor, multiplier: 0.75),
 
-            closeButton.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
+            closeButton.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 14),
             closeButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
-            closeButton.widthAnchor.constraint(equalToConstant: 18),
-            closeButton.heightAnchor.constraint(equalToConstant: 18),
+            closeButton.widthAnchor.constraint(equalToConstant: 28),
+            closeButton.heightAnchor.constraint(equalToConstant: 28),
 
-            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 20),
-            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            titleLabel.trailingAnchor.constraint(equalTo: closeButton.leadingAnchor, constant: -8),
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 18),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 48),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -48),
 
-            verseLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
-            verseLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            verseLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
+            verseLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
+            verseLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
+            verseLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
 
-            scrollView.topAnchor.constraint(equalTo: verseLabel.bottomAnchor, constant: 12),
-            scrollView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            scrollView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
-            scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 120),
+            scrollView.topAnchor.constraint(equalTo: verseLabel.bottomAnchor, constant: 14),
+            scrollView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
+            scrollView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
+            scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 140),
 
             contentLabel.topAnchor.constraint(equalTo: scrollView.topAnchor),
             contentLabel.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
@@ -187,15 +182,15 @@ final class VerseExplanationView: UIView {
             retryButton.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 16),
             retryButton.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
 
-            actionStack.topAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: 16),
-            actionStack.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
-            actionStack.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
-            actionStack.bottomAnchor.constraint(equalTo: cardView.safeAreaLayoutGuide.bottomAnchor, constant: -20),
-            actionStack.heightAnchor.constraint(equalToConstant: 70)
+            actionStack.topAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: 18),
+            actionStack.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 32),
+            actionStack.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -32),
+            actionStack.bottomAnchor.constraint(equalTo: cardView.safeAreaLayoutGuide.bottomAnchor, constant: -18),
+            actionStack.heightAnchor.constraint(equalToConstant: 72)
         ])
 
         DispatchQueue.main.async {
-            self.cardView.roundCorners(corners: [.topLeft, .topRight], radius: 30)
+            self.cardView.roundCorners(corners: [.topLeft, .topRight], radius: 24)
         }
     }
 
@@ -206,7 +201,10 @@ final class VerseExplanationView: UIView {
         let iconHolder = UIView()
         iconHolder.translatesAutoresizingMaskIntoConstraints = false
         iconHolder.backgroundColor = themeColor == BGNightMode ? BGNightMode : .white
-        iconHolder.ViewBorder(color: themeColor == BGNightMode ? .black : themeColor)
+        iconHolder.layer.cornerRadius = 10
+        iconHolder.layer.borderWidth = 1.5
+        iconHolder.layer.borderColor = (themeColor == BGNightMode ? UIColor.white : themeColor).cgColor
+        iconHolder.clipsToBounds = true
         container.addSubview(iconHolder)
 
         let imageView = UIImageView(image: UIImage(named: imageName))
@@ -217,9 +215,9 @@ final class VerseExplanationView: UIView {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = title
-        label.font = UIFont.systemFont(ofSize: 10, weight: .semibold)
+        label.font = UIFont.systemFont(ofSize: 12, weight: .medium)
         label.textAlignment = .center
-        label.textColor = themeColor == BGNightMode ? .black : themeColor
+        label.textColor = themeColor == BGNightMode ? .white : themeColor
         container.addSubview(label)
 
         let button = UIButton(type: .custom)
@@ -227,26 +225,26 @@ final class VerseExplanationView: UIView {
         button.addTarget(self, action: action, for: .touchUpInside)
         iconHolder.addSubview(button)
 
-        let tint = themeColor == BGNightMode ? UIColor.black : themeColor
+        let tint = themeColor == BGNightMode ? UIColor.white : themeColor
         ImageTint.sharedInstance.imageTintcolorMethod(img: imageView, colorVu: tint)
 
         NSLayoutConstraint.activate([
             iconHolder.topAnchor.constraint(equalTo: container.topAnchor),
             iconHolder.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            iconHolder.widthAnchor.constraint(equalToConstant: 40),
-            iconHolder.heightAnchor.constraint(equalToConstant: 40),
+            iconHolder.widthAnchor.constraint(equalToConstant: 44),
+            iconHolder.heightAnchor.constraint(equalToConstant: 44),
 
             imageView.centerXAnchor.constraint(equalTo: iconHolder.centerXAnchor),
             imageView.centerYAnchor.constraint(equalTo: iconHolder.centerYAnchor),
-            imageView.widthAnchor.constraint(equalToConstant: 25),
-            imageView.heightAnchor.constraint(equalToConstant: 25),
+            imageView.widthAnchor.constraint(equalToConstant: 22),
+            imageView.heightAnchor.constraint(equalToConstant: 22),
 
             button.topAnchor.constraint(equalTo: iconHolder.topAnchor),
             button.leadingAnchor.constraint(equalTo: iconHolder.leadingAnchor),
             button.trailingAnchor.constraint(equalTo: iconHolder.trailingAnchor),
             button.bottomAnchor.constraint(equalTo: iconHolder.bottomAnchor),
 
-            label.topAnchor.constraint(equalTo: iconHolder.bottomAnchor, constant: 8),
+            label.topAnchor.constraint(equalTo: iconHolder.bottomAnchor, constant: 6),
             label.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             label.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             label.bottomAnchor.constraint(equalTo: container.bottomAnchor)
@@ -293,7 +291,7 @@ final class VerseExplanationView: UIView {
         showLoading()
 
         let languageCode = UserDefaults.standard.string(forKey: "language_code") ?? language_code
-        GeminiExplanationService.shared.fetchExplanation(
+        OpenAIExplanationService.shared.fetchExplanation(
             verseReference: verseReference,
             verseText: verseText,
             bibleVersion: bibleVersion,
@@ -323,7 +321,7 @@ final class VerseExplanationView: UIView {
         showLoading()
 
         let languageCode = UserDefaults.standard.string(forKey: "language_code") ?? language_code
-        GeminiExplanationService.shared.fetchChapterSummary(
+        OpenAIExplanationService.shared.fetchChapterSummary(
             chapterReference: screenTitle ?? verseReference.replacingOccurrences(of: "-", with: " "),
             chapterText: verseText,
             bibleVersion: bibleVersion,
