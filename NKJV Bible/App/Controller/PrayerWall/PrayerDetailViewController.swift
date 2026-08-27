@@ -27,11 +27,13 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
     private let descriptionLabel = UILabel()
     private let authorLabel = UILabel()
     private let likeButton = UIButton(type: .system)
+    private let blockButton = UIButton(type: .system)
     private let commentsTitleLabel = UILabel()
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let commentField = UITextField()
     private let sendCommentButton = UIButton(type: .system)
     private var tableHeightConstraint: NSLayoutConstraint?
+    private var isBlocking = false
 
     init(prayer: PrayerWallItem) {
         self.prayer = prayer
@@ -98,6 +100,15 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
         likeButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         likeButton.addTarget(self, action: #selector(likeTapped), for: .touchUpInside)
         cardView.addSubview(likeButton)
+
+        blockButton.translatesAutoresizingMaskIntoConstraints = false
+        blockButton.layer.cornerRadius = 10
+        blockButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
+        blockButton.addTarget(self, action: #selector(blockTapped), for: .touchUpInside)
+        if #available(iOS 13.0, *) {
+            blockButton.setImage(UIImage(systemName: "hand.raised.fill"), for: .normal)
+        }
+        cardView.addSubview(blockButton)
 
         commentsTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         commentsTitleLabel.text = "Comments"
@@ -166,9 +177,14 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
 
             likeButton.topAnchor.constraint(equalTo: authorLabel.bottomAnchor, constant: 16),
             likeButton.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
-            likeButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
+            likeButton.trailingAnchor.constraint(equalTo: blockButton.leadingAnchor, constant: -10),
             likeButton.heightAnchor.constraint(equalToConstant: 44),
             likeButton.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -16),
+
+            blockButton.centerYAnchor.constraint(equalTo: likeButton.centerYAnchor),
+            blockButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
+            blockButton.widthAnchor.constraint(equalToConstant: 110),
+            blockButton.heightAnchor.constraint(equalToConstant: 44),
 
             commentsTitleLabel.topAnchor.constraint(equalTo: cardView.bottomAnchor, constant: 24),
             commentsTitleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
@@ -203,6 +219,22 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
         authorLabel.text = "Shared by \(author)"
         authorLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.65) : .gray
         updateLikeButton()
+        updateBlockButton()
+    }
+
+    private func updateBlockButton() {
+        let blocked = PrayerWallService.shared.isUserBlocked(prayer.blockTargetId)
+        let title = blocked ? " Unblock" : " Block"
+        blockButton.setTitle(title, for: .normal)
+        if blocked {
+            blockButton.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.15) : UIColor.systemOrange.withAlphaComponent(0.15)
+            blockButton.setTitleColor(isNight ? .white : .systemOrange, for: .normal)
+            blockButton.tintColor = isNight ? .white : .systemOrange
+        } else {
+            blockButton.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.12) : UIColor.systemRed.withAlphaComponent(0.12)
+            blockButton.setTitleColor(isNight ? .white : .systemRed, for: .normal)
+            blockButton.tintColor = isNight ? .white : .systemRed
+        }
     }
 
     private func loadEngagement() {
@@ -269,6 +301,74 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
             likeCount = max(0, likeCount + (liked ? 1 : -1))
             updateLikeButton()
             onUpdated?()
+        case .failure(let error):
+            view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+        }
+    }
+
+    @objc private func blockTapped() {
+        PrayerWallLoginGate.requireLogin(from: self) { [weak self] in
+            guard let self = self else { return }
+            if !NetworkManager.sharedInstance.isConnectedToInternet() {
+                self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                return
+            }
+            guard !self.isBlocking else { return }
+
+            let targetId = self.prayer.blockTargetId
+            guard !targetId.isEmpty else {
+                self.view.makeToast("Unable to block this prayer.", duration: 2.0, position: .bottom)
+                return
+            }
+            if let me = PrayerWallService.shared.currentBlockerUserId(), me == targetId {
+                self.view.makeToast("You can't block your own prayer.", duration: 2.0, position: .bottom)
+                return
+            }
+
+            let alreadyBlocked = PrayerWallService.shared.isUserBlocked(targetId)
+            let title = alreadyBlocked ? "Unblock" : "Block"
+            let message = alreadyBlocked
+                ? "Unblock this user so you can see their prayers again?"
+                : "Block this user? Their prayers will be hidden from your Prayer Wall."
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            alert.addAction(UIAlertAction(title: title, style: alreadyBlocked ? .default : .destructive, handler: { [weak self] _ in
+                guard let self = self else { return }
+                if !alreadyBlocked {
+                    let author = self.prayer.isAnonymous || self.prayer.userName.isEmpty ? "Anonymous" : self.prayer.userName
+                    PrayerWallService.shared.rememberBlockedUserDisplayName(author, for: targetId)
+                }
+                self.performBlockToggle(alreadyBlocked: alreadyBlocked, targetId: targetId)
+            }))
+            self.present(alert, animated: true)
+        }
+    }
+
+    private func performBlockToggle(alreadyBlocked: Bool, targetId: String) {
+        isBlocking = true
+        blockButton.isEnabled = false
+        if alreadyBlocked {
+            PrayerWallService.shared.unblockUser(blockedUserId: targetId) { [weak self] result in
+                self?.handleBlockResult(result, blocked: false)
+            }
+        } else {
+            PrayerWallService.shared.blockUser(blockedUserId: targetId) { [weak self] result in
+                self?.handleBlockResult(result, blocked: true)
+            }
+        }
+    }
+
+    private func handleBlockResult(_ result: Result<Void, PrayerWallError>, blocked: Bool) {
+        isBlocking = false
+        blockButton.isEnabled = true
+        switch result {
+        case .success:
+            updateBlockButton()
+            view.makeToast(blocked ? "User blocked" : "User unblocked", duration: 2.0, position: .bottom)
+            onUpdated?()
+            if blocked {
+                navigationController?.popViewController(animated: true)
+            }
         case .failure(let error):
             view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
         }

@@ -40,19 +40,32 @@ enum OnboardingProgress {
 enum OnboardingBibleVerse {
     private static let fallbackText = "For I can do everything through Christ, who gives me strength."
     private static let fallbackReference = "Philippians 4:13"
-    private static let fallbackOptions = ["strength", "hope", "peace"]
-    private static let fallbackBlank = "For I can do everything through Christ, who gives me ________."
+    private static let fallbackTokens = ["For", "I", "can", "do", "everything", "through", "Christ,", "who", "gives", "me", "strength."]
+    private static let fallbackBlankIndices = [1, 3, 5, 10]
+    private static let fallbackOptions = ["I", "do", "through", "strength"]
 
     private static var cachedLanguage: String?
-    private static var cachedPayload: (text: String, reference: String, blankPrompt: String, options: [String])?
+    private static var cachedPayload: (
+        text: String,
+        reference: String,
+        tokens: [String],
+        blankIndices: [Int],
+        options: [String]
+    )?
 
     static var text: String { payload.text }
     static var reference: String { payload.reference }
-    static var blankPrompt: String { payload.blankPrompt }
+    static var tokens: [String] { payload.tokens }
+    static var blankIndices: [Int] { payload.blankIndices }
     static var options: [String] { payload.options }
-    static var correctOptionIndex: Int { 0 }
 
-    private static var payload: (text: String, reference: String, blankPrompt: String, options: [String]) {
+    private static var payload: (
+        text: String,
+        reference: String,
+        tokens: [String],
+        blankIndices: [Int],
+        options: [String]
+    ) {
         let language = UserDefaults.standard.string(forKey: "SelectedLanguage")
         if let cachedPayload, cachedLanguage == language {
             return cachedPayload
@@ -64,59 +77,65 @@ enum OnboardingBibleVerse {
         return built
     }
 
-    private static func buildVerse(language: String?) -> (text: String, reference: String, blankPrompt: String, options: [String]) {
+    private static func buildVerse(language: String?) -> (
+        text: String,
+        reference: String,
+        tokens: [String],
+        blankIndices: [Int],
+        options: [String]
+    ) {
         guard language != nil else {
-            return (fallbackText, fallbackReference, fallbackBlank, fallbackOptions)
+            return (fallbackText, fallbackReference, fallbackTokens, fallbackBlankIndices, fallbackOptions)
         }
 
         let books = BibleContent.sharedInstance.BookToPosition()
         let bookIndex = 49
         guard bookIndex < books.count else {
-            return (fallbackText, fallbackReference, fallbackBlank, fallbackOptions)
+            return (fallbackText, fallbackReference, fallbackTokens, fallbackBlankIndices, fallbackOptions)
         }
 
         let bookName = books[bookIndex].components(separatedBy: "-")[0]
         let verses = BibleContent.sharedInstance.AudioBibleList(selecterBookName: bookName, selectedId: 3)
         let verseIndex = 12
         guard verseIndex < verses.count else {
-            return (fallbackText, fallbackReference, fallbackBlank, fallbackOptions)
+            return (fallbackText, fallbackReference, fallbackTokens, fallbackBlankIndices, fallbackOptions)
         }
 
         let text = verses[verseIndex].trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
-            return (fallbackText, fallbackReference, fallbackBlank, fallbackOptions)
+            return (fallbackText, fallbackReference, fallbackTokens, fallbackBlankIndices, fallbackOptions)
         }
 
-        let words = text.split(whereSeparator: { $0.isWhitespace }).map(String.init)
-        let answer = (words.last ?? fallbackOptions[0])
-            .trimmingCharacters(in: CharacterSet.punctuationCharacters)
-        let blankPrompt: String
-        if words.count > 1 {
-            blankPrompt = words.dropLast().joined(separator: " ") + " ________."
-        } else {
-            blankPrompt = fallbackBlank
+        let tokens = text.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        let candidates = tokens.enumerated().compactMap { idx, word -> (Int, String)? in
+            let cleaned = word.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+            guard cleaned.count >= 3 else { return nil }
+            return (idx, cleaned)
         }
 
-        var extras: [String] = []
-        for word in words.dropLast() {
-            let cleaned = word.trimmingCharacters(in: CharacterSet.punctuationCharacters)
-            guard cleaned.count >= 4, cleaned.caseInsensitiveCompare(answer) != .orderedSame else { continue }
-            if !extras.contains(where: { $0.caseInsensitiveCompare(cleaned) == .orderedSame }) {
-                extras.append(cleaned)
+        var picked = Array(candidates.shuffled().prefix(4))
+        if picked.count < 4 {
+            let extras = tokens.enumerated().compactMap { idx, word -> (Int, String)? in
+                guard !picked.contains(where: { $0.0 == idx }) else { return nil }
+                let cleaned = word.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+                guard !cleaned.isEmpty else { return nil }
+                return (idx, cleaned)
             }
-            if extras.count == 2 { break }
-        }
-        while extras.count < 2 {
-            let filler = fallbackOptions[extras.count + 1]
-            if extras.contains(where: { $0.caseInsensitiveCompare(filler) == .orderedSame }) == false,
-               filler.caseInsensitiveCompare(answer) != .orderedSame {
-                extras.append(filler)
-            } else {
-                extras.append(filler)
+            for item in extras where picked.count < 4 {
+                picked.append(item)
             }
         }
 
-        return (text, "\(bookName) 4:13", blankPrompt, [answer] + extras)
+        let blankIndices = picked.map { $0.0 }.sorted()
+        let options = blankIndices.map {
+            tokens[$0].trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        }.shuffled()
+
+        guard blankIndices.count == 4, options.count == 4 else {
+            return (fallbackText, fallbackReference, fallbackTokens, fallbackBlankIndices, fallbackOptions)
+        }
+
+        return (text, "\(bookName) 4:13", tokens, blankIndices, options)
     }
 }
 

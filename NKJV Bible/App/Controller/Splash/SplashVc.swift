@@ -197,13 +197,10 @@ class SplashVc: UIViewController, SplashDelegate {
     
     
     func LoadData() {
-        self.PopupView = UIView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height))
-        self.view.addSubview(self.PopupView!)
-        
-        self.popupXIB = AppTrackIng_Popup.fromNib(named: "AppTrackIng_Popup")
-        self.popupXIB!.frame = self.PopupView!.bounds
-        self.popupXIB!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        self.PopupView!.addSubview(self.popupXIB!)
+        // Skip custom "Thankful for Your Support" alert; go straight to welcome onboarding.
+        // App Tracking is requested after the welcome screen (Start Reading).
+        OnboardingProgress.markStarted()
+        presentOnboarding()
     }
     
     
@@ -227,20 +224,9 @@ class SplashVc: UIViewController, SplashDelegate {
     
     func PopupClose() {
         self.PopupView?.removeFromSuperview()
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
-            ATTrackingManager.requestTrackingAuthorization(completionHandler: { status in
-                if status == .authorized {
-                    print("App approved")
-                } else {
-                    print("App Removed")
-                }
-                DispatchQueue.main.async {
-                    OnboardingProgress.markStarted()
-                    self.presentOnboarding()
-                }
-            })
-        })
+        // Tracking is requested after welcome; keep this path for any leftover popup callers.
+        OnboardingProgress.markStarted()
+        presentOnboarding()
     }
 
     private func presentOnboarding() {

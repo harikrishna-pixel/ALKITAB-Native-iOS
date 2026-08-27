@@ -14,6 +14,8 @@ struct PrayerWallItem: Decodable {
     let userName: String
     let isAnonymous: Bool
     let createdAt: Date?
+    /// Mongo author id when present; otherwise clients may use prayer `_id` for block APIs.
+    let userId: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
@@ -25,6 +27,8 @@ struct PrayerWallItem: Decodable {
         case userName = "user_name"
         case isAnonymous
         case createdAt
+        case userId
+        case user_id
     }
 
     init(from decoder: Decoder) throws {
@@ -57,6 +61,24 @@ struct PrayerWallItem: Decodable {
         } else {
             createdAt = nil
         }
+
+        if let uid = try? container.decode(String.self, forKey: .userId), !uid.isEmpty {
+            userId = uid
+        } else if let uid = try? container.decode(String.self, forKey: .user_id), !uid.isEmpty {
+            userId = uid
+        } else if let dict = try? container.decode([String: String].self, forKey: .userId), let oid = dict["$oid"] {
+            userId = oid
+        } else if let dict = try? container.decode([String: String].self, forKey: .user_id), let oid = dict["$oid"] {
+            userId = oid
+        } else {
+            userId = nil
+        }
+    }
+
+    /// Id used with blocked-users API for this prayer's author (Mongo `userId` or prayer `_id`).
+    var blockTargetId: String {
+        if let userId = userId, !userId.isEmpty { return userId }
+        return id
     }
 }
 

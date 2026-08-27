@@ -598,6 +598,7 @@
 		01PRW30529FBD2210006BD35 /* PrayerDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10529FBD2210006BD15 /* PrayerDetailViewController.swift */; };
 		01PRW30629FBD2210006BD36 /* PrayerWallLoginGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10629FBD2210006BD16 /* PrayerWallLoginGate.swift */; };
 		01PRW30729FBD2210006BD37 /* PrayerWallLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10729FBD2210006BD17 /* PrayerWallLoginView.swift */; };
+		01PRW30829FBD2210006BD38 /* PrayerBlockedUsersViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10829FBD2210006BD18 /* PrayerBlockedUsersViewController.swift */; };
 		6F9FDDDC2EEFFEA600CE0114 /* Onboarding3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDDA2EEFFEA600CE0114 /* Onboarding3.swift */; };
 		6F9FDDDD2EEFFEA600CE0114 /* Onboarding4.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDDB2EEFFEA600CE0114 /* Onboarding4.swift */; };
 		6F9FDDDE2EEFFEA600CE0114 /* Onboarding2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDD92EEFFEA600CE0114 /* Onboarding2.swift */; };
@@ -625,6 +626,7 @@
 		C3D4E5F62F46C30100000002 /* ChallengeHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000012 /* ChallengeHubView.swift */; };
 		C3D4E5F62F46C30100000003 /* ChallengeHubViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000013 /* ChallengeHubViewController.swift */; };
 		C3D4E5F62F46C30100000004 /* ChallengeQuickQuizView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000014 /* ChallengeQuickQuizView.swift */; };
+		C3D4E5F62F46C30100000009 /* ChallengeOldStyleChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000019 /* ChallengeOldStyleChrome.swift */; };
 		C3D4E5F62F46C30100000005 /* ChallengeFillVerseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000015 /* ChallengeFillVerseView.swift */; };
 		C3D4E5F62F46C30100000006 /* ChallengeVerseMatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000016 /* ChallengeVerseMatchView.swift */; };
 		C3D4E5F62F46C30100000007 /* ChallengeTrueFalseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000017 /* ChallengeTrueFalseView.swift */; };
@@ -1256,6 +1258,7 @@
 		01PRW10529FBD2210006BD15 /* PrayerDetailViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerDetailViewController.swift; sourceTree = "<group>"; };
 		01PRW10629FBD2210006BD16 /* PrayerWallLoginGate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerWallLoginGate.swift; sourceTree = "<group>"; };
 		01PRW10729FBD2210006BD17 /* PrayerWallLoginView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerWallLoginView.swift; sourceTree = "<group>"; };
+		01PRW10829FBD2210006BD18 /* PrayerBlockedUsersViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerBlockedUsersViewController.swift; sourceTree = "<group>"; };
 		5684D797A8C667919AB63043 /* Pods_NKJV_Bible.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_NKJV_Bible.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6415B4B174ADEF152243C01E /* Pods-NKJV Bible.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NKJV Bible.release.xcconfig"; path = "Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible.release.xcconfig"; sourceTree = "<group>"; };
 		6F9FDDD82EEFFEA600CE0114 /* Onboarding1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding1.swift; sourceTree = "<group>"; };
@@ -1284,6 +1287,7 @@
 		C3D4E5F62F46C30100000012 /* ChallengeHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000013 /* ChallengeHubViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubViewController.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000014 /* ChallengeQuickQuizView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeQuickQuizView.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000019 /* ChallengeOldStyleChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeOldStyleChrome.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000015 /* ChallengeFillVerseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeFillVerseView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000016 /* ChallengeVerseMatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseMatchView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000017 /* ChallengeTrueFalseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeTrueFalseView.swift; sourceTree = "<group>"; };
@@ -3495,6 +3499,7 @@
 				01PRW10529FBD2210006BD15 /* PrayerDetailViewController.swift */,
 				01PRW10629FBD2210006BD16 /* PrayerWallLoginGate.swift */,
 				01PRW10729FBD2210006BD17 /* PrayerWallLoginView.swift */,
+				01PRW10829FBD2210006BD18 /* PrayerBlockedUsersViewController.swift */,
 			);
 			path = PrayerWall;
 			sourceTree = "<group>";
@@ -3551,6 +3556,7 @@
 				C3D4E5F62F46C30100000016 /* ChallengeVerseMatchView.swift */,
 				C3D4E5F62F46C30100000017 /* ChallengeTrueFalseView.swift */,
 				C3D4E5F62F46C30100000018 /* ChallengeWordSearchView.swift */,
+				C3D4E5F62F46C30100000019 /* ChallengeOldStyleChrome.swift */,
 			);
 			path = ChallengeHub;
 			sourceTree = "<group>";
@@ -4273,6 +4279,7 @@
 				C3D4E5F62F46C30100000002 /* ChallengeHubView.swift in Sources */,
 				C3D4E5F62F46C30100000003 /* ChallengeHubViewController.swift in Sources */,
 				C3D4E5F62F46C30100000004 /* ChallengeQuickQuizView.swift in Sources */,
+				C3D4E5F62F46C30100000009 /* ChallengeOldStyleChrome.swift in Sources */,
 				C3D4E5F62F46C30100000005 /* ChallengeFillVerseView.swift in Sources */,
 				C3D4E5F62F46C30100000006 /* ChallengeVerseMatchView.swift in Sources */,
 				C3D4E5F62F46C30100000007 /* ChallengeTrueFalseView.swift in Sources */,
@@ -4337,6 +4344,7 @@
 				01PRW30529FBD2210006BD35 /* PrayerDetailViewController.swift in Sources */,
 				01PRW30629FBD2210006BD36 /* PrayerWallLoginGate.swift in Sources */,
 				01PRW30729FBD2210006BD37 /* PrayerWallLoginView.swift in Sources */,
+				01PRW30829FBD2210006BD38 /* PrayerBlockedUsersViewController.swift in Sources */,
 				0139432A2A2471D400DF2434 /* RateUsViewController.swift in Sources */,
 				0144EEAF2A90CD530022EABF /* ImageSliderVu.swift in Sources */,
 				01B127B329487B2800D95467 /* DropDown.swift in Sources */,
@@ -4588,6 +4596,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "NKJV Bible/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Alkitab Bible";
+				INFOPLIST_KEY_CFBundleName = "Alkitab Bible";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app requires camera access to submit feedback with image attachments";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app requires permission to access camera and microphone to submit feedback with video attachments";
@@ -4630,6 +4639,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "NKJV Bible/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Alkitab Bible";
+				INFOPLIST_KEY_CFBundleName = "Alkitab Bible";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app requires camera access to submit feedback with image attachments";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app requires permission to access camera and microphone to submit feedback with video attachments";

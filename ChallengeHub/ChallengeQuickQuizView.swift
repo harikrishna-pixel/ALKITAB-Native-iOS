@@ -13,162 +13,163 @@ struct ChallengeQuickQuizView: View {
     @State private var questions: [QuickQuizQuestion] = []
     @State private var index = 0
     @State private var selected: Int?
+    @State private var revealed = false
     @State private var score = 0
     @State private var finished = false
+    @State private var lives = 3
+    @State private var hiddenOptions: Set<Int> = []
+    @State private var usedFifty = false
+    @State private var usedHint = false
+    @State private var walletTick = 0
+    @State private var toast: String?
 
     var body: some View {
-        VStack(spacing: 0) {
-            header("Quick Quiz")
-
+        Group {
             if finished {
-                resultBlock
+                ChallengeOldStyleResult(
+                    scoreText: "You scored \(score) / \(questions.count)",
+                    onDone: onClose
+                )
             } else if questions.indices.contains(index) {
                 let q = questions[index]
-                Text("Question \(index + 1) of \(questions.count)")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color.black.opacity(0.45))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color.black.opacity(0.08))
-                        Capsule()
-                            .fill(Color(hex: "1C46B2"))
-                            .frame(width: geo.size.width * CGFloat(index + 1) / CGFloat(max(questions.count, 1)))
-                    }
-                }
-                .frame(height: 6)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-
-                ScrollView(showsIndicators: false) {
+                ChallengeOldStyleShell(
+                    onBack: onClose,
+                    lives: lives,
+                    questionNumber: index + 1,
+                    questionTotal: questions.count,
+                    caption: "Choose the correct answer.",
+                    primaryTitle: revealed
+                        ? (index + 1 >= questions.count ? "Finish" : "Next")
+                        : "Check Answer",
+                    primaryEnabled: selected != nil,
+                    onPrimary: { primaryAction(for: q) },
+                    fiftyFiftyEnabled: !usedFifty && !revealed && selected == nil,
+                    hintEnabled: !usedHint && !revealed,
+                    skipEnabled: !revealed,
+                    onLifeline: { handleLifeline($0, question: q) },
+                    walletTick: walletTick
+                ) {
                     VStack(alignment: .leading, spacing: 14) {
                         Text(q.prompt)
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 18, weight: .bold))
                             .foregroundColor(Color(hex: "0B1B3A"))
 
                         ForEach(Array(q.options.enumerated()), id: \.offset) { i, option in
-                            optionRow(option, index: i, correct: q.correctIndex)
+                            if !hiddenOptions.contains(i) {
+                                optionRow(option, index: i, correct: q.correctIndex)
+                            }
+                        }
+
+                        if let toast = toast {
+                            Text(toast)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(Color(hex: "D70015"))
                         }
                     }
-                    .padding(20)
                 }
-
-                Button(action: next) {
-                    Text(index + 1 >= questions.count ? "Finish" : "Next")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(selected == nil ? Color.gray.opacity(0.4) : Color(hex: "1C46B2"))
-                        .cornerRadius(27)
-                }
-                .disabled(selected == nil)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 10)
-
-                Button("Open classic Bible Quiz") {
-                    onOpenLegacyQuiz()
-                }
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color(hex: "1C46B2"))
-                .padding(.bottom, 18)
             } else {
-                Spacer()
+                Color(hex: "F2F3F7").ignoresSafeArea()
             }
         }
-        .background(Color.white.ignoresSafeArea())
         .onAppear {
             questions = ChallengeGameFactory.quickQuiz(from: verse)
         }
     }
 
-    private var resultBlock: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Text("Great job! 🎉")
-                .font(.system(size: 24, weight: .bold))
-                .foregroundColor(Color(hex: "0B1B3A"))
-            Text("You scored \(score) / \(questions.count)")
-                .font(.system(size: 16))
-                .foregroundColor(Color.black.opacity(0.55))
-            Button(action: onClose) {
-                Text("Done")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color(hex: "1C46B2"))
-                    .cornerRadius(27)
-            }
-            .padding(.horizontal, 20)
-            Spacer()
-        }
-    }
-
     private func optionRow(_ option: String, index i: Int, correct: Int) -> some View {
         let isSelected = selected == i
-        let showCorrect = selected != nil && i == correct
-        let showWrong = selected != nil && isSelected && i != correct
-        return Button(action: { if selected == nil { selected = i } }) {
+        let showCorrect = revealed && i == correct
+        let showWrong = revealed && isSelected && i != correct
+        return Button(action: {
+            guard !revealed else { return }
+            selected = i
+            toast = nil
+        }) {
             HStack(spacing: 12) {
-                Image(systemName: showCorrect ? "checkmark.circle.fill" : (showWrong ? "xmark.circle.fill" : "circle"))
-                    .foregroundColor(showCorrect ? Color(hex: "34C759") : (showWrong ? Color(hex: "D70015") : Color.black.opacity(0.25)))
+                Image(systemName: showCorrect ? "checkmark.circle.fill" : (showWrong ? "xmark.circle.fill" : (isSelected ? "largecircle.fill.circle" : "circle")))
+                    .foregroundColor(showCorrect ? Color(hex: "34C759") : (showWrong ? Color(hex: "D70015") : (isSelected ? Color(hex: "1C46B2") : Color.black.opacity(0.25))))
                 Text(option)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(Color(hex: "0B1B3A"))
                     .multilineTextAlignment(.leading)
                 Spacer()
-                if showCorrect {
-                    Image(systemName: "checkmark")
-                        .foregroundColor(Color(hex: "34C759"))
-                } else if showWrong {
-                    Image(systemName: "xmark")
-                        .foregroundColor(Color(hex: "D70015"))
-                }
             }
             .padding(14)
-            .background(showCorrect ? Color(hex: "E8F8EE") : (showWrong ? Color(hex: "FDECEC") : Color.white))
+            .background(showCorrect ? Color(hex: "E8F8EE") : (showWrong ? Color(hex: "FDECEC") : Color(hex: "F7F8FC")))
             .cornerRadius(14)
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(showCorrect ? Color(hex: "34C759") : (showWrong ? Color(hex: "D70015") : Color.black.opacity(0.1)), lineWidth: 1.5)
+                    .stroke(showCorrect ? Color(hex: "34C759") : (showWrong ? Color(hex: "D70015") : (isSelected ? Color(hex: "1C46B2") : Color.black.opacity(0.08))), lineWidth: 1.5)
             )
         }
         .buttonStyle(PlainButtonStyle())
-        .disabled(selected != nil)
+        .disabled(revealed)
     }
 
-    private func next() {
-        guard let selected = selected else { return }
-        if selected == questions[index].correctIndex {
-            score += 1
+    private func primaryAction(for q: QuickQuizQuestion) {
+        if revealed {
+            advance()
+            return
         }
-        if index + 1 >= questions.count {
+        guard let selected = selected else { return }
+        revealed = true
+        if selected == q.correctIndex {
+            score += 1
+        } else {
+            lives = max(0, lives - 1)
+            if lives == 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    finished = true
+                }
+            }
+        }
+    }
+
+    private func advance() {
+        if index + 1 >= questions.count || lives == 0 {
             finished = true
         } else {
             index += 1
-            self.selected = nil
+            selected = nil
+            revealed = false
+            hiddenOptions = []
+            usedFifty = false
+            usedHint = false
+            toast = nil
         }
     }
 
-    private func header(_ title: String) -> some View {
-        HStack {
-            Button(action: onClose) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Color(hex: "0B1B3A"))
+    private func handleLifeline(_ kind: ChallengeLifelineKind, question q: QuickQuizQuestion) {
+        switch kind {
+        case .fiftyFifty:
+            guard ChallengeWallet.spend(ChallengeWallet.fiftyFiftyCost) else {
+                toast = "Not enough coins for 50/50."
+                return
             }
-            Spacer()
-            Text(title)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundColor(Color(hex: "0B1B3A"))
-            Spacer()
-            Color.clear.frame(width: 18, height: 18)
+            walletTick += 1
+            usedFifty = true
+            let wrong = q.options.indices.filter { $0 != q.correctIndex }.shuffled().prefix(2)
+            hiddenOptions = Set(wrong)
+            if let selected = selected, hiddenOptions.contains(selected) {
+                self.selected = nil
+            }
+            toast = nil
+        case .hint:
+            guard ChallengeWallet.spend(ChallengeWallet.hintCost) else {
+                toast = "Not enough coins for Hint."
+                return
+            }
+            walletTick += 1
+            usedHint = true
+            selected = q.correctIndex
+            toast = nil
+        case .skip:
+            guard ChallengeWallet.spend(ChallengeWallet.skipCost) else {
+                toast = "Not enough coins for Skip."
+                return
+            }
+            walletTick += 1
+            advance()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
     }
 }

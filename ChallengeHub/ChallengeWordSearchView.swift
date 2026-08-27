@@ -18,6 +18,10 @@ struct ChallengeWordSearchView: View {
     @State private var foundPaths: [String: [GridPos]] = [:]
     @State private var wordColors: [String: Color] = [:]
     @State private var wordHex: [String: String] = [:]
+    @State private var lives = 3
+    @State private var usedHint = false
+    @State private var walletTick = 0
+    @State private var toast: String?
 
     private let palette: [Color] = [
         Color(hex: "34C759"),
@@ -29,70 +33,73 @@ struct ChallengeWordSearchView: View {
     private let paletteHex = ["34C759", "1C46B2", "F5A623", "7B61FF", "E85D4C"]
 
     var body: some View {
-        VStack(spacing: 0) {
-            header("Word Search")
+        ChallengeOldStyleShell(
+            onBack: onClose,
+            lives: lives,
+            questionNumber: words.isEmpty ? 1 : min(found.count + (found.count == words.count ? 0 : 1), words.count),
+            questionTotal: max(words.count, 1),
+            caption: "Solve the word puzzle.",
+            primaryTitle: found.count == words.count && !words.isEmpty ? "Done" : "Check Answer",
+            primaryEnabled: true,
+            onPrimary: {
+                if found.count == words.count && !words.isEmpty {
+                    onClose()
+                } else {
+                    toast = found.isEmpty ? "Find the words in the grid." : "Keep searching — \(found.count)/\(words.count) found."
+                }
+            },
+            fiftyFiftyEnabled: false,
+            hintEnabled: !usedHint && found.count < words.count,
+            skipEnabled: found.count < words.count,
+            onLifeline: handleLifeline,
+            walletTick: walletTick
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Find the words below")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color.black.opacity(0.5))
 
-            Text("Find the words below")
-                .font(.system(size: 14))
-                .foregroundColor(Color.black.opacity(0.5))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.top, 6)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(words, id: \.self) { word in
-                        Text(word)
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(found.contains(word) ? .white : Color(hex: "0B1B3A"))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule().fill(found.contains(word) ? (wordColors[word] ?? Color(hex: "1C46B2")) : Color(hex: "EEF2F8"))
-                            )
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(words, id: \.self) { word in
+                            Text(word)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(found.contains(word) ? .white : Color(hex: "0B1B3A"))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule().fill(found.contains(word) ? (wordColors[word] ?? Color(hex: "1C46B2")) : Color(hex: "EEF2F8"))
+                                )
+                        }
                     }
                 }
-                .padding(.horizontal, 20)
-            }
-            .frame(height: 48)
-            .padding(.vertical, 8)
+                .frame(height: 40)
 
-            WordSearchBoardRepresentable(
-                letters: grid,
-                foundPaths: foundPaths,
-                colors: foundUIColors,
-                onFinishedPath: commitPath
-            )
-            .frame(maxWidth: .infinity)
-            .frame(height: boardHeight)
-            .padding(.horizontal, 16)
+                WordSearchBoardRepresentable(
+                    letters: grid,
+                    foundPaths: foundPaths,
+                    colors: foundUIColors,
+                    onFinishedPath: commitPath
+                )
+                .frame(maxWidth: .infinity)
+                .frame(height: boardHeight)
 
-            if found.count == words.count && !words.isEmpty {
-                HStack(spacing: 8) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(Color(hex: "34C759"))
-                    Text("Great job! 🎉")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(hex: "1B7A3D"))
+                if found.count == words.count && !words.isEmpty {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(Color(hex: "34C759"))
+                        Text("Great job!")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Color(hex: "1B7A3D"))
+                    }
                 }
-                .padding(.top, 16)
+                if let toast = toast {
+                    Text(toast)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(hex: "D70015"))
+                }
             }
-
-            Spacer(minLength: 8)
-
-            Button(action: onClose) {
-                Text(found.count == words.count && !words.isEmpty ? "Done" : "Close")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color(hex: "1C46B2"))
-                    .cornerRadius(27)
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
         }
-        .background(Color.white.ignoresSafeArea())
         .navigationBarHidden(true)
         .onAppear(perform: build)
         .modifier(WordSearchSheetLock())
@@ -150,28 +157,39 @@ struct ChallengeWordSearchView: View {
         if words.contains(forward), !found.contains(forward) {
             found.insert(forward)
             foundPaths[forward] = path
+            toast = nil
         } else if words.contains(reverse), !found.contains(reverse) {
             found.insert(reverse)
             foundPaths[reverse] = Array(path.reversed())
+            toast = nil
         }
     }
 
-    private func header(_ title: String) -> some View {
-        HStack {
-            Button(action: onClose) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Color(hex: "0B1B3A"))
+    private func handleLifeline(_ kind: ChallengeLifelineKind) {
+        switch kind {
+        case .fiftyFifty:
+            toast = "50/50 is not available for Word Search."
+        case .hint:
+            guard ChallengeWallet.spend(ChallengeWallet.hintCost) else {
+                toast = "Not enough coins for Hint."
+                return
             }
-            Spacer()
-            Text(title)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundColor(Color(hex: "0B1B3A"))
-            Spacer()
-            Color.clear.frame(width: 18, height: 18)
+            walletTick += 1
+            usedHint = true
+            if let word = words.first(where: { !found.contains($0) }),
+               let path = WordSearchBuilder.lastPlacements[word] {
+                found.insert(word)
+                foundPaths[word] = path
+            }
+            toast = nil
+        case .skip:
+            guard ChallengeWallet.spend(ChallengeWallet.skipCost) else {
+                toast = "Not enough coins for Skip."
+                return
+            }
+            walletTick += 1
+            onClose()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
     }
 }
 

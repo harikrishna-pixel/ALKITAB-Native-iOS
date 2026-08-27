@@ -4,8 +4,11 @@
 //
 
 import SwiftUI
+import AppTrackingTransparency
 
 struct Onboarding1: View {
+    @State private var navigateToNext = false
+
     var body: some View {
         if #available(iOS 16.0, *) {
             NavigationStack {
@@ -38,10 +41,8 @@ struct Onboarding1: View {
 
                 VStack(spacing: 0) {
                     OnboardingBrandHeader(lightContent: true)
-                        .padding(.top, max(geometry.safeAreaInsets.top, 20) + 32)
+                        .padding(.top, max(geometry.safeAreaInsets.top, 12) + 12)
                         .padding(.horizontal, 24)
-
-                    Spacer(minLength: geometry.size.height * 0.04)
 
                     VStack(spacing: 14) {
                         Text("Scripture Made Clear")
@@ -66,11 +67,23 @@ struct Onboarding1: View {
                         .frame(maxWidth: .infinity)
                         .padding(.top, 12)
                     }
+                    .padding(.top, 28)
 
-                    Spacer(minLength: geometry.size.height * 0.22)
+                    Spacer(minLength: 16)
 
-                    OnboardingPrimaryLink(title: "Start Reading", destination: Onboarding2())
-                        .padding(.horizontal, 24)
+                    OnboardingPrimaryButton(title: "Start Reading") {
+                        requestTrackingThenContinue()
+                    }
+                    .padding(.horizontal, 24)
+                    .background(
+                        NavigationLink(
+                            destination: Onboarding2(),
+                            isActive: $navigateToNext
+                        ) {
+                            EmptyView()
+                        }
+                        .hidden()
+                    )
 
                     OnboardingPageDots(current: 0, total: 5, onDark: true)
                         .padding(.top, 16)
@@ -81,6 +94,18 @@ struct Onboarding1: View {
         }
         .edgesIgnoringSafeArea(.all)
         .navigationBarHidden(true)
+    }
+
+    private func requestTrackingThenContinue() {
+        if #available(iOS 14, *) {
+            ATTrackingManager.requestTrackingAuthorization { _ in
+                DispatchQueue.main.async {
+                    navigateToNext = true
+                }
+            }
+        } else {
+            navigateToNext = true
+        }
     }
 
     private func iconLabel(systemName: String, title: String) -> some View {

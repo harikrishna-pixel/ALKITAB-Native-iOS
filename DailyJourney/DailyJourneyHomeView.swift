@@ -174,8 +174,8 @@ struct DailyJourneyHomeView: View {
     }
 
     private var streakSummaryCard: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
                 Button(action: { showStreak = true }) {
                     HStack(spacing: 6) {
                         Image(systemName: "flame.fill")
@@ -187,25 +187,35 @@ struct DailyJourneyHomeView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
 
+                Spacer(minLength: 8)
+
                 Button(action: { showCalendar = true }) {
                     Text("View Calendar >")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.7))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.85))
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-            Spacer()
-            Button(action: { showStreak = true }) {
-                VStack(spacing: 2) {
-                    Text("\(max(store.streakCount, 1))")
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(.white)
-                    Text("Days")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.7))
+
+            HStack(alignment: .bottom, spacing: 12) {
+                Text("Keep going! You’re building a beautiful habit.")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.white.opacity(0.75))
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button(action: { showStreak = true }) {
+                    VStack(spacing: 2) {
+                        Text("\(max(store.streakCount, 1))")
+                            .font(.system(size: 36, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("Days")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.white.opacity(0.7))
+                    }
                 }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
         }
         .padding(18)
         .background(

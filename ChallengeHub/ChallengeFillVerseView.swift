@@ -16,20 +16,35 @@ struct ChallengeFillVerseView: View {
     @State private var selectedBlank: Int?
     @State private var feedback: String?
     @State private var correct = false
+    @State private var lives = 3
+    @State private var usedFifty = false
+    @State private var usedHint = false
+    @State private var walletTick = 0
+    @State private var toast: String?
+    @State private var hiddenBank: Set<String> = []
 
     var body: some View {
-        VStack(spacing: 0) {
-            header("Fill the Verse")
+        ChallengeOldStyleShell(
+            onBack: onClose,
+            lives: lives,
+            questionNumber: 1,
+            questionTotal: 1,
+            caption: "Drag the correct words to fill the blanks.",
+            primaryTitle: correct ? "Done" : "Check Answer",
+            primaryEnabled: true,
+            onPrimary: check,
+            fiftyFiftyEnabled: !usedFifty && !correct,
+            hintEnabled: !usedHint && !correct,
+            skipEnabled: !correct,
+            onLifeline: handleLifeline,
+            walletTick: walletTick
+        ) {
+            VStack(alignment: .leading, spacing: 16) {
+                verseBoard
 
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 16) {
-                    verseBoard
-                        .padding(16)
-                        .background(Color(hex: "F7F8FC"))
-                        .cornerRadius(14)
-
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                        ForEach(Array(bank.enumerated()), id: \.offset) { _, word in
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    ForEach(Array(bank.enumerated()), id: \.offset) { _, word in
+                        if !hiddenBank.contains(word) {
                             let wrongChip = isWrongBankWord(word)
                             Button(action: { pick(word) }) {
                                 Text(word)
@@ -37,7 +52,7 @@ struct ChallengeFillVerseView: View {
                                     .foregroundColor(wrongChip ? Color(hex: "D70015") : Color(hex: "0B1B3A"))
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 12)
-                                    .background(wrongChip ? Color(hex: "FDECEC") : Color.white)
+                                    .background(wrongChip ? Color(hex: "FDECEC") : Color(hex: "F7F8FC"))
                                     .cornerRadius(12)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
@@ -48,40 +63,20 @@ struct ChallengeFillVerseView: View {
                             .disabled(correct)
                         }
                     }
-
-                    if let feedback = feedback {
-                        Text(feedback)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(correct ? Color(hex: "1B7A3D") : Color(hex: "D70015"))
-                    }
                 }
-                .padding(20)
-            }
 
-            Button(action: check) {
-                Text(correct ? "Done" : "Check Answer")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color(hex: "1C46B2"))
-                    .cornerRadius(27)
-            }
-            .padding(.horizontal, 20)
-
-            Button(action: hint) {
-                HStack(spacing: 6) {
-                    Image(systemName: "lightbulb.fill")
-                    Text("Need a hint?")
+                if let feedback = feedback {
+                    Text(feedback)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(correct ? Color(hex: "1B7A3D") : Color(hex: "D70015"))
                 }
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color(hex: "1C46B2"))
+                if let toast = toast {
+                    Text(toast)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(hex: "D70015"))
+                }
             }
-            .padding(.top, 10)
-            .padding(.bottom, 20)
-            .disabled(correct)
         }
-        .background(Color.white.ignoresSafeArea())
         .onAppear(perform: build)
     }
 
@@ -136,6 +131,10 @@ struct ChallengeFillVerseView: View {
         filled = [:]
         feedback = nil
         correct = false
+        hiddenBank = []
+        usedFifty = false
+        usedHint = false
+        toast = nil
     }
 
     private func pick(_ word: String) {
@@ -145,13 +144,13 @@ struct ChallengeFillVerseView: View {
         } else if let empty = blanks.first(where: { filled[$0] == nil }) {
             target = empty
         } else {
-            // All blanks filled (e.g. after a wrong check) — replace the first blank immediately.
             target = blanks.first
         }
         guard let target else { return }
         filled[target] = word
         selectedBlank = blanks.first(where: { filled[$0] == nil }) ?? target
         feedback = nil
+        toast = nil
     }
 
     private func check() {
@@ -171,31 +170,49 @@ struct ChallengeFillVerseView: View {
         correct = ok
         feedback = ok ? "Correct! Great job." : "Not quite — try again."
         if !ok {
+            lives = max(0, lives - 1)
             selectedBlank = blanks.first
-        }
-    }
-
-    private func hint() {
-        guard let idx = blanks.first(where: { filled[$0] == nil }) ?? blanks.first else { return }
-        filled[idx] = tokens[idx].trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        selectedBlank = blanks.first(where: { filled[$0] == nil })
-    }
-
-    private func header(_ title: String) -> some View {
-        HStack {
-            Button(action: onClose) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Color(hex: "0B1B3A"))
+            if lives == 0 {
+                feedback = "Out of lives. Try again tomorrow."
             }
-            Spacer()
-            Text(title)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundColor(Color(hex: "0B1B3A"))
-            Spacer()
-            Color.clear.frame(width: 18, height: 18)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+    }
+
+    private func handleLifeline(_ kind: ChallengeLifelineKind) {
+        switch kind {
+        case .fiftyFifty:
+            guard ChallengeWallet.spend(ChallengeWallet.fiftyFiftyCost) else {
+                toast = "Not enough coins for 50/50."
+                return
+            }
+            walletTick += 1
+            usedFifty = true
+            let correctWords = Set(blanks.map {
+                tokens[$0].trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+            })
+            let distractors = bank.filter { word in
+                !correctWords.contains(where: { $0.caseInsensitiveCompare(word) == .orderedSame })
+            }
+            hiddenBank = Set(distractors.prefix(max(distractors.count / 2, 1)))
+            toast = nil
+        case .hint:
+            guard ChallengeWallet.spend(ChallengeWallet.hintCost) else {
+                toast = "Not enough coins for Hint."
+                return
+            }
+            walletTick += 1
+            usedHint = true
+            guard let idx = blanks.first(where: { filled[$0] == nil }) ?? blanks.first else { return }
+            filled[idx] = tokens[idx].trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+            selectedBlank = blanks.first(where: { filled[$0] == nil })
+            toast = nil
+        case .skip:
+            guard ChallengeWallet.spend(ChallengeWallet.skipCost) else {
+                toast = "Not enough coins for Skip."
+                return
+            }
+            walletTick += 1
+            onClose()
+        }
     }
 }

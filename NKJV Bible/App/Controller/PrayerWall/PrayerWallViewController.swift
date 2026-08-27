@@ -23,6 +23,7 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
     private let backImageView = UIImageView()
     private let backButton = UIButton(type: .system)
     private let addButton = UIButton(type: .system)
+    private let blockedListButton = UIButton(type: .system)
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let refreshControl = UIRefreshControl()
     private let emptyStateLabel = UILabel()
@@ -50,6 +51,7 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
             App_Protocol.delegateReader?.hideBottomMenu(Status: true)
         }
         navigationController?.setNavigationBarHidden(true, animated: animated)
+        loadPrayers(showLoader: false)
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -87,6 +89,13 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
         addButton.tintColor = .white
         addButton.addTarget(self, action: #selector(addTapped), for: .touchUpInside)
         view.addSubview(addButton)
+
+        blockedListButton.translatesAutoresizingMaskIntoConstraints = false
+        blockedListButton.setImage(UIImage(systemName: "hand.raised.fill"), for: .normal)
+        blockedListButton.tintColor = .white
+        blockedListButton.accessibilityLabel = "Blocked Users"
+        blockedListButton.addTarget(self, action: #selector(blockedListTapped), for: .touchUpInside)
+        view.addSubview(blockedListButton)
 
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.backgroundColor = .clear
@@ -138,6 +147,11 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
             addButton.widthAnchor.constraint(equalToConstant: 34),
             addButton.heightAnchor.constraint(equalToConstant: 34),
 
+            blockedListButton.trailingAnchor.constraint(equalTo: addButton.leadingAnchor, constant: -8),
+            blockedListButton.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+            blockedListButton.widthAnchor.constraint(equalToConstant: 34),
+            blockedListButton.heightAnchor.constraint(equalToConstant: 34),
+
             tableView.topAnchor.constraint(equalTo: bannerView.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -162,6 +176,11 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
 
     @objc private func backTapped() {
         navigationController?.popViewController(animated: true)
+    }
+
+    @objc private func blockedListTapped() {
+        let vc = PrayerBlockedUsersViewController()
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc private func addTapped() {
@@ -202,7 +221,9 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
 
             switch result {
             case .success(let items):
-                self.prayers = items.filter { !$0.id.isEmpty }
+                self.prayers = items.filter { item in
+                    !item.id.isEmpty && !PrayerWallService.shared.isUserBlocked(item.blockTargetId)
+                }
                 self.emptyStateLabel.isHidden = !self.prayers.isEmpty
                 self.tableView.reloadData()
                 self.loadCounts(for: self.prayers)

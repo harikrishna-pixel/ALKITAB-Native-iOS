@@ -17,6 +17,9 @@ final class PrayerWallService {
 
     private let likedPrayerIDsKey = "PrayerWallLikedPrayerIDs"
     private let likeDocumentIDsKey = "PrayerWallLikeDocumentIDs"
+    private let blockedUserIDsKey = "PrayerWallBlockedUserIDs"
+    private let blockedUserNamesKey = "PrayerWallBlockedUserNames"
+    private let blockerUserIDKey = "PrayerWallBlockerUserID"
 
     init(session: URLSession = .shared) {
         self.session = session
@@ -26,6 +29,128 @@ final class PrayerWallService {
 
     private var deviceUserID: String {
         return Udid
+    }
+
+    /// Mongo / prayer `_id` used as `user_id` when calling blocked-users APIs.
+    func currentBlockerUserId() -> String? {
+        if let stored = UserDefaults.standard.string(forKey: blockerUserIDKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !stored.isEmpty {
+            return stored
+        }
+        if let loggedIn = UserDefaults.standard.string(forKey: "OnboardingUserId")?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !loggedIn.isEmpty {
+            return loggedIn
+        }
+        return nil
+    }
+
+    func rememberBlockerUserId(from prayer: PrayerWallItem) {
+        let candidate = prayer.userId?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let value = candidate.isEmpty ? prayer.id : candidate
+        guard !value.isEmpty else { return }
+        if UserDefaults.standard.string(forKey: blockerUserIDKey) == nil {
+            UserDefaults.standard.set(value, forKey: blockerUserIDKey)
+        }
+    }
+
+    func isUserBlocked(_ blockedUserId: String) -> Bool {
+        guard !blockedUserId.isEmpty else { return false }
+        return blockedUserIds().contains(blockedUserId)
+    }
+
+    /// Local list of blocked ids (for Blocked Users screen).
+    func allBlockedUserIds() -> [String] {
+        return Array(blockedUserIds()).sorted()
+    }
+
+    func blockedUserDisplayName(for blockedUserId: String) -> String {
+        let map = UserDefaults.standard.dictionary(forKey: blockedUserNamesKey) as? [String: String] ?? [:]
+        if let name = map[blockedUserId]?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+            return name
+        }
+        return "Blocked user"
+    }
+
+    func rememberBlockedUserDisplayName(_ name: String, for blockedUserId: String) {
+        guard !blockedUserId.isEmpty else { return }
+        var map = UserDefaults.standard.dictionary(forKey: blockedUserNamesKey) as? [String: String] ?? [:]
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        map[blockedUserId] = trimmed.isEmpty ? "Anonymous" : trimmed
+        UserDefaults.standard.set(map, forKey: blockedUserNamesKey)
+    }
+
+    func blockUser(
+        blockedUserId: String,
+        completion: @escaping (Result<Void, PrayerWallError>) -> Void
+    ) {
+        guard let userId = currentBlockerUserId(), !userId.isEmpty else {
+            completion(.failure(.apiError("Login or share a prayer first, then try Block again.")))
+            return
+        }
+        guard !blockedUserId.isEmpty else {
+            completion(.failure(.apiError("Missing user to block.")))
+            return
+        }
+        let body: [String: Any] = [
+            "user_id": userId,
+            "blocked_user_id": blockedUserId
+        ]
+        request(method: "POST", path: "/api/blocked-users", body: body) { [weak self] result in
+            switch result {
+            case .success:
+                self?.storeBlockedUserId(blockedUserId)
+                completion(.success(()))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+
+    func unblockUser(
+        blockedUserId: String,
+        completion: @escaping (Result<Void, PrayerWallError>) -> Void
+    ) {
+        guard let userId = currentBlockerUserId(), !userId.isEmpty else {
+            completion(.failure(.apiError("Login and try again to unblock.")))
+            return
+        }
+        guard !blockedUserId.isEmpty else {
+            completion(.failure(.apiError("Missing user to unblock.")))
+            return
+        }
+        let body: [String: Any] = [
+            "user_id": userId,
+            "blocked_user_id": blockedUserId
+        ]
+        request(method: "DELETE", path: "/api/blocked-users", body: body) { [weak self] result in
+            switch result {
+            case .success:
+                self?.removeBlockedUserId(blockedUserId)
+                completion(.success(()))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+
+    private func blockedUserIds() -> Set<String> {
+        let values = UserDefaults.standard.stringArray(forKey: blockedUserIDsKey) ?? []
+        return Set(values)
+    }
+
+    private func storeBlockedUserId(_ blockedUserId: String) {
+        var values = blockedUserIds()
+        values.insert(blockedUserId)
+        UserDefaults.standard.set(Array(values), forKey: blockedUserIDsKey)
+    }
+
+    private func removeBlockedUserId(_ blockedUserId: String) {
+        var values = blockedUserIds()
+        values.remove(blockedUserId)
+        UserDefaults.standard.set(Array(values), forKey: blockedUserIDsKey)
+        var map = UserDefaults.standard.dictionary(forKey: blockedUserNamesKey) as? [String: String] ?? [:]
+        map.removeValue(forKey: blockedUserId)
+        UserDefaults.standard.set(map, forKey: blockedUserNamesKey)
     }
 
     func fetchPrayers(completion: @escaping (Result<[PrayerWallItem], PrayerWallError>) -> Void) {
@@ -67,6 +192,7 @@ final class PrayerWallService {
             switch result {
             case .success(let data):
                 if let prayer = try? self.decoder.decode(PrayerWallItem.self, from: data) {
+                    self.rememberBlockerUserId(from: prayer)
                     completion(.success(prayer))
                     return
                 }

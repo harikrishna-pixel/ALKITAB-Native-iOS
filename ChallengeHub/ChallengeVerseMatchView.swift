@@ -18,80 +18,84 @@ struct ChallengeVerseMatchView: View {
     @State private var dragPoint: CGPoint?
     @State private var feedback: String?
     @State private var solved = false
+    @State private var lives = 3
+    @State private var usedHint = false
+    @State private var walletTick = 0
+    @State private var toast: String?
 
     private let colors: [Color] = [Color(hex: "1C46B2"), Color(hex: "34C759"), Color(hex: "F5A623")]
 
     var body: some View {
-        VStack(spacing: 0) {
-            header("Verse Match")
+        ChallengeOldStyleShell(
+            onBack: onClose,
+            lives: lives,
+            questionNumber: 1,
+            questionTotal: 1,
+            caption: "Match the verses / people / events.",
+            primaryTitle: solved ? "Done" : "Check Answer",
+            primaryEnabled: true,
+            onPrimary: check,
+            fiftyFiftyEnabled: false,
+            hintEnabled: !usedHint && !solved,
+            skipEnabled: !solved,
+            onLifeline: handleLifeline,
+            walletTick: walletTick
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Match the verse with the correct reference.")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color.black.opacity(0.5))
 
-            Text("Match the verse with the correct reference.")
-                .font(.system(size: 14))
-                .foregroundColor(Color.black.opacity(0.5))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.top, 6)
-
-            GeometryReader { geo in
-                ZStack {
-                    HStack(alignment: .top, spacing: 18) {
-                        VStack(spacing: 12) {
-                            ForEach(leftOrder, id: \.self) { id in
-                                if let pair = pairs.first(where: { $0.id == id }) {
-                                    leftCard(pair)
+                GeometryReader { geo in
+                    ZStack {
+                        HStack(alignment: .top, spacing: 18) {
+                            VStack(spacing: 12) {
+                                ForEach(leftOrder, id: \.self) { id in
+                                    if let pair = pairs.first(where: { $0.id == id }) {
+                                        leftCard(pair)
+                                    }
                                 }
                             }
-                        }
-                        .frame(maxWidth: .infinity)
+                            .frame(maxWidth: .infinity)
 
-                        VStack(spacing: 12) {
-                            ForEach(rightOrder, id: \.self) { id in
-                                if let pair = pairs.first(where: { $0.id == id }) {
-                                    rightCard(pair)
+                            VStack(spacing: 12) {
+                                ForEach(rightOrder, id: \.self) { id in
+                                    if let pair = pairs.first(where: { $0.id == id }) {
+                                        rightCard(pair)
+                                    }
                                 }
                             }
+                            .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
+
+                        MatchLinesOverlay(
+                            matches: matches,
+                            anchors: anchors,
+                            dragStartLeft: dragStartLeft,
+                            dragPoint: dragPoint,
+                            pairs: pairs,
+                            colors: colors
+                        )
+                        .allowsHitTesting(false)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-
-                    MatchLinesOverlay(
-                        matches: matches,
-                        anchors: anchors,
-                        dragStartLeft: dragStartLeft,
-                        dragPoint: dragPoint,
-                        pairs: pairs,
-                        colors: colors
-                    )
-                    .allowsHitTesting(false)
+                    .coordinateSpace(name: "matchBoard")
+                    .onPreferenceChange(MatchAnchorKey.self) { anchors = $0 }
+                    .frame(width: geo.size.width, height: max(geo.size.height, 280), alignment: .top)
                 }
-                .coordinateSpace(name: "matchBoard")
-                .onPreferenceChange(MatchAnchorKey.self) { anchors = $0 }
-                .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
-            }
+                .frame(minHeight: 280)
 
-            if let feedback = feedback {
-                Text(feedback)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(solved ? Color(hex: "1B7A3D") : Color(hex: "D70015"))
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 8)
+                if let feedback = feedback {
+                    Text(feedback)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(solved ? Color(hex: "1B7A3D") : Color(hex: "D70015"))
+                }
+                if let toast = toast {
+                    Text(toast)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(hex: "D70015"))
+                }
             }
-
-            Button(action: check) {
-                Text(solved ? "Done" : "Check")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color(hex: "1C46B2"))
-                    .cornerRadius(27)
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
         }
-        .background(Color.white.ignoresSafeArea())
         .onAppear {
             pairs = ChallengeGameFactory.matchPairs(from: verse)
             leftOrder = pairs.map { $0.id }.shuffled()
@@ -262,24 +266,36 @@ struct ChallengeVerseMatchView: View {
         let ok = matches.allSatisfy { $0.key == $0.value }
         solved = ok
         feedback = ok ? "Perfect match!" : "Some matches are incorrect — try again."
+        if !ok {
+            lives = max(0, lives - 1)
+        }
     }
 
-    private func header(_ title: String) -> some View {
-        HStack {
-            Button(action: onClose) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Color(hex: "0B1B3A"))
+    private func handleLifeline(_ kind: ChallengeLifelineKind) {
+        switch kind {
+        case .fiftyFifty:
+            toast = "50/50 is not available for Verse Match."
+        case .hint:
+            guard ChallengeWallet.spend(ChallengeWallet.hintCost) else {
+                toast = "Not enough coins for Hint."
+                return
             }
-            Spacer()
-            Text(title)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundColor(Color(hex: "0B1B3A"))
-            Spacer()
-            Color.clear.frame(width: 18, height: 18)
+            walletTick += 1
+            usedHint = true
+            if let pair = pairs.first(where: { matches[$0.id] != $0.id }) {
+                var next = matches.filter { $0.key != pair.id && $0.value != pair.id }
+                next[pair.id] = pair.id
+                matches = next
+            }
+            toast = nil
+        case .skip:
+            guard ChallengeWallet.spend(ChallengeWallet.skipCost) else {
+                toast = "Not enough coins for Skip."
+                return
+            }
+            walletTick += 1
+            onClose()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
     }
 }
 

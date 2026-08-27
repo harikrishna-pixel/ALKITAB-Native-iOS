@@ -39,7 +39,7 @@ final class OpenChatViewController: UIViewController, UITableViewDataSource, UIT
     private let composerContainer = UIView()
     private let inputTextView = UITextView()
     private let placeholderLabel = UILabel()
-    private let sendButton = UIButton(type: .system)
+    private let sendButton = UIButton(type: .custom)
     private let typingLabel = UILabel()
 
     private var bannerHeightConstraint: NSLayoutConstraint?
@@ -170,8 +170,14 @@ final class OpenChatViewController: UIViewController, UITableViewDataSource, UIT
         inputTextView.addSubview(placeholderLabel)
 
         sendButton.translatesAutoresizingMaskIntoConstraints = false
-        sendButton.setImage(UIImage(systemName: "arrow.up.circle.fill"), for: .normal)
+        let sendConfig = UIImage.SymbolConfiguration(pointSize: 36, weight: .semibold)
+        sendButton.setImage(UIImage(systemName: "arrow.up.circle.fill", withConfiguration: sendConfig), for: .normal)
         sendButton.tintColor = isNight ? .white : themeColor
+        sendButton.adjustsImageWhenHighlighted = true
+        sendButton.contentHorizontalAlignment = .fill
+        sendButton.contentVerticalAlignment = .fill
+        sendButton.imageView?.contentMode = .scaleAspectFit
+        sendButton.imageView?.clipsToBounds = false
         sendButton.addTarget(self, action: #selector(sendTapped), for: .touchUpInside)
         composerContainer.addSubview(sendButton)
 
@@ -248,9 +254,9 @@ final class OpenChatViewController: UIViewController, UITableViewDataSource, UIT
             placeholderLabel.leadingAnchor.constraint(equalTo: inputTextView.leadingAnchor, constant: 16),
 
             sendButton.trailingAnchor.constraint(equalTo: composerContainer.trailingAnchor, constant: -12),
-            sendButton.bottomAnchor.constraint(equalTo: inputTextView.bottomAnchor),
-            sendButton.widthAnchor.constraint(equalToConstant: 36),
-            sendButton.heightAnchor.constraint(equalToConstant: 36),
+            sendButton.centerYAnchor.constraint(equalTo: inputTextView.centerYAnchor),
+            sendButton.widthAnchor.constraint(equalTo: inputTextView.heightAnchor),
+            sendButton.heightAnchor.constraint(equalTo: inputTextView.heightAnchor),
 
             tableView.topAnchor.constraint(equalTo: modelBar.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),

@@ -12,73 +12,60 @@ struct ChallengeTrueFalseView: View {
     @State private var questions: [TrueFalseQuestion] = []
     @State private var index = 0
     @State private var selected: Bool?
+    @State private var revealed = false
     @State private var score = 0
     @State private var finished = false
+    @State private var lives = 3
+    @State private var usedHint = false
+    @State private var walletTick = 0
+    @State private var toast: String?
 
     var body: some View {
-        VStack(spacing: 0) {
-            header("True or False")
-
+        Group {
             if finished {
-                VStack(spacing: 16) {
-                    Spacer()
-                    Text("Great job! 🎉")
-                        .font(.system(size: 24, weight: .bold))
-                    Text("You scored \(score) / \(questions.count)")
-                        .foregroundColor(Color.black.opacity(0.55))
-                    Button(action: onClose) {
-                        Text("Done")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 54)
-                            .background(Color(hex: "1C46B2"))
-                            .cornerRadius(27)
-                    }
-                    .padding(.horizontal, 20)
-                    Spacer()
-                }
+                ChallengeOldStyleResult(
+                    scoreText: "You scored \(score) / \(questions.count)",
+                    onDone: onClose
+                )
             } else if questions.indices.contains(index) {
                 let q = questions[index]
-                Text("Question \(index + 1) of \(questions.count)")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color.black.opacity(0.45))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
+                ChallengeOldStyleShell(
+                    onBack: onClose,
+                    lives: lives,
+                    questionNumber: index + 1,
+                    questionTotal: questions.count,
+                    caption: "Choose True or False.",
+                    primaryTitle: revealed
+                        ? (index + 1 >= questions.count ? "Finish" : "Next")
+                        : "Check Answer",
+                    primaryEnabled: selected != nil,
+                    onPrimary: { primaryAction(for: q) },
+                    fiftyFiftyEnabled: false,
+                    hintEnabled: !usedHint && !revealed,
+                    skipEnabled: !revealed,
+                    onLifeline: { handleLifeline($0, question: q) },
+                    walletTick: walletTick
+                ) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text(q.statement)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(Color(hex: "0B1B3A"))
+                            .fixedSize(horizontal: false, vertical: true)
 
-                Spacer()
+                        tfButton(title: "True", value: true, correct: q.isTrue)
+                        tfButton(title: "False", value: false, correct: !q.isTrue)
 
-                Text(q.statement)
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(Color(hex: "0B1B3A"))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 10)
-
-                VStack(spacing: 12) {
-                    tfButton(title: "True", value: true, correct: q.isTrue)
-                    tfButton(title: "False", value: false, correct: !q.isTrue)
+                        if let toast = toast {
+                            Text(toast)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(Color(hex: "D70015"))
+                        }
+                    }
                 }
-                .padding(20)
-
-                Spacer()
-
-                Button(action: next) {
-                    Text(index + 1 >= questions.count ? "Finish" : "Next")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(selected == nil ? Color.gray.opacity(0.4) : Color(hex: "1C46B2"))
-                        .cornerRadius(27)
-                }
-                .disabled(selected == nil)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 24)
+            } else {
+                Color(hex: "F2F3F7").ignoresSafeArea()
             }
         }
-        .background(Color.white.ignoresSafeArea())
         .onAppear {
             questions = ChallengeGameFactory.trueFalse(from: verse)
         }
@@ -86,59 +73,84 @@ struct ChallengeTrueFalseView: View {
 
     private func tfButton(title: String, value: Bool, correct: Bool) -> some View {
         let isSelected = selected == value
-        let showCorrect = selected != nil && correct
-        let showWrong = selected != nil && isSelected && !correct
-        return Button(action: { if selected == nil { selected = value } }) {
-            HStack {
+        let showCorrect = revealed && correct
+        let showWrong = revealed && isSelected && !correct
+        return Button(action: {
+            guard !revealed else { return }
+            selected = value
+            toast = nil
+        }) {
+            HStack(spacing: 12) {
+                Image(systemName: showCorrect ? "checkmark.circle.fill" : (showWrong ? "xmark.circle.fill" : (isSelected ? "largecircle.fill.circle" : "circle")))
+                    .foregroundColor(showCorrect ? Color(hex: "34C759") : (showWrong ? Color(hex: "D70015") : (isSelected ? Color(hex: "1C46B2") : Color.black.opacity(0.25))))
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(Color(hex: "0B1B3A"))
                 Spacer()
-                if showCorrect {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(Color(hex: "34C759"))
-                }
             }
-            .padding(18)
-            .background(showCorrect ? Color(hex: "E8F8EE") : (showWrong ? Color(hex: "FDECEC") : Color.white))
+            .padding(16)
+            .background(showCorrect ? Color(hex: "E8F8EE") : (showWrong ? Color(hex: "FDECEC") : Color(hex: "F7F8FC")))
             .cornerRadius(14)
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(showCorrect ? Color(hex: "34C759") : (showWrong ? Color(hex: "D70015") : Color.black.opacity(0.1)), lineWidth: 1.5)
+                    .stroke(showCorrect ? Color(hex: "34C759") : (showWrong ? Color(hex: "D70015") : (isSelected ? Color(hex: "1C46B2") : Color.black.opacity(0.08))), lineWidth: 1.5)
             )
         }
         .buttonStyle(PlainButtonStyle())
-        .disabled(selected != nil)
+        .disabled(revealed)
     }
 
-    private func next() {
-        guard let selected = selected else { return }
-        if selected == questions[index].isTrue {
-            score += 1
+    private func primaryAction(for q: TrueFalseQuestion) {
+        if revealed {
+            advance()
+            return
         }
-        if index + 1 >= questions.count {
+        guard let selected = selected else { return }
+        revealed = true
+        if selected == q.isTrue {
+            score += 1
+        } else {
+            lives = max(0, lives - 1)
+            if lives == 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    finished = true
+                }
+            }
+        }
+    }
+
+    private func advance() {
+        if index + 1 >= questions.count || lives == 0 {
             finished = true
         } else {
             index += 1
-            self.selected = nil
+            selected = nil
+            revealed = false
+            usedHint = false
+            toast = nil
         }
     }
 
-    private func header(_ title: String) -> some View {
-        HStack {
-            Button(action: onClose) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Color(hex: "0B1B3A"))
+    private func handleLifeline(_ kind: ChallengeLifelineKind, question q: TrueFalseQuestion) {
+        switch kind {
+        case .fiftyFifty:
+            toast = "50/50 is not available for True or False."
+        case .hint:
+            guard ChallengeWallet.spend(ChallengeWallet.hintCost) else {
+                toast = "Not enough coins for Hint."
+                return
             }
-            Spacer()
-            Text(title)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundColor(Color(hex: "0B1B3A"))
-            Spacer()
-            Color.clear.frame(width: 18, height: 18)
+            walletTick += 1
+            usedHint = true
+            selected = q.isTrue
+            toast = nil
+        case .skip:
+            guard ChallengeWallet.spend(ChallengeWallet.skipCost) else {
+                toast = "Not enough coins for Skip."
+                return
+            }
+            walletTick += 1
+            advance()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
     }
 }

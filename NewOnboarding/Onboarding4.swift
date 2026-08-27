@@ -50,13 +50,6 @@ struct Onboarding4: View {
                                 title: "Chapter at a Glance",
                                 subtitle: "See the key points and the big picture quickly"
                             )
-
-                            HStack(spacing: 10) {
-                                badge("1 free explanation daily")
-                                badge("1 free chapter insight daily")
-                            }
-                            .padding(.horizontal, 24)
-                            .padding(.top, 4)
                             .padding(.bottom, 12)
                         }
                     }
@@ -101,23 +94,6 @@ struct Onboarding4: View {
                 .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
         )
         .padding(.horizontal, 24)
-    }
-
-    private func badge(_ text: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: "lightbulb.fill")
-                .font(.system(size: 11))
-                .foregroundColor(Color.orange)
-            Text(text)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(Color(hex: "8B6B3D"))
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(
-            Capsule()
-                .fill(Color(hex: "F5E6D3"))
-        )
     }
 }
 

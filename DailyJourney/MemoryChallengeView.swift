@@ -136,36 +136,22 @@ struct MemoryChallengeView: View {
     }
 
     private var verseBoard: some View {
-        let columns = [GridItem(.adaptive(minimum: 70), spacing: 8, alignment: .leading)]
-        return LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
-            ForEach(Array(displayTokens.enumerated()), id: \.offset) { index, token in
-                if blankIndices.contains(index) {
-                    Button(action: {
-                        if !isReviewMode {
-                            // Tap a filled blank again to erase just that word
-                            if selectedBlank == index, filled[index] != nil {
-                                filled[index] = nil
-                                feedback = nil
-                                isCorrect = false
-                            } else {
-                                selectedBlank = index
-                            }
-                        }
-                    }) {
-                        Text(filled[index] ?? "______")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(filled[index] == nil ? Color.black.opacity(0.35) : Color(hex: "1C46B2"))
-                            .underline(color: selectedBlank == index ? Color(hex: "1C46B2") : Color.black.opacity(0.2))
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(isReviewMode)
+        MemoryVerseFlowView(
+            tokens: displayTokens,
+            blankIndices: blankIndices,
+            filled: filled,
+            selectedBlank: selectedBlank,
+            isReviewMode: isReviewMode,
+            onTapBlank: { index in
+                if selectedBlank == index, filled[index] != nil {
+                    filled[index] = nil
+                    feedback = nil
+                    isCorrect = false
                 } else {
-                    Text(token)
-                        .font(.system(size: 15))
-                        .foregroundColor(.black)
+                    selectedBlank = index
                 }
             }
-        }
+        )
     }
 
     private func buildChallenge() {
@@ -202,8 +188,8 @@ struct MemoryChallengeView: View {
         correctWords = blankIndices.map { displayTokens[$0] }
 
         var bank = correctWords.map { stripPunctuation($0) }
-        // Word bank count matches blank count (no extra distractors).
-        wordBank = Array(Set(bank)).shuffled()
+        // Keep one chip per blank (do not collapse duplicates with Set).
+        wordBank = bank.shuffled()
 
         selectedBlank = blankIndices.first
         filled = [:]
@@ -271,5 +257,99 @@ struct MemoryChallengeView: View {
 
     private func stripPunctuation(_ value: String) -> String {
         value.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+    }
+}
+
+/// Lays verse words out like normal reading text (wraps naturally).
+private struct MemoryVerseFlowView: View {
+    let tokens: [String]
+    let blankIndices: [Int]
+    let filled: [Int: String]
+    let selectedBlank: Int?
+    let isReviewMode: Bool
+    let onTapBlank: (Int) -> Void
+
+    var body: some View {
+        if #available(iOS 16.0, *) {
+            MemoryFlowLayout(spacing: 5, lineSpacing: 8) {
+                wordViews
+            }
+        } else {
+            // Older iOS: still prefer smaller adaptive chips over a wide 4-column grid.
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 36), spacing: 5, alignment: .leading)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                wordViews
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var wordViews: some View {
+        ForEach(Array(tokens.enumerated()), id: \.offset) { index, token in
+            if blankIndices.contains(index) {
+                Button(action: {
+                    if !isReviewMode { onTapBlank(index) }
+                }) {
+                    Text(filled[index] ?? "______")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(filled[index] == nil ? Color.black.opacity(0.35) : Color(hex: "1C46B2"))
+                        .underline(color: selectedBlank == index ? Color(hex: "1C46B2") : Color.black.opacity(0.2))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(isReviewMode)
+            } else {
+                Text(token + " ")
+                    .font(.system(size: 16))
+                    .foregroundColor(.black)
+            }
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+private struct MemoryFlowLayout: Layout {
+    var spacing: CGFloat
+    var lineSpacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var maxX: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth, x > 0 {
+                x = 0
+                y += rowHeight + lineSpacing
+                rowHeight = 0
+            }
+            maxX = max(maxX, x + size.width)
+            rowHeight = max(rowHeight, size.height)
+            x += size.width + spacing
+        }
+        return CGSize(width: maxWidth.isFinite ? maxWidth : maxX, height: y + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > bounds.maxX, x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + lineSpacing
+                rowHeight = 0
+            }
+            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            rowHeight = max(rowHeight, size.height)
+            x += size.width + spacing
+        }
     }
 }

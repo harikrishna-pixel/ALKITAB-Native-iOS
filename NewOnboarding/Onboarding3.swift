@@ -6,7 +6,12 @@
 import SwiftUI
 
 struct Onboarding3: View {
-    @State private var selectedOption: Int? = nil
+    @State private var filled: [Int: String] = [:]
+    @State private var selectedBlank: Int?
+    @State private var feedback: String?
+
+    private let tokens = OnboardingBibleVerse.tokens
+    private let blankIndices = OnboardingBibleVerse.blankIndices
     private let options = OnboardingBibleVerse.options
 
     var body: some View {
@@ -44,26 +49,24 @@ struct Onboarding3: View {
                             }
 
                             VStack(alignment: .leading, spacing: 14) {
-                                fillInBlankText()
-                                    .font(.system(size: 16, weight: .medium))
-                                    .multilineTextAlignment(.leading)
-                                    .fixedSize(horizontal: false, vertical: true)
+                                OnboardingVerseFlowView(
+                                    tokens: tokens,
+                                    blankIndices: blankIndices,
+                                    filled: filled,
+                                    selectedBlank: selectedBlank,
+                                    onSelectBlank: { index in
+                                        selectedBlank = index
+                                        feedback = nil
+                                    }
+                                )
 
                                 Text(OnboardingBibleVerse.reference)
                                     .font(.system(size: 13, weight: .medium))
                                     .foregroundColor(OnboardingTheme.textSecondary)
 
-                                VStack(spacing: 10) {
-                                    if options.indices.contains(0) {
-                                        optionChip(index: 0)
-                                    }
-                                    HStack(spacing: 10) {
-                                        if options.indices.contains(1) {
-                                            optionChip(index: 1)
-                                        }
-                                        if options.indices.contains(2) {
-                                            optionChip(index: 2)
-                                        }
+                                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                                    ForEach(Array(options.enumerated()), id: \.offset) { _, word in
+                                        optionChip(word)
                                     }
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -77,11 +80,13 @@ struct Onboarding3: View {
                             )
                             .padding(.horizontal, 24)
 
-                            if let selectedOption {
-                                feedbackBanner(for: selectedOption)
+                            if let feedback = feedback {
+                                Text(feedback)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(OnboardingTheme.primaryBlue)
+                                    .multilineTextAlignment(.center)
                                     .padding(.horizontal, 24)
                                     .padding(.bottom, 12)
-                                    .transition(.opacity.combined(with: .move(edge: .top)))
                             }
                         }
                     }
@@ -96,93 +101,144 @@ struct Onboarding3: View {
             }
         }
         .navigationBarHidden(true)
-        .animation(.easeInOut(duration: 0.2), value: selectedOption)
-    }
-
-    private func fillInBlankText() -> Text {
-        let prompt = OnboardingBibleVerse.blankPrompt
-        let parts = prompt.components(separatedBy: "________")
-        let prefix = parts.first ?? prompt
-        let suffix = parts.count > 1 ? parts[1] : ""
-        if let selectedOption, options.indices.contains(selectedOption) {
-            let isCorrect = selectedOption == OnboardingBibleVerse.correctOptionIndex
-            return Text(prefix)
-                .foregroundColor(.black)
-            + Text(options[selectedOption])
-                .fontWeight(.semibold)
-                .foregroundColor(isCorrect ? OnboardingTheme.primaryBlue : Color(hex: "C0392B"))
-            + Text(suffix)
-                .foregroundColor(.black)
-        }
-        return Text(prompt)
-            .foregroundColor(.black)
-    }
-
-    private func feedbackBanner(for selectedIndex: Int) -> some View {
-        let isCorrect = selectedIndex == OnboardingBibleVerse.correctOptionIndex
-        let message = isCorrect
-            ? "Great! 🥳 Keep going and remember His Word today."
-            : "Not quite. The correct word is \"\(options[OnboardingBibleVerse.correctOptionIndex])\"."
-        let accent = isCorrect ? OnboardingTheme.primaryBlue : Color(hex: "C0392B")
-
-        return HStack(spacing: 8) {
-            Text(message)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(accent)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(accent.opacity(0.08))
-        )
-    }
-
-    private func optionChip(index: Int) -> some View {
-        let isSelected = selectedOption == index
-        let isCorrect = index == OnboardingBibleVerse.correctOptionIndex
-        let fillColor: Color
-        let textColor: Color
-        let borderOpacity: Double
-
-        if isSelected {
-            if isCorrect {
-                fillColor = OnboardingTheme.primaryBlue
-                textColor = .white
-                borderOpacity = 0
-            } else {
-                fillColor = Color(hex: "C0392B")
-                textColor = .white
-                borderOpacity = 0
+        .onAppear {
+            if selectedBlank == nil {
+                selectedBlank = blankIndices.first
             }
-        } else {
-            fillColor = Color.white
-            textColor = OnboardingTheme.primaryBlue
-            borderOpacity = 0.35
         }
+    }
 
-        return Button(action: { selectedOption = index }) {
-            HStack(spacing: 6) {
-                Text(options[index])
-                    .font(.system(size: 16, weight: .semibold))
-                if isSelected {
-                    Image(systemName: isCorrect ? "checkmark" : "xmark")
-                        .font(.system(size: 14, weight: .bold))
+    private func optionChip(_ word: String) -> some View {
+        let used = filled.values.contains(where: { $0.caseInsensitiveCompare(word) == .orderedSame })
+        return Button(action: { pick(word) }) {
+            Text(word)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(used ? Color.white.opacity(0.7) : OnboardingTheme.primaryBlue)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(
+                    Capsule()
+                        .fill(used ? OnboardingTheme.primaryBlue.opacity(0.45) : Color.white)
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(OnboardingTheme.primaryBlue.opacity(used ? 0 : 0.35), lineWidth: 1.5)
+                )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(used)
+    }
+
+    private func pick(_ word: String) {
+        let target = selectedBlank ?? blankIndices.first(where: { filled[$0] == nil })
+        guard let target else { return }
+        filled[target] = word
+        selectedBlank = blankIndices.first(where: { filled[$0] == nil })
+        if blankIndices.allSatisfy({ filled[$0] != nil }) {
+            let ok = blankIndices.allSatisfy { idx in
+                let a = (filled[idx] ?? "").trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+                let b = tokens[idx].trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+                return a.caseInsensitiveCompare(b) == .orderedSame
+            }
+            feedback = ok
+                ? "Great! 🥳 Keep going and remember His Word today."
+                : "Not quite — try different words, or continue."
+        } else {
+            feedback = nil
+        }
+    }
+}
+
+/// Flows words like a real verse (not a rigid grid).
+private struct OnboardingVerseFlowView: View {
+    let tokens: [String]
+    let blankIndices: [Int]
+    let filled: [Int: String]
+    let selectedBlank: Int?
+    let onSelectBlank: (Int) -> Void
+
+    var body: some View {
+        OnboardingWrappingLayout(spacing: 6, lineSpacing: 8) {
+            ForEach(Array(tokens.enumerated()), id: \.offset) { index, token in
+                if blankIndices.contains(index) {
+                    Button(action: { onSelectBlank(index) }) {
+                        Text(filled[index] ?? "______")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(filled[index] == nil ? Color.black.opacity(0.35) : OnboardingTheme.primaryBlue)
+                            .underline(color: selectedBlank == index ? OnboardingTheme.primaryBlue : Color.black.opacity(0.2))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                } else {
+                    Text(token)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.black)
                 }
             }
-            .foregroundColor(textColor)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(
-                Capsule()
-                    .fill(fillColor)
-            )
-            .overlay(
-                Capsule()
-                    .stroke(OnboardingTheme.primaryBlue.opacity(borderOpacity), lineWidth: 1.5)
-            )
+        }
+    }
+}
+
+/// Simple left-to-right wrapping layout for verse words.
+private struct OnboardingWrappingLayout<Content: View>: View {
+    var spacing: CGFloat = 6
+    var lineSpacing: CGFloat = 8
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        if #available(iOS 16.0, *) {
+            OnboardingFlowLayout(spacing: spacing, lineSpacing: lineSpacing) {
+                content()
+            }
+        } else {
+            // Fallback: still readable as wrapped text-ish HStacks via LazyVGrid of flexible items
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 28), spacing: spacing, alignment: .leading)], alignment: .leading, spacing: lineSpacing) {
+                content()
+            }
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+private struct OnboardingFlowLayout: Layout {
+    var spacing: CGFloat
+    var lineSpacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var maxX: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth, x > 0 {
+                x = 0
+                y += rowHeight + lineSpacing
+                rowHeight = 0
+            }
+            maxX = max(maxX, x + size.width)
+            rowHeight = max(rowHeight, size.height)
+            x += size.width + spacing
+        }
+        return CGSize(width: maxWidth.isFinite ? maxWidth : maxX, height: y + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > bounds.maxX, x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + lineSpacing
+                rowHeight = 0
+            }
+            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            rowHeight = max(rowHeight, size.height)
+            x += size.width + spacing
         }
     }
 }
