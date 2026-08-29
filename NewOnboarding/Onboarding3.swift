@@ -9,98 +9,129 @@ struct Onboarding3: View {
     @State private var filled: [Int: String] = [:]
     @State private var selectedBlank: Int?
     @State private var feedback: String?
+    @State private var navigateForward = false
 
     private let tokens = OnboardingBibleVerse.tokens
     private let blankIndices = OnboardingBibleVerse.blankIndices
     private let options = OnboardingBibleVerse.options
 
+    private var allFilled: Bool {
+        blankIndices.allSatisfy { filled[$0] != nil }
+    }
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                Color.white.ignoresSafeArea()
+                OnboardingTheme.paper.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     ScrollView(showsIndicators: false) {
-                        VStack(spacing: 16) {
-                            ZStack {
-                                Circle()
-                                    .fill(OnboardingTheme.primaryBlue.opacity(0.1))
-                                    .frame(width: 72, height: 72)
-                                Image(systemName: "brain.head.profile")
-                                    .font(.system(size: 30))
-                                    .foregroundColor(OnboardingTheme.primaryBlue)
+                        VStack(alignment: .leading, spacing: 0) {
+                            OnboardingTopBar(onLight: true)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 8)
+
+                            HStack {
+                                Text("FILL THE VERSE")
+                                    .font(.system(size: 11, weight: .heavy))
+                                    .tracking(1)
+                                    .foregroundColor(Color(hex: "7488A6"))
+                                Spacer()
+                                Text("Question 1 of 1")
+                                    .font(.system(size: 11, weight: .heavy))
+                                    .foregroundColor(Color(hex: "8595AE"))
                             }
-                            .padding(.top, 16)
+                            .padding(.horizontal, 26)
+                            .padding(.top, 4)
 
-                            VStack(spacing: 6) {
-                                Text("Remember What You Read")
-                                    .font(.system(size: min(geometry.size.width * 0.07, 28), weight: .bold))
-                                    .multilineTextAlignment(.center)
-                                    .foregroundColor(.black)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.horizontal, 28)
-
-                                Text("Simple fill-in-the-blank challenges help Scripture stay with you.")
-                                    .font(.system(size: 15))
-                                    .multilineTextAlignment(.center)
-                                    .foregroundColor(OnboardingTheme.textSecondary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.horizontal, 36)
-                            }
-
-                            VStack(alignment: .leading, spacing: 14) {
-                                OnboardingVerseFlowView(
-                                    tokens: tokens,
-                                    blankIndices: blankIndices,
-                                    filled: filled,
-                                    selectedBlank: selectedBlank,
-                                    onSelectBlank: { index in
-                                        selectedBlank = index
-                                        feedback = nil
-                                    }
-                                )
-
-                                Text(OnboardingBibleVerse.reference)
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(OnboardingTheme.textSecondary)
-
-                                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                                    ForEach(Array(options.enumerated()), id: \.offset) { _, word in
-                                        optionChip(word)
-                                    }
+                            GeometryReader { barGeo in
+                                ZStack(alignment: .leading) {
+                                    Capsule()
+                                        .fill(OnboardingTheme.paperLine)
+                                        .frame(height: 4)
+                                    Capsule()
+                                        .fill(OnboardingTheme.primaryBlue)
+                                        .frame(width: allFilled ? barGeo.size.width : barGeo.size.width * 0.35, height: 4)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .padding(18)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(
-                                RoundedRectangle(cornerRadius: 18)
-                                    .fill(Color.white)
-                                    .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
+                            .frame(height: 4)
+                            .padding(.horizontal, 26)
+                            .padding(.top, 8)
+                            .padding(.bottom, 18)
+
+                            OnboardingSerifTitle(
+                                lines: ["Remember", "What You Read"],
+                                size: min(geometry.size.width * 0.08, 31),
+                                alignment: .leading,
+                                onDark: false
                             )
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, 26)
+                            .padding(.bottom, 16)
+
+                            verseBox
+                                .padding(.horizontal, 26)
+
+                            optionsRow
+                                .padding(.horizontal, 26)
+                                .padding(.top, 16)
 
                             if let feedback = feedback {
                                 Text(feedback)
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(OnboardingTheme.primaryBlue)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 24)
-                                    .padding(.bottom, 12)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(OnboardingTheme.grow)
+                                    .padding(15)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .fill(OnboardingTheme.growBg)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 14)
+                                                    .stroke(OnboardingTheme.growLine, lineWidth: 1)
+                                            )
+                                    )
+                                    .padding(.horizontal, 26)
+                                    .padding(.top, 14)
                             }
+
+                            if allFilled {
+                                challengeTypesPreview
+                                    .padding(.horizontal, 26)
+                                    .padding(.top, 20)
+                                    .transition(.opacity)
+                            }
+
+                            Spacer(minLength: 20)
                         }
                     }
 
-                    OnboardingPrimaryLink(title: "Try It Now", destination: OnboardingNotificationView())
-                        .padding(.horizontal, 24)
+                    Group {
+                        if allFilled {
+                            OnboardingPrimaryButton(title: "Continue") {
+                                navigateForward = true
+                            }
+                        } else {
+                            OnboardingPrimaryButton(title: "Tap an answer to continue", isEnabled: false, onDark: false) {}
+                        }
+                    }
+                    .padding(.horizontal, 26)
+                    .background(
+                        NavigationLink(
+                            destination: OnboardingNotificationView(),
+                            isActive: $navigateForward
+                        ) {
+                            EmptyView()
+                        }
+                        .hidden()
+                    )
 
                     OnboardingPageDots(current: 2, total: 5)
                         .padding(.top, 14)
-                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 24))
+                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 34))
                 }
             }
         }
         .navigationBarHidden(true)
+        .animation(.easeOut(duration: 0.35), value: allFilled)
         .onAppear {
             if selectedBlank == nil {
                 selectedBlank = blankIndices.first
@@ -108,25 +139,120 @@ struct Onboarding3: View {
         }
     }
 
+    private var verseBox: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            OnboardingVerseFlowView(
+                tokens: tokens,
+                blankIndices: blankIndices,
+                filled: filled,
+                selectedBlank: selectedBlank,
+                onSelectBlank: { index in
+                    selectedBlank = index
+                    if !allFilled {
+                        feedback = nil
+                    }
+                }
+            )
+
+            Text("\(OnboardingBibleVerse.reference) · \(APPNAME)")
+                .font(.system(size: 12))
+                .foregroundColor(Color(hex: "8595AE"))
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(OnboardingTheme.paperLine, lineWidth: 1)
+                )
+        )
+    }
+
+    private var optionsRow: some View {
+        HStack(spacing: 9) {
+            ForEach(Array(options.enumerated()), id: \.offset) { _, word in
+                optionChip(word)
+            }
+        }
+    }
+
+    private var challengeTypesPreview: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Text("MORE WAYS TO REMEMBER")
+                .font(.system(size: 11, weight: .heavy))
+                .tracking(1.3)
+                .foregroundColor(Color(hex: "7488A6"))
+
+            HStack(spacing: 6) {
+                ForEach(ChallengeKind.allCases) { kind in
+                    challengeTypeThumb(kind: kind)
+                }
+            }
+        }
+    }
+
+    private func onboardingChallengeLabel(for kind: ChallengeKind) -> String {
+        switch kind {
+        case .quickQuiz: return "Quick\nQuiz"
+        case .fillVerse: return "Fill the\nVerse"
+        case .verseMatch: return "Verse\nMatch"
+        case .trueFalse: return "True /\nFalse"
+        case .wordSearch: return "Word\nSearch"
+        }
+    }
+
+    private func challengeTypeThumb(kind: ChallengeKind) -> some View {
+        let isFree = !kind.isPremium
+        return VStack(spacing: 6) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(Color(hex: kind.iconBgHex))
+                    .frame(height: 34)
+                Image(systemName: kind.icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: kind.iconTintHex))
+            }
+            Text(onboardingChallengeLabel(for: kind))
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(isFree ? Color(hex: "1F4C9E") : Color(hex: "5A6D8C"))
+                .multilineTextAlignment(.center)
+                .lineSpacing(1)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 7)
+        .padding(.horizontal, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isFree ? Color(hex: "F4F9FF") : Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isFree ? Color(hex: "B9D4F5") : OnboardingTheme.paperLine, lineWidth: 1)
+                )
+        )
+    }
+
     private func optionChip(_ word: String) -> some View {
-        let used = filled.values.contains(where: { $0.caseInsensitiveCompare(word) == .orderedSame })
+        let usedElsewhere = filled.contains { index, value in
+            index != selectedBlank && value.caseInsensitiveCompare(word) == .orderedSame
+        }
         return Button(action: { pick(word) }) {
             Text(word)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(used ? Color.white.opacity(0.7) : OnboardingTheme.primaryBlue)
+                .font(.system(size: 14.5, weight: .bold))
+                .foregroundColor(usedElsewhere ? Color(hex: "31456A").opacity(0.42) : Color(hex: "31456A"))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(
-                    Capsule()
-                        .fill(used ? OnboardingTheme.primaryBlue.opacity(0.45) : Color.white)
-                )
+                .padding(.vertical, 14)
+                .background(Color.white)
                 .overlay(
-                    Capsule()
-                        .stroke(OnboardingTheme.primaryBlue.opacity(used ? 0 : 0.35), lineWidth: 1.5)
+                    RoundedRectangle(cornerRadius: 13)
+                        .stroke(OnboardingTheme.paperLine, lineWidth: 1.5)
                 )
+                .cornerRadius(13)
         }
         .buttonStyle(PlainButtonStyle())
-        .disabled(used)
+        .disabled(usedElsewhere)
+        .opacity(usedElsewhere ? 0.42 : 1)
     }
 
     private func pick(_ word: String) {
@@ -135,14 +261,7 @@ struct Onboarding3: View {
         filled[target] = word
         selectedBlank = blankIndices.first(where: { filled[$0] == nil })
         if blankIndices.allSatisfy({ filled[$0] != nil }) {
-            let ok = blankIndices.allSatisfy { idx in
-                let a = (filled[idx] ?? "").trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-                let b = tokens[idx].trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-                return a.caseInsensitiveCompare(b) == .orderedSame
-            }
-            feedback = ok
-                ? "Great! 🥳 Keep going and remember His Word today."
-                : "Not quite — try different words, or continue."
+            feedback = "Great! Keep going and remember His Word today."
         } else {
             feedback = nil
         }
@@ -150,7 +269,7 @@ struct Onboarding3: View {
 }
 
 /// Flows words like a real verse (not a rigid grid).
-private struct OnboardingVerseFlowView: View {
+struct OnboardingVerseFlowView: View {
     let tokens: [String]
     let blankIndices: [Int]
     let filled: [Int: String]
@@ -163,15 +282,22 @@ private struct OnboardingVerseFlowView: View {
                 if blankIndices.contains(index) {
                     Button(action: { onSelectBlank(index) }) {
                         Text(filled[index] ?? "______")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(filled[index] == nil ? Color.black.opacity(0.35) : OnboardingTheme.primaryBlue)
-                            .underline(color: selectedBlank == index ? OnboardingTheme.primaryBlue : Color.black.opacity(0.2))
+                            .font(.system(size: filled[index] == nil ? 19 : 17, weight: filled[index] == nil ? .regular : .semibold, design: filled[index] == nil ? .serif : .default))
+                            .foregroundColor(
+                                filled[index] == nil
+                                    ? Color.black.opacity(0.35)
+                                    : OnboardingTheme.grow
+                            )
+                            .underline(
+                                filled[index] == nil,
+                                color: selectedBlank == index ? OnboardingTheme.primaryBlue : OnboardingTheme.primaryBlue.opacity(0.6)
+                            )
                     }
                     .buttonStyle(PlainButtonStyle())
                 } else {
                     Text(token)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.black)
+                        .font(.system(size: 19, weight: .regular, design: .serif))
+                        .foregroundColor(OnboardingTheme.paperInk)
                 }
             }
         }
@@ -190,7 +316,6 @@ private struct OnboardingWrappingLayout<Content: View>: View {
                 content()
             }
         } else {
-            // Fallback: still readable as wrapped text-ish HStacks via LazyVGrid of flexible items
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 28), spacing: spacing, alignment: .leading)], alignment: .leading, spacing: lineSpacing) {
                 content()
             }

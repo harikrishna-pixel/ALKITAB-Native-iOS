@@ -8,106 +8,89 @@ import UserNotifications
 
 struct OnboardingNotificationView: View {
     @State private var navigateForward = false
-
-    /// Dark navy/violet card (matches attached UI)
-    private let cardBackground = Color(hex: "0B1B3A")
-    private let screenBackground = Color(hex: "E8EEFF")
+    @State private var dailyVerseOn = true
+    @State private var journeyReminderOn = true
+    @State private var memoryChallengeOn = false
+    @State private var prayerWallOn = false
 
     var body: some View {
-        GeometryReader { _ in
+        GeometryReader { geometry in
             ZStack {
-                screenBackground
-                    .ignoresSafeArea()
+                OnboardingTheme.darkPageGradient.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    Spacer()
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Spacer(minLength: geometry.size.height * 0.08)
 
-                    VStack(spacing: 18) {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    RadialGradient(
-                                        colors: [
-                                            OnboardingTheme.primaryBlue.opacity(0.95),
-                                            OnboardingTheme.primaryBlue
-                                        ],
-                                        center: .center,
-                                        startRadius: 0,
-                                        endRadius: 42
-                                    )
+                            OnboardingSerifTitle(
+                                lines: ["Keep God's", "Word Close"],
+                                size: min(geometry.size.width * 0.08, 31),
+                                alignment: .leading
+                            )
+                            .padding(.horizontal, 26)
+
+                            OnboardingLede(
+                                text: "Two gentle reminders a day. Nothing more, unless you ask.",
+                                onDark: true,
+                                alignment: .leading
+                            )
+                            .padding(.horizontal, 26)
+                            .padding(.top, 10)
+
+                            VStack(spacing: 0) {
+                                OnboardingToggleRow(
+                                    title: "Your daily verse",
+                                    detail: "7:00 AM",
+                                    isOn: $dailyVerseOn
                                 )
-                                .frame(width: 84, height: 84)
-                            Image(systemName: "bell.fill")
-                                .font(.system(size: 34))
-                                .foregroundColor(.white)
+                                OnboardingToggleRow(
+                                    title: "Journey reminder",
+                                    detail: "8:00 PM · only if today isn't finished",
+                                    isOn: $journeyReminderOn
+                                )
+                                OnboardingToggleRow(
+                                    title: "Memory challenge",
+                                    detail: "Off by default",
+                                    isOn: $memoryChallengeOn
+                                )
+                                OnboardingToggleRow(
+                                    title: "Prayer Wall activity",
+                                    detail: "Off by default",
+                                    isOn: $prayerWallOn,
+                                    showDivider: false
+                                )
+                            }
+                            .padding(.horizontal, 26)
+                            .padding(.top, 8)
+
+                            Spacer(minLength: 20)
                         }
-
-                        Text("Keep God's Word Close")
-                            .font(.system(size: 24, weight: .bold))
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.white)
-
-                        Text("Get your daily verse and gentle reminders to keep your Bible journey going.")
-                            .font(.system(size: 15))
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.white.opacity(0.85))
-                            .padding(.horizontal, 8)
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            check("Daily Verse")
-                            check("Memory Challenge Reminders")
-                            check("Reading Progress")
-                            check("Streak Reminders")
-                        }
-                        .padding(.top, 8)
-
-                        OnboardingPrimaryButton(title: "Keep Me Rooted") {
-                            requestNotificationsThenContinue()
-                        }
-                        .padding(.top, 8)
-
-                        NavigationLink(destination: Onboarding4()) {
-                            Text("Maybe Later")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.white.opacity(0.9))
-                        }
-                        .padding(.top, 4)
                     }
-                    .padding(24)
-                    .background(
-                        RoundedRectangle(cornerRadius: 24)
-                            .fill(cardBackground)
-                            .shadow(color: Color.black.opacity(0.2), radius: 16, x: 0, y: 8)
-                    )
-                    .padding(.horizontal, 24)
 
-                    Spacer()
+                    OnboardingPrimaryButton(title: "Keep Me Rooted") {
+                        requestNotificationsThenContinue()
+                    }
+                    .padding(.horizontal, 26)
+
+                    OnboardingGhostButton(title: "Maybe Later") {
+                        navigateForward = true
+                    }
+                    .padding(.horizontal, 26)
+
+                    Spacer(minLength: max(geometry.safeAreaInsets.bottom, 34))
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(screenBackground.ignoresSafeArea())
-        }
-        .background(screenBackground.ignoresSafeArea())
-        .navigationBarHidden(true)
-        .background(
-            NavigationLink(
-                destination: Onboarding4(),
-                isActive: $navigateForward,
-                label: { EmptyView() }
+            .background(
+                NavigationLink(
+                    destination: Onboarding4(),
+                    isActive: $navigateForward,
+                    label: { EmptyView() }
+                )
+                .hidden()
             )
-            .hidden()
-        )
-    }
-
-    private func check(_ text: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(OnboardingTheme.primaryBlue)
-            Text(text)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.white)
-            Spacer()
         }
+        .navigationBarHidden(true)
     }
 
     private func requestNotificationsThenContinue() {

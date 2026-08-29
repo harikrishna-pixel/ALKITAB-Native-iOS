@@ -6,132 +6,132 @@
 import SwiftUI
 
 struct Onboarding5: View {
+    private let dayLabels = ["M", "T", "W", "T", "F", "S", "S"]
+    private let journeyItems = [
+        ("Today's Verse", false),
+        ("Memory Challenge", false),
+        ("Reflection", false)
+    ]
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Soft off-white + blue glow (matches required UI)
-                Color(hex: "F7F8FC").ignoresSafeArea()
-                VStack {
-                    Spacer()
-                    RadialGradient(
-                        colors: [
-                            OnboardingTheme.primaryBlue.opacity(0.14),
-                            Color.clear
-                        ],
-                        center: .bottom,
-                        startRadius: 20,
-                        endRadius: max(geometry.size.width * 0.75, 220)
-                    )
-                    .frame(height: geometry.size.height * 0.45)
-                    .allowsHitTesting(false)
-                }
-                .ignoresSafeArea()
+                OnboardingTheme.darkPageGradient.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     ScrollView(showsIndicators: false) {
-                        VStack(spacing: 16) {
-                            Image(systemName: "flame.fill")
-                                .font(.system(size: 28))
-                                .foregroundColor(Color(hex: "FF9F0A"))
-                                .padding(.top, 20)
-
-                            Text("Stay Rooted Every Day")
-                                .font(.system(size: min(geometry.size.width * 0.07, 28), weight: .bold))
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(OnboardingTheme.navy)
-                                .frame(maxWidth: .infinity)
-                                .padding(.horizontal, 28)
-
-                            Text("Read. Remember. Reflect.\nWatch your Scripture journey grow.")
-                                .font(.system(size: 15))
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(OnboardingTheme.textSecondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.horizontal, 36)
-
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("7 Day Streak 🔥")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                HStack {
-                                    ForEach(Array(["M", "T", "W", "T", "F", "S", "S"].enumerated()), id: \.offset) { index, day in
-                                        VStack(spacing: 6) {
-                                            Text(day)
-                                                .font(.system(size: 11, weight: .medium))
-                                                .foregroundColor(.white.opacity(0.7))
-                                            streakCompletionIndicator(done: index < 6, pending: index == 6)
-                                        }
-                                        .frame(maxWidth: .infinity)
-                                    }
-                                }
-
-                                VStack(alignment: .leading, spacing: 14) {
-                                    checklistRow(icon: "book.fill", title: "Today's Verse", done: true)
-                                    checklistRow(icon: "brain.head.profile", title: "Memory Challenge", done: true)
-                                    checklistRow(icon: "heart.fill", title: "Reflection", done: false)
-                                }
-                                .padding(.top, 6)
-                            }
-                            .padding(18)
-                            .background(
-                                RoundedRectangle(cornerRadius: 18)
-                                    .fill(OnboardingTheme.navy)
+                        VStack(alignment: .leading, spacing: 0) {
+                            OnboardingSerifTitle(
+                                lines: ["Stay Rooted", "Every Day"],
+                                size: min(geometry.size.width * 0.08, 31),
+                                alignment: .leading
                             )
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 12)
+                            .padding(.horizontal, 26)
+                            .padding(.top, 12)
+
+                            OnboardingLede(
+                                text: "Read. Remember. Reflect.\nYour journey starts today.",
+                                onDark: true,
+                                alignment: .leading
+                            )
+                            .padding(.horizontal, 26)
+                            .padding(.top, 8)
+
+                            streakCard
+                                .padding(.horizontal, 26)
+                                .padding(.top, 18)
+
+                            VStack(spacing: 0) {
+                                ForEach(Array(journeyItems.enumerated()), id: \.offset) { index, item in
+                                    journeyRow(title: item.0, done: item.1, showDivider: index > 0)
+                                }
+                            }
+                            .padding(.horizontal, 28)
+                            .padding(.top, 10)
+
+                            Spacer(minLength: 20)
                         }
                     }
 
                     OnboardingPrimaryLink(title: "Build My Bible Habit", destination: OnboardingCreateAccountView())
-                        .padding(.horizontal, 24)
+                        .padding(.horizontal, 26)
 
                     OnboardingPageDots(current: 4, total: 5)
                         .padding(.top, 14)
-                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 24))
+                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 34))
                 }
             }
         }
         .navigationBarHidden(true)
     }
 
-    /// Left feature icon + title; completion status on the right (as in UI).
-    private func checklistRow(icon: String, title: String, done: Bool) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white.opacity(0.9))
-                .frame(width: 22)
-
-            Text(title)
-                .font(.system(size: 15, weight: .medium))
+    private var streakCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                HStack(spacing: 4) {
+                    Text("Day 1")
+                    Image(systemName: "flame.fill")
+                        .foregroundColor(OnboardingTheme.gold)
+                }
+                .font(.system(size: 19, weight: .heavy))
                 .foregroundColor(.white)
+                Spacer()
+                Text("This week")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(OnboardingTheme.dim)
+            }
 
-            Spacer()
-
-            streakCompletionIndicator(done: done)
+            HStack(spacing: 0) {
+                ForEach(Array(dayLabels.enumerated()), id: \.offset) { index, day in
+                    VStack(spacing: 7) {
+                        Text(day)
+                            .font(.system(size: 10.5, weight: .bold))
+                            .foregroundColor(index == 0 ? .white : Color(hex: "7C93B8"))
+                        Circle()
+                            .fill(index == 0 ? OnboardingTheme.gold : Color.clear)
+                            .overlay(
+                                Circle()
+                                    .stroke(
+                                        index == 0 ? OnboardingTheme.gold : Color.white.opacity(0.2),
+                                        lineWidth: 1.5
+                                    )
+                            )
+                            .frame(width: 28, height: 28)
+                            .shadow(color: index == 0 ? OnboardingTheme.gold.opacity(0.5) : .clear, radius: 9)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.top, 18)
         }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 19)
+                .fill(Color.white.opacity(0.07))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 19)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                )
+        )
     }
 
-    private func streakCompletionIndicator(done: Bool, pending: Bool = false) -> some View {
-        ZStack {
-            if done {
-                Circle()
-                    .fill(Color(hex: "34C759"))
-                    .frame(width: 22, height: 22)
-                Image(systemName: "checkmark")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.white)
-            } else if pending {
-                Circle()
-                    .stroke(Color(hex: "C9A227").opacity(0.85), lineWidth: 1.5)
-                    .frame(width: 22, height: 22)
-            } else {
-                Circle()
-                    .stroke(Color.white.opacity(0.35), lineWidth: 1.5)
-                    .frame(width: 22, height: 22)
+    private func journeyRow(title: String, done: Bool, showDivider: Bool) -> some View {
+        VStack(spacing: 0) {
+            if showDivider {
+                Rectangle()
+                    .fill(Color.white.opacity(0.09))
+                    .frame(height: 1)
             }
+            HStack {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Color(hex: "DCE7F8"))
+                Spacer()
+                Text(done ? "✓" : "○")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(done ? OnboardingTheme.grow : Color(hex: "4C5F7E"))
+            }
+            .padding(.vertical, 14)
         }
     }
 }

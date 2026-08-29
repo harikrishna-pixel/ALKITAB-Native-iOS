@@ -11,107 +11,103 @@ struct OnboardingCreateAccountView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                Color.white.ignoresSafeArea()
+                OnboardingTheme.paper.ignoresSafeArea()
 
-                VStack(spacing: 24) {
-                    Spacer()
+                VStack(spacing: 0) {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 0) {
+                            Spacer(minLength: max(geometry.safeAreaInsets.top, 16) + 24)
 
-                    ZStack {
-                        Circle()
-                            .fill(OnboardingTheme.primaryBlue.opacity(0.12))
-                            .frame(width: 84, height: 84)
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(.system(size: 40))
-                            .foregroundColor(OnboardingTheme.primaryBlue)
-                    }
+                            OnboardingSerifTitle(
+                                lines: ["Keep Your Journey", "With You"],
+                                size: min(geometry.size.width * 0.09, 34),
+                                alignment: .center,
+                                onDark: false
+                            )
+                            .padding(.horizontal, 32)
 
-                    Text("Keep Your Journey With You.")
-                        .font(.system(size: 24, weight: .bold))
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 28)
+                            OnboardingLede(
+                                text: "Save your streak, reflections and progress across devices. Optional.",
+                                alignment: .center
+                            )
+                            .padding(.horizontal, 36)
+                            .padding(.top, 10)
 
-                    Text("Save your reading progress, streaks, reflections and Prayer Wall activity.")
-                        .font(.system(size: 15))
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(OnboardingTheme.textSecondary)
-                        .padding(.horizontal, 36)
+                            VStack(spacing: 10) {
+                                socialSignInButton(title: "Continue with Apple") {
+                                    Image(systemName: "apple.logo")
+                                        .font(.system(size: 18, weight: .semibold))
+                                } action: {
+                                    auth.signInWithApple()
+                                }
 
-                    VStack(spacing: 12) {
-                        socialButton(title: "Continue with Apple", fill: .black, textColor: .white) {
-                            Image(systemName: "apple.logo")
-                                .font(.system(size: 18, weight: .semibold))
-                        } action: {
-                            auth.signInWithApple()
+                                socialSignInButton(title: "Continue with Google") {
+                                    Image("google_logo")
+                                        .resizable()
+                                        .scaledToFit()
+                                } action: {
+                                    auth.signInWithGoogle()
+                                }
+                            }
+                            .padding(.horizontal, 26)
+                            .padding(.top, 28)
+                            .disabled(auth.isBusy)
+                            .opacity(auth.isBusy ? 0.6 : 1)
+
+                            if auth.isBusy {
+                                SwiftUI.ProgressView()
+                                    .padding(.top, 16)
+                            }
+
+                            if let errorMessage = auth.errorMessage, !errorMessage.isEmpty {
+                                Text(errorMessage)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.red)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 28)
+                                    .padding(.top, 12)
+                            }
+
+                            Spacer(minLength: 20)
                         }
-                        socialButton(title: "Continue with Google", fill: .white, textColor: .black, bordered: true) {
-                            Image("google_logo")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 22, height: 22)
-                        } action: {
-                            auth.signInWithGoogle()
-                        }
-                    }
-                    .padding(.horizontal, 28)
-                    .padding(.top, 8)
-                    .disabled(auth.isBusy)
-                    .opacity(auth.isBusy ? 0.6 : 1)
-
-                    if auth.isBusy {
-                        SwiftUI.ProgressView()
                     }
 
-                    if let errorMessage = auth.errorMessage, !errorMessage.isEmpty {
-                        Text(errorMessage)
-                            .font(.system(size: 13))
-                            .foregroundColor(.red)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 28)
-                    }
-
-                    Button(action: {
+                    OnboardingGhostButton(title: "Not Now", onDark: false) {
                         UIKitNavigationHelper.navigateToIAPView()
-                    }) {
-                        Text("Not Now")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(OnboardingTheme.textSecondary)
                     }
-                    .padding(.top, 8)
+                    .padding(.horizontal, 26)
                     .disabled(auth.isBusy)
 
-                    Spacer()
+                    Spacer(minLength: max(geometry.safeAreaInsets.bottom, 34))
                 }
             }
         }
         .navigationBarHidden(true)
     }
 
-    private func socialButton<Icon: View>(
+    private func socialSignInButton<Icon: View>(
         title: String,
-        fill: Color,
-        textColor: Color,
-        bordered: Bool = false,
         @ViewBuilder icon: () -> Icon,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 icon()
-                    .frame(width: 22, height: 22)
+                    .frame(width: 20, height: 20)
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 16.5, weight: .semibold))
             }
-            .foregroundColor(textColor)
+            .foregroundColor(OnboardingTheme.paperInk)
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(fill)
-            .cornerRadius(14)
+            .padding(.vertical, 17)
+            .background(Color.white)
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(bordered ? Color.black.opacity(0.15) : Color.clear, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 15)
+                    .stroke(OnboardingTheme.paperLine, lineWidth: 1)
             )
+            .cornerRadius(15)
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

@@ -30,51 +30,59 @@ struct Onboarding1: View {
                     .scaledToFill()
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .clipped()
-                    .overlay(
-                        LinearGradient(
-                            colors: [Color.black.opacity(0.2), Color.black.opacity(0.6)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+
+                OnboardingTheme.darkPageGradient
+                    .opacity(0.55)
                     .edgesIgnoringSafeArea(.all)
 
-                VStack(spacing: 0) {
-                    OnboardingBrandHeader(lightContent: true)
-                        .padding(.top, max(geometry.safeAreaInsets.top, 12) + 12)
-                        .padding(.horizontal, 24)
+                LinearGradient(
+                    colors: [Color.black.opacity(0.15), Color.black.opacity(0.45)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .edgesIgnoringSafeArea(.all)
 
-                    VStack(spacing: 14) {
-                        Text("Scripture Made Clear")
-                            .font(.system(size: min(geometry.size.width * 0.085, 34), weight: .bold))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
+                VStack(spacing: 0) {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 0) {
+                            OnboardingTopBar()
+                                .padding(.horizontal, 20)
+                                .padding(.top, max(geometry.safeAreaInsets.top, 12))
+
+                            Spacer(minLength: geometry.size.height * 0.08)
+
+                            OnboardingBrandTag()
+
+                            OnboardingSerifTitle(
+                                lines: ["Scripture", "Made Clear"],
+                                goldWord: "Clear",
+                                size: min(geometry.size.width * 0.1, 41)
+                            )
                             .padding(.horizontal, 24)
 
-                        Text("Read the Bible in a beautiful, focused Bible experience.")
-                            .font(.system(size: 15, weight: .regular))
-                            .foregroundColor(.white.opacity(0.88))
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
-                            .padding(.horizontal, 40)
+                            OnboardingGoldOrnament()
 
-                        HStack(spacing: 36) {
-                            iconLabel(systemName: "book.fill", title: "Read")
-                            iconLabel(systemName: "brain.head.profile", title: "Remember")
-                            iconLabel(systemName: "heart.fill", title: "Reflect")
+                            OnboardingLede(
+                                text: "Read and remember God's Word\nin clear, modern English.",
+                                onDark: true
+                            )
+                            .padding(.horizontal, 32)
+
+                            Spacer(minLength: 20)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 12)
                     }
-                    .padding(.top, 28)
 
-                    Spacer(minLength: 16)
+                    OnboardingPillarRow(items: [
+                        ("book.fill", "Read"),
+                        ("brain.head.profile", "Remember"),
+                        ("heart", "Reflect")
+                    ])
+                    .padding(.bottom, 20)
 
-                    OnboardingPrimaryButton(title: "Start Reading") {
+                    OnboardingPrimaryButton(title: "Continue") {
                         requestTrackingThenContinue()
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 26)
                     .background(
                         NavigationLink(
                             destination: Onboarding2(),
@@ -86,8 +94,8 @@ struct Onboarding1: View {
                     )
 
                     OnboardingPageDots(current: 0, total: 5, onDark: true)
-                        .padding(.top, 16)
-                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 24))
+                        .padding(.top, 14)
+                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 34))
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
@@ -106,16 +114,6 @@ struct Onboarding1: View {
         } else {
             navigateToNext = true
         }
-    }
-
-    private func iconLabel(systemName: String, title: String) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: systemName)
-                .font(.system(size: 18))
-            Text(title)
-                .font(.system(size: 12, weight: .medium))
-        }
-        .foregroundColor(.white.opacity(0.95))
     }
 }
 
