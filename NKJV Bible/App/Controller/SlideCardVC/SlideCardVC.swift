@@ -648,16 +648,16 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
 
                }
                
-//               if PaymentHistory.sharedInstance.paymentInfo() {
-//                   if UNITY_ENABLE {
-//                       DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.2) {
-//                           UnityAdClass.sharedInstance.LoadAdCatagory = "INTERSTITIAL"
-//                           UnityAdClass.sharedInstance.sourceVC = self
-//                           UnityAdClass.sharedInstance.loadInterstitial_UnityAds()
-//                           UNITY_ENABLE = false
-//                       }
-//                   }
-//               }
+               if PaymentHistory.sharedInstance.paymentInfo() {
+                   if UNITY_ENABLE {
+                       DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.2) {
+                           UnityAdClass.sharedInstance.sourceVC = self
+                           UnityAdClass.sharedInstance.LoadAdCatagory = "INTERSTITIAL"
+                           UnityAdClass.sharedInstance.loadInterstitial_UnityAds()
+                           UNITY_ENABLE = false
+                       }
+                   }
+               }
            }
        }
 

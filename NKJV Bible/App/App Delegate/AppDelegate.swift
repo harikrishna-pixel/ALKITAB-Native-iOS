@@ -490,6 +490,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                         }
 
                         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+3.5) {
+                                    UnityAdClass.sharedInstance.initializeIfNeeded()
                                     AdmobManager.shared.IronSource_Interstitial_AdLoad()
                                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.5) {
                                     AdmobManager.shared.IronSource_Reward_AdLoad()
@@ -506,6 +507,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     print("   → Loading fallback or cached data...")
                     if API_Switch == "1" {
                         GetAppInfo.shared.loadFallbackOrCachedData()
+                        UnityAdClass.sharedInstance.initializeIfNeeded()
                     }
                 }
             })
@@ -515,6 +517,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         print("   → Loading fallback or cached data...")
         if API_Switch == "1" {
             GetAppInfo.shared.loadFallbackOrCachedData()
+            UnityAdClass.sharedInstance.initializeIfNeeded()
         }
     }
 }

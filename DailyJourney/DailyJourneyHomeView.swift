@@ -73,7 +73,8 @@ struct DailyJourneyHomeView: View {
 
                 journeySection
 
-                prayerWallCard
+                // Prayer section — hidden (logic unchanged)
+                // prayerWallCard
 
                 continueReadingCard
             }

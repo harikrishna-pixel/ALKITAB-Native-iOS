@@ -423,7 +423,7 @@ extension SubscrbViewController {
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+3.5) {
             self.LoaderVu.isHidden = true
         }
-        
+
         AdmobManager.shared.IronSource_Reward_ShowAds(vw: (UIApplication.shared.keyWindow?.rootViewController)!, RewardAd: "SubscrbViewController")
     }
     

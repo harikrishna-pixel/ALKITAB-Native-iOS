@@ -239,7 +239,8 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         
         
         self.mainContainer()
-        self.installPrayerWallBottomTabIfNeeded()
+        // Prayer tab — hidden (logic unchanged)
+        // self.installPrayerWallBottomTabIfNeeded()
         self.installBottomTabHighlightsIfNeeded()
         self.selectBottomTabHighlight(.home)
          
@@ -1291,13 +1292,15 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     private func installBottomTabHighlightsIfNeeded() {
         guard !bottomTabHighlightsReady else { return }
         guard let stack = TabVu.subviews.compactMap({ $0 as? UIStackView }).first,
-              stack.arrangedSubviews.count >= 6 else { return }
+              stack.arrangedSubviews.count >= 5 else { return }
         bottomTabHighlightsReady = true
 
-        let prayerContainer = stack.arrangedSubviews[3]
-        let quizContainer = stack.arrangedSubviews[4]
-        let moreContainer = stack.arrangedSubviews[5]
-        prayerTabContainer = prayerContainer
+        let hasPrayerTab = stack.arrangedSubviews.count >= 6
+        if hasPrayerTab {
+            prayerTabContainer = stack.arrangedSubviews[3]
+        }
+        let quizContainer = stack.arrangedSubviews[hasPrayerTab ? 4 : 3]
+        let moreContainer = stack.arrangedSubviews[hasPrayerTab ? 5 : 4]
         quizTabContainer = quizContainer
         moreTabContainer = moreContainer
 
@@ -1333,15 +1336,16 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         }
 
         let theme = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
-        if prayerTabPill == nil, let prayerContainer = prayerTabContainer {
-            prayerTabPill = makeBottomTabPill(
-                title: "Prayer",
-                iconImage: prayerWallTabIcon?.image,
-                usesTemplate: true,
-                theme: theme,
-                in: prayerContainer
-            )
-        }
+        // Prayer tab — hidden (logic unchanged)
+        // if prayerTabPill == nil, let prayerContainer = prayerTabContainer {
+        //     prayerTabPill = makeBottomTabPill(
+        //         title: "Prayer",
+        //         iconImage: prayerWallTabIcon?.image,
+        //         usesTemplate: true,
+        //         theme: theme,
+        //         in: prayerContainer
+        //     )
+        // }
         if quizTabPill == nil {
             quizTabPill = makeBottomTabPill(
                 title: "Quiz",

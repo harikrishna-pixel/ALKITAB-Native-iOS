@@ -14,12 +14,17 @@ PODS:
     - Flurry-iOS-SDK/CrashReporter
   - GoogleUserMessagingPlatform (2.4.0)
   - IQKeyboardManager (6.5.19)
+  - IronSourceAdQualitySDK (9.9.0)
   - IronSourceSDK (8.1.0.0)
   - ReachabilitySwift (5.2.3)
   - SDWebImage (5.19.2):
     - SDWebImage/Core (= 5.19.2)
   - SDWebImage/Core (5.19.2)
   - Toast-Swift (5.1.1)
+  - UnityAds (4.20.0):
+    - IronSourceAdQualitySDK (< 10.0.0)
+    - UnityCoherenceLib (= 0.1.0)
+  - UnityCoherenceLib (0.1.0)
   - Zip (2.1.2)
 
 DEPENDENCIES:
@@ -33,6 +38,7 @@ DEPENDENCIES:
   - ReachabilitySwift
   - SDWebImage
   - Toast-Swift
+  - UnityAds
   - Zip (~> 2.1)
 
 SPEC REPOS:
@@ -46,10 +52,13 @@ SPEC REPOS:
     - Flurry-iOS-SDK
     - GoogleUserMessagingPlatform
     - IQKeyboardManager
+    - IronSourceAdQualitySDK
     - IronSourceSDK
     - ReachabilitySwift
     - SDWebImage
     - Toast-Swift
+    - UnityAds
+    - UnityCoherenceLib
     - Zip
 
 SPEC CHECKSUMS:
@@ -62,12 +71,15 @@ SPEC CHECKSUMS:
   Flurry-iOS-SDK: 8e6d7d9323ad24da06f24943ed738e36039631e9
   GoogleUserMessagingPlatform: f131fa7978d2ba88d7426702b057c2cc318e6595
   IQKeyboardManager: c8665b3396bd0b79402b4c573eac345a31c7d485
+  IronSourceAdQualitySDK: 8797f78661d72fc2bef00e8c1055047132dc7249
   IronSourceSDK: f4380fe08a2bfa1cd37c26948fcfd2585a0493a2
   ReachabilitySwift: 7f151ff156cea1481a8411701195ac6a984f4979
   SDWebImage: dfe95b2466a9823cf9f0c6d01217c06550d7b29a
   Toast-Swift: 7a03a532afe3a560d4044bc7c237e2864d295173
+  UnityAds: aac7752619961224969a1bfea8b5077d2b93005f
+  UnityCoherenceLib: d9be08c5b9c2880cb220c7ecd643f97ebda422b7
   Zip: b3fef584b147b6e582b2256a9815c897d60ddc67
 
-PODFILE CHECKSUM: 9067d0fe4d95977a6f6b797aa1c580f8c2c0d568
+PODFILE CHECKSUM: 89237e7f7c85d20b2b8610c68ae2dbefa462831e
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2
