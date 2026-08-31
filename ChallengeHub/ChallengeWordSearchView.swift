@@ -34,6 +34,7 @@ struct ChallengeWordSearchView: View {
 
     var body: some View {
         ChallengeOldStyleShell(
+            screenTitle: ChallengeKind.wordSearch.title,
             onBack: onClose,
             lives: lives,
             questionNumber: words.isEmpty ? 1 : min(found.count + (found.count == words.count ? 0 : 1), words.count),
@@ -52,12 +53,14 @@ struct ChallengeWordSearchView: View {
             hintEnabled: !usedHint && found.count < words.count,
             skipEnabled: found.count < words.count,
             onLifeline: handleLifeline,
-            walletTick: walletTick
+            walletTick: walletTick,
+            contentScrollDisabled: true
         ) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Find the words below")
-                    .font(.system(size: 14))
-                    .foregroundColor(Color.black.opacity(0.5))
+                ChallengeQuizContentHeader(
+                    reference: verse.reference,
+                    instruction: "Find the hidden Bible words from today's verse."
+                )
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -236,6 +239,7 @@ final class WordSearchBoardUIView: UIView {
     private var selecting: [GridPos] = []
     private let foundShape = CAShapeLayer()
     private let selectShape = CAShapeLayer()
+    private weak var lockedScrollView: UIScrollView?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -421,6 +425,7 @@ final class WordSearchBoardUIView: UIView {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        lockAncestorScrollViews()
         guard let point = touches.first?.location(in: self), let cell = cell(at: point) else { return }
         selecting = [cell]
         redrawSelecting()
@@ -436,10 +441,30 @@ final class WordSearchBoardUIView: UIView {
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         finishSelection()
+        unlockAncestorScrollViews()
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         finishSelection()
+        unlockAncestorScrollViews()
+    }
+
+    private func lockAncestorScrollViews() {
+        guard lockedScrollView == nil else { return }
+        var view: UIView? = superview
+        while let current = view {
+            if let scroll = current as? UIScrollView, scroll.isScrollEnabled {
+                scroll.isScrollEnabled = false
+                lockedScrollView = scroll
+                break
+            }
+            view = current.superview
+        }
+    }
+
+    private func unlockAncestorScrollViews() {
+        lockedScrollView?.isScrollEnabled = true
+        lockedScrollView = nil
     }
 
     private func nearestCell(to point: CGPoint) -> GridPos? {

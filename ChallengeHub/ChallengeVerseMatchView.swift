@@ -27,6 +27,7 @@ struct ChallengeVerseMatchView: View {
 
     var body: some View {
         ChallengeOldStyleShell(
+            screenTitle: ChallengeKind.verseMatch.title,
             onBack: onClose,
             lives: lives,
             questionNumber: 1,
@@ -42,9 +43,10 @@ struct ChallengeVerseMatchView: View {
             walletTick: walletTick
         ) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Match the verse with the correct reference.")
-                    .font(.system(size: 14))
-                    .foregroundColor(Color.black.opacity(0.5))
+                ChallengeQuizContentHeader(
+                    reference: verse.reference,
+                    instruction: "Match the verse with the correct reference."
+                )
 
                 GeometryReader { geo in
                     ZStack {

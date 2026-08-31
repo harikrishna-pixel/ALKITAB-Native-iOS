@@ -25,11 +25,12 @@ struct ChallengeFillVerseView: View {
 
     var body: some View {
         ChallengeOldStyleShell(
+            screenTitle: ChallengeKind.fillVerse.title,
             onBack: onClose,
             lives: lives,
             questionNumber: 1,
             questionTotal: 1,
-            caption: "Drag the correct words to fill the blanks.",
+            caption: "Tap the correct words to complete the verse.",
             primaryTitle: correct ? "Done" : "Check Answer",
             primaryEnabled: true,
             onPrimary: check,
@@ -40,30 +41,35 @@ struct ChallengeFillVerseView: View {
             walletTick: walletTick
         ) {
             VStack(alignment: .leading, spacing: 16) {
-                verseBoard
+                ChallengeQuizContentHeader(
+                    reference: verse.reference,
+                    instruction: "Fill in the blanks to complete today's verse."
+                )
 
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                    ForEach(Array(bank.enumerated()), id: \.offset) { _, word in
-                        if !hiddenBank.contains(word) {
-                            let wrongChip = isWrongBankWord(word)
-                            Button(action: { pick(word) }) {
-                                Text(word)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(wrongChip ? Color(hex: "D70015") : Color(hex: "0B1B3A"))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
-                                    .background(wrongChip ? Color(hex: "FDECEC") : Color(hex: "F7F8FC"))
-                                    .cornerRadius(12)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(wrongChip ? Color(hex: "D70015") : Color.black.opacity(0.1), lineWidth: 1)
-                                    )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .disabled(correct)
+                ChallengeFillVerseBoard(
+                    tokens: tokens,
+                    blankIndices: blanks,
+                    filled: filled,
+                    selectedBlank: selectedBlank,
+                    isLocked: correct,
+                    isWrongBlank: isWrongFill,
+                    onTapBlank: { index in
+                        if selectedBlank == index, filled[index] != nil {
+                            filled[index] = nil
+                            feedback = nil
+                        } else {
+                            selectedBlank = index
                         }
                     }
-                }
+                )
+
+                ChallengeWordBankGrid(
+                    words: bank,
+                    hiddenWords: hiddenBank,
+                    isWrongWord: isWrongBankWord,
+                    isLocked: correct,
+                    onSelect: pick
+                )
 
                 if let feedback = feedback {
                     Text(feedback)
@@ -78,29 +84,6 @@ struct ChallengeFillVerseView: View {
             }
         }
         .onAppear(perform: build)
-    }
-
-    private var verseBoard: some View {
-        let columns = [GridItem(.adaptive(minimum: 70), spacing: 8, alignment: .leading)]
-        return LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
-            ForEach(Array(tokens.enumerated()), id: \.offset) { index, token in
-                if blanks.contains(index) {
-                    let wrong = isWrongFill(index)
-                    Button(action: { selectedBlank = index }) {
-                        Text(filled[index] ?? "______")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(wrong ? Color(hex: "D70015") : Color(hex: "1C46B2"))
-                            .underline()
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(correct)
-                } else {
-                    Text(token)
-                        .font(.system(size: 15))
-                        .foregroundColor(Color(hex: "0B1B3A"))
-                }
-            }
-        }
     }
 
     private var showingWrongState: Bool {

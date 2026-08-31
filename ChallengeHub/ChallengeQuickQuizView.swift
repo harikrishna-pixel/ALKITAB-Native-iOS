@@ -33,6 +33,7 @@ struct ChallengeQuickQuizView: View {
             } else if questions.indices.contains(index) {
                 let q = questions[index]
                 ChallengeOldStyleShell(
+                    screenTitle: ChallengeKind.quickQuiz.title,
                     onBack: onClose,
                     lives: lives,
                     questionNumber: index + 1,
@@ -50,6 +51,11 @@ struct ChallengeQuickQuizView: View {
                     walletTick: walletTick
                 ) {
                     VStack(alignment: .leading, spacing: 14) {
+                        ChallengeQuizContentHeader(
+                            reference: verse.reference,
+                            instruction: "Choose the correct answer."
+                        )
+
                         Text(q.prompt)
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(Color(hex: "0B1B3A"))
@@ -80,30 +86,18 @@ struct ChallengeQuickQuizView: View {
         let isSelected = selected == i
         let showCorrect = revealed && i == correct
         let showWrong = revealed && isSelected && i != correct
-        return Button(action: {
-            guard !revealed else { return }
-            selected = i
-            toast = nil
-        }) {
-            HStack(spacing: 12) {
-                Image(systemName: showCorrect ? "checkmark.circle.fill" : (showWrong ? "xmark.circle.fill" : (isSelected ? "largecircle.fill.circle" : "circle")))
-                    .foregroundColor(showCorrect ? Color(hex: "34C759") : (showWrong ? Color(hex: "D70015") : (isSelected ? Color(hex: "1C46B2") : Color.black.opacity(0.25))))
-                Text(option)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(hex: "0B1B3A"))
-                    .multilineTextAlignment(.leading)
-                Spacer()
+        return ChallengeQuizOptionRow(
+            title: option,
+            isSelected: isSelected,
+            showCorrect: showCorrect,
+            showWrong: showWrong,
+            isDisabled: revealed,
+            onTap: {
+                guard !revealed else { return }
+                selected = i
+                toast = nil
             }
-            .padding(14)
-            .background(showCorrect ? Color(hex: "E8F8EE") : (showWrong ? Color(hex: "FDECEC") : Color(hex: "F7F8FC")))
-            .cornerRadius(14)
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(showCorrect ? Color(hex: "34C759") : (showWrong ? Color(hex: "D70015") : (isSelected ? Color(hex: "1C46B2") : Color.black.opacity(0.08))), lineWidth: 1.5)
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-        .disabled(revealed)
+        )
     }
 
     private func primaryAction(for q: QuickQuizQuestion) {

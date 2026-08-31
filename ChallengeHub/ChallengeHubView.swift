@@ -13,41 +13,37 @@ struct ChallengeHubView: View {
     var onOpenChallenge: (ChallengeKind, ChallengeVerseContext) -> Void
 
     @State private var verse = ChallengeVerseContext.loadToday()
+    @State private var walletTick = 0
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                if showBackButton {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(Color(hex: "0B1B3A"))
-                            .frame(width: 36, height: 36)
-                    }
-                } else {
-                    Color.clear.frame(width: 36, height: 36)
-                }
-                Spacer()
-                Text("Challenge Hub")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(Color(hex: "0B1B3A"))
-                Spacer()
-                Color.clear.frame(width: 36, height: 36)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-
-            Text("Choose a challenge to grow in God's Word.")
-                .font(.system(size: 14))
-                .foregroundColor(Color.black.opacity(0.45))
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.horizontal, 20)
-                .padding(.top, 4)
-                .padding(.bottom, 14)
+            ChallengeQuizHeaderBar(
+                title: "Bible Quiz",
+                showBackButton: showBackButton,
+                onBack: onBack,
+                walletTick: walletTick
+            )
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
+                VStack(spacing: 14) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ChallengeQuizContentHeader(
+                            reference: verse.reference,
+                            instruction: "Choose a challenge to grow in God's Word."
+                        )
+
+                        Text(verse.text)
+                            .font(.system(size: 15))
+                            .foregroundColor(Color(hex: "0B1B3A"))
+                            .lineLimit(4)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white)
+                    .cornerRadius(14)
+                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
+
                     ForEach(ChallengeKind.allCases) { kind in
                         challengeRow(kind)
                     }
@@ -58,17 +54,22 @@ struct ChallengeHubView: View {
                         .foregroundColor(Color.black.opacity(0.45))
                         .padding(14)
                         .frame(maxWidth: .infinity)
-                        .background(Color(hex: "EEF2F8"))
+                        .background(Color.white)
                         .cornerRadius(14)
-                        .padding(.top, 8)
+                        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
                 }
                 .padding(.horizontal, 16)
+                .padding(.top, 14)
                 .padding(.bottom, 24)
             }
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Color(hex: "F2F3F7").ignoresSafeArea())
         .onAppear {
             verse = ChallengeVerseContext.loadToday()
+            walletTick += 1
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            walletTick += 1
         }
     }
 
@@ -109,17 +110,18 @@ struct ChallengeHubView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color(hex: "0B1B3A"))
+                        .background(ChallengeQuizTheme.accent)
                         .clipShape(Capsule())
                 }
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color.black.opacity(0.2))
             }
             .padding(14)
             .background(Color.white)
-            .cornerRadius(16)
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.black.opacity(0.06), lineWidth: 1)
-            )
+            .cornerRadius(14)
+            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -135,14 +137,28 @@ struct ChallengeHubView: View {
 }
 
 struct ChallengeGameScreen: View {
-    let kind: ChallengeKind
     let verse: ChallengeVerseContext
     var onClose: () -> Void
     var onOpenLegacyQuiz: () -> Void
 
+    @State private var activeKind: ChallengeKind
+    @State private var showKindPicker = false
+
+    init(
+        kind: ChallengeKind,
+        verse: ChallengeVerseContext,
+        onClose: @escaping () -> Void,
+        onOpenLegacyQuiz: @escaping () -> Void
+    ) {
+        _activeKind = State(initialValue: kind)
+        self.verse = verse
+        self.onClose = onClose
+        self.onOpenLegacyQuiz = onOpenLegacyQuiz
+    }
+
     var body: some View {
         Group {
-            switch kind {
+            switch activeKind {
             case .quickQuiz:
                 ChallengeQuickQuizView(verse: verse, onClose: onClose, onOpenLegacyQuiz: onOpenLegacyQuiz)
             case .fillVerse:
@@ -155,6 +171,101 @@ struct ChallengeGameScreen: View {
                 ChallengeWordSearchView(verse: verse, onClose: onClose)
             }
         }
+        .id(activeKind)
+        .environment(\.challengeSwitchAction, { showKindPicker = true })
+        .sheet(isPresented: $showKindPicker) {
+            ChallengeKindPickerSheet(
+                current: activeKind,
+                onSelect: { kind in
+                    activeKind = kind
+                    showKindPicker = false
+                },
+                onDismiss: { showKindPicker = false }
+            )
+        }
         .navigationBarHidden(true)
+    }
+}
+
+/// In-game challenge picker — same options as Challenge Hub list (UI only).
+struct ChallengeKindPickerSheet: View {
+    let current: ChallengeKind
+    var onSelect: (ChallengeKind) -> Void
+    var onDismiss: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ChallengeQuizHeaderBar(title: "Change Challenge", showBackButton: false)
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 12) {
+                    Text("Switch to another challenge without leaving.")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color.black.opacity(0.45))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 8)
+                        .padding(.top, 4)
+
+                    ForEach(ChallengeKind.allCases) { kind in
+                        Button(action: { onSelect(kind) }) {
+                            HStack(spacing: 14) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(hex: kind.iconBgHex))
+                                        .frame(width: 44, height: 44)
+                                    Image(systemName: kind.icon)
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(Color(hex: kind.iconTintHex))
+                                }
+
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(kind.title)
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(Color(hex: "0B1B3A"))
+                                    Text(kind.subtitle)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color.black.opacity(0.45))
+                                }
+
+                                Spacer()
+
+                                if kind == current {
+                                    Text("Current")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(ChallengeQuizTheme.accent)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
+                                        .background(ChallengeQuizTheme.accent.opacity(0.12))
+                                        .clipShape(Capsule())
+                                } else {
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(Color.black.opacity(0.25))
+                                }
+                            }
+                            .padding(14)
+                            .background(Color.white)
+                            .cornerRadius(14)
+                            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+
+                    Button(action: onDismiss) {
+                        Text("Close")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(ChallengeQuizTheme.accent)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.top, 4)
+                }
+                .padding(16)
+            }
+        }
+        .background(Color(hex: "F2F3F7").ignoresSafeArea())
     }
 }
