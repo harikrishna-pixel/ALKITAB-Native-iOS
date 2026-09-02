@@ -8,6 +8,7 @@ import SwiftUI
 
 /// UIKit share / bookmark controls with a real hit area (avoids ScrollView swallowing SwiftUI taps).
 struct DailyJourneyVerseActionsBar: UIViewRepresentable {
+    var isSaved: Bool
     var onShare: () -> Void
     var onBookmark: () -> Void
 
@@ -25,6 +26,7 @@ struct DailyJourneyVerseActionsBar: UIViewRepresentable {
         context.coordinator.onShare = onShare
         context.coordinator.onBookmark = onBookmark
         uiView.coordinator = context.coordinator
+        uiView.isSaved = isSaved
     }
 
     final class Coordinator: NSObject {
@@ -51,15 +53,22 @@ final class VerseActionsContainer: UIView {
         didSet { bindTargets() }
     }
 
+    var isSaved: Bool = false {
+        didSet { updateBookmarkIcon() }
+    }
+
     private let shareButton = UIButton(type: .custom)
     private let bookmarkButton = UIButton(type: .custom)
+    private let accentColor = UIColor(red: 28 / 255, green: 70 / 255, blue: 178 / 255, alpha: 1)
+    private let buttonBackground = UIColor(red: 232 / 255, green: 238 / 255, blue: 255 / 255, alpha: 1)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         isUserInteractionEnabled = true
         backgroundColor = .clear
         configure(shareButton, systemName: "square.and.arrow.up")
-        configure(bookmarkButton, systemName: "photo.fill")
+        configure(bookmarkButton)
+        updateBookmarkIcon()
         addSubview(shareButton)
         addSubview(bookmarkButton)
     }
@@ -87,10 +96,30 @@ final class VerseActionsContainer: UIView {
     private func configure(_ button: UIButton, systemName: String) {
         let config = UIImage.SymbolConfiguration(pointSize: 15, weight: .medium)
         button.setImage(UIImage(systemName: systemName, withConfiguration: config), for: .normal)
-        button.tintColor = UIColor(red: 28 / 255, green: 70 / 255, blue: 178 / 255, alpha: 1)
-        button.backgroundColor = UIColor(red: 232 / 255, green: 238 / 255, blue: 255 / 255, alpha: 1)
+        button.tintColor = accentColor
+        button.backgroundColor = buttonBackground
         button.clipsToBounds = true
         button.isUserInteractionEnabled = true
+    }
+
+    private func configure(_ button: UIButton) {
+        button.tintColor = accentColor
+        button.backgroundColor = buttonBackground
+        button.clipsToBounds = true
+        button.isUserInteractionEnabled = true
+        button.imageView?.contentMode = .scaleAspectFit
+        button.contentEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
+    }
+
+    private func updateBookmarkIcon() {
+        if isSaved {
+            let image = UIImage(named: "save")?.withRenderingMode(.alwaysOriginal)
+            bookmarkButton.setImage(image, for: .normal)
+        } else {
+            let image = UIImage(named: "SaveBlue")?.withRenderingMode(.alwaysTemplate)
+            bookmarkButton.tintColor = accentColor
+            bookmarkButton.setImage(image, for: .normal)
+        }
     }
 
     private func bindTargets() {

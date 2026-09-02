@@ -97,6 +97,8 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         tableView.dataSource = self
         tableView.delegate = self
         tableView.contentInset = UIEdgeInsets(top: 16, left: 0, bottom: 12, right: 0)
+        tableView.estimatedRowHeight = 88
+        tableView.rowHeight = UITableView.automaticDimension
         tableView.register(AIChatBubbleCell.self, forCellReuseIdentifier: AIChatBubbleCell.reuseId)
         tableView.register(AIChatTypingCell.self, forCellReuseIdentifier: AIChatTypingCell.reuseId)
         view.addSubview(tableView)
@@ -469,8 +471,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         isSending = true
         typingLabel.isHidden = false
         refreshFollowUpSuggestions()
-        tableView.reloadData()
-        scrollToBottom(animated: true)
+        reloadChatAndScrollToBottom(animated: true)
         view.endEditing(false)
 
         let payload = buildInput(for: text)
@@ -489,6 +490,11 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             self.refreshFollowUpSuggestions()
             self.scrollToBottom(animated: true)
         }
+    }
+
+    private func reloadChatAndScrollToBottom(animated: Bool) {
+        tableView.reloadData()
+        scrollToBottom(animated: animated)
     }
 
     private func buildInput(for latestUserText: String) -> String {
@@ -517,10 +523,22 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     private func scrollToBottom(animated: Bool) {
-        let rowCount = tableView.numberOfRows(inSection: 0)
-        guard rowCount > 0 else { return }
-        let indexPath = IndexPath(row: rowCount - 1, section: 0)
-        tableView.scrollToRow(at: indexPath, at: .bottom, animated: animated)
+        let performScroll = { [weak self] (shouldAnimate: Bool) in
+            guard let self = self else { return }
+            let rowCount = self.tableView.numberOfRows(inSection: 0)
+            guard rowCount > 0 else { return }
+
+            self.view.layoutIfNeeded()
+            self.tableView.layoutIfNeeded()
+
+            let indexPath = IndexPath(row: rowCount - 1, section: 0)
+            self.tableView.scrollToRow(at: indexPath, at: .bottom, animated: shouldAnimate)
+        }
+
+        performScroll(animated)
+        DispatchQueue.main.async {
+            performScroll(false)
+        }
     }
 
     func textViewDidChange(_ textView: UITextView) {

@@ -8,6 +8,7 @@ import UIKit
 
 struct ChallengeWordSearchView: View {
     let verse: ChallengeVerseContext
+    var sessionConfig: ChallengeSessionConfig? = nil
     var onClose: () -> Void
 
     private let size = 7
@@ -122,7 +123,7 @@ struct ChallengeWordSearchView: View {
     }
 
     private func build() {
-        let all = ChallengeGameFactory.wordSearchWords(from: verse)
+        let all = ChallengeGameFactory.wordSearchWords(from: verse, config: sessionConfig)
         words = all.filter { $0.count <= size }
         if words.isEmpty {
             words = ["FAITH", "GRACE", "LOVE", "PEACE", "HOPE"].filter { $0.count <= size }

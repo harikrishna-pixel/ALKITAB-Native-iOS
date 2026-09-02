@@ -2028,9 +2028,9 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     func MarkAsReadPopup() {
-        let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "QuizAlertVC") as! QuizAlertVC
-        vc.bookname = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
-        vc.Chapter = UserDefaults.standard.string(forKey: "BookChapter") ?? "0"
+        let vc = ChallengeHubSetupViewController()
+        vc.prefillBook = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
+        vc.prefillChapter = UserDefaults.standard.string(forKey: "BookChapter") ?? "0"
         self.navigationController?.pushViewController(vc, animated: true)
     }
     

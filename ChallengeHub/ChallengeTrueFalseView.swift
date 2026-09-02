@@ -7,6 +7,7 @@ import SwiftUI
 
 struct ChallengeTrueFalseView: View {
     let verse: ChallengeVerseContext
+    var sessionConfig: ChallengeSessionConfig? = nil
     var onClose: () -> Void
 
     @State private var questions: [TrueFalseQuestion] = []
@@ -73,7 +74,7 @@ struct ChallengeTrueFalseView: View {
             }
         }
         .onAppear {
-            questions = ChallengeGameFactory.trueFalse(from: verse)
+            questions = ChallengeGameFactory.trueFalse(from: verse, config: sessionConfig)
         }
     }
 

@@ -153,6 +153,7 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     
     func setupProducts() {
         print("🛒 [StoreManager] setupProducts() called")
+        applyCachedPricesIfNeeded()
         
         // NEW: Check if products are already loaded from shared instance (preloaded at splash)
         let shared = StoreManager.shared
@@ -243,14 +244,41 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
             }
         } else {
             print("❌ [StoreManager] No internet connection")
-            hasProductLoadError = true
+            applyCachedPricesIfNeeded()
+            isLoading1 = false
+            isLoading2 = false
+            isLoading3 = false
+            hasProductLoadError = price1.isEmpty && price2.isEmpty && price3.isEmpty
             productLoadErrorMessage = "No internet connection. Please check your connection and try again."
             // Use cached prices if available
             if !price1.isEmpty || !price2.isEmpty || !price3.isEmpty {
                 print("   ℹ️ Using cached prices from previous session")
+                hasProductLoadError = false
             }
             calculateOriginalPrices()
         }
+    }
+
+    private func applyCachedPricesIfNeeded() {
+        if price1.isEmpty, let cached = UserDefaults.standard.string(forKey: "PriceTag1"), !cached.isEmpty {
+            price1 = cached
+        }
+        if price2.isEmpty, let cached = UserDefaults.standard.string(forKey: "PriceTag2"), !cached.isEmpty {
+            price2 = cached
+        }
+        if price3.isEmpty, let cached = UserDefaults.standard.string(forKey: "PriceTag3"), !cached.isEmpty {
+            price3 = cached
+        }
+
+        let shared = StoreManager.shared
+        guard shared !== self else { return }
+
+        if price1.isEmpty && !shared.price1.isEmpty { price1 = shared.price1 }
+        if price2.isEmpty && !shared.price2.isEmpty { price2 = shared.price2 }
+        if price3.isEmpty && !shared.price3.isEmpty { price3 = shared.price3 }
+        if originalPrice1.isEmpty && !shared.originalPrice1.isEmpty { originalPrice1 = shared.originalPrice1 }
+        if originalPrice2.isEmpty && !shared.originalPrice2.isEmpty { originalPrice2 = shared.originalPrice2 }
+        if originalPrice3.isEmpty && !shared.originalPrice3.isEmpty { originalPrice3 = shared.originalPrice3 }
     }
     
     private func loadExitOfferText() {

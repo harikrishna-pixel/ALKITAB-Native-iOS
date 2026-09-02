@@ -7,7 +7,11 @@ import SwiftUI
 
 struct ChallengeFillVerseView: View {
     let verse: ChallengeVerseContext
+    var sessionConfig: ChallengeSessionConfig? = nil
     var onClose: () -> Void
+
+    @State private var rounds: [ChallengeVerseContext] = []
+    @State private var roundIndex = 0
 
     @State private var tokens: [String] = []
     @State private var blanks: [Int] = []
@@ -23,15 +27,21 @@ struct ChallengeFillVerseView: View {
     @State private var toast: String?
     @State private var hiddenBank: Set<String> = []
 
+    private var totalRounds: Int { max(1, rounds.count) }
+    private var activeVerse: ChallengeVerseContext {
+        if rounds.indices.contains(roundIndex) { return rounds[roundIndex] }
+        return verse
+    }
+
     var body: some View {
         ChallengeOldStyleShell(
             screenTitle: ChallengeKind.fillVerse.title,
             onBack: onClose,
             lives: lives,
-            questionNumber: 1,
-            questionTotal: 1,
+            questionNumber: roundIndex + 1,
+            questionTotal: totalRounds,
             caption: "Tap the correct words to complete the verse.",
-            primaryTitle: correct ? "Done" : "Check Answer",
+            primaryTitle: correct ? (roundIndex + 1 >= totalRounds ? "Done" : "Next") : "Check Answer",
             primaryEnabled: true,
             onPrimary: check,
             fiftyFiftyEnabled: !usedFifty && !correct,
@@ -42,8 +52,10 @@ struct ChallengeFillVerseView: View {
         ) {
             VStack(alignment: .leading, spacing: 16) {
                 ChallengeQuizContentHeader(
-                    reference: verse.reference,
-                    instruction: "Fill in the blanks to complete today's verse."
+                    reference: activeVerse.reference,
+                    instruction: sessionConfig == nil
+                        ? "Fill in the blanks to complete today's verse."
+                        : "Fill in the blanks to complete the verse."
                 )
 
                 ChallengeFillVerseBoard(
@@ -83,7 +95,21 @@ struct ChallengeFillVerseView: View {
                 }
             }
         }
-        .onAppear(perform: build)
+        .onAppear {
+            prepareRounds()
+            build()
+        }
+    }
+
+    private func prepareRounds() {
+        if let sessionConfig {
+            let verses = sessionConfig.chapterVerses()
+            rounds = Array(verses.shuffled().prefix(sessionConfig.fillQuestionCount))
+            if rounds.isEmpty { rounds = [verse] }
+        } else {
+            rounds = [verse]
+        }
+        roundIndex = 0
     }
 
     private var showingWrongState: Bool {
@@ -106,7 +132,7 @@ struct ChallengeFillVerseView: View {
     }
 
     private func build() {
-        let data = ChallengeGameFactory.fillChallenge(from: verse)
+        let data = ChallengeGameFactory.fillChallenge(from: activeVerse, config: sessionConfig)
         tokens = data.tokens
         blanks = data.blankIndices
         bank = data.bank
@@ -138,6 +164,11 @@ struct ChallengeFillVerseView: View {
 
     private func check() {
         if correct {
+            if roundIndex + 1 < totalRounds {
+                roundIndex += 1
+                build()
+                return
+            }
             onClose()
             return
         }

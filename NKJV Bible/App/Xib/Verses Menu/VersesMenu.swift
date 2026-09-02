@@ -57,11 +57,12 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     
     private var getExplanationButton: UIButton?
     private var getExplanationAdded = false
-    
+    private var actionRowPinned = false
     private static let getExplanationTopInset: CGFloat = 12
     private static let getExplanationHorizontalInset: CGFloat = 20
     private static let getExplanationButtonHeight: CGFloat = 44
-    private static let getExplanationBookNameGap: CGFloat = 12
+    private static let getExplanationBookNameGap: CGFloat = 4
+    private static let bookNameActionRowGap: CGFloat = 4
     private static var getExplanationExtraHeight: CGFloat {
         getExplanationTopInset + getExplanationButtonHeight + getExplanationBookNameGap
     }
@@ -209,6 +210,25 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
 
         hideVerseMenuCloseIcon()
         repositionBookNameBelowGetExplanationButton(button, gap: Self.getExplanationBookNameGap)
+        pinActionRowBelowBookName()
+    }
+
+    private func topActionStackView() -> UIStackView? {
+        // Bookmark outlet is the inner icon holder; stack is two levels up.
+        Bookmark.superview?.superview as? UIStackView
+    }
+
+    private func pinActionRowBelowBookName() {
+        guard !actionRowPinned, let actionRow = topActionStackView() else { return }
+        actionRowPinned = true
+
+        MainView.constraints.filter { constraint in
+            let rowIsTopItem = constraint.firstItem as? UIView == actionRow && constraint.firstAttribute == .top
+            let rowIsTopSecondItem = constraint.secondItem as? UIView == actionRow && constraint.secondAttribute == .top
+            return rowIsTopItem || rowIsTopSecondItem
+        }.forEach { $0.isActive = false }
+
+        actionRow.topAnchor.constraint(equalTo: BookNameTxt.bottomAnchor, constant: Self.bookNameActionRowGap).isActive = true
     }
 
     private func hideVerseMenuCloseIcon() {

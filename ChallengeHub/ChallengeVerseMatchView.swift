@@ -7,6 +7,7 @@ import SwiftUI
 
 struct ChallengeVerseMatchView: View {
     let verse: ChallengeVerseContext
+    var sessionConfig: ChallengeSessionConfig? = nil
     var onClose: () -> Void
 
     @State private var pairs: [VerseMatchPair] = []
@@ -25,6 +26,13 @@ struct ChallengeVerseMatchView: View {
 
     private let colors: [Color] = [Color(hex: "1C46B2"), Color(hex: "34C759"), Color(hex: "F5A623")]
 
+    private var boardHeight: CGFloat {
+        let rows = CGFloat(max(pairs.count, 1))
+        let rowHeight: CGFloat = 72
+        let rowSpacing: CGFloat = 12
+        return rows * rowHeight + max(0, rows - 1) * rowSpacing
+    }
+
     var body: some View {
         ChallengeOldStyleShell(
             screenTitle: ChallengeKind.verseMatch.title,
@@ -40,7 +48,8 @@ struct ChallengeVerseMatchView: View {
             hintEnabled: !usedHint && !solved,
             skipEnabled: !solved,
             onLifeline: handleLifeline,
-            walletTick: walletTick
+            walletTick: walletTick,
+            contentScrollDisabled: true
         ) {
             VStack(alignment: .leading, spacing: 12) {
                 ChallengeQuizContentHeader(
@@ -48,43 +57,41 @@ struct ChallengeVerseMatchView: View {
                     instruction: "Match the verse with the correct reference."
                 )
 
-                GeometryReader { geo in
-                    ZStack {
-                        HStack(alignment: .top, spacing: 18) {
-                            VStack(spacing: 12) {
-                                ForEach(leftOrder, id: \.self) { id in
-                                    if let pair = pairs.first(where: { $0.id == id }) {
-                                        leftCard(pair)
-                                    }
+                ZStack(alignment: .top) {
+                    HStack(alignment: .top, spacing: 18) {
+                        VStack(spacing: 12) {
+                            ForEach(leftOrder, id: \.self) { id in
+                                if let pair = pairs.first(where: { $0.id == id }) {
+                                    leftCard(pair)
                                 }
                             }
-                            .frame(maxWidth: .infinity)
-
-                            VStack(spacing: 12) {
-                                ForEach(rightOrder, id: \.self) { id in
-                                    if let pair = pairs.first(where: { $0.id == id }) {
-                                        rightCard(pair)
-                                    }
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
                         }
+                        .frame(maxWidth: .infinity)
 
-                        MatchLinesOverlay(
-                            matches: matches,
-                            anchors: anchors,
-                            dragStartLeft: dragStartLeft,
-                            dragPoint: dragPoint,
-                            pairs: pairs,
-                            colors: colors
-                        )
-                        .allowsHitTesting(false)
+                        VStack(spacing: 12) {
+                            ForEach(rightOrder, id: \.self) { id in
+                                if let pair = pairs.first(where: { $0.id == id }) {
+                                    rightCard(pair)
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .coordinateSpace(name: "matchBoard")
-                    .onPreferenceChange(MatchAnchorKey.self) { anchors = $0 }
-                    .frame(width: geo.size.width, height: max(geo.size.height, 280), alignment: .top)
+
+                    MatchLinesOverlay(
+                        matches: matches,
+                        anchors: anchors,
+                        dragStartLeft: dragStartLeft,
+                        dragPoint: dragPoint,
+                        pairs: pairs,
+                        colors: colors
+                    )
+                    .allowsHitTesting(false)
                 }
-                .frame(minHeight: 280)
+                .coordinateSpace(name: "matchBoard")
+                .onPreferenceChange(MatchAnchorKey.self) { anchors = $0 }
+                .frame(maxWidth: .infinity)
+                .frame(height: boardHeight, alignment: .top)
 
                 if let feedback = feedback {
                     Text(feedback)
@@ -99,7 +106,7 @@ struct ChallengeVerseMatchView: View {
             }
         }
         .onAppear {
-            pairs = ChallengeGameFactory.matchPairs(from: verse)
+            pairs = ChallengeGameFactory.matchPairs(from: verse, config: sessionConfig)
             leftOrder = pairs.map { $0.id }.shuffled()
             rightOrder = pairs.map { $0.id }.shuffled()
         }

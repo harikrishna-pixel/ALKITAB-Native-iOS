@@ -23,52 +23,61 @@ class ChapterView: UIView, UICollectionViewDelegate, UICollectionViewDataSource,
     var CellHeight:CGFloat = 0.0
     var CellWidth:CGFloat = 0.0
     var MarkedList:[Int] = []
+    private var didConfigureCollection = false
+    private var lastCollectionWidth: CGFloat = 0
 
-    
-    
-    
-    override func draw(_ rect: CGRect) {
-        
-        
-        let MarkAsReadArray = CoreDataModel.sharedInstance.GetMarkasReadStatus(entity: CDMarkAsRead)
-        
-        for item in MarkAsReadArray {
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        configureCollectionIfNeeded()
+        updateChapterLayoutIfNeeded()
+    }
+
+    private func configureCollectionIfNeeded() {
+        guard !didConfigureCollection else { return }
+        didConfigureCollection = true
+
+        let markAsReadArray = CoreDataModel.sharedInstance.GetMarkasReadStatus(entity: CDMarkAsRead)
+        MarkedList = []
+        for item in markAsReadArray {
             if item.components(separatedBy: "-")[0] == self.BookName.text! {
-                MarkedList.append(Int(item.components(separatedBy: "-")[1])!)
+                if let chapter = Int(item.components(separatedBy: "-")[1]) {
+                    MarkedList.append(chapter)
+                }
             }
         }
-        
-        
+
         if isIpad {
             self.WLeftConstrain.constant = 120
             self.WRightConstrain.constant = 120
         }
-        
-        
+
         self.ChapterCollection.delegate = self
         self.ChapterCollection.dataSource = self
-        
         self.ChapterCollection.register(UINib(nibName: "ChapterCell", bundle: nil), forCellWithReuseIdentifier: "ChapterCell")
-        self.ChapterCollection.reloadData()
-        
         self.chaptercount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: self.BookName.text!)
-        
-        
-        self.CellHeight = (self.ChapterCollection.frame.width)/5.5
-        self.CellWidth = (self.ChapterCollection.frame.width)/7
-        var ChapterColumn = Int(self.chaptercount/7)
-        
-        if Float(ChapterColumn) < Float(self.chaptercount)/7 {
-            ChapterColumn = ChapterColumn+1
+    }
+
+    private func updateChapterLayoutIfNeeded() {
+        let collectionWidth = ChapterCollection.bounds.width
+        guard collectionWidth > 0 else { return }
+        guard abs(collectionWidth - lastCollectionWidth) > 0.5 else { return }
+        lastCollectionWidth = collectionWidth
+
+        self.CellHeight = collectionWidth / 5.5
+        self.CellWidth = collectionWidth / 7
+        var chapterColumn = Int(self.chaptercount / 7)
+
+        if Float(chapterColumn) < Float(self.chaptercount) / 7 {
+            chapterColumn = chapterColumn + 1
         }
 
-        
-        
-        if self.frame.height/1.5 < ((self.CellHeight+10)*CGFloat(ChapterColumn))+80 {
-            self.CollectionHeight.constant = self.frame.height/1.5
+        if self.frame.height / 1.5 < ((self.CellHeight + 10) * CGFloat(chapterColumn)) + 80 {
+            self.CollectionHeight.constant = self.frame.height / 1.5
         } else {
-            self.CollectionHeight.constant = ((self.CellHeight+10)*CGFloat(ChapterColumn)+80)
+            self.CollectionHeight.constant = ((self.CellHeight + 10) * CGFloat(chapterColumn) + 80)
         }
+
+        self.ChapterCollection.reloadData()
     }
 
     

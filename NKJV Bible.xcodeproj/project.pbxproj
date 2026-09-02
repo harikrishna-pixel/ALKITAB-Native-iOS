@@ -622,9 +622,15 @@
 		B2C3D4E52F46B20100000006 /* DailyJourneyHomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000016 /* DailyJourneyHomeViewController.swift */; };
 		B2C3D4E52F46B20100000007 /* DailyJourneyVerseActionsBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000017 /* DailyJourneyVerseActionsBar.swift */; };
 		B2C3D4E52F46B20100000008 /* StreakCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000018 /* StreakCalendarView.swift */; };
+		B2C3D4E52F46B20100000009 /* DailyVerseFullscreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000019 /* DailyVerseFullscreenView.swift */; };
+		B2C3D4E52F46B2010000000A /* DailyVerseFullscreenViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B2010000001A /* DailyVerseFullscreenViewController.swift */; };
 		BFB65A5D50D4E04587173B1F /* Pods_NKJV_Bible.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5684D797A8C667919AB63043 /* Pods_NKJV_Bible.framework */; };
 		C3D4E5F62F46C30100000001 /* ChallengeGameContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000011 /* ChallengeGameContent.swift */; };
+		C3D4E5F62F46C30100000034 /* ChallengeHubPickerComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000024 /* ChallengeHubPickerComponents.swift */; };
 		C3D4E5F62F46C30100000002 /* ChallengeHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000012 /* ChallengeHubView.swift */; };
+		C3D4E5F62F46C30100000031 /* ChallengeSessionConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000021 /* ChallengeSessionConfig.swift */; };
+		C3D4E5F62F46C30100000032 /* ChallengeHubSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000022 /* ChallengeHubSetupView.swift */; };
+		C3D4E5F62F46C30100000033 /* ChallengeHubSetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000023 /* ChallengeHubSetupViewController.swift */; };
 		C3D4E5F62F46C30100000003 /* ChallengeHubViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000013 /* ChallengeHubViewController.swift */; };
 		C3D4E5F62F46C30100000004 /* ChallengeQuickQuizView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000014 /* ChallengeQuickQuizView.swift */; };
 		C3D4E5F62F46C30100000005 /* ChallengeFillVerseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000015 /* ChallengeFillVerseView.swift */; };
@@ -1285,8 +1291,14 @@
 		B2C3D4E52F46B20100000016 /* DailyJourneyHomeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyJourneyHomeViewController.swift; sourceTree = "<group>"; };
 		B2C3D4E52F46B20100000017 /* DailyJourneyVerseActionsBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyJourneyVerseActionsBar.swift; sourceTree = "<group>"; };
 		B2C3D4E52F46B20100000018 /* StreakCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakCalendarView.swift; sourceTree = "<group>"; };
+		B2C3D4E52F46B20100000019 /* DailyVerseFullscreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyVerseFullscreenView.swift; sourceTree = "<group>"; };
+		B2C3D4E52F46B2010000001A /* DailyVerseFullscreenViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyVerseFullscreenViewController.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000011 /* ChallengeGameContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeGameContent.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000024 /* ChallengeHubPickerComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubPickerComponents.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000012 /* ChallengeHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubView.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000021 /* ChallengeSessionConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeSessionConfig.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000022 /* ChallengeHubSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubSetupView.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000023 /* ChallengeHubSetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubSetupViewController.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000013 /* ChallengeHubViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubViewController.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000014 /* ChallengeQuickQuizView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeQuickQuizView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000015 /* ChallengeFillVerseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeFillVerseView.swift; sourceTree = "<group>"; };
@@ -3554,6 +3566,8 @@
 				B2C3D4E52F46B20100000016 /* DailyJourneyHomeViewController.swift */,
 				B2C3D4E52F46B20100000017 /* DailyJourneyVerseActionsBar.swift */,
 				B2C3D4E52F46B20100000018 /* StreakCalendarView.swift */,
+				B2C3D4E52F46B20100000019 /* DailyVerseFullscreenView.swift */,
+				B2C3D4E52F46B2010000001A /* DailyVerseFullscreenViewController.swift */,
 			);
 			path = DailyJourney;
 			sourceTree = "<group>";
@@ -3562,8 +3576,12 @@
 			isa = PBXGroup;
 			children = (
 				C3D4E5F62F46C30100000011 /* ChallengeGameContent.swift */,
+				C3D4E5F62F46C30100000021 /* ChallengeSessionConfig.swift */,
+				C3D4E5F62F46C30100000024 /* ChallengeHubPickerComponents.swift */,
 				C3D4E5F62F46C30100000012 /* ChallengeHubView.swift */,
+				C3D4E5F62F46C30100000022 /* ChallengeHubSetupView.swift */,
 				C3D4E5F62F46C30100000013 /* ChallengeHubViewController.swift */,
+				C3D4E5F62F46C30100000023 /* ChallengeHubSetupViewController.swift */,
 				C3D4E5F62F46C30100000014 /* ChallengeQuickQuizView.swift */,
 				C3D4E5F62F46C30100000015 /* ChallengeFillVerseView.swift */,
 				C3D4E5F62F46C30100000016 /* ChallengeVerseMatchView.swift */,
@@ -4279,9 +4297,15 @@
 				B2C3D4E52F46B20100000006 /* DailyJourneyHomeViewController.swift in Sources */,
 				B2C3D4E52F46B20100000007 /* DailyJourneyVerseActionsBar.swift in Sources */,
 				B2C3D4E52F46B20100000008 /* StreakCalendarView.swift in Sources */,
+				B2C3D4E52F46B20100000009 /* DailyVerseFullscreenView.swift in Sources */,
+				B2C3D4E52F46B2010000000A /* DailyVerseFullscreenViewController.swift in Sources */,
 				C3D4E5F62F46C30100000001 /* ChallengeGameContent.swift in Sources */,
+				C3D4E5F62F46C30100000031 /* ChallengeSessionConfig.swift in Sources */,
+				C3D4E5F62F46C30100000034 /* ChallengeHubPickerComponents.swift in Sources */,
 				C3D4E5F62F46C30100000002 /* ChallengeHubView.swift in Sources */,
+				C3D4E5F62F46C30100000032 /* ChallengeHubSetupView.swift in Sources */,
 				C3D4E5F62F46C30100000003 /* ChallengeHubViewController.swift in Sources */,
+				C3D4E5F62F46C30100000033 /* ChallengeHubSetupViewController.swift in Sources */,
 				C3D4E5F62F46C30100000004 /* ChallengeQuickQuizView.swift in Sources */,
 				C3D4E5F62F46C30100000009 /* ChallengeOldStyleChrome.swift in Sources */,
 				C3D4E5F62F46C30100000005 /* ChallengeFillVerseView.swift in Sources */,

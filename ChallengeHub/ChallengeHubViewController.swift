@@ -9,6 +9,7 @@ import SwiftUI
 final class ChallengeHubViewController: UIViewController {
 
     var isEmbeddedTab = false
+    var sessionConfig: ChallengeSessionConfig?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -17,6 +18,7 @@ final class ChallengeHubViewController: UIViewController {
 
         let root = ChallengeHubView(
             showBackButton: !isEmbeddedTab,
+            sessionConfig: sessionConfig,
             onBack: { [weak self] in
                 self?.navigationController?.popViewController(animated: true)
             },
@@ -26,8 +28,8 @@ final class ChallengeHubViewController: UIViewController {
             onOpenLegacyQuiz: { [weak self] in
                 self?.openLegacyQuiz()
             },
-            onOpenChallenge: { [weak self] kind, verse in
-                self?.openChallenge(kind, verse: verse)
+            onOpenChallenge: { [weak self] kind, verse, config in
+                self?.openChallenge(kind, verse: verse, config: config)
             }
         )
 
@@ -49,10 +51,11 @@ final class ChallengeHubViewController: UIViewController {
         navigationController?.setNavigationBarHidden(true, animated: animated)
     }
 
-    private func openChallenge(_ kind: ChallengeKind, verse: ChallengeVerseContext) {
+    private func openChallenge(_ kind: ChallengeKind, verse: ChallengeVerseContext, config: ChallengeSessionConfig?) {
         let root = ChallengeGameScreen(
             kind: kind,
             verse: verse,
+            sessionConfig: config,
             onClose: { [weak self] in
                 self?.navigationController?.popViewController(animated: true)
             },

@@ -28,7 +28,8 @@ struct Onboarding1: View {
                 Image("onboarding1_bg")
                     .resizable()
                     .scaledToFill()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .frame(width: geometry.size.width, height: geometry.size.height + 48)
+                    .offset(y: -28)
                     .clipped()
 
                 OnboardingTheme.darkPageGradient

@@ -14,6 +14,9 @@ class SplashVc: UIViewController, SplashDelegate {
 
     @IBOutlet weak var LogoImage: UIImageView!
     @IBOutlet weak var AppText: UILabel!
+    
+    private let splashStartTime = Date()
+    private let minimumSplashDuration: TimeInterval = 1.2
         
     
     var PopupView:UIView?
@@ -29,7 +32,9 @@ class SplashVc: UIViewController, SplashDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        AppConstrains.shared.Constrains()
         App_Protocol.DelegateSplash = self
+        configureSplashBranding()
         
         // MARK: - Preload IAP Products Early
         // Load fallback or cached data first, then preload products
@@ -63,10 +68,12 @@ class SplashVc: UIViewController, SplashDelegate {
             
             let notification_data = DailyVerseLanguageConversion.sharedInstance.DailyVerseLAst().components(separatedBy: "_")
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
-                if OnboardingProgress.shouldShow {
-                    self.presentOnboarding()
-                } else {
-                    self.OpenAd()
+                self.runAfterMinimumSplash {
+                    if OnboardingProgress.shouldShow {
+                        self.presentOnboarding()
+                    } else {
+                        self.OpenAd()
+                    }
                 }
             }
         }
@@ -108,14 +115,16 @@ class SplashVc: UIViewController, SplashDelegate {
     
         
     override func viewDidAppear(_ animated: Bool) {
-        super.viewDidLoad()
+        super.viewDidAppear(animated)
 
+        configureSplashBranding()
+    }
+
+    private func configureSplashBranding() {
         AppConstrains.shared.Constrains()
-        
         AppText.textColor = UserDefaults.standard.color(forKey: "AppThemeColor")
         AppText.text = APPNAME_SPLASH
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.LogoImage!, colorVu: UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor)
-           
     }
     
     
@@ -123,7 +132,9 @@ class SplashVc: UIViewController, SplashDelegate {
     
     func OpenAd() {
         if OnboardingProgress.shouldShow {
-            presentOnboarding()
+            runAfterMinimumSplash {
+                self.presentOnboarding()
+            }
             return
         }
 
@@ -200,7 +211,9 @@ class SplashVc: UIViewController, SplashDelegate {
         // Skip custom "Thankful for Your Support" alert; go straight to welcome onboarding.
         // App Tracking is requested after the welcome screen (Start Reading).
         OnboardingProgress.markStarted()
-        presentOnboarding()
+        runAfterMinimumSplash {
+            self.presentOnboarding()
+        }
     }
     
     
@@ -226,7 +239,15 @@ class SplashVc: UIViewController, SplashDelegate {
         self.PopupView?.removeFromSuperview()
         // Tracking is requested after welcome; keep this path for any leftover popup callers.
         OnboardingProgress.markStarted()
-        presentOnboarding()
+        runAfterMinimumSplash {
+            self.presentOnboarding()
+        }
+    }
+
+    private func runAfterMinimumSplash(_ work: @escaping () -> Void) {
+        let elapsed = Date().timeIntervalSince(splashStartTime)
+        let delay = max(0, minimumSplashDuration - elapsed)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 
     private func presentOnboarding() {

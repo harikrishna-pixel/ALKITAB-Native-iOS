@@ -19,6 +19,16 @@ struct Onboarding3: View {
         blankIndices.allSatisfy { filled[$0] != nil }
     }
 
+    private var isAnswerCorrect: Bool {
+        blankIndices.allSatisfy { idx in
+            stripPunctuation(filled[idx] ?? "").caseInsensitiveCompare(stripPunctuation(tokens[idx])) == .orderedSame
+        }
+    }
+
+    private var showingWrongState: Bool {
+        allFilled && !isAnswerCorrect && feedback != nil
+    }
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -76,24 +86,56 @@ struct Onboarding3: View {
                                 .padding(.top, 16)
 
                             if let feedback = feedback {
-                                Text(feedback)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(OnboardingTheme.grow)
-                                    .padding(15)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .fill(OnboardingTheme.growBg)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 14)
-                                                    .stroke(OnboardingTheme.growLine, lineWidth: 1)
-                                            )
-                                    )
-                                    .padding(.horizontal, 26)
-                                    .padding(.top, 14)
+                                let isWrong = feedback.hasPrefix("Not quite")
+                                HStack(alignment: .top, spacing: 10) {
+                                    Image(systemName: isWrong ? "xmark.circle.fill" : "checkmark.circle.fill")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(isWrong ? Color(hex: "D70015") : OnboardingTheme.grow)
+                                    Text(feedback)
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(isWrong ? Color(hex: "D70015") : OnboardingTheme.grow)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                .padding(15)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(isWrong ? Color(hex: "FDECEC") : OnboardingTheme.growBg)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14)
+                                                .stroke(isWrong ? Color(hex: "F5C2C7") : OnboardingTheme.growLine, lineWidth: 1)
+                                        )
+                                )
+                                .padding(.horizontal, 26)
+                                .padding(.top, 14)
                             }
 
-                            if allFilled {
+                            if showingWrongState {
+                                Button(action: clearAnswers) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "arrow.counterclockwise")
+                                            .font(.system(size: 13, weight: .semibold))
+                                        Text("Clear & Try Again")
+                                            .font(.system(size: 14, weight: .semibold))
+                                    }
+                                    .foregroundColor(Color(hex: "D70015"))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color(hex: "FDECEC"))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(Color(hex: "F5C2C7"), lineWidth: 1)
+                                            )
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .padding(.horizontal, 26)
+                                .padding(.top, 10)
+                            }
+
+                            if allFilled && isAnswerCorrect {
                                 challengeTypesPreview
                                     .padding(.horizontal, 26)
                                     .padding(.top, 20)
@@ -146,10 +188,17 @@ struct Onboarding3: View {
                 blankIndices: blankIndices,
                 filled: filled,
                 selectedBlank: selectedBlank,
+                showWrongValidation: showingWrongState,
+                isWrongBlank: isWrongBlank,
                 onSelectBlank: { index in
-                    selectedBlank = index
-                    if !allFilled {
+                    if selectedBlank == index, filled[index] != nil {
+                        filled[index] = nil
                         feedback = nil
+                    } else {
+                        selectedBlank = index
+                        if !allFilled {
+                            feedback = nil
+                        }
                     }
                 }
             )
@@ -261,10 +310,27 @@ struct Onboarding3: View {
         filled[target] = word
         selectedBlank = blankIndices.first(where: { filled[$0] == nil })
         if blankIndices.allSatisfy({ filled[$0] != nil }) {
-            feedback = "Great! Keep going and remember His Word today."
+            feedback = isAnswerCorrect
+                ? "Great! Keep going and remember His Word today."
+                : "Not quite — try different words, or continue."
         } else {
             feedback = nil
         }
+    }
+
+    private func clearAnswers() {
+        filled = [:]
+        selectedBlank = blankIndices.first
+        feedback = nil
+    }
+
+    private func isWrongBlank(_ index: Int) -> Bool {
+        guard showingWrongState, filled[index] != nil else { return false }
+        return stripPunctuation(filled[index] ?? "").caseInsensitiveCompare(stripPunctuation(tokens[index])) != .orderedSame
+    }
+
+    private func stripPunctuation(_ value: String) -> String {
+        value.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
     }
 }
 
@@ -274,19 +340,22 @@ struct OnboardingVerseFlowView: View {
     let blankIndices: [Int]
     let filled: [Int: String]
     let selectedBlank: Int?
+    var showWrongValidation: Bool = false
+    var isWrongBlank: (Int) -> Bool = { _ in false }
     let onSelectBlank: (Int) -> Void
 
     var body: some View {
         OnboardingWrappingLayout(spacing: 6, lineSpacing: 8) {
             ForEach(Array(tokens.enumerated()), id: \.offset) { index, token in
                 if blankIndices.contains(index) {
+                    let wrong = showWrongValidation && isWrongBlank(index)
                     Button(action: { onSelectBlank(index) }) {
                         Text(filled[index] ?? "______")
                             .font(.system(size: filled[index] == nil ? 19 : 17, weight: filled[index] == nil ? .regular : .semibold, design: filled[index] == nil ? .serif : .default))
                             .foregroundColor(
                                 filled[index] == nil
                                     ? Color.black.opacity(0.35)
-                                    : OnboardingTheme.grow
+                                    : (wrong ? Color(hex: "D70015") : OnboardingTheme.grow)
                             )
                             .underline(
                                 filled[index] == nil,

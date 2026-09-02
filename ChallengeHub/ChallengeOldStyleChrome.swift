@@ -376,13 +376,17 @@ struct ChallengeOldStyleShell<Content: View>: View {
 
             Group {
                 if contentScrollDisabled {
-                    shellScrollBody
+                    VStack(spacing: 0) {
+                        shellScrollBody
+                        Spacer(minLength: 0)
+                    }
                 } else {
                     ScrollView(showsIndicators: false) {
                         shellScrollBody
                     }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
             Button(action: onPrimary) {
                 HStack(spacing: 8) {
@@ -409,6 +413,7 @@ struct ChallengeOldStyleShell<Content: View>: View {
                 .padding(.top, 8)
                 .padding(.bottom, 16)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color(hex: "F2F3F7").ignoresSafeArea())
         .onAppear { refreshTick += 1 }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in

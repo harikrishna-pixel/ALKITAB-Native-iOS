@@ -78,6 +78,12 @@ class BookListViewController: UIViewController, UITableViewDelegate, UITableView
         App_Protocol.delegateBook = self
         // Do any additional setup after loading the view.
     }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        let font = UIFont.systemFont(ofSize: BookCatagorytxtSize)
+        TestamentSegment.setTitleTextAttributes([NSAttributedString.Key.font: font], for: .normal)
+    }
     
     
     

@@ -7,6 +7,7 @@ import SwiftUI
 
 struct ChallengeQuickQuizView: View {
     let verse: ChallengeVerseContext
+    var sessionConfig: ChallengeSessionConfig? = nil
     var onClose: () -> Void
     var onOpenLegacyQuiz: () -> Void
 
@@ -78,7 +79,7 @@ struct ChallengeQuickQuizView: View {
             }
         }
         .onAppear {
-            questions = ChallengeGameFactory.quickQuiz(from: verse)
+            questions = ChallengeGameFactory.quickQuiz(from: verse, config: sessionConfig)
         }
     }
 

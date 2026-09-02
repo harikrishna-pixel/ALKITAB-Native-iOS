@@ -15,24 +15,37 @@ struct DailyJourneyHomeView: View {
     @State private var showStreak = false
     @State private var showCalendar = false
     @State private var didAutoPresentStreak = false
+    @State private var isVerseImageSaved = false
 
     var onContinueReading: () -> Void
     var onOpenPrayerWall: () -> Void
     var onShareVerse: (DailyVerseSnapshot) -> Void
-    var onBookmarkVerse: (DailyVerseSnapshot) -> Void
+    var onBookmarkVerse: (DailyVerseSnapshot, @escaping (Bool) -> Void) -> Void
+    var onOpenVerseFullscreen: (DailyVerseSnapshot, @escaping (DailyVerseSnapshot) -> Void) -> Void
+    var onOpenMemoryChallenge: (DailyVerseSnapshot) -> Void
+    var onOpenReflection: (DailyVerseSnapshot) -> Void
+    var onPresentStreakComplete: () -> Void
 
     init(
         store: DailyJourneyStore = .shared,
         onContinueReading: @escaping () -> Void,
         onOpenPrayerWall: @escaping () -> Void,
         onShareVerse: @escaping (DailyVerseSnapshot) -> Void = { _ in },
-        onBookmarkVerse: @escaping (DailyVerseSnapshot) -> Void = { _ in }
+        onBookmarkVerse: @escaping (DailyVerseSnapshot, @escaping (Bool) -> Void) -> Void = { _, completion in completion(false) },
+        onOpenVerseFullscreen: @escaping (DailyVerseSnapshot, @escaping (DailyVerseSnapshot) -> Void) -> Void = { _, _ in },
+        onOpenMemoryChallenge: @escaping (DailyVerseSnapshot) -> Void = { _ in },
+        onOpenReflection: @escaping (DailyVerseSnapshot) -> Void = { _ in },
+        onPresentStreakComplete: @escaping () -> Void = {}
     ) {
         self.store = store
         self.onContinueReading = onContinueReading
         self.onOpenPrayerWall = onOpenPrayerWall
         self.onShareVerse = onShareVerse
         self.onBookmarkVerse = onBookmarkVerse
+        self.onOpenVerseFullscreen = onOpenVerseFullscreen
+        self.onOpenMemoryChallenge = onOpenMemoryChallenge
+        self.onOpenReflection = onOpenReflection
+        self.onPresentStreakComplete = onPresentStreakComplete
         _verse = State(initialValue: DailyVerseSnapshot.loadCurrent())
         _continueReading = State(initialValue: ContinueReadingSnapshot.loadCurrent())
     }
@@ -128,6 +141,7 @@ struct DailyJourneyHomeView: View {
             loaded.imageName = HomeVerseImage
             verse = loaded
             continueReading = ContinueReadingSnapshot.loadCurrent()
+            isVerseImageSaved = false
             loadPrayerCount()
             UserDefaults.standard.set("1", forKey: "AppOpenFirst")
             if store.allStepsComplete {
@@ -139,7 +153,7 @@ struct DailyJourneyHomeView: View {
                 didAutoPresentStreak = true
                 showMemory = false
                 showReflection = false
-                showStreak = true
+                onPresentStreakComplete()
             }
         }
     }
@@ -234,8 +248,15 @@ struct DailyJourneyHomeView: View {
                 Spacer(minLength: 8)
 
                 DailyJourneyVerseActionsBar(
+                    isSaved: isVerseImageSaved,
                     onShare: { onShareVerse(verse) },
-                    onBookmark: { onBookmarkVerse(verse) }
+                    onBookmark: {
+                        onBookmarkVerse(verse) { success in
+                            if success {
+                                isVerseImageSaved = true
+                            }
+                        }
+                    }
                 )
                 .frame(width: 82, height: 36)
                 .fixedSize()
@@ -285,23 +306,25 @@ struct DailyJourneyHomeView: View {
             .cornerRadius(18)
             .contentShape(Rectangle())
             .gesture(
-                DragGesture(minimumDistance: 24)
+                DragGesture(minimumDistance: 0)
                     .onEnded { value in
                         let dx = value.translation.width
                         let dy = value.translation.height
+                        if abs(dx) < 12 && abs(dy) < 12 {
+                            store.markVerseCompleted()
+                            openVerseFullscreen()
+                            return
+                        }
                         guard abs(dx) > abs(dy), abs(dx) > 40 else { return }
                         if dx < 0 {
                             verse.cycleWallpaper()
                         } else {
                             verse.cycleWallpaper(backward: true)
                         }
+                        isVerseImageSaved = false
                         store.markVerseCompleted()
                     }
             )
-            .onTapGesture {
-                verse.cycleWallpaper()
-                store.markVerseCompleted()
-            }
 
             HStack {
                 Spacer()
@@ -338,23 +361,26 @@ struct DailyJourneyHomeView: View {
                     subtitle: verse.reference.isEmpty ? "Read today's Scripture" : verse.reference,
                     icon: "book.fill",
                     done: store.verseCompleted,
-                    action: { store.markVerseCompleted() }
+                    action: {
+                        store.markVerseCompleted()
+                        openVerseFullscreen()
+                    }
                 )
                 Divider().padding(.leading, 52)
                 journeyRow(
                     title: "Memory Challenge",
-                    subtitle: "How much can you remember?",
+                    subtitle: store.memoryCompleted ? "Completed for today" : "How much can you remember?",
                     icon: "brain.head.profile",
                     done: store.memoryCompleted,
-                    action: { showMemory = true }
+                    action: { onOpenMemoryChallenge(verse) }
                 )
                 Divider().padding(.leading, 52)
                 journeyRow(
                     title: "Reflection",
-                    subtitle: "What spoke to you?",
+                    subtitle: store.reflectionCompleted ? "Completed for today" : "What spoke to you?",
                     icon: "pencil",
                     done: store.reflectionCompleted,
-                    action: { showReflection = true }
+                    action: { onOpenReflection(verse) }
                 )
             }
             .background(Color.white)
@@ -518,5 +544,12 @@ struct DailyJourneyHomeView: View {
     private func avatarColor(_ index: Int) -> Color {
         let colors = [Color(hex: "7AA2FF"), Color(hex: "F5A623"), Color(hex: "34C759")]
         return colors[index % colors.count]
+    }
+
+    private func openVerseFullscreen() {
+        onOpenVerseFullscreen(verse) { updated in
+            verse = updated
+            isVerseImageSaved = false
+        }
     }
 }

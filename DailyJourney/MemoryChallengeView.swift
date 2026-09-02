@@ -9,6 +9,7 @@ struct MemoryChallengeView: View {
     let verse: DailyVerseSnapshot
     @ObservedObject var store: DailyJourneyStore
     var onDone: () -> Void
+    var onProceed: (() -> Void)? = nil
 
     @State private var displayTokens: [String] = []
     @State private var blankIndices: [Int] = []
@@ -209,7 +210,11 @@ struct MemoryChallengeView: View {
 
     private func checkAnswer() {
         if isReviewMode || isCorrect {
-            onDone()
+            if let onProceed = onProceed {
+                onProceed()
+            } else {
+                onDone()
+            }
             return
         }
         guard blankIndices.allSatisfy({ filled[$0] != nil }) else {
