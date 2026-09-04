@@ -43,7 +43,7 @@ struct Onboarding3: View {
 
                             HStack {
                                 Text("FILL THE VERSE")
-                                    .font(.system(size: 11, weight: .heavy))
+                                                                                                                                                                                                                                        .font(.system(size: 11, weight: .heavy))
                                     .tracking(1)
                                     .foregroundColor(Color(hex: "7488A6"))
                                 Spacer()
@@ -84,6 +84,20 @@ struct Onboarding3: View {
                             optionsRow
                                 .padding(.horizontal, 26)
                                 .padding(.top, 16)
+
+                            HStack {
+                                Spacer()
+                                Button(action: revealHint) {
+                                    Text("Need a hint?")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(OnboardingTheme.primaryBlue)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .disabled(allFilled && isAnswerCorrect)
+                                .opacity(allFilled && isAnswerCorrect ? 0.35 : 1)
+                            }
+                            .padding(.horizontal, 26)
+                            .padding(.top, 10)
 
                             if let feedback = feedback {
                                 let isWrong = feedback.hasPrefix("Not quite")
@@ -322,6 +336,24 @@ struct Onboarding3: View {
         filled = [:]
         selectedBlank = blankIndices.first
         feedback = nil
+    }
+
+    /// Same idea as Memory Challenge hint — fills one blank with the correct word.
+    private func revealHint() {
+        guard let idx = blankIndices.first(where: { filled[$0] == nil }) ?? blankIndices.first else { return }
+        let answer = stripPunctuation(tokens[idx])
+        let word = options.first {
+            stripPunctuation($0).caseInsensitiveCompare(answer) == .orderedSame
+        } ?? answer
+        filled[idx] = word
+        selectedBlank = blankIndices.first(where: { filled[$0] == nil })
+        if blankIndices.allSatisfy({ filled[$0] != nil }) {
+            feedback = isAnswerCorrect
+                ? "Great! Keep going and remember His Word today."
+                : "Not quite — try different words, or continue."
+        } else {
+            feedback = nil
+        }
     }
 
     private func isWrongBlank(_ index: Int) -> Bool {

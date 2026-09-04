@@ -550,6 +550,12 @@ final class VerseExplanationView: UIView {
     }
 
     @objc private func shareTapped() {
-        App_Protocol.delegateReader?.shared(VerseStr: explanationText, Bookname: "\(verseText)\n\n\(verseReference.replacingOccurrences(of: "-", with: " "))")
+        // Display order only: verse + reference, then "Explanation", then explanation text.
+        // Uses the same shared(VerseStr:Bookname:) path — no share/fetch logic changes.
+        let reference = verseReference.replacingOccurrences(of: "-", with: " ")
+        App_Protocol.delegateReader?.shared(
+            VerseStr: "\(verseText)\n\n\(reference)",
+            Bookname: "Explanation\n\n\(explanationText)"
+        )
     }
 }

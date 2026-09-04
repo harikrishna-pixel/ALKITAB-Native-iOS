@@ -23,6 +23,8 @@ struct ChallengeVerseMatchView: View {
     @State private var usedHint = false
     @State private var walletTick = 0
     @State private var toast: String?
+    @State private var outOfLives = false
+    @State private var finalCorrectCount = 0
 
     private let colors: [Color] = [Color(hex: "1C46B2"), Color(hex: "34C759"), Color(hex: "F5A623")]
 
@@ -34,75 +36,100 @@ struct ChallengeVerseMatchView: View {
     }
 
     var body: some View {
-        ChallengeOldStyleShell(
-            screenTitle: ChallengeKind.verseMatch.title,
-            onBack: onClose,
-            lives: lives,
-            questionNumber: 1,
-            questionTotal: 1,
-            caption: "Match the verses / people / events.",
-            primaryTitle: solved ? "Done" : "Check Answer",
-            primaryEnabled: true,
-            onPrimary: check,
-            fiftyFiftyEnabled: false,
-            hintEnabled: !usedHint && !solved,
-            skipEnabled: !solved,
-            onLifeline: handleLifeline,
-            walletTick: walletTick,
-            contentScrollDisabled: true
-        ) {
-            VStack(alignment: .leading, spacing: 12) {
-                ChallengeQuizContentHeader(
-                    reference: verse.reference,
-                    instruction: "Match the verse with the correct reference."
+        Group {
+            if outOfLives {
+                ChallengeOldStyleResult(
+                    title: "Out of Lives!",
+                    scoreText: "Your Score: \(finalCorrectCount)/\(max(pairs.count, 1))",
+                    subtitle: "Good try! Keep practicing",
+                    onDone: onClose
                 )
+            } else {
+                ChallengeOldStyleShell(
+                    screenTitle: ChallengeKind.verseMatch.title,
+                    onBack: onClose,
+                    lives: lives,
+                    questionNumber: 1,
+                    questionTotal: 1,
+                    caption: "Match the verses / people / events.",
+                    primaryTitle: solved ? "Done" : "Check Answer",
+                    primaryEnabled: !outOfLives,
+                    onPrimary: check,
+                    fiftyFiftyEnabled: false,
+                    hintEnabled: !usedHint && !solved && lives > 0,
+                    skipEnabled: !solved && lives > 0,
+                    onLifeline: handleLifeline,
+                    walletTick: walletTick,
+                    contentScrollDisabled: true
+                ) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ChallengeQuizContentHeader(
+                            reference: verse.reference,
+                            instruction: "Match the verse with the correct reference."
+                        )
 
-                ZStack(alignment: .top) {
-                    HStack(alignment: .top, spacing: 18) {
-                        VStack(spacing: 12) {
-                            ForEach(leftOrder, id: \.self) { id in
-                                if let pair = pairs.first(where: { $0.id == id }) {
-                                    leftCard(pair)
+                        ZStack(alignment: .top) {
+                            HStack(alignment: .top, spacing: 18) {
+                                VStack(spacing: 12) {
+                                    ForEach(leftOrder, id: \.self) { id in
+                                        if let pair = pairs.first(where: { $0.id == id }) {
+                                            leftCard(pair)
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
+                                .frame(maxWidth: .infinity)
 
-                        VStack(spacing: 12) {
-                            ForEach(rightOrder, id: \.self) { id in
-                                if let pair = pairs.first(where: { $0.id == id }) {
-                                    rightCard(pair)
+                                VStack(spacing: 12) {
+                                    ForEach(rightOrder, id: \.self) { id in
+                                        if let pair = pairs.first(where: { $0.id == id }) {
+                                            rightCard(pair)
+                                        }
+                                    }
                                 }
+                                .frame(maxWidth: .infinity)
                             }
+
+                            MatchLinesOverlay(
+                                matches: matches,
+                                anchors: anchors,
+                                dragStartLeft: dragStartLeft,
+                                dragPoint: dragPoint,
+                                pairs: pairs,
+                                colors: colors
+                            )
+                            .allowsHitTesting(false)
                         }
+                        .coordinateSpace(name: "matchBoard")
+                        .onPreferenceChange(MatchAnchorKey.self) { anchors = $0 }
                         .frame(maxWidth: .infinity)
+                        .frame(height: boardHeight, alignment: .top)
+                        .clipped()
+
+                        // Fixed-height slot so feedback never resizes the card / shifts chrome.
+                        Text(feedback ?? " ")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(solved ? Color(hex: "1B7A3D") : Color(hex: "D70015"))
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.85)
+                            .opacity(feedback == nil ? 0 : 1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(height: 36, alignment: .topLeading)
                     }
-
-                    MatchLinesOverlay(
-                        matches: matches,
-                        anchors: anchors,
-                        dragStartLeft: dragStartLeft,
-                        dragPoint: dragPoint,
-                        pairs: pairs,
-                        colors: colors
-                    )
-                    .allowsHitTesting(false)
+                    .overlay(alignment: .bottom) {
+                        if let toast = toast {
+                            Text(toast)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color(hex: "D70015").opacity(0.92))
+                                .cornerRadius(10)
+                                .padding(.bottom, 4)
+                                .allowsHitTesting(false)
+                        }
+                    }
                 }
-                .coordinateSpace(name: "matchBoard")
-                .onPreferenceChange(MatchAnchorKey.self) { anchors = $0 }
-                .frame(maxWidth: .infinity)
-                .frame(height: boardHeight, alignment: .top)
-
-                if let feedback = feedback {
-                    Text(feedback)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(solved ? Color(hex: "1B7A3D") : Color(hex: "D70015"))
-                }
-                if let toast = toast {
-                    Text(toast)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Color(hex: "D70015"))
-                }
+                .transaction { $0.animation = nil }
             }
         }
         .onAppear {
@@ -134,7 +161,7 @@ struct ChallengeVerseMatchView: View {
                 )
         }
         .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 72, maxHeight: 72, alignment: .leading)
         .background(Color.white)
         .cornerRadius(12)
         .overlay(
@@ -166,7 +193,7 @@ struct ChallengeVerseMatchView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 72, maxHeight: 72, alignment: .leading)
         .background(Color.white)
         .cornerRadius(12)
         .overlay(
@@ -268,15 +295,28 @@ struct ChallengeVerseMatchView: View {
             onClose()
             return
         }
+        guard lives > 0 else { return }
         guard matches.count == pairs.count else {
             feedback = "Draw lines to match all verses."
             return
         }
         let ok = matches.allSatisfy { $0.key == $0.value }
+        let correctCount = matches.filter { $0.key == $0.value }.count
         solved = ok
-        feedback = ok ? "Perfect match!" : "Some matches are incorrect — try again."
-        if !ok {
-            lives = max(0, lives - 1)
+        if ok {
+            feedback = "Perfect match!"
+            return
+        }
+        lives = max(0, lives - 1)
+        if lives == 0 {
+            finalCorrectCount = correctCount
+            feedback = "Out of lives"
+            toast = "Out of Lives!"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                outOfLives = true
+            }
+        } else {
+            feedback = "Some matches are incorrect — try again."
         }
     }
 

@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -614,6 +614,15 @@
 		A1B2C3D42F46A10100000005 /* OnboardingAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000015 /* OnboardingAuthManager.swift */; };
 		A2G00A032F13E3240097A8E3 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = A2G00A022F13E3240097A8E3 /* GoogleSignIn */; };
 		B18CE61E303DAE26001FA16C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */; };
+		B1A3D241304AC9B100FD5D0C /* 5.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D23B304AC9B100FD5D0C /* 5.png */; };
+		B1A3D242304AC9B100FD5D0C /* 2.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D238304AC9B100FD5D0C /* 2.png */; };
+		B1A3D243304AC9B100FD5D0C /* 6.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D23C304AC9B100FD5D0C /* 6.png */; };
+		B1A3D244304AC9B100FD5D0C /* 1.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D237304AC9B100FD5D0C /* 1.png */; };
+		B1A3D245304AC9B100FD5D0C /* 7.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D23D304AC9B100FD5D0C /* 7.png */; };
+		B1A3D246304AC9B100FD5D0C /* 3.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D239304AC9B100FD5D0C /* 3.png */; };
+		B1A3D247304AC9B100FD5D0C /* 4.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D23A304AC9B100FD5D0C /* 4.png */; };
+		B1A3D248304AC9B100FD5D0C /* 8.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D23E304AC9B100FD5D0C /* 8.png */; };
+		B1A3D249304AC9B100FD5D0C /* 9.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D23F304AC9B100FD5D0C /* 9.png */; };
 		B2C3D4E52F46B20100000001 /* DailyJourneyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000011 /* DailyJourneyStore.swift */; };
 		B2C3D4E52F46B20100000002 /* DailyJourneyHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000012 /* DailyJourneyHomeView.swift */; };
 		B2C3D4E52F46B20100000003 /* MemoryChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000013 /* MemoryChallengeView.swift */; };
@@ -626,11 +635,7 @@
 		B2C3D4E52F46B2010000000A /* DailyVerseFullscreenViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B2010000001A /* DailyVerseFullscreenViewController.swift */; };
 		BFB65A5D50D4E04587173B1F /* Pods_NKJV_Bible.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5684D797A8C667919AB63043 /* Pods_NKJV_Bible.framework */; };
 		C3D4E5F62F46C30100000001 /* ChallengeGameContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000011 /* ChallengeGameContent.swift */; };
-		C3D4E5F62F46C30100000034 /* ChallengeHubPickerComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000024 /* ChallengeHubPickerComponents.swift */; };
 		C3D4E5F62F46C30100000002 /* ChallengeHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000012 /* ChallengeHubView.swift */; };
-		C3D4E5F62F46C30100000031 /* ChallengeSessionConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000021 /* ChallengeSessionConfig.swift */; };
-		C3D4E5F62F46C30100000032 /* ChallengeHubSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000022 /* ChallengeHubSetupView.swift */; };
-		C3D4E5F62F46C30100000033 /* ChallengeHubSetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000023 /* ChallengeHubSetupViewController.swift */; };
 		C3D4E5F62F46C30100000003 /* ChallengeHubViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000013 /* ChallengeHubViewController.swift */; };
 		C3D4E5F62F46C30100000004 /* ChallengeQuickQuizView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000014 /* ChallengeQuickQuizView.swift */; };
 		C3D4E5F62F46C30100000005 /* ChallengeFillVerseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000015 /* ChallengeFillVerseView.swift */; };
@@ -638,6 +643,11 @@
 		C3D4E5F62F46C30100000007 /* ChallengeTrueFalseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000017 /* ChallengeTrueFalseView.swift */; };
 		C3D4E5F62F46C30100000008 /* ChallengeWordSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000018 /* ChallengeWordSearchView.swift */; };
 		C3D4E5F62F46C30100000009 /* ChallengeOldStyleChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000019 /* ChallengeOldStyleChrome.swift */; };
+		C3D4E5F62F46C30100000031 /* ChallengeSessionConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000021 /* ChallengeSessionConfig.swift */; };
+		C3D4E5F62F46C30100000032 /* ChallengeHubSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000022 /* ChallengeHubSetupView.swift */; };
+		C3D4E5F62F46C30100000033 /* ChallengeHubSetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000023 /* ChallengeHubSetupViewController.swift */; };
+		C3D4E5F62F46C30100000034 /* ChallengeHubPickerComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000024 /* ChallengeHubPickerComponents.swift */; };
+		C3D4E5F62F46C30100000035 /* QuizOrChallengeChooserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000025 /* QuizOrChallengeChooserView.swift */; };
 		D42E2B172BF79432006D4D18 /* puzzal Notification in Resources */ = {isa = PBXBuildFile; fileRef = D42E2B162BF79432006D4D18 /* puzzal Notification */; };
 /* End PBXBuildFile section */
 
@@ -1283,6 +1293,15 @@
 		A1B2C3D42F46A10100000015 /* OnboardingAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAuthManager.swift; sourceTree = "<group>"; };
 		B13B6D6A8DF1821F657CBFAA /* Pods-NKJV Bible.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NKJV Bible.debug.xcconfig"; path = "Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible.debug.xcconfig"; sourceTree = "<group>"; };
 		B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		B1A3D237304AC9B100FD5D0C /* 1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 1.png; sourceTree = "<group>"; };
+		B1A3D238304AC9B100FD5D0C /* 2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 2.png; sourceTree = "<group>"; };
+		B1A3D239304AC9B100FD5D0C /* 3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 3.png; sourceTree = "<group>"; };
+		B1A3D23A304AC9B100FD5D0C /* 4.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 4.png; sourceTree = "<group>"; };
+		B1A3D23B304AC9B100FD5D0C /* 5.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 5.png; sourceTree = "<group>"; };
+		B1A3D23C304AC9B100FD5D0C /* 6.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 6.png; sourceTree = "<group>"; };
+		B1A3D23D304AC9B100FD5D0C /* 7.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 7.png; sourceTree = "<group>"; };
+		B1A3D23E304AC9B100FD5D0C /* 8.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 8.png; sourceTree = "<group>"; };
+		B1A3D23F304AC9B100FD5D0C /* 9.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 9.png; sourceTree = "<group>"; };
 		B2C3D4E52F46B20100000011 /* DailyJourneyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyJourneyStore.swift; sourceTree = "<group>"; };
 		B2C3D4E52F46B20100000012 /* DailyJourneyHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyJourneyHomeView.swift; sourceTree = "<group>"; };
 		B2C3D4E52F46B20100000013 /* MemoryChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryChallengeView.swift; sourceTree = "<group>"; };
@@ -1294,11 +1313,7 @@
 		B2C3D4E52F46B20100000019 /* DailyVerseFullscreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyVerseFullscreenView.swift; sourceTree = "<group>"; };
 		B2C3D4E52F46B2010000001A /* DailyVerseFullscreenViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyVerseFullscreenViewController.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000011 /* ChallengeGameContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeGameContent.swift; sourceTree = "<group>"; };
-		C3D4E5F62F46C30100000024 /* ChallengeHubPickerComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubPickerComponents.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000012 /* ChallengeHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubView.swift; sourceTree = "<group>"; };
-		C3D4E5F62F46C30100000021 /* ChallengeSessionConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeSessionConfig.swift; sourceTree = "<group>"; };
-		C3D4E5F62F46C30100000022 /* ChallengeHubSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubSetupView.swift; sourceTree = "<group>"; };
-		C3D4E5F62F46C30100000023 /* ChallengeHubSetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubSetupViewController.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000013 /* ChallengeHubViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubViewController.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000014 /* ChallengeQuickQuizView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeQuickQuizView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000015 /* ChallengeFillVerseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeFillVerseView.swift; sourceTree = "<group>"; };
@@ -1306,21 +1321,16 @@
 		C3D4E5F62F46C30100000017 /* ChallengeTrueFalseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeTrueFalseView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000018 /* ChallengeWordSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeWordSearchView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000019 /* ChallengeOldStyleChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeOldStyleChrome.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000021 /* ChallengeSessionConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeSessionConfig.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000022 /* ChallengeHubSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubSetupView.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000023 /* ChallengeHubSetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubSetupViewController.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000024 /* ChallengeHubPickerComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubPickerComponents.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000025 /* QuizOrChallengeChooserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuizOrChallengeChooserView.swift; sourceTree = "<group>"; };
 		D42E2B162BF79432006D4D18 /* puzzal Notification */ = {isa = PBXFileReference; lastKnownFileType = file; path = "puzzal Notification"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		B1A9DAC330381F560007DC37 /* Onboarding_bg */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = Onboarding_bg;
-			sourceTree = "<group>";
-		};
+		B1A9DAC330381F560007DC37 /* Onboarding_bg */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Onboarding_bg; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1555,6 +1565,7 @@
 				F2A8816BC7DD130E668A70D4 /* Pods */,
 				EFB127088675B0D9FB9CCA36 /* Frameworks */,
 				B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */,
+				B1A3D240304AC9B100FD5D0C /* VerseBG Compressed */,
 			);
 			sourceTree = "<group>";
 		};
@@ -3555,6 +3566,22 @@
 			path = BibleHiPromotion;
 			sourceTree = "<group>";
 		};
+		B1A3D240304AC9B100FD5D0C /* VerseBG Compressed */ = {
+			isa = PBXGroup;
+			children = (
+				B1A3D237304AC9B100FD5D0C /* 1.png */,
+				B1A3D238304AC9B100FD5D0C /* 2.png */,
+				B1A3D239304AC9B100FD5D0C /* 3.png */,
+				B1A3D23A304AC9B100FD5D0C /* 4.png */,
+				B1A3D23B304AC9B100FD5D0C /* 5.png */,
+				B1A3D23C304AC9B100FD5D0C /* 6.png */,
+				B1A3D23D304AC9B100FD5D0C /* 7.png */,
+				B1A3D23E304AC9B100FD5D0C /* 8.png */,
+				B1A3D23F304AC9B100FD5D0C /* 9.png */,
+			);
+			path = "VerseBG Compressed";
+			sourceTree = "<group>";
+		};
 		B2C3D4E52F46B20100000020 /* DailyJourney */ = {
 			isa = PBXGroup;
 			children = (
@@ -3582,6 +3609,7 @@
 				C3D4E5F62F46C30100000022 /* ChallengeHubSetupView.swift */,
 				C3D4E5F62F46C30100000013 /* ChallengeHubViewController.swift */,
 				C3D4E5F62F46C30100000023 /* ChallengeHubSetupViewController.swift */,
+				C3D4E5F62F46C30100000025 /* QuizOrChallengeChooserView.swift */,
 				C3D4E5F62F46C30100000014 /* ChallengeQuickQuizView.swift */,
 				C3D4E5F62F46C30100000015 /* ChallengeFillVerseView.swift */,
 				C3D4E5F62F46C30100000016 /* ChallengeVerseMatchView.swift */,
@@ -3765,6 +3793,15 @@
 				017C396F2A40401C004C64FA /* heart2.png in Resources */,
 				0144EEB42A90CD530022EABF /* ColorViewCCell.xib in Resources */,
 				0144EF202A90CD530022EABF /* Leather Boots.otf in Resources */,
+				B1A3D241304AC9B100FD5D0C /* 5.png in Resources */,
+				B1A3D242304AC9B100FD5D0C /* 2.png in Resources */,
+				B1A3D243304AC9B100FD5D0C /* 6.png in Resources */,
+				B1A3D244304AC9B100FD5D0C /* 1.png in Resources */,
+				B1A3D245304AC9B100FD5D0C /* 7.png in Resources */,
+				B1A3D246304AC9B100FD5D0C /* 3.png in Resources */,
+				B1A3D247304AC9B100FD5D0C /* 4.png in Resources */,
+				B1A3D248304AC9B100FD5D0C /* 8.png in Resources */,
+				B1A3D249304AC9B100FD5D0C /* 9.png in Resources */,
 				019246782A69202E00D5CF27 /* ColorCell.xib in Resources */,
 				0144EF0E2A90CD530022EABF /* Daniella.otf in Resources */,
 				0144EF372A90CD530022EABF /* Serigraphy.otf in Resources */,
@@ -4085,9 +4122,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -4124,9 +4165,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -4306,6 +4351,7 @@
 				C3D4E5F62F46C30100000032 /* ChallengeHubSetupView.swift in Sources */,
 				C3D4E5F62F46C30100000003 /* ChallengeHubViewController.swift in Sources */,
 				C3D4E5F62F46C30100000033 /* ChallengeHubSetupViewController.swift in Sources */,
+				C3D4E5F62F46C30100000035 /* QuizOrChallengeChooserView.swift in Sources */,
 				C3D4E5F62F46C30100000004 /* ChallengeQuickQuizView.swift in Sources */,
 				C3D4E5F62F46C30100000009 /* ChallengeOldStyleChrome.swift in Sources */,
 				C3D4E5F62F46C30100000005 /* ChallengeFillVerseView.swift in Sources */,

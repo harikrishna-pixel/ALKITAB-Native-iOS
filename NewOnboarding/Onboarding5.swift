@@ -8,7 +8,7 @@ import SwiftUI
 struct Onboarding5: View {
     private let dayLabels = ["M", "T", "W", "T", "F", "S", "S"]
     private let journeyItems = [
-        ("Today's Verse", false),
+        ("Today's Verse", true),
         ("Memory Challenge", false),
         ("Reflection", false)
     ]
@@ -20,11 +20,11 @@ struct Onboarding5: View {
 
                 VStack(spacing: 0) {
                     ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 0) {
+                        VStack(alignment: .center, spacing: 0) {
                             OnboardingSerifTitle(
                                 lines: ["Stay Rooted", "Every Day"],
                                 size: min(geometry.size.width * 0.08, 31),
-                                alignment: .leading
+                                alignment: .center
                             )
                             .padding(.horizontal, 26)
                             .padding(.top, 12)
@@ -32,7 +32,7 @@ struct Onboarding5: View {
                             OnboardingLede(
                                 text: "Read. Remember. Reflect.\nYour journey starts today.",
                                 onDark: true,
-                                alignment: .leading
+                                alignment: .center
                             )
                             .padding(.horizontal, 26)
                             .padding(.top, 8)
@@ -127,8 +127,8 @@ struct Onboarding5: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(Color(hex: "DCE7F8"))
                 Spacer()
-                Text(done ? "✓" : "○")
-                    .font(.system(size: 16, weight: .semibold))
+                Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(done ? OnboardingTheme.grow : Color(hex: "4C5F7E"))
             }
             .padding(.vertical, 14)

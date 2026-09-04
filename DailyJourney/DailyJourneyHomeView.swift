@@ -305,16 +305,15 @@ struct DailyJourneyHomeView: View {
             .frame(height: 200)
             .cornerRadius(18)
             .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
+            .onTapGesture {
+                store.markVerseCompleted()
+                openVerseFullscreen()
+            }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 40)
                     .onEnded { value in
                         let dx = value.translation.width
                         let dy = value.translation.height
-                        if abs(dx) < 12 && abs(dy) < 12 {
-                            store.markVerseCompleted()
-                            openVerseFullscreen()
-                            return
-                        }
                         guard abs(dx) > abs(dy), abs(dx) > 40 else { return }
                         if dx < 0 {
                             verse.cycleWallpaper()

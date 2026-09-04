@@ -481,11 +481,11 @@
                         <constraint firstItem="yK6-w4-Lan" firstAttribute="top" secondItem="rTO-XT-jaF" secondAttribute="top" constant="20" id="9s6-FW-Zfb"/>
                         <constraint firstAttribute="trailing" secondItem="zC9-AP-Z3a" secondAttribute="trailing" constant="20" id="BNQ-TH-59N"/>
                         <constraint firstItem="zC9-AP-Z3a" firstAttribute="leading" secondItem="rTO-XT-jaF" secondAttribute="leading" constant="20" id="Csb-cs-5St"/>
-                        <constraint firstAttribute="trailing" secondItem="YoU-DM-oDm" secondAttribute="trailing" constant="60" id="GPq-Fz-Cmn"/>
+                        <constraint firstAttribute="trailing" secondItem="YoU-DM-oDm" secondAttribute="trailing" constant="20" id="GPq-Fz-Cmn"/>
                         <constraint firstAttribute="trailing" secondItem="Y8R-vF-gcU" secondAttribute="trailing" constant="20" id="HgL-9R-Gdg"/>
                         <constraint firstItem="Lp6-6e-u48" firstAttribute="leading" secondItem="rTO-XT-jaF" secondAttribute="leading" constant="16" id="Vp2-8i-ztY"/>
                         <constraint firstAttribute="trailing" secondItem="Lp6-6e-u48" secondAttribute="trailing" constant="20" id="YR3-dt-oWr"/>
-                        <constraint firstItem="YoU-DM-oDm" firstAttribute="leading" secondItem="rTO-XT-jaF" secondAttribute="leading" constant="60" id="awp-af-9kD"/>
+                        <constraint firstItem="YoU-DM-oDm" firstAttribute="leading" secondItem="rTO-XT-jaF" secondAttribute="leading" constant="20" id="awp-af-9kD"/>
                         <constraint firstItem="Y8R-vF-gcU" firstAttribute="top" secondItem="rTO-XT-jaF" secondAttribute="top" constant="23" id="dRi-Yl-Ipv"/>
                         <constraint firstItem="D6p-zX-v2d" firstAttribute="top" secondItem="rTO-XT-jaF" secondAttribute="top" constant="8" id="g8T-r8-Ihs"/>
                         <constraint firstItem="yK6-w4-Lan" firstAttribute="centerX" secondItem="rTO-XT-jaF" secondAttribute="centerX" id="ooa-M9-abw"/>

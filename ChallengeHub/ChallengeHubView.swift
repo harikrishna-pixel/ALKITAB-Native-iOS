@@ -36,7 +36,7 @@ struct ChallengeHubView: View {
     var body: some View {
         VStack(spacing: 0) {
             ChallengeQuizHeaderBar(
-                title: "Bible Quiz",
+                title: "Challenge Hub",
                 showBackButton: showBackButton,
                 onBack: onBack,
                 walletTick: walletTick
@@ -44,26 +44,6 @@ struct ChallengeHubView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        ChallengeQuizContentHeader(
-                            reference: verse.reference,
-                            instruction: sessionConfig == nil
-                                ? "Choose a challenge to grow in God's Word."
-                                : "\(sessionConfig!.bookName) \(sessionConfig!.displayChapterNumber()) · \(sessionConfig!.difficulty.title)"
-                        )
-
-                        Text(verse.text)
-                            .font(.system(size: 15))
-                            .foregroundColor(Color(hex: "0B1B3A"))
-                            .lineLimit(4)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white)
-                    .cornerRadius(14)
-                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
-
                     ForEach(ChallengeKind.allCases) { kind in
                         challengeRow(kind)
                     }
@@ -410,7 +390,7 @@ struct ChallengeStartSheet: View {
                     }
 
                     if let difficulty {
-                        Text(difficulty.blankHint)
+                        Text(kind.difficultyInstruction(for: difficulty))
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(themeColor)
                     }

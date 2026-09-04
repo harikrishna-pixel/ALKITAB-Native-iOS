@@ -10,6 +10,7 @@ struct StreakCompleteView: View {
     var onDone: () -> Void
 
     @State private var showCalendar = false
+    @State private var flamePulse = false
 
     private var days: Int { max(store.streakCount, 1) }
     /// Fixed Sun → Sat week order (calendar date aligned).
@@ -21,13 +22,25 @@ struct StreakCompleteView: View {
                 VStack(spacing: 22) {
                     ZStack {
                         Circle()
-                            .fill(Color(hex: "FF9F0A").opacity(0.14))
+                            .fill(Color(hex: "FF9F0A").opacity(flamePulse ? 0.28 : 0.14))
                             .frame(width: 84, height: 84)
+                            .scaleEffect(flamePulse ? 1.08 : 1.0)
                         Image(systemName: "flame.fill")
                             .font(.system(size: 34))
                             .foregroundColor(Color(hex: "FF9F0A"))
+                            .scaleEffect(flamePulse ? 1.12 : 0.92)
+                            .opacity(flamePulse ? 1.0 : 0.85)
+                            .offset(y: flamePulse ? -2 : 2)
                     }
-                    .padding(.top, 12)
+                    .padding(.top, 28)
+                    .onAppear {
+                        withAnimation(
+                            Animation.easeInOut(duration: 0.85)
+                                .repeatForever(autoreverses: true)
+                        ) {
+                            flamePulse = true
+                        }
+                    }
 
                     Text("Keep Your Streak")
                         .font(.system(size: 26, weight: .bold))
@@ -56,14 +69,21 @@ struct StreakCompleteView: View {
                         HStack {
                             ForEach(Array(weekdays.enumerated()), id: \.offset) { index, day in
                                 let filled = isWeekdayFilled(at: index)
+                                let isToday = isCurrentWeekday(at: index)
                                 VStack(spacing: 8) {
                                     Text(day)
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundColor(.white.opacity(0.7))
+                                        .font(.system(size: 11, weight: isToday ? .bold : .medium))
+                                        .foregroundColor(isToday ? .white : .white.opacity(0.7))
                                     ZStack {
                                         Circle()
                                             .fill(filled ? Color(hex: "34C759") : Color.white.opacity(0.12))
                                             .frame(width: 28, height: 28)
+                                        // In-progress today: outer ring (before completion).
+                                        if isToday && !filled {
+                                            Circle()
+                                                .stroke(Color(hex: "FF9F0A"), lineWidth: 2.5)
+                                                .frame(width: 28, height: 28)
+                                        }
                                         if filled {
                                             Image(systemName: "checkmark")
                                                 .font(.system(size: 11, weight: .bold))
@@ -155,5 +175,11 @@ struct StreakCompleteView: View {
     private func isWeekdayFilled(at displayIndex: Int) -> Bool {
         guard let dayKey = store.dayKeyForWeekdayDisplayIndex(displayIndex) else { return false }
         return store.hasSavedStreak(on: dayKey)
+    }
+
+    /// Sun…Sat index for today (display only).
+    private func isCurrentWeekday(at displayIndex: Int) -> Bool {
+        let todayIndex = Calendar.current.component(.weekday, from: Date()) - 1
+        return displayIndex == todayIndex
     }
 }

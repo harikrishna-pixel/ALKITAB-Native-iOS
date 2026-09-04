@@ -6,8 +6,8 @@
 import Foundation
 
 enum ChallengeKind: String, CaseIterable, Identifiable {
-    case quickQuiz
     case fillVerse
+    case quickQuiz
     case verseMatch
     case trueFalse
     case wordSearch
@@ -66,8 +66,40 @@ enum ChallengeKind: String, CaseIterable, Identifiable {
 
     var isPremium: Bool {
         switch self {
-        case .quickQuiz, .fillVerse: return false
-        case .verseMatch, .trueFalse, .wordSearch: return true
+        case .fillVerse: return false
+        case .quickQuiz, .verseMatch, .trueFalse, .wordSearch: return true
+        }
+    }
+
+    /// Setup-sheet instruction under Easy / Medium / Hard (display only).
+    func difficultyInstruction(for difficulty: ChallengeDifficulty) -> String {
+        switch self {
+        case .fillVerse:
+            return difficulty.blankHint
+        case .quickQuiz:
+            switch difficulty {
+            case .easy: return "Shorter multiple-choice questions"
+            case .medium: return "Standard multiple-choice questions"
+            case .hard: return "Tougher multiple-choice questions"
+            }
+        case .verseMatch:
+            switch difficulty {
+            case .easy: return "Match verses with their references"
+            case .medium: return "Match more verse and reference pairs"
+            case .hard: return "Match the full set of verse pairs"
+            }
+        case .trueFalse:
+            switch difficulty {
+            case .easy: return "Simpler true or false statements"
+            case .medium: return "Standard true or false statements"
+            case .hard: return "Harder true or false statements"
+            }
+        case .wordSearch:
+            switch difficulty {
+            case .easy: return "Find fewer hidden Bible words"
+            case .medium: return "Find the hidden Bible words"
+            case .hard: return "Find more hidden Bible words"
+            }
         }
     }
 }
@@ -264,9 +296,34 @@ enum ChallengeGameFactory {
         }
         let blanks = Array(candidates.shuffled().prefix(min(blankLimit, candidates.count))).sorted()
         var bank = blanks.map { tokens[$0].trimmingCharacters(in: CharacterSet.alphanumerics.inverted) }
-        let distractors = ["strength", "fear", "guide", "hope", "faith", "peace"]
-            .filter { d in !bank.contains(where: { $0.caseInsensitiveCompare(d) == .orderedSame }) }
-        bank.append(contentsOf: distractors.prefix(max(0, 6 - bank.count)))
+
+        // Distractors from the same verse/chapter language (not hardcoded English).
+        let blankIndexSet = Set(blanks)
+        var distractors: [String] = []
+        func consider(_ raw: String) {
+            let clean = raw.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+            guard clean.count >= 4 else { return }
+            let inBank = bank.contains { $0.caseInsensitiveCompare(clean) == .orderedSame }
+            let inPool = distractors.contains { $0.caseInsensitiveCompare(clean) == .orderedSame }
+            guard !inBank, !inPool else { return }
+            distractors.append(clean)
+        }
+        for (idx, word) in tokens.enumerated() where !blankIndexSet.contains(idx) {
+            consider(word)
+        }
+        if distractors.count < max(0, 6 - bank.count), let config {
+            for verse in config.chapterVerses() {
+                for word in verse.text
+                    .replacingOccurrences(of: "\n", with: " ")
+                    .components(separatedBy: " ")
+                    .filter({ !$0.isEmpty }) {
+                    consider(word)
+                    if distractors.count >= 12 { break }
+                }
+                if distractors.count >= 12 { break }
+            }
+        }
+        bank.append(contentsOf: distractors.shuffled().prefix(max(0, 6 - bank.count)))
         return (tokens, blanks, bank.shuffled())
     }
 

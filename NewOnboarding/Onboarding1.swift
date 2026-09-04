@@ -44,13 +44,14 @@ struct Onboarding1: View {
                 .edgesIgnoringSafeArea(.all)
 
                 VStack(spacing: 0) {
+                    // Pin Skip below the status bar (not inside ScrollView).
+                    OnboardingTopBar()
+                        .padding(.horizontal, 20)
+                        .padding(.top, max(geometry.safeAreaInsets.top, 54) + 28)
+
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 0) {
-                            OnboardingTopBar()
-                                .padding(.horizontal, 20)
-                                .padding(.top, max(geometry.safeAreaInsets.top, 12))
-
-                            Spacer(minLength: geometry.size.height * 0.08)
+                            Spacer(minLength: geometry.size.height * 0.12)
 
                             OnboardingBrandTag()
 
@@ -73,13 +74,6 @@ struct Onboarding1: View {
                         }
                     }
 
-                    OnboardingPillarRow(items: [
-                        ("book.fill", "Read"),
-                        ("brain.head.profile", "Remember"),
-                        ("heart", "Reflect")
-                    ])
-                    .padding(.bottom, 20)
-
                     OnboardingPrimaryButton(title: "Continue") {
                         requestTrackingThenContinue()
                     }
@@ -96,7 +90,8 @@ struct Onboarding1: View {
 
                     OnboardingPageDots(current: 0, total: 5, onDark: true)
                         .padding(.top, 14)
-                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 34))
+                        // Nudge Continue a little higher.
+                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 34) + 36)
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)

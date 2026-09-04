@@ -58,6 +58,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     private var getExplanationButton: UIButton?
     private var getExplanationAdded = false
     private var actionRowPinned = false
+    private var bottomRowAligned = false
     private static let getExplanationTopInset: CGFloat = 12
     private static let getExplanationHorizontalInset: CGFloat = 20
     private static let getExplanationButtonHeight: CGFloat = 44
@@ -100,6 +101,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         super.layoutSubviews()
         MainView.roundCorners(corners: [.topLeft, .topRight], radius: 30)
         hideVerseMenuCloseIcon()
+        hideExplainAdIconAndAlignBottomRow()
         if let getExplanationButton {
             MainView.bringSubviewToFront(getExplanationButton)
         }
@@ -164,6 +166,8 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         self.Note.ViewBorder(color: UIColor.gray)
         self.Bookmark.ViewBorder(color: UIColor.gray)
         self.ExplainView.ViewBorder(color: UIColor.gray)
+        // Temporarily remove Explain (ad) icon from this menu.
+        hideExplainAdIconAndAlignBottomRow()
         
         
                 
@@ -174,13 +178,13 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         self.RefreshTxt.textColor = self.Themecolor!
         self.UnderlineTxt.textColor = self.Themecolor!
         self.ImageTxt.textColor = self.Themecolor!
-        self.ExplainTxt.textColor = self.Themecolor!
-        self.ExplainTxt.text = "Explain (ad)"
+        // self.ExplainTxt.textColor = self.Themecolor!
+        // self.ExplainTxt.text = "Explain (ad)"
         // Ensure single line and prevent truncation - font will scale down if needed
-        self.ExplainTxt.numberOfLines = 1
-        self.ExplainTxt.adjustsFontSizeToFitWidth = true
-        self.ExplainTxt.minimumScaleFactor = 0.6
-        self.ExplainTxt.lineBreakMode = .byClipping
+        // self.ExplainTxt.numberOfLines = 1
+        // self.ExplainTxt.adjustsFontSizeToFitWidth = true
+        // self.ExplainTxt.minimumScaleFactor = 0.6
+        // self.ExplainTxt.lineBreakMode = .byClipping
     }
 
     private func setupGetExplanationButton() {
@@ -216,6 +220,63 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     private func topActionStackView() -> UIStackView? {
         // Bookmark outlet is the inner icon holder; stack is two levels up.
         Bookmark.superview?.superview as? UIStackView
+    }
+
+    private func bottomActionStackView() -> UIStackView? {
+        // Copy outlet is the inner icon holder; stack is two levels up.
+        Copy.superview?.superview as? UIStackView
+    }
+
+    /// Temporarily remove Explain (ad). Bottom row is a true 3-column grid:
+    /// Copy / Reset / Share spaced evenly across the same width as the top row.
+    private func hideExplainAdIconAndAlignBottomRow() {
+        ExplainView.isHidden = true
+        ExplainTxt.isHidden = true
+
+        guard let topStack = topActionStackView(),
+              let bottomStack = bottomActionStackView() else { return }
+
+        // Fully remove the 4th Explain column from the stack (not just hide content).
+        if let explainColumn = ExplainView.superview,
+           bottomStack.arrangedSubviews.contains(explainColumn) {
+            bottomStack.removeArrangedSubview(explainColumn)
+            explainColumn.removeFromSuperview()
+        }
+
+        bottomStack.distribution = .fillEqually
+        bottomStack.spacing = topStack.spacing
+        bottomStack.alignment = .fill
+
+        guard !bottomRowAligned else {
+            bottomStack.setNeedsLayout()
+            return
+        }
+        bottomRowAligned = true
+
+        if let container = bottomStack.superview {
+            container.constraints.filter { constraint in
+                let involvesBottom =
+                    constraint.firstItem as? UIView == bottomStack
+                    || constraint.secondItem as? UIView == bottomStack
+                let isHorizontal =
+                    constraint.firstAttribute == .leading
+                    || constraint.firstAttribute == .trailing
+                    || constraint.firstAttribute == .centerX
+                    || constraint.firstAttribute == .width
+                    || constraint.secondAttribute == .leading
+                    || constraint.secondAttribute == .trailing
+                    || constraint.secondAttribute == .centerX
+                    || constraint.secondAttribute == .width
+                return involvesBottom && isHorizontal
+            }.forEach { $0.isActive = false }
+        }
+
+        // 3 icons evenly across the exact same horizontal span as the top row.
+        NSLayoutConstraint.activate([
+            bottomStack.leadingAnchor.constraint(equalTo: topStack.leadingAnchor),
+            bottomStack.trailingAnchor.constraint(equalTo: topStack.trailingAnchor),
+            bottomStack.widthAnchor.constraint(equalTo: topStack.widthAnchor)
+        ])
     }
 
     private func pinActionRowBelowBookName() {

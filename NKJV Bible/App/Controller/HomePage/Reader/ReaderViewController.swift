@@ -1398,26 +1398,35 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         label.textColor = theme
 
         pill.addSubview(icon)
-        pill.addSubview(label)
+        if !title.isEmpty {
+            pill.addSubview(label)
+        }
         if let button = container.subviews.compactMap({ $0 as? UIButton }).first {
             container.insertSubview(pill, belowSubview: button)
         } else {
             container.addSubview(pill)
         }
 
-        NSLayoutConstraint.activate([
+        var constraints: [NSLayoutConstraint] = [
             pill.topAnchor.constraint(equalTo: container.topAnchor),
             pill.bottomAnchor.constraint(equalTo: container.bottomAnchor),
             pill.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             pill.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            icon.leadingAnchor.constraint(equalTo: pill.leadingAnchor, constant: 8),
-            icon.centerYAnchor.constraint(equalTo: pill.centerYAnchor),
             icon.widthAnchor.constraint(equalToConstant: 14),
             icon.heightAnchor.constraint(equalToConstant: 14),
-            label.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 4),
-            label.trailingAnchor.constraint(equalTo: pill.trailingAnchor, constant: -8),
-            label.centerYAnchor.constraint(equalTo: pill.centerYAnchor)
-        ])
+            icon.centerYAnchor.constraint(equalTo: pill.centerYAnchor)
+        ]
+        if title.isEmpty {
+            constraints.append(icon.centerXAnchor.constraint(equalTo: pill.centerXAnchor))
+        } else {
+            constraints.append(contentsOf: [
+                icon.leadingAnchor.constraint(equalTo: pill.leadingAnchor, constant: 8),
+                label.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 4),
+                label.trailingAnchor.constraint(equalTo: pill.trailingAnchor, constant: -8),
+                label.centerYAnchor.constraint(equalTo: pill.centerYAnchor)
+            ])
+        }
+        NSLayoutConstraint.activate(constraints)
         return pill
     }
 
@@ -1454,7 +1463,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         case .quiz:
             quizTabIcon?.isHidden = true
             quizTabPill?.isHidden = false
-            quizTabWidthConstraint?.constant = 70
+            quizTabWidthConstraint?.constant = 72
             (quizTabPill?.subviews.compactMap { $0 as? UIImageView }.first)?.tintColor = theme
             (quizTabPill?.subviews.compactMap { $0 as? UILabel }.first)?.textColor = theme
         case .more:
@@ -2028,9 +2037,9 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     func MarkAsReadPopup() {
-        let vc = ChallengeHubSetupViewController()
-        vc.prefillBook = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
-        vc.prefillChapter = UserDefaults.standard.string(forKey: "BookChapter") ?? "0"
+        let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "QuizAlertVC") as! QuizAlertVC
+        vc.bookname = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
+        vc.Chapter = UserDefaults.standard.string(forKey: "BookChapter") ?? "0"
         self.navigationController?.pushViewController(vc, animated: true)
     }
     

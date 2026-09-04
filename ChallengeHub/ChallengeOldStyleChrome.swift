@@ -273,33 +273,32 @@ struct ChallengeQuizHeaderBar: View {
     private var accent: Color { ChallengeQuizTheme.accent }
 
     var body: some View {
-        ZStack {
-            accent.ignoresSafeArea(edges: .top)
-            HStack(spacing: 8) {
-                if showBackButton, let onBack {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                    }
-                } else {
-                    Color.clear.frame(width: 36, height: 36)
+        HStack(spacing: 8) {
+            if showBackButton, let onBack {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 36, height: 36)
                 }
-                Spacer(minLength: 4)
-                Text(title)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                Spacer(minLength: 4)
-                ChallengeQuizCoinPill(walletTick: walletTick)
+            } else {
+                Color.clear.frame(width: 36, height: 36)
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 10)
-            .padding(.top, 4)
+            Spacer(minLength: 4)
+            Text(title)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            Spacer(minLength: 4)
+            ChallengeQuizCoinPill(walletTick: walletTick)
         }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 10)
+        .padding(.top, 4)
         .frame(height: 56)
+        .frame(maxWidth: .infinity)
+        .background(accent.ignoresSafeArea(edges: .top))
     }
 }
 
@@ -364,56 +363,83 @@ struct ChallengeOldStyleShell<Content: View>: View {
     private var accent: Color { ChallengeQuizTheme.accent }
 
     var body: some View {
-        VStack(spacing: 0) {
-            headerBar
+        // Pin to the offered size so tall content (e.g. Verse Match) cannot grow the
+        // stack into the status-bar safe area when feedback/toast updates.
+        GeometryReader { geo in
+            VStack(spacing: 0) {
+                headerBar
+                    .fixedSize(horizontal: false, vertical: true)
+                    .layoutPriority(2)
 
-            VStack(spacing: 10) {
-                heartsRow
-                questionProgress
-            }
-            .padding(.top, 12)
-            .padding(.horizontal, 20)
-
-            Group {
-                if contentScrollDisabled {
-                    VStack(spacing: 0) {
-                        shellScrollBody
-                        Spacer(minLength: 0)
-                    }
-                } else {
-                    ScrollView(showsIndicators: false) {
-                        shellScrollBody
-                    }
+                VStack(spacing: 6) {
+                    heartsRow
+                    questionProgress
                 }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-
-            Button(action: onPrimary) {
-                HStack(spacing: 8) {
-                    Text(primaryTitle)
-                        .font(.system(size: 17, weight: .semibold))
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(primaryEnabled ? accent : Color.gray.opacity(0.45))
-                .cornerRadius(12)
-            }
-            .disabled(!primaryEnabled)
-            .padding(.horizontal, 16)
-            .padding(.top, 4)
-
-            Text(caption)
-                .font(.system(size: 12))
-                .foregroundColor(Color.black.opacity(0.45))
-                .multilineTextAlignment(.center)
+                .padding(.top, 10)
                 .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 16)
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(2)
+
+                Group {
+                    if contentScrollDisabled {
+                        // Keep lifelines pinned; only the white card may clip when space is tight.
+                        VStack(spacing: 14) {
+                            content()
+                                .padding(16)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                                .background(Color.white)
+                                .cornerRadius(14)
+                                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
+                                .clipped()
+
+                            lifelineRow
+                                .fixedSize(horizontal: false, vertical: true)
+                                .layoutPriority(2)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 6)
+                        .padding(.bottom, 8)
+                    } else {
+                        ScrollView(showsIndicators: false) {
+                            shellScrollBody
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .layoutPriority(0)
+
+                Button(action: onPrimary) {
+                    HStack(spacing: 8) {
+                        Text(primaryTitle)
+                            .font(.system(size: 17, weight: .semibold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(primaryEnabled ? accent : Color.gray.opacity(0.45))
+                    .cornerRadius(12)
+                }
+                .disabled(!primaryEnabled)
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(2)
+
+                Text(caption)
+                    .font(.system(size: 12))
+                    .foregroundColor(Color.black.opacity(0.45))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 16)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .layoutPriority(2)
+            }
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(hex: "F2F3F7").ignoresSafeArea())
         .onAppear { refreshTick += 1 }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
@@ -433,50 +459,51 @@ struct ChallengeOldStyleShell<Content: View>: View {
             lifelineRow
         }
         .padding(.horizontal, 16)
-        .padding(.top, 14)
+        .padding(.top, 6)
         .padding(.bottom, 8)
     }
 
     private var headerBar: some View {
-        ZStack {
-            accent.ignoresSafeArea(edges: .top)
-            HStack(spacing: 8) {
-                Button(action: onBack) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(width: 36, height: 36)
-                }
-                Spacer(minLength: 4)
-                Text(screenTitle)
+        HStack(spacing: 8) {
+            Button(action: onBack) {
+                Image(systemName: "chevron.left")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                Spacer(minLength: 4)
-                if let onChangeChallenge {
-                    Button(action: onChangeChallenge) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .font(.system(size: 12, weight: .semibold))
-                            Text("Change")
-                                .font(.system(size: 13, weight: .semibold))
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.22))
-                        .cornerRadius(14)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                coinPill
+                    .frame(width: 36, height: 36)
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 10)
-            .padding(.top, 4)
+            Spacer(minLength: 4)
+            Text(screenTitle)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            Spacer(minLength: 4)
+            if let onChangeChallenge {
+                Button(action: onChangeChallenge) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text("Change")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.22))
+                    .cornerRadius(14)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            coinPill
         }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 10)
+        .padding(.top, 4)
+        .frame(maxWidth: .infinity)
         .frame(height: 56)
+        .background(accent)
+        // Keep header content below the notch; extend blue into the status-bar area only.
+        .background(accent.ignoresSafeArea(edges: .top))
     }
 
     private var coinPill: some View {
@@ -492,6 +519,7 @@ struct ChallengeOldStyleShell<Content: View>: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .frame(height: 28)
     }
 
     private var questionProgress: some View {
@@ -511,6 +539,7 @@ struct ChallengeOldStyleShell<Content: View>: View {
             }
             .frame(height: 5)
         }
+        .frame(height: 28, alignment: .top)
     }
 
     private var lifelineRow: some View {
@@ -582,18 +611,29 @@ struct ChallengeOldStyleShell<Content: View>: View {
 }
 
 struct ChallengeOldStyleResult: View {
+    var title: String = "Great job!"
     var scoreText: String
+    var subtitle: String? = nil
     var onDone: () -> Void
 
     var body: some View {
         VStack(spacing: 16) {
             Spacer()
-            Text("Great job!")
+            Text(title)
                 .font(.system(size: 24, weight: .bold))
                 .foregroundColor(Color(hex: "0B1B3A"))
+                .multilineTextAlignment(.center)
             Text(scoreText)
                 .font(.system(size: 16))
                 .foregroundColor(Color.black.opacity(0.55))
+                .multilineTextAlignment(.center)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Color.black.opacity(0.45))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+            }
             Button(action: onDone) {
                 Text("Done")
                     .font(.system(size: 17, weight: .semibold))

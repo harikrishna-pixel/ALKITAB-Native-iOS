@@ -747,6 +747,15 @@ struct YearlyPlanCard: View {
     private var shouldShowOffer: Bool {
         return !offerValue.isEmpty
     }
+
+    /// Prefer live price; fall back to last cached StoreKit price for offline UI.
+    private var displayPriceText: String {
+        if !price.isEmpty { return price.cleanPrice() }
+        if let cached = UserDefaults.standard.string(forKey: "PriceTag2"), !cached.isEmpty {
+            return cached.cleanPrice()
+        }
+        return ""
+    }
     
     // Helper to read offer value from UserDefaults (handles both Int and String)
     private func readOfferValue() -> String {
@@ -820,7 +829,7 @@ struct YearlyPlanCard: View {
                     
                     Spacer()
                     
-                    if isLoading {
+                    if isLoading && price.isEmpty {
                         ActivityIndicator(isAnimating: .constant(true), style: .medium)
                             .scaleEffect(1.2)
                     } else {
@@ -838,8 +847,8 @@ struct YearlyPlanCard: View {
                                     }
                             }
                             
-                            // Current discounted price
-                            Text(price.cleanPrice())
+                            // Current discounted price (cached price still shows offline)
+                            Text(displayPriceText)
                                 .font(.system(size: 22, weight: .bold))
                                 .foregroundColor(.black)
                                 .lineLimit(1)
@@ -940,6 +949,15 @@ struct LifetimePlanCard: View {
     let isSmallDevice: Bool
     let showOffer: Bool
     let action: () -> Void
+
+    /// Prefer live price; fall back to last cached StoreKit price for offline UI.
+    private var displayPriceText: String {
+        if !price.isEmpty { return price.cleanPrice() }
+        if let cached = UserDefaults.standard.string(forKey: "PriceTag3"), !cached.isEmpty {
+            return cached.cleanPrice()
+        }
+        return ""
+    }
     
     var body: some View {
         Button(action: action) {
@@ -958,13 +976,13 @@ struct LifetimePlanCard: View {
                 
                 Spacer()
                 
-                if isLoading {
+                if isLoading && price.isEmpty {
                     ActivityIndicator(isAnimating: .constant(true), style: .medium)
                         .scaleEffect(1.2)
                 } else {
                     VStack(spacing: 2) {
                        
-                        Text(price.cleanPrice())
+                        Text(displayPriceText)
                             .font(.system(size: 22, weight: .bold))
                             .foregroundColor(.black)
                             .lineLimit(1)

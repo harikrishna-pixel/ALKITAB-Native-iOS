@@ -91,12 +91,9 @@ class QuizAlertVC: UIViewController, QuizAlert {
             MARK_US_READ = false
         }
 
-        let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "SelectionViewController") as! SelectionViewController
-        vc.ChapterString = UserDefaults.standard.string(forKey: "BookChapter") ?? "0"
-        vc.BookString = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
-        vc.ChapterCount = BibleContent.sharedInstance.AudioBibleListCount(
-            selecterBookName: UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
-        )
+        let vc = QuizOrChallengeChooserViewController()
+        vc.bookName = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
+        vc.chapter = UserDefaults.standard.string(forKey: "BookChapter") ?? "0"
         self.navigationController?.pushViewController(vc, animated: true)
     }
 

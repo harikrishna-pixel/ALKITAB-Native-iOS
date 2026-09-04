@@ -248,6 +248,7 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
             isLoading1 = false
             isLoading2 = false
             isLoading3 = false
+            isLoading = false
             hasProductLoadError = price1.isEmpty && price2.isEmpty && price3.isEmpty
             productLoadErrorMessage = "No internet connection. Please check your connection and try again."
             // Use cached prices if available
@@ -864,6 +865,12 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
                 self.callAPI(index: self.productIDIndex)
             } else {
                 print("   ⚠️ All products failed to load")
+                // Keep showing last known prices offline / after StoreKit failure (display only).
+                self.applyCachedPricesIfNeeded()
+                self.calculateOriginalPrices()
+                if !self.price1.isEmpty || !self.price2.isEmpty || !self.price3.isEmpty {
+                    self.hasProductLoadError = false
+                }
                 self.enableButtons(true)
             }
         }

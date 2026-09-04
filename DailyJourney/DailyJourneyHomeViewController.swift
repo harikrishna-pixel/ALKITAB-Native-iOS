@@ -335,8 +335,8 @@ final class DailyJourneyHomeViewController: UIViewController {
     }
 
     private func renderVerseCardImage(_ verse: DailyVerseSnapshot) -> UIImage {
-        // Match HomeController: snapshot a full square card (wallpaper fills entire image + text overlay).
-        // Previous Core Graphics path filled the lower half with opaque black, so shares looked "half-hidden".
+        // Match classic HomeController VerseImageVu: full wallpaper + dim overlay +
+        // centered verse text (not bottom-pinned), so long verses still share cleanly.
         let side: CGFloat = 1080
         let container = UIView(frame: CGRect(x: 0, y: 0, width: side, height: side))
         container.backgroundColor = UIColor(red: 0.11, green: 0.18, blue: 0.42, alpha: 1)
@@ -347,45 +347,46 @@ final class DailyJourneyHomeViewController: UIViewController {
         bgView.image = UIImage(named: verse.imageName) ?? UIImage(named: HomeVerseImage)
         container.addSubview(bgView)
 
-        let gradientHost = UIView(frame: CGRect(x: 0, y: side * 0.42, width: side, height: side * 0.58))
-        gradientHost.isUserInteractionEnabled = false
-        container.addSubview(gradientHost)
-        let gradient = CAGradientLayer()
-        gradient.frame = gradientHost.bounds
-        gradient.colors = [
-            UIColor.clear.cgColor,
-            UIColor.black.withAlphaComponent(0.55).cgColor,
-            UIColor.black.withAlphaComponent(0.72).cgColor
-        ]
-        gradient.locations = [0, 0.35, 1]
-        gradientHost.layer.insertSublayer(gradient, at: 0)
+        let dimOverlay = UIView(frame: container.bounds)
+        dimOverlay.backgroundColor = UIColor.black.withAlphaComponent(0.45)
+        dimOverlay.isUserInteractionEnabled = false
+        container.addSubview(dimOverlay)
 
-        let padding: CGFloat = 64
+        let padding: CGFloat = 72
         let contentWidth = side - padding * 2
-
-        let refLabel = UILabel()
-        refLabel.text = verse.reference
-        refLabel.textColor = UIColor.white.withAlphaComponent(0.92)
-        refLabel.font = UIFont.systemFont(ofSize: 36, weight: .semibold)
-        refLabel.numberOfLines = 2
-        refLabel.lineBreakMode = .byWordWrapping
+        let maxTextHeight = side * 0.55
 
         let textLabel = UILabel()
         textLabel.text = verse.text
         textLabel.textColor = .white
-        textLabel.font = UIFont.systemFont(ofSize: 42, weight: .medium)
+        textLabel.textAlignment = .center
         textLabel.numberOfLines = 0
         textLabel.lineBreakMode = .byWordWrapping
+        textLabel.font = UIFont.systemFont(ofSize: 44, weight: .medium)
+        textLabel.adjustsFontSizeToFitWidth = true
+        textLabel.minimumScaleFactor = 0.45
+        textLabel.allowsDefaultTighteningForTruncation = true
 
-        let refHeight = ceil(refLabel.sizeThatFits(CGSize(width: contentWidth, height: .greatestFiniteMagnitude)).height)
-        let textHeight = ceil(textLabel.sizeThatFits(CGSize(width: contentWidth, height: side * 0.42)).height)
-        let blockHeight = refHeight + 16 + textHeight
-        let blockTop = side - padding - blockHeight
+        let refLabel = UILabel()
+        refLabel.text = verse.reference
+        refLabel.textColor = UIColor.white.withAlphaComponent(0.92)
+        refLabel.textAlignment = .center
+        refLabel.numberOfLines = 2
+        refLabel.lineBreakMode = .byWordWrapping
+        refLabel.font = UIFont.systemFont(ofSize: 34, weight: .semibold)
+        refLabel.adjustsFontSizeToFitWidth = true
+        refLabel.minimumScaleFactor = 0.7
 
-        refLabel.frame = CGRect(x: padding, y: blockTop, width: contentWidth, height: refHeight)
-        textLabel.frame = CGRect(x: padding, y: blockTop + refHeight + 16, width: contentWidth, height: textHeight)
-        container.addSubview(refLabel)
+        var textHeight = ceil(textLabel.sizeThatFits(CGSize(width: contentWidth, height: maxTextHeight)).height)
+        textHeight = min(textHeight, maxTextHeight)
+        let refHeight = ceil(refLabel.sizeThatFits(CGSize(width: contentWidth, height: 120)).height)
+        let blockHeight = textHeight + 28 + refHeight
+        let blockTop = (side - blockHeight) / 2
+
+        textLabel.frame = CGRect(x: padding, y: blockTop, width: contentWidth, height: textHeight)
+        refLabel.frame = CGRect(x: padding, y: blockTop + textHeight + 28, width: contentWidth, height: refHeight)
         container.addSubview(textLabel)
+        container.addSubview(refLabel)
 
         container.setNeedsLayout()
         container.layoutIfNeeded()

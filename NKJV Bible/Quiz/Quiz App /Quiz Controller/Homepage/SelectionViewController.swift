@@ -7,6 +7,7 @@
 
 import UIKit
 import Toast_Swift
+import SwiftUI
 
 class SelectionViewController: UIViewController, QuizSelect {
     
@@ -64,7 +65,8 @@ class SelectionViewController: UIViewController, QuizSelect {
     
     var Level :String = ""
     var Themecolor:UIColor?
-    
+    /// Set from Mark as Read → Quiz Hub. Nil keeps classic Let's Start → Bible Quiz.
+    var markAsReadDestination: MarkAsReadQuizDestination? = nil
     
     
     override func viewDidLoad() {
@@ -317,12 +319,54 @@ class SelectionViewController: UIViewController, QuizSelect {
         UserDefaults.standard.setValue(self.BookTxt.text!, forKey: "LastSelectedBook")
         UserDefaults.standard.setValue(self.ChapterTxt.text!, forKey: "LastSelectedChapter")
         
-        let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "QuizMainPageVC") as! QuizMainPageVC
-        vc.level = self.Level
-        vc.BookName = self.BookTxt.text!
-        vc.Chapter = Int(self.ChapterTxt.text!)!
-        self.navigationController?.pushViewController(vc, animated: true)
+        let book = self.BookTxt.text!
+        let chapter = Int(self.ChapterTxt.text!)!
+        
+        switch markAsReadDestination {
+        case .challenge(let kind):
+            openChallenge(kind, book: book, chapter: chapter, level: self.Level)
+        case .bibleQuiz, .none:
+            let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "QuizMainPageVC") as! QuizMainPageVC
+            vc.level = self.Level
+            vc.BookName = book
+            vc.Chapter = chapter
+            self.navigationController?.pushViewController(vc, animated: true)
+        }
      
+    }
+
+    private func openChallenge(_ kind: ChallengeKind, book: String, chapter: Int, level: String) {
+        let difficulty: ChallengeDifficulty
+        switch level.lowercased() {
+        case "medium": difficulty = .medium
+        case "hard": difficulty = .hard
+        default: difficulty = .easy
+        }
+        let config = ChallengeSessionConfig.markAsRead(
+            book: book,
+            chapter: chapter,
+            difficulty: difficulty
+        )
+        let verse = config.primaryVerse()
+        let root = ChallengeGameScreen(
+            kind: kind,
+            verse: verse,
+            sessionConfig: config,
+            onClose: { [weak self] in
+                self?.navigationController?.popViewController(animated: true)
+            },
+            onOpenLegacyQuiz: { [weak self] in
+                guard let self = self else { return }
+                let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "QuizMainPageVC") as! QuizMainPageVC
+                vc.level = level
+                vc.BookName = book
+                vc.Chapter = chapter
+                self.navigationController?.pushViewController(vc, animated: true)
+            }
+        )
+        let host = SelectionChallengeHostingController(rootView: root)
+        host.view.backgroundColor = .white
+        navigationController?.pushViewController(host, animated: true)
     }
     
    
@@ -355,4 +399,11 @@ class SelectionViewController: UIViewController, QuizSelect {
     }
     */
 
+}
+
+private final class SelectionChallengeHostingController<Content: View>: UIHostingController<Content> {
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
 }

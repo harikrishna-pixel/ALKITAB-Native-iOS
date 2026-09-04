@@ -153,6 +153,7 @@ struct ChallengeWordSearchView: View {
 
     private func commitPath(_ path: [GridPos]) {
         guard path.count >= 2 else { return }
+        guard lives > 0 else { return }
         let forward = String(path.compactMap { pos -> Character? in
             guard grid.indices.contains(pos.r), grid[pos.r].indices.contains(pos.c) else { return nil }
             return grid[pos.r][pos.c]
@@ -166,6 +167,12 @@ struct ChallengeWordSearchView: View {
             found.insert(reverse)
             foundPaths[reverse] = Array(path.reversed())
             toast = nil
+        } else if words.contains(forward) || words.contains(reverse) {
+            // Already found — ignore without losing a life.
+            return
+        } else {
+            lives = max(0, lives - 1)
+            toast = lives == 0 ? "Out of lives. Try again tomorrow." : "Not quite — try again."
         }
     }
 
