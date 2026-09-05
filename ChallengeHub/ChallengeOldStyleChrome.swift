@@ -62,6 +62,27 @@ enum ChallengeWallet {
             }
         }
     }
+
+    /// UI only: when credits are insufficient, show alert with Add Credit → Wallet.
+    /// Does not change spend / lifeline logic.
+    static func presentInsufficientCreditsAlert(for feature: String) {
+        DispatchQueue.main.async {
+            guard let top = OnboardingAuthManager.topViewController() else { return }
+            // Avoid stacking multiple alerts if several taps happen quickly.
+            if top.presentedViewController is UIAlertController { return }
+
+            let alert = UIAlertController(
+                title: "Not Enough Credits",
+                message: "You don’t have enough credits for \(feature). Add credit to continue.",
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            alert.addAction(UIAlertAction(title: "Add Credit", style: .default, handler: { _ in
+                openWalletScreen()
+            }))
+            top.present(alert, animated: true)
+        }
+    }
 }
 
 /// Shared top block inside the white quiz card — reference + instruction (UI only).

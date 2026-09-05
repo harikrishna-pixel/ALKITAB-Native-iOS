@@ -122,10 +122,10 @@ final class DailyVerseFullscreenViewController: UIViewController {
         view.addSubview(scrollView)
 
         verseLabel.translatesAutoresizingMaskIntoConstraints = false
-        verseLabel.font = UIFont(name: "Georgia", size: 28) ?? UIFont.systemFont(ofSize: 28, weight: .regular)
+        verseLabel.font = UIFont(name: "Georgia", size: 22) ?? UIFont.systemFont(ofSize: 22, weight: .regular)
         // Prefer design serif if available in the app
-        if let playfair = UIFont(name: "PlayfairDisplay-Regular", size: 28)
-            ?? UIFont(name: "PlayfairDisplay-Medium", size: 28) {
+        if let playfair = UIFont(name: "PlayfairDisplay-Regular", size: 22)
+            ?? UIFont(name: "PlayfairDisplay-Medium", size: 22) {
             verseLabel.font = playfair
         }
         verseLabel.textColor = .white
@@ -215,7 +215,7 @@ final class DailyVerseFullscreenViewController: UIViewController {
         paragraph.alignment = .center
         paragraph.lineSpacing = 6
         paragraph.lineBreakMode = .byWordWrapping
-        let font = verseLabel.font ?? UIFont.systemFont(ofSize: 28)
+        let font = verseLabel.font ?? UIFont.systemFont(ofSize: 22)
         verseLabel.attributedText = NSAttributedString(
             string: verse.text,
             attributes: [

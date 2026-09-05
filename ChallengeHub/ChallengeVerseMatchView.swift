@@ -326,7 +326,7 @@ struct ChallengeVerseMatchView: View {
             toast = "50/50 is not available for Verse Match."
         case .hint:
             guard ChallengeWallet.spend(ChallengeWallet.hintCost) else {
-                toast = "Not enough coins for Hint."
+                ChallengeWallet.presentInsufficientCreditsAlert(for: "Hint")
                 return
             }
             walletTick += 1
@@ -339,7 +339,7 @@ struct ChallengeVerseMatchView: View {
             toast = nil
         case .skip:
             guard ChallengeWallet.spend(ChallengeWallet.skipCost) else {
-                toast = "Not enough coins for Skip."
+                ChallengeWallet.presentInsufficientCreditsAlert(for: "Skip")
                 return
             }
             walletTick += 1

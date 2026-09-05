@@ -60,7 +60,9 @@ struct ChallengeWordSearchView: View {
             VStack(alignment: .leading, spacing: 12) {
                 ChallengeQuizContentHeader(
                     reference: verse.reference,
-                    instruction: "Find the hidden Bible words from today's verse."
+                    instruction: sessionConfig == nil
+                        ? "Find the hidden Bible words from today's verse."
+                        : "Find the hidden Bible words from this chapter."
                 )
 
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -182,7 +184,7 @@ struct ChallengeWordSearchView: View {
             toast = "50/50 is not available for Word Search."
         case .hint:
             guard ChallengeWallet.spend(ChallengeWallet.hintCost) else {
-                toast = "Not enough coins for Hint."
+                ChallengeWallet.presentInsufficientCreditsAlert(for: "Hint")
                 return
             }
             walletTick += 1
@@ -195,7 +197,7 @@ struct ChallengeWordSearchView: View {
             toast = nil
         case .skip:
             guard ChallengeWallet.spend(ChallengeWallet.skipCost) else {
-                toast = "Not enough coins for Skip."
+                ChallengeWallet.presentInsufficientCreditsAlert(for: "Skip")
                 return
             }
             walletTick += 1

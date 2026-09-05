@@ -143,7 +143,7 @@ struct QuizOrChallengeChooserView: View {
 
                 if isPremium {
                     HStack(spacing: 4) {
-                        Image(systemName: "crown.fill")
+                        Image(systemName: ChallengeGameFactory.hasPremiumAccess ? "crown.fill" : "lock.fill")
                             .font(.system(size: 11))
                         Text("Premium")
                             .font(.system(size: 12, weight: .semibold))
@@ -199,6 +199,10 @@ final class QuizOrChallengeChooserViewController: UIViewController {
                 self?.openSelection(destination: .bibleQuiz)
             },
             onOpenChallenge: { [weak self] kind in
+                if kind.isPremium && !ChallengeGameFactory.hasPremiumAccess {
+                    self?.openPaywall()
+                    return
+                }
                 self?.openSelection(destination: .challenge(kind))
             }
         )
@@ -235,6 +239,26 @@ final class QuizOrChallengeChooserViewController: UIViewController {
         vc.ChapterCount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: book)
         vc.markAsReadDestination = destination
         navigationController?.pushViewController(vc, animated: true)
+    }
+
+    private func openPaywall() {
+        if NetworkManager.sharedInstance.isConnectedToInternet() {
+            if #available(iOS 15.0, *) {
+                var swiftUIView = BibleSubscriptionView(isPresentedFromOnboarding: false)
+                // Must dismiss the presented IAP — empty handler left the paywall stuck open.
+                swiftUIView.dismissHandler = { [weak self] in
+                    self?.dismiss(animated: true, completion: nil)
+                }
+                let hostingController = UIHostingController(rootView: swiftUIView)
+                hostingController.modalPresentationStyle = .fullScreen
+                present(hostingController, animated: true, completion: nil)
+            } else {
+                let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "SubscrbViewController") as! SubscrbViewController
+                navigationController?.pushViewController(vc, animated: true)
+            }
+        } else {
+            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+        }
     }
 }
 

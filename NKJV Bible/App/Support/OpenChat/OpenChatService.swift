@@ -53,8 +53,12 @@ final class OpenChatService {
             return
         }
 
-        let auth = Secrets.openChatAuthorization.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !auth.isEmpty, auth != "YOUR_OPEN_CHAT_AUTHORIZATION_HERE" else {
+        let auth = (Bundle.main.object(forInfoDictionaryKey: "OpenChatAuthorization") as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            ?? UserDefaults.standard.string(forKey: "OpenChatAuthorization")?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            ?? ""
+        guard !auth.isEmpty else {
             completion(.failure(.missingAuthorization))
             return
         }

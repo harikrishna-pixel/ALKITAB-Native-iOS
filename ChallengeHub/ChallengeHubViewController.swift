@@ -63,6 +63,9 @@ final class ChallengeHubViewController: UIViewController {
                 guard let self = self, let nav = self.navigationController else { return }
                 nav.popViewController(animated: false)
                 self.openLegacyQuiz()
+            },
+            onOpenPremiumPaywall: { [weak self] in
+                self?.openPaywall()
             }
         )
         let host = ChallengePushedHostingController(rootView: root)
@@ -79,7 +82,10 @@ final class ChallengeHubViewController: UIViewController {
         if NetworkManager.sharedInstance.isConnectedToInternet() {
             if #available(iOS 15.0, *) {
                 var swiftUIView = BibleSubscriptionView(isPresentedFromOnboarding: false)
-                swiftUIView.dismissHandler = { }
+                // Must dismiss the presented IAP — empty handler left the paywall stuck open.
+                swiftUIView.dismissHandler = { [weak self] in
+                    self?.dismiss(animated: true, completion: nil)
+                }
                 let hostingController = UIHostingController(rootView: swiftUIView)
                 hostingController.modalPresentationStyle = .fullScreen
                 present(hostingController, animated: true, completion: nil)

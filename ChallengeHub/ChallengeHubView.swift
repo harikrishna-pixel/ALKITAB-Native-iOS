@@ -73,6 +73,11 @@ struct ChallengeHubView: View {
                 kind: kind,
                 onCancel: { pendingKind = nil },
                 onStart: { config in
+                    if kind.isPremium && !ChallengeGameFactory.hasPremiumAccess {
+                        pendingKind = nil
+                        onOpenPremiumPaywall()
+                        return
+                    }
                     let startVerse = config.primaryVerse()
                     onOpenChallenge(kind, startVerse, config)
                     pendingKind = nil
@@ -109,7 +114,7 @@ struct ChallengeHubView: View {
 
                 if kind.isPremium {
                     HStack(spacing: 4) {
-                        Image(systemName: "crown.fill")
+                        Image(systemName: ChallengeGameFactory.hasPremiumAccess ? "crown.fill" : "lock.fill")
                             .font(.system(size: 11))
                         Text("Premium")
                             .font(.system(size: 12, weight: .semibold))
@@ -138,6 +143,10 @@ struct ChallengeHubView: View {
     }
 
     private func open(_ kind: ChallengeKind) {
+        if kind.isPremium && !ChallengeGameFactory.hasPremiumAccess {
+            onOpenPremiumPaywall()
+            return
+        }
         if let sessionConfig {
             onOpenChallenge(kind, verse, sessionConfig)
             return
@@ -159,6 +168,7 @@ struct ChallengeGameScreen: View {
     var sessionConfig: ChallengeSessionConfig? = nil
     var onClose: () -> Void
     var onOpenLegacyQuiz: () -> Void
+    var onOpenPremiumPaywall: () -> Void = {}
 
     @State private var activeKind: ChallengeKind
     @State private var showKindPicker = false
@@ -168,13 +178,15 @@ struct ChallengeGameScreen: View {
         verse: ChallengeVerseContext,
         sessionConfig: ChallengeSessionConfig? = nil,
         onClose: @escaping () -> Void,
-        onOpenLegacyQuiz: @escaping () -> Void
+        onOpenLegacyQuiz: @escaping () -> Void,
+        onOpenPremiumPaywall: @escaping () -> Void = {}
     ) {
         _activeKind = State(initialValue: kind)
         self.verse = verse
         self.sessionConfig = sessionConfig
         self.onClose = onClose
         self.onOpenLegacyQuiz = onOpenLegacyQuiz
+        self.onOpenPremiumPaywall = onOpenPremiumPaywall
     }
 
     var body: some View {
@@ -199,6 +211,11 @@ struct ChallengeGameScreen: View {
                 current: activeKind,
                 sessionConfig: sessionConfig,
                 onSelect: { kind in
+                    if kind.isPremium && !ChallengeGameFactory.hasPremiumAccess {
+                        showKindPicker = false
+                        onOpenPremiumPaywall()
+                        return
+                    }
                     activeKind = kind
                     showKindPicker = false
                 },
@@ -254,7 +271,7 @@ struct ChallengeKindPickerSheet: View {
 
                                 if kind.isPremium {
                                     HStack(spacing: 4) {
-                                        Image(systemName: "crown.fill")
+                                        Image(systemName: ChallengeGameFactory.hasPremiumAccess ? "crown.fill" : "lock.fill")
                                             .font(.system(size: 11))
                                         Text("Premium")
                                             .font(.system(size: 12, weight: .semibold))
@@ -394,30 +411,37 @@ struct ChallengeStartSheet: View {
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(themeColor)
                     }
-
-                    Button(action: startTapped) {
-                        Text("Start \(kind.title)")
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(canStart ? themeColor : Color.gray.opacity(0.4))
-                            .cornerRadius(12)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(!canStart)
-
-                    Button(action: onCancel) {
-                        Text("Cancel")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(ChallengeQuizTheme.accent)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                    }
-                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(16)
             }
+
+            // Keep Start + Cancel pinned to the bottom (outside ScrollView).
+            VStack(spacing: 0) {
+                Button(action: startTapped) {
+                    Text("Start \(kind.title)")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(canStart ? themeColor : Color.gray.opacity(0.4))
+                        .cornerRadius(12)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(!canStart)
+
+                Button(action: onCancel) {
+                    Text("Cancel")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(ChallengeQuizTheme.accent)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 16)
+            .background(Color(hex: "F2F3F7"))
         }
         .background(Color(hex: "F2F3F7").ignoresSafeArea())
         .sheet(isPresented: $showBookPicker) {

@@ -138,7 +138,7 @@ struct ChallengeQuickQuizView: View {
         switch kind {
         case .fiftyFifty:
             guard ChallengeWallet.spend(ChallengeWallet.fiftyFiftyCost) else {
-                toast = "Not enough coins for 50/50."
+                ChallengeWallet.presentInsufficientCreditsAlert(for: "50/50")
                 return
             }
             walletTick += 1
@@ -151,7 +151,7 @@ struct ChallengeQuickQuizView: View {
             toast = nil
         case .hint:
             guard ChallengeWallet.spend(ChallengeWallet.hintCost) else {
-                toast = "Not enough coins for Hint."
+                ChallengeWallet.presentInsufficientCreditsAlert(for: "Hint")
                 return
             }
             walletTick += 1
@@ -160,7 +160,7 @@ struct ChallengeQuickQuizView: View {
             toast = nil
         case .skip:
             guard ChallengeWallet.spend(ChallengeWallet.skipCost) else {
-                toast = "Not enough coins for Skip."
+                ChallengeWallet.presentInsufficientCreditsAlert(for: "Skip")
                 return
             }
             walletTick += 1

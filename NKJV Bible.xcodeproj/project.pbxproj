@@ -585,9 +585,6 @@
 		01EDFFA82F1F19E800AA074B /* verseBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01EDFFA32F1F19E800AA074B /* verseBundle.swift */; };
 		01F813CE2A73ACD700A271E6 /* WallpaperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F813CC2A73ACD600A271E6 /* WallpaperView.swift */; };
 		01F813CF2A73ACD700A271E6 /* WallpaperView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 01F813CD2A73ACD600A271E6 /* WallpaperView.xib */; };
-		01GEM02229FBD2210006BD22 /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01GEM00229FBD2210006BD02 /* Secrets.swift */; };
-		01GEM02329FBD2210006BD23 /* GeminiKeyProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01GEM00329FBD2210006BD03 /* GeminiKeyProvider.swift */; };
-		01GEM02429FBD2210006BD24 /* GeminiExplanationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01GEM00429FBD2210006BD04 /* GeminiExplanationService.swift */; };
 		01GEM02529FBD2210006BD25 /* VerseExplanationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01GEM00529FBD2210006BD05 /* VerseExplanationView.swift */; };
 		01OPC30129FBD2210006BD31 /* OpenChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01OPC10129FBD2210006BD11 /* OpenChatService.swift */; };
 		01OPC30229FBD2210006BD32 /* OpenChatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01OPC10229FBD2210006BD12 /* OpenChatViewController.swift */; };
@@ -722,7 +719,7 @@
 		01342BFA2A8A309A00608DB5 /* AdSplash2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = AdSplash2.png; sourceTree = "<group>"; };
 		0134E06A29FBD2210006BD9B /* SaveNotes.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SaveNotes.swift; sourceTree = "<group>"; };
 		0134E06B29FBD2210006BD9B /* SaveNotes.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = SaveNotes.xib; sourceTree = "<group>"; };
-		01370BD92941E68C0042B718 /* NKJV Bible.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NKJV Bible.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		01370BD92941E68C0042B718 /* ALKITAB Bible.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ALKITAB Bible.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		01370BDC2941E68C0042B718 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		01370BDE2941E68C0042B718 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		01370BE32941E68C0042B718 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -1261,10 +1258,6 @@
 		01EDFFA32F1F19E800AA074B /* verseBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = verseBundle.swift; sourceTree = "<group>"; };
 		01F813CC2A73ACD600A271E6 /* WallpaperView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WallpaperView.swift; sourceTree = "<group>"; };
 		01F813CD2A73ACD600A271E6 /* WallpaperView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = WallpaperView.xib; sourceTree = "<group>"; };
-		01GEM00129FBD2210006BD01 /* Secrets.example.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Secrets.example.swift; sourceTree = "<group>"; };
-		01GEM00229FBD2210006BD02 /* Secrets.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
-		01GEM00329FBD2210006BD03 /* GeminiKeyProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeminiKeyProvider.swift; sourceTree = "<group>"; };
-		01GEM00429FBD2210006BD04 /* GeminiExplanationService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeminiExplanationService.swift; sourceTree = "<group>"; };
 		01GEM00529FBD2210006BD05 /* VerseExplanationView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VerseExplanationView.swift; sourceTree = "<group>"; };
 		01OPC10129FBD2210006BD11 /* OpenChatService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenChatService.swift; sourceTree = "<group>"; };
 		01OPC10229FBD2210006BD12 /* OpenChatViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenChatViewController.swift; sourceTree = "<group>"; };
@@ -1464,7 +1457,6 @@
 				01E40B90295592B300A078CB /* TextAttribute.swift */,
 				01D52549295D657700DAC5F8 /* SendMail.swift */,
 				01D3956E29ED1231002281C1 /* HexColorConvert.swift */,
-				01GEM01029FBD2210006BD10 /* Gemini */,
 				01AIC20129FBD2210006BD11 /* OpenAIChat */,
 				01OPC20129FBD2210006BD21 /* OpenChat */,
 				01PRW20129FBD2210006BD21 /* PrayerWall */,
@@ -1572,7 +1564,7 @@
 		01370BDA2941E68C0042B718 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				01370BD92941E68C0042B718 /* NKJV Bible.app */,
+				01370BD92941E68C0042B718 /* ALKITAB Bible.app */,
 				01709ADC2A28AD4300C55987 /* Notification.appex */,
 				01EDFF8C2F1F19C600AA074B /* verseExtension.appex */,
 			);
@@ -3483,17 +3475,6 @@
 			path = verse;
 			sourceTree = "<group>";
 		};
-		01GEM01029FBD2210006BD10 /* Gemini */ = {
-			isa = PBXGroup;
-			children = (
-				01GEM00129FBD2210006BD01 /* Secrets.example.swift */,
-				01GEM00229FBD2210006BD02 /* Secrets.swift */,
-				01GEM00329FBD2210006BD03 /* GeminiKeyProvider.swift */,
-				01GEM00429FBD2210006BD04 /* GeminiExplanationService.swift */,
-			);
-			path = Gemini;
-			sourceTree = "<group>";
-		};
 		01GEM01129FBD2210006BD11 /* VerseExplanation */ = {
 			isa = PBXGroup;
 			children = (
@@ -3644,9 +3625,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		01370BD82941E68C0042B718 /* NKJV Bible */ = {
+		01370BD82941E68C0042B718 /* ALKITAB Bible */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 01370BF02941E68F0042B718 /* Build configuration list for PBXNativeTarget "NKJV Bible" */;
+			buildConfigurationList = 01370BF02941E68F0042B718 /* Build configuration list for PBXNativeTarget "ALKITAB Bible" */;
 			buildPhases = (
 				8563E6A7AD5432E1CF13A7F5 /* [CP] Check Pods Manifest.lock */,
 				01370BD52941E68C0042B718 /* Sources */,
@@ -3665,7 +3646,7 @@
 			fileSystemSynchronizedGroups = (
 				B1A9DAC330381F560007DC37 /* Onboarding_bg */,
 			);
-			name = "NKJV Bible";
+			name = "ALKITAB Bible";
 			packageProductDependencies = (
 				01547AD02F13E3240097A8E3 /* FirebaseCore */,
 				01547AD22F13E3240097A8E3 /* FirebaseCrashlytics */,
@@ -3673,7 +3654,7 @@
 				A2G00A022F13E3240097A8E3 /* GoogleSignIn */,
 			);
 			productName = "NKJV Bible";
-			productReference = 01370BD92941E68C0042B718 /* NKJV Bible.app */;
+			productReference = 01370BD92941E68C0042B718 /* ALKITAB Bible.app */;
 			productType = "com.apple.product-type.application";
 		};
 		01709ADB2A28AD4300C55987 /* Notification */ = {
@@ -3748,7 +3729,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				01370BD82941E68C0042B718 /* NKJV Bible */,
+				01370BD82941E68C0042B718 /* ALKITAB Bible */,
 				01709ADB2A28AD4300C55987 /* Notification */,
 				01EDFF8B2F1F19C600AA074B /* verseExtension */,
 			);
@@ -4402,9 +4383,6 @@
 				01DBC6A2294DD5A000C02AA1 /* DailyVersesCollectionViewCell.swift in Sources */,
 				0180DDF12949B50A00F0C508 /* Ad_ToastController.swift in Sources */,
 				0134E06C29FBD2210006BD9B /* SaveNotes.swift in Sources */,
-				01GEM02229FBD2210006BD22 /* Secrets.swift in Sources */,
-				01GEM02329FBD2210006BD23 /* GeminiKeyProvider.swift in Sources */,
-				01GEM02429FBD2210006BD24 /* GeminiExplanationService.swift in Sources */,
 				01GEM02529FBD2210006BD25 /* VerseExplanationView.swift in Sources */,
 				01AIC30129FBD2210006BD21 /* OpenAIChatService.swift in Sources */,
 				01AIC30329FBD2210006BD23 /* OpenAIExplanationService.swift in Sources */,
@@ -4691,6 +4669,7 @@
 				);
 				MARKETING_VERSION = 1.0.57;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bmrbibles.alkitabbibleinindonesian;
+				PRODUCT_MODULE_NAME = NKJV_Bible;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -4734,6 +4713,7 @@
 				);
 				MARKETING_VERSION = 1.0.57;
 				PRODUCT_BUNDLE_IDENTIFIER = com.bmrbibles.alkitabbibleinindonesian;
+				PRODUCT_MODULE_NAME = NKJV_Bible;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -4885,7 +4865,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		01370BF02941E68F0042B718 /* Build configuration list for PBXNativeTarget "NKJV Bible" */ = {
+		01370BF02941E68F0042B718 /* Build configuration list for PBXNativeTarget "ALKITAB Bible" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				01370BF12941E68F0042B718 /* Debug */,

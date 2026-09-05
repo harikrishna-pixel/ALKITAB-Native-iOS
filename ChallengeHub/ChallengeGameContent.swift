@@ -172,16 +172,26 @@ enum ChallengeGameFactory {
         if let config {
             return chapterQuickQuiz(config: config, fallback: ctx)
         }
+        return shuffledQuickQuiz(singleVerseQuickQuiz(from: ctx))
+    }
+
+    /// Questions for one verse (used for both single-verse and chapter pools).
+    private static func singleVerseQuickQuiz(from ctx: ChallengeVerseContext) -> [QuickQuizQuestion] {
         let book = ctx.reference.components(separatedBy: " ").first ?? ctx.reference
         let words = Array(ctx.significantWords.prefix(8))
         let keyWord = words.first ?? "faith"
-        let distractors = ["Moses", "Aaron", "Joshua", "David", "Peter", "Paul", "John", "Abraham"]
+        // Prefer other words from the same verse as distractors (keeps language consistent).
+        let verseDistractors = words
+            .dropFirst()
+            .map { $0.capitalized }
+        let fallbackDistractors = ["Moses", "Aaron", "Joshua", "David", "Peter", "Paul", "John", "Abraham"]
+        let distractors = verseDistractors.isEmpty ? fallbackDistractors : Array(verseDistractors) + fallbackDistractors
 
         var questions: [QuickQuizQuestion] = []
 
         questions.append(
             QuickQuizQuestion(
-                prompt: "Which book does today's verse come from?",
+                prompt: "Which book does this verse come from?",
                 options: uniqueOptions(
                     correct: book.isEmpty ? "Bible" : book,
                     pool: localizedBookNames(excluding: book) + [book]
@@ -192,7 +202,7 @@ enum ChallengeGameFactory {
 
         questions.append(
             QuickQuizQuestion(
-                prompt: "What is today's verse reference?",
+                prompt: "What is this verse reference?",
                 options: uniqueOptions(
                     correct: ctx.reference,
                     pool: localizedReferencePool(excluding: ctx.reference) + [ctx.reference]
@@ -203,7 +213,7 @@ enum ChallengeGameFactory {
 
         questions.append(
             QuickQuizQuestion(
-                prompt: "Which word appears in today's verse?",
+                prompt: "Which word appears in this verse?",
                 options: uniqueOptions(correct: keyWord.capitalized, pool: distractors + [keyWord.capitalized]),
                 correctIndex: 0
             )
@@ -211,7 +221,7 @@ enum ChallengeGameFactory {
 
         questions.append(
             QuickQuizQuestion(
-                prompt: "Today's verse encourages us to grow in God's Word. What should we do?",
+                prompt: "This verse encourages us to grow in God's Word. What should we do?",
                 options: [
                     "Read and reflect on Scripture",
                     "Ignore the verse",
@@ -230,7 +240,7 @@ enum ChallengeGameFactory {
         ].filter { !$0.isEmpty }
         questions.append(
             QuickQuizQuestion(
-                prompt: "Which line matches today's verse?",
+                prompt: "Which line matches this verse?",
                 options: uniqueOptions(
                     correct: snippet.isEmpty ? ctx.text : snippet + (ctx.text.count > 60 ? "…" : ""),
                     pool: [
@@ -241,7 +251,11 @@ enum ChallengeGameFactory {
             )
         )
 
-        return Array(questions.prefix(5)).map { q in
+        return Array(questions.prefix(5))
+    }
+
+    private static func shuffledQuickQuiz(_ questions: [QuickQuizQuestion]) -> [QuickQuizQuestion] {
+        questions.map { q in
             let shuffled = q.options.shuffled()
             let idx = shuffled.firstIndex(of: q.options[q.correctIndex]) ?? 0
             return QuickQuizQuestion(prompt: q.prompt, options: shuffled, correctIndex: idx)
@@ -330,7 +344,15 @@ enum ChallengeGameFactory {
     static func wordSearchWords(from ctx: ChallengeVerseContext, config: ChallengeSessionConfig? = nil) -> [String] {
         let targetCount = config?.wordSearchCount ?? 5
         let defaults = ["FAITH", "GRACE", "LOVE", "PEACE", "HOPE"]
-        var picked = ctx.significantWords
+        var sourceWords = ctx.significantWords
+        if let config {
+            // Pull words from the chosen chapter, not only the first/daily verse.
+            let chapterWords = config.chapterVerses(minWords: 1).flatMap { $0.significantWords }
+            if !chapterWords.isEmpty {
+                sourceWords = chapterWords
+            }
+        }
+        var picked = sourceWords
             .map { $0.uppercased().trimmingCharacters(in: CharacterSet.alphanumerics.inverted) }
             .filter { (4...8).contains($0.count) }
         picked = Array(Set(picked)).prefix(targetCount).map { $0 }
@@ -351,7 +373,8 @@ enum ChallengeGameFactory {
 
         while questions.count < config.quickQuizCount {
             let ctx = pool[verseIndex % pool.count]
-            let batch = quickQuiz(from: ctx)
+            // Build from the chosen chapter verse — do not use the daily-verse-only path.
+            let batch = shuffledQuickQuiz(singleVerseQuickQuiz(from: ctx))
             for question in batch where questions.count < config.quickQuizCount {
                 questions.append(question)
             }

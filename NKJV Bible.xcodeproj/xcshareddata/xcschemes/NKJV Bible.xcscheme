@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "01370BD82941E68C0042B718"
-               BuildableName = "NKJV Bible.app"
-               BlueprintName = "NKJV Bible"
+               BuildableName = "ALKITAB Bible.app"
+               BlueprintName = "ALKITAB Bible"
                ReferencedContainer = "container:NKJV Bible.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -44,8 +44,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "01370BD82941E68C0042B718"
-            BuildableName = "NKJV Bible.app"
-            BlueprintName = "NKJV Bible"
+            BuildableName = "ALKITAB Bible.app"
+            BlueprintName = "ALKITAB Bible"
             ReferencedContainer = "container:NKJV Bible.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -68,8 +68,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "01370BD82941E68C0042B718"
-            BuildableName = "NKJV Bible.app"
-            BlueprintName = "NKJV Bible"
+            BuildableName = "ALKITAB Bible.app"
+            BlueprintName = "ALKITAB Bible"
             ReferencedContainer = "container:NKJV Bible.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

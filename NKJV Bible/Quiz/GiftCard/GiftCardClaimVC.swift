@@ -38,7 +38,7 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
     @IBOutlet weak var CoinsTxt: UILabel!
     var AdEnable = false
     
-    var CoinCards:[Any] = [10,20,30,40,50,60,70,80,90,100,150,200,250,300,350,400,450,500,"Life","50:50","Hint"]
+    var CoinCards:[Any] = [20,30,40,50,60,70,80,90]
     var coins:Int = 0
     var CardType:String = ""
     
@@ -57,13 +57,9 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
         
         
         DispatchQueue.main.async {
-            if CoreDataModel.sharedInstance.GetCardAry(entity: CDCardList).count % 10 == 0 {
-                self.CoinCards = [100,150,200,250,300,350]
-                self.swipeImage.setImage(UIImage(named: "card.png"), for: .normal)
-            } else {
-                self.CoinCards = [10,20,30,40,50,60,70,80,90]
-                self.swipeImage.setImage(UIImage(named: "card.png"), for: .normal)
-            }
+            // Scratch credits must stay under 100.
+            self.CoinCards = [20,30,40,50,60,70,80,90]
+            self.swipeImage.setImage(UIImage(named: "card.png"), for: .normal)
             
             self.AdVu.layer.masksToBounds = true
             self.ClimeButtonVu.isHidden = true
