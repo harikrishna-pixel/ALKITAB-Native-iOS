@@ -16,7 +16,6 @@ final class DailyVerseFullscreenViewController: UIViewController {
     private let backgroundImageView = UIImageView()
     private let gradientView = UIView()
     private let closeButton = UIButton(type: .system)
-    private let nextButton = UIButton(type: .system)
     private let ctaButton = UIButton(type: .system)
     private let scrollView = UIScrollView()
     private let referenceLabel = UILabel()
@@ -66,21 +65,6 @@ final class DailyVerseFullscreenViewController: UIViewController {
         closeButton.layer.cornerRadius = 20
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         view.addSubview(closeButton)
-
-        // Next — rounded pill, top-right (mockup)
-        nextButton.translatesAutoresizingMaskIntoConstraints = false
-        nextButton.setTitle("Next", for: .normal)
-        nextButton.setImage(UIImage(systemName: "chevron.right", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)), for: .normal)
-        nextButton.semanticContentAttribute = .forceRightToLeft
-        nextButton.tintColor = .white
-        nextButton.setTitleColor(.white, for: .normal)
-        nextButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
-        nextButton.backgroundColor = UIColor.black.withAlphaComponent(0.40)
-        nextButton.layer.cornerRadius = 18
-        nextButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 14, bottom: 8, right: 12)
-        nextButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 6, bottom: 0, right: 0)
-        nextButton.addTarget(self, action: #selector(nextTapped), for: .touchUpInside)
-        view.addSubview(nextButton)
 
         // Reference — top center, uppercase + underline (mockup)
         referenceLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -150,13 +134,9 @@ final class DailyVerseFullscreenViewController: UIViewController {
             closeButton.widthAnchor.constraint(equalToConstant: 40),
             closeButton.heightAnchor.constraint(equalToConstant: 40),
 
-            nextButton.centerYAnchor.constraint(equalTo: closeButton.centerYAnchor),
-            nextButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            nextButton.heightAnchor.constraint(equalToConstant: 36),
-
             referenceLabel.centerYAnchor.constraint(equalTo: closeButton.centerYAnchor, constant: -4),
             referenceLabel.leadingAnchor.constraint(equalTo: closeButton.trailingAnchor, constant: 12),
-            referenceLabel.trailingAnchor.constraint(equalTo: nextButton.leadingAnchor, constant: -12),
+            referenceLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
 
             referenceUnderline.topAnchor.constraint(equalTo: referenceLabel.bottomAnchor, constant: 6),
             referenceUnderline.centerXAnchor.constraint(equalTo: referenceLabel.centerXAnchor),
@@ -190,11 +170,11 @@ final class DailyVerseFullscreenViewController: UIViewController {
         gradientView.layer.sublayers?.removeAll(where: { $0 is CAGradientLayer })
         let gradient = CAGradientLayer()
         gradient.frame = gradientView.bounds
-        // Soft dim so wallpaper stays visible; text stays readable (mockup style).
+        // Stronger black dim so verse text stays readable over bright wallpapers.
         gradient.colors = [
-            UIColor.black.withAlphaComponent(0.28).cgColor,
-            UIColor.black.withAlphaComponent(0.18).cgColor,
-            UIColor.black.withAlphaComponent(0.45).cgColor
+            UIColor.black.withAlphaComponent(0.42).cgColor,
+            UIColor.black.withAlphaComponent(0.38).cgColor,
+            UIColor.black.withAlphaComponent(0.55).cgColor
         ]
         gradient.locations = [0, 0.45, 1]
         gradientView.layer.addSublayer(gradient)

@@ -283,8 +283,11 @@ struct DailyJourneyHomeView: View {
                 .clipped()
                 .id(verse.imageName)
 
+                // Black overlay so verse text stays readable over bright wallpapers.
+                Color.black.opacity(0.40)
+
                 LinearGradient(
-                    gradient: Gradient(colors: [Color.black.opacity(0.05), Color.black.opacity(0.65)]),
+                    gradient: Gradient(colors: [Color.black.opacity(0.15), Color.black.opacity(0.55)]),
                     startPoint: .top,
                     endPoint: .bottom
                 )

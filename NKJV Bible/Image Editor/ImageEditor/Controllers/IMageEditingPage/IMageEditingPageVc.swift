@@ -48,6 +48,10 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
     
     @IBOutlet var BlurVu: UIView!
     @IBOutlet var Watermark: UIView!
+
+    /// Dim layer over wallpaper so verse text stays readable (UI only).
+    private let imageDimOverlay = UIView()
+    private var didInstallImageDimOverlay = false
     @IBOutlet var WatermarkClose: UIImageView!
     
     
@@ -138,8 +142,7 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
         self.FontColorBtn.layer.cornerRadius = self.FontColorBtn.frame.height/2
         self.FontstyleBtn.layer.cornerRadius = self.FontstyleBtn.frame.height/2
         self.imageVu.image = GetImage
-        
-        
+        installImageDimOverlayIfNeeded()
         
         self.atributetxt()
         
@@ -278,6 +281,22 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
     
     func ImageChange_Action(Image:UIImage) {
         imageVu.image = Image
+        installImageDimOverlayIfNeeded()
+    }
+
+    private func installImageDimOverlayIfNeeded() {
+        guard !didInstallImageDimOverlay, let parent = imageVu.superview else { return }
+        didInstallImageDimOverlay = true
+        imageDimOverlay.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+        imageDimOverlay.isUserInteractionEnabled = false
+        imageDimOverlay.translatesAutoresizingMaskIntoConstraints = false
+        parent.insertSubview(imageDimOverlay, aboveSubview: imageVu)
+        NSLayoutConstraint.activate([
+            imageDimOverlay.topAnchor.constraint(equalTo: imageVu.topAnchor),
+            imageDimOverlay.leadingAnchor.constraint(equalTo: imageVu.leadingAnchor),
+            imageDimOverlay.trailingAnchor.constraint(equalTo: imageVu.trailingAnchor),
+            imageDimOverlay.bottomAnchor.constraint(equalTo: imageVu.bottomAnchor)
+        ])
     }
     
     

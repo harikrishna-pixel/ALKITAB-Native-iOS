@@ -348,7 +348,7 @@ final class DailyJourneyHomeViewController: UIViewController {
         container.addSubview(bgView)
 
         let dimOverlay = UIView(frame: container.bounds)
-        dimOverlay.backgroundColor = UIColor.black.withAlphaComponent(0.45)
+        dimOverlay.backgroundColor = UIColor.black.withAlphaComponent(0.50)
         dimOverlay.isUserInteractionEnabled = false
         container.addSubview(dimOverlay)
 

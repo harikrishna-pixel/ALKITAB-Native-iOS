@@ -41,7 +41,7 @@ struct DailyVerseFullscreenView: View {
                 )
 
                 LinearGradient(
-                    gradient: Gradient(colors: [Color.black.opacity(0.2), Color.black.opacity(0.75)]),
+                    gradient: Gradient(colors: [Color.black.opacity(0.42), Color.black.opacity(0.38), Color.black.opacity(0.55)]),
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -60,21 +60,6 @@ struct DailyVerseFullscreenView: View {
                         .buttonStyle(PlainButtonStyle())
 
                         Spacer()
-
-                        Button(action: onForward) {
-                            HStack(spacing: 6) {
-                                Text("Next")
-                                    .font(.system(size: 15, weight: .semibold))
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .semibold))
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .background(Color.black.opacity(0.35))
-                            .clipShape(Capsule())
-                        }
-                        .buttonStyle(PlainButtonStyle())
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, max(geometry.safeAreaInsets.top, 16))
