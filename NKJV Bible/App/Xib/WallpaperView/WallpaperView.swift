@@ -55,6 +55,8 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
     var Bookname:String?
     var BooknameTxt:String?
     var SelectedPath:Int = 0
+    /// Last verse page that already counted toward tap/swipe interstitial (10, 20, 30…).
+    private var lastWallpaperAdCountedPath: Int?
     var saveImage:UIImage?
     var status: PHAuthorizationStatus?
     
@@ -100,6 +102,7 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
         self.WallPaperCollection.register(UINib(nibName: "WallpaperCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "WallpaperCell")
          
         self.SelectedPath = Int(BookArray[BookArray.count-1])!-1
+        self.lastWallpaperAdCountedPath = self.SelectedPath
         
         
         var indexPath = IndexPath(row: Int(BookArray[BookArray.count-1])!-1, section: 0)
@@ -246,6 +249,8 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
                 
         let saveImage = self.WallpaperCell!.Walpaperframe.asImage()
         App_Protocol.delegateReader?.SliderCardPreview(Vereseimage: saveImage)
+        // First Save this app session only → IronSource interstitial.
+        App_Protocol.delegateReader?.CallIndustrialAd()
         
         
         status = PHPhotoLibrary.authorizationStatus(for: PHAccessLevel(rawValue: PHAccessLevel.RawValue(GETALL))!)
@@ -397,6 +402,7 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
 //            self.WallpaperCell?.TabTxt.text = "Share the image"
             BGImageCount = BGImageCount+1
             self.WallpaperCell!.Wallpaper.image = UIImage(named: "S\(BGImageCount).jpg")
+            App_Protocol.delegateReader?.CallWallpaperAds()
 
             
 //            self.hexStringToUIColor(hex: BGColor.randomElement()!)
@@ -431,8 +437,40 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
                   
         self.SelectedPath = Int((newTargetOffset / pageWidth)+0.01)
         self.updatePageControl()
-        
        }
+    
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        commitWallpaperPageChangeIfNeeded()
+    }
+    
+    func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+        commitWallpaperPageChangeIfNeeded()
+    }
+    
+    /// Prefer centered cell index over offset/pageWidth math (swipe ads were missing when SelectedPath didn't change).
+    private func centeredWallpaperPage() -> Int? {
+        let collection = WallPaperCollection!
+        let centerX = collection.contentOffset.x + collection.bounds.width / 2
+        let center = CGPoint(x: centerX, y: collection.bounds.height / 2)
+        if let row = collection.indexPathForItem(at: center)?.row {
+            return row
+        }
+        return collection.indexPathsForVisibleItems.sorted { $0.row < $1.row }.first?.row
+    }
+    
+    private func commitWallpaperPageChangeIfNeeded() {
+        guard let page = centeredWallpaperPage() else { return }
+        SelectedPath = page
+        updatePageControl()
+        
+        if lastWallpaperAdCountedPath == nil {
+            lastWallpaperAdCountedPath = page
+            return
+        }
+        guard page != lastWallpaperAdCountedPath else { return }
+        lastWallpaperAdCountedPath = page
+        App_Protocol.delegateReader?.CallWallpaperAds()
+    }
     
     
     private func setupPageControl() {

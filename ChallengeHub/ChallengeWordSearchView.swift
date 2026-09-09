@@ -23,6 +23,7 @@ struct ChallengeWordSearchView: View {
     @State private var usedHint = false
     @State private var walletTick = 0
     @State private var toast: String?
+    @State private var outOfLives = false
 
     private let palette: [Color] = [
         Color(hex: "34C759"),
@@ -34,75 +35,89 @@ struct ChallengeWordSearchView: View {
     private let paletteHex = ["34C759", "1C46B2", "F5A623", "7B61FF", "E85D4C"]
 
     var body: some View {
-        ChallengeOldStyleShell(
-            screenTitle: ChallengeKind.wordSearch.title,
-            onBack: onClose,
-            lives: lives,
-            questionNumber: words.isEmpty ? 1 : min(found.count + (found.count == words.count ? 0 : 1), words.count),
-            questionTotal: max(words.count, 1),
-            caption: "Solve the word puzzle.",
-            primaryTitle: found.count == words.count && !words.isEmpty ? "Done" : "Check Answer",
-            primaryEnabled: true,
-            onPrimary: {
-                if found.count == words.count && !words.isEmpty {
-                    onClose()
-                } else {
-                    toast = found.isEmpty ? "Find the words in the grid." : "Keep searching — \(found.count)/\(words.count) found."
-                }
-            },
-            fiftyFiftyEnabled: false,
-            hintEnabled: !usedHint && found.count < words.count,
-            skipEnabled: found.count < words.count,
-            onLifeline: handleLifeline,
-            walletTick: walletTick,
-            contentScrollDisabled: true
-        ) {
-            VStack(alignment: .leading, spacing: 12) {
-                ChallengeQuizContentHeader(
-                    reference: verse.reference,
-                    instruction: sessionConfig == nil
-                        ? "Find the hidden Bible words from today's verse."
-                        : "Find the hidden Bible words from this chapter."
+        Group {
+            if outOfLives {
+                ChallengeOldStyleResult(
+                    title: "Out of Lives!",
+                    scoreText: "Your Score: \(found.count)/\(max(words.count, 1))",
+                    subtitle: "Good try! Keep practicing.",
+                    onDone: onClose
                 )
+            } else {
+                ChallengeOldStyleShell(
+                    screenTitle: ChallengeKind.wordSearch.title,
+                    onBack: onClose,
+                    lives: lives,
+                    questionNumber: words.isEmpty ? 1 : min(found.count + (found.count == words.count ? 0 : 1), words.count),
+                    questionTotal: max(words.count, 1),
+                    caption: "Solve the word puzzle.",
+                    primaryTitle: found.count == words.count && !words.isEmpty ? "Done" : "Check Answer",
+                    primaryEnabled: lives > 0 || (found.count == words.count && !words.isEmpty),
+                    onPrimary: {
+                        if found.count == words.count && !words.isEmpty {
+                            onClose()
+                        } else if lives == 0 {
+                            return
+                        } else {
+                            toast = found.isEmpty ? "Find the words in the grid." : "Keep searching — \(found.count)/\(words.count) found."
+                        }
+                    },
+                    fiftyFiftyEnabled: false,
+                    hintEnabled: !usedHint && found.count < words.count && lives > 0,
+                    skipEnabled: found.count < words.count && lives > 0,
+                    onLifeline: handleLifeline,
+                    walletTick: walletTick,
+                    contentScrollDisabled: true
+                ) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ChallengeQuizContentHeader(
+                            reference: verse.reference,
+                            instruction: sessionConfig == nil
+                                ? "Find the hidden Bible words from today's verse."
+                                : "Find the hidden Bible words from this chapter."
+                        )
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(words, id: \.self) { word in
-                            Text(word)
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(found.contains(word) ? .white : Color(hex: "0B1B3A"))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(
-                                    Capsule().fill(found.contains(word) ? (wordColors[word] ?? Color(hex: "1C46B2")) : Color(hex: "EEF2F8"))
-                                )
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(words, id: \.self) { word in
+                                    Text(word)
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(found.contains(word) ? .white : Color(hex: "0B1B3A"))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            Capsule().fill(found.contains(word) ? (wordColors[word] ?? Color(hex: "1C46B2")) : Color(hex: "EEF2F8"))
+                                        )
+                                }
+                            }
+                        }
+                        .frame(height: 40)
+
+                        WordSearchBoardRepresentable(
+                            letters: grid,
+                            foundPaths: foundPaths,
+                            colors: foundUIColors,
+                            onFinishedPath: commitPath
+                        )
+                        .frame(maxWidth: .infinity)
+                        .frame(height: boardHeight)
+                        .allowsHitTesting(lives > 0)
+
+                        if found.count == words.count && !words.isEmpty {
+                            HStack(spacing: 8) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(Color(hex: "34C759"))
+                                Text("Great job!")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(Color(hex: "1B7A3D"))
+                            }
+                        }
+                        if let toast = toast {
+                            Text(toast)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(Color(hex: "D70015"))
                         }
                     }
-                }
-                .frame(height: 40)
-
-                WordSearchBoardRepresentable(
-                    letters: grid,
-                    foundPaths: foundPaths,
-                    colors: foundUIColors,
-                    onFinishedPath: commitPath
-                )
-                .frame(maxWidth: .infinity)
-                .frame(height: boardHeight)
-
-                if found.count == words.count && !words.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(Color(hex: "34C759"))
-                        Text("Great job!")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color(hex: "1B7A3D"))
-                    }
-                }
-                if let toast = toast {
-                    Text(toast)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Color(hex: "D70015"))
                 }
             }
         }
@@ -174,7 +189,12 @@ struct ChallengeWordSearchView: View {
             return
         } else {
             lives = max(0, lives - 1)
-            toast = lives == 0 ? "Out of lives. Try again tomorrow." : "Not quite — try again."
+            toast = lives == 0 ? "Out of Lives!" : "Not quite — try again."
+            if lives == 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                    outOfLives = true
+                }
+            }
         }
     }
 

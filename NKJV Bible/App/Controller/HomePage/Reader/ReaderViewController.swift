@@ -19,6 +19,10 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     weak var WallpaperVU:WallpaperView?
     weak var SubscriptionVu: SubscriptionPopup?
     var PopupMenuView: PopupMenu?
+    /// Verse Image Save: first Save interstitial this app session only.
+    private static var didShowVerseImageSaveAdThisSession = false
+    /// Verse Image tap/swipe count this app session (IS at 10, 20, 30…).
+    private static var verseImageViewAdCount = 0
     
     var myView:UIView?
     var VerseView:UIView?
@@ -184,6 +188,12 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     override func viewDidLoad() {
         super.viewDidLoad()
         App_Protocol.delegateReader = self
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidEnterBackgroundForMemory),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
         
         
         self.SelectedTab = "0"
@@ -309,7 +319,11 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             self.MenuVu.isHidden = true
         }
         
-        if  self.Themecolor!.toHexString() == BGNightMode.toHexString() {
+        let theme = self.Themecolor
+            ?? UserDefaults.standard.color(forKey: "AppThemeColor")
+            ?? PrimaryColor
+        self.Themecolor = theme
+        if theme.toHexString() == BGNightMode.toHexString() {
             self.NightModeBtn.setImage(UIImage(named: "night-mode-on"), for: .normal)
         } else {
             self.NightModeBtn.setImage(UIImage(named: "night-mode-off"), for: .normal)
@@ -328,9 +342,9 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             rateus.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             self.view.addSubview(rateus)
 
-        } else if UserDefaults.standard.string(forKey: "RateAction") ?? "" != "" {
+        } else if let rateAction = UserDefaults.standard.string(forKey: "RateAction"), !rateAction.isEmpty {
 
-            let showDate1 = GetReceptKey.shared.convertData(date: UserDefaults.standard.string(forKey: "RateAction")!)
+            let showDate1 = GetReceptKey.shared.convertData(date: rateAction)
 
             if !showDate1.isGreaterThan(Date()) {
                 let rateus = rateus2.fromNib(named: "rateus2")
@@ -734,24 +748,17 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     func CallWallpaperAds() {
-        
-        if PaymentHistory.sharedInstance.paymentInfo() {
-            if  WallpaperAds  == 5 {
-                WallpaperAds = 0
-                UserDefaults.standard.set(WallpaperAds, forKey: "WallpaperAds")
-                self.IndestrialAd()
-            }
-            else {
-                WallpaperAds = WallpaperAds+1
-                UserDefaults.standard.set(WallpaperAds, forKey: "WallpaperAds")
-            }
+        // Verse Image: every 10th tap/swipe this session → IronSource interstitial.
+        guard PaymentHistory.sharedInstance.paymentInfo() else { return }
+        Self.verseImageViewAdCount += 1
+        if Self.verseImageViewAdCount % 10 == 0 {
+            IndestrialAd()
         }
-        
     }
     
     
     func IndestrialAd() {
-        
+        AdmobManager.shared.IronSource_Interstitial_ShowAds(vw: self, waitForLoadIfNeeded: true)
     }
     
     
@@ -1716,17 +1723,19 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
        
 
     func NoteNib(VersePosition: Int, BookName: String, Pageindex:Int, BookVerse:Array<String>, note:String) {
+        guard VersePosition >= 1, VersePosition <= BookVerse.count else { return }
         
         self.myView = UIView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height))
         self.view.addSubview(self.myView!)
         self.NoteVu = SaveNotes.fromNib(named: "SaveNotes")
-        self.NoteVu!.VerseStr = BookVerse[VersePosition-1]
-        self.NoteVu!.Note = note
-        self.NoteVu!.Bookname = BookName
-        self.NoteVu!.ChapterNo = "\(Pageindex-1):\(VersePosition)"
-        self.NoteVu!.frame = self.myView!.bounds
-        self.NoteVu!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        self.myView!.addSubview(self.NoteVu!)
+        guard let noteVu = self.NoteVu, let overlay = self.myView else { return }
+        noteVu.VerseStr = BookVerse[VersePosition-1]
+        noteVu.Note = note
+        noteVu.Bookname = BookName
+        noteVu.ChapterNo = "\(Pageindex-1):\(VersePosition)"
+        noteVu.frame = overlay.bounds
+        noteVu.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        overlay.addSubview(noteVu)
         
     }
 
@@ -1834,6 +1843,9 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     func WallpaperNib(VersePosition: Int, BookName: String, Pageindex:Int, BookVerse:Array<String>) {
         
         self.CloseMenu()
+        if PaymentHistory.sharedInstance.paymentInfo() {
+            AdmobManager.shared.IronSource_Interstitial_AdLoad()
+        }
         self.myView = UIView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height))
         self.view.addSubview(self.myView!)
         self.WallpaperVU = WallpaperView.fromNib(named: "WallpaperView")
@@ -1871,9 +1883,8 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     func CloseView() {
-        if self.myView! != nil {
-            self.myView!.removeFromSuperview()
-        }
+        self.myView?.removeFromSuperview()
+        self.myView = nil
     }
     
     func CloseChapterView() {
@@ -1889,6 +1900,12 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             menuFrame.removeFromSuperview()
             self.MenuFrame = nil
         }
+        self.MenuView = nil
+    }
+    
+    /// Drop verse-menu overlay when suspended so iOS is less likely to jetsam the app.
+    @objc private func appDidEnterBackgroundForMemory() {
+        CloseMenu()
     }
     
     
@@ -1969,13 +1986,20 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     func ConstrainChange(Top: CGFloat, bottom: CGFloat) {
-            self.VeresViewBottom.constant = (Top < 0.0 ? 0.0:-72.0)
+        // Apply verse-area inset without animation so Mark as Read / Get Summary
+        // don't slide or resize when scrolling to the chapter bottom.
+        let verseBottom = (Top < 0.0 ? 0.0 : -72.0)
+        UIView.performWithoutAnimation {
+            self.VeresViewBottom.constant = verseBottom
+            self.view.layoutIfNeeded()
+        }
         
         UIView.animate(withDuration: 0.6, animations: { [weak self] in
-                self!.topBannerConstant.constant = Top
-                self!.BottomMenyConstrain.constant = bottom
-                self!.MenuConstrain.constant = bottom >= 20 ? 20:0
-                self!.view.layoutIfNeeded()
+            guard let self = self else { return }
+            self.topBannerConstant.constant = Top
+            self.BottomMenyConstrain.constant = bottom
+            self.MenuConstrain.constant = bottom >= 20 ? 20 : 0
+            self.view.layoutIfNeeded()
          }, completion: { finished in
             })
     }
@@ -2123,14 +2147,11 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     func CallIndustrialAd() {
-
-//        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
-//                let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "InterstitialViewController") as! InterstitialViewController
-//                vc.LoadAdCatagory = "INTERSTITIAL"
-//                vc.modalPresentationStyle = .overCurrentContext
-//                vc.modalTransitionStyle = .crossDissolve
-//                self.present(vc, animated: true, completion: nil)
-//        }
+        // Verse Image Save: interstitial once per app session only.
+        guard PaymentHistory.sharedInstance.paymentInfo() else { return }
+        guard !Self.didShowVerseImageSaveAdThisSession else { return }
+        Self.didShowVerseImageSaveAdThisSession = true
+        IndestrialAd()
     }
     
     

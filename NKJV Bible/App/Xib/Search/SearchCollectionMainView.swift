@@ -25,6 +25,8 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
     var LineCount:CGFloat = 0.0
     var LineNote:CGFloat = 0.0
     private var lastContentOffset: CGFloat = 60
+    /// My Library → Explanations accordion: which row is open (`nil` = all collapsed).
+    private var expandedExplanationIndex: Int? = nil
     
     @IBOutlet weak var ImageHeight: NSLayoutConstraint!
     @IBOutlet weak var ImageWidth: NSLayoutConstraint!
@@ -47,6 +49,7 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
         
         self.SearchCollectionVu!.register(UINib(nibName: "SearchCollectionView", bundle: nil), forCellWithReuseIdentifier: "Search")
         self.SearchCollectionVu!.register(UINib(nibName: "Notes", bundle: nil), forCellWithReuseIdentifier: "Notes")
+        self.SearchCollectionVu!.register(ExplanationLibraryCell.self, forCellWithReuseIdentifier: ExplanationLibraryCell.reuseId)
         
         // BUG FIX: Use float(forKey:) instead of integer(forKey:) for FontSize
         // OLD CODE: fontsize = UserDefaults.standard.integer(forKey: "FontSize")
@@ -84,7 +87,7 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
         
         
         corevalueReverced = corevalue.reversed()
- 
+        expandedExplanationIndex = nil
         
         DispatchQueue.main.async {
             self.SearchCollectionVu.collectionViewLayout.invalidateLayout()
@@ -122,9 +125,21 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
         } else {
             if coreTitle == "Explanations" {
                 let parts = self.corevalueReverced[indexPath.row].components(separatedBy: ExplanationRecordDelimiter)
-                LineCount = parts.count > 3 ? parts[3].lines() : 0
-                LineNote = parts.count > 2 ? parts[2].Notelines() : 0
-                return CGSize(width: self.SearchCollectionVu.frame.width , height: 70 + (lineHeight * LineCount) + (20 * LineNote) + 50)
+                let verseText = parts.count > 3 ? parts[3] : ""
+                let explanation = parts.count > 2 ? parts[2] : ""
+                let fontName = UserDefaults.standard.string(forKey: "FontName")
+                let verseFont = UIFont(name: fontName ?? "", size: CGFloat(fontsize)) ?? UIFont.systemFont(ofSize: CGFloat(fontsize))
+                let bodyFont = UIFont(name: fontName ?? "", size: 14) ?? UIFont.systemFont(ofSize: 14)
+                let isExpanded = (expandedExplanationIndex == indexPath.row)
+                let height = ExplanationLibraryCell.preferredHeight(
+                    width: self.SearchCollectionVu.frame.width,
+                    verseText: verseText,
+                    explanation: explanation,
+                    verseFont: verseFont,
+                    bodyFont: bodyFont,
+                    isExpanded: isExpanded
+                )
+                return CGSize(width: self.SearchCollectionVu.frame.width, height: height)
             }
 
             let seperatedValue:Array<String> =  self.corevalueReverced[indexPath.row].components(separatedBy: "_")
@@ -211,30 +226,32 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
         } else {
             if coreTitle == "Explanations" {
                 let parts = self.corevalueReverced[indexPath.row].components(separatedBy: ExplanationRecordDelimiter)
-                let cell = self.SearchCollectionVu!.dequeueReusableCell(withReuseIdentifier: "Notes", for: indexPath) as! Notes
+                let cell = self.SearchCollectionVu!.dequeueReusableCell(
+                    withReuseIdentifier: ExplanationLibraryCell.reuseId,
+                    for: indexPath
+                ) as! ExplanationLibraryCell
 
-                cell.DottedLines.addDashedLine()
-                cell.VerseTitle.text = parts.first?.replacingOccurrences(of: "-", with: " ") ?? ""
-                cell.VerseLbl.attributedText = TextAttribute.shared.attributedTextBold(
-                    withString: parts.count > 3 ? parts[3] : "",
-                    boldString: parts.count > 3 ? parts[3] : "",
-                    font: cell.VerseTitle.font,
-                    line: false,
-                    colorStatus: false,
-                    color: UIColor.clear
+                let isNight = (Themecolor == BGNightMode)
+                let fontName = UserDefaults.standard.string(forKey: "FontName")
+                let verseFont = UIFont(name: fontName ?? "", size: CGFloat(fontsize)) ?? UIFont.systemFont(ofSize: CGFloat(fontsize))
+                let bodyFont = UIFont(name: fontName ?? "", size: 14) ?? UIFont.systemFont(ofSize: 14)
+                let reference = (parts.first ?? "").replacingOccurrences(of: "-", with: " ")
+                let isExpanded = (expandedExplanationIndex == indexPath.row)
+
+                cell.configure(
+                    verseText: parts.count > 3 ? parts[3] : "",
+                    reference: reference,
+                    explanation: parts.count > 2 ? parts[2] : "",
+                    themeColor: isNight ? .white : Themecolor,
+                    isNight: isNight,
+                    verseFont: verseFont,
+                    bodyFont: bodyFont,
+                    menuTint: isNight ? .white : .darkGray,
+                    isExpanded: isExpanded
                 )
-                cell.VerseLbl.textColor = (Themecolor == BGNightMode ? .white : .black)
-                cell.VerseTitle.textColor = (Themecolor == BGNightMode ? .white : .black)
-                cell.NoteLbl.textColor = (Themecolor == BGNightMode ? .white : .black)
-                cell.NoteTitle.textColor = (Themecolor == BGNightMode ? .white : .black)
-                cell.NoteLbl.text = parts.count > 2 ? parts[2] : ""
-                cell.Noteheight.constant = 17 * LineNote
-                cell.MenuBtn.tag = indexPath.row
-                cell.MenuBtn.addTarget(self, action: #selector(CallMenu), for: .touchUpInside)
-                cell.VerseTitle.font = UIFont(name: UserDefaults.standard.string(forKey: "FontName")!, size: 15)
-                cell.VerseLbl.font = UIFont(name: UserDefaults.standard.string(forKey: "FontName")!, size: CGFloat(fontsize))
-                cell.NoteLbl.font = UIFont(name: UserDefaults.standard.string(forKey: "FontName")!, size: 14)
-                ImageTint.sharedInstance.imageTintcolorMethod(img: cell.menuImage, colorVu: (Themecolor == BGNightMode ? .white : .darkGray))
+                cell.menuBtn.tag = indexPath.row
+                cell.menuBtn.removeTarget(nil, action: nil, for: .allEvents)
+                cell.menuBtn.addTarget(self, action: #selector(CallMenu), for: .touchUpInside)
                 return cell
             }
 
@@ -362,7 +379,19 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         guard coreTitle == "Explanations", corevalueReverced.count > indexPath.row else { return }
-        App_Protocol.delegateReader?.ShowSavedExplanation(dataString: corevalueReverced[indexPath.row])
+        let previous = expandedExplanationIndex
+        if previous == indexPath.row {
+            expandedExplanationIndex = nil
+        } else {
+            expandedExplanationIndex = indexPath.row
+        }
+        var paths = [indexPath]
+        if let previous, previous != indexPath.row, previous < corevalueReverced.count {
+            paths.append(IndexPath(row: previous, section: 0))
+        }
+        collectionView.performBatchUpdates({
+            collectionView.reloadItems(at: paths)
+        }, completion: nil)
     }
     
     

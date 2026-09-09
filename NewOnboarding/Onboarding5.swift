@@ -7,11 +7,16 @@ import SwiftUI
 
 struct Onboarding5: View {
     private let dayLabels = ["M", "T", "W", "T", "F", "S", "S"]
-    private let journeyItems = [
-        ("Today's Verse", true),
-        ("Memory Challenge", false),
-        ("Reflection", false)
-    ]
+    @State private var todaysVerseDone = false
+    @State private var memoryChallengeDone = false
+
+    private var journeyItems: [(String, Bool)] {
+        [
+            ("Today's Verse", todaysVerseDone),
+            ("Memory Challenge", memoryChallengeDone),
+            ("Reflection", false)
+        ]
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -63,6 +68,23 @@ struct Onboarding5: View {
             }
         }
         .navigationBarHidden(true)
+        .onAppear {
+            // Ticks appear one by one (first, then second).
+            if !todaysVerseDone {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.68)) {
+                        todaysVerseDone = true
+                    }
+                }
+            }
+            if !memoryChallengeDone {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.68)) {
+                        memoryChallengeDone = true
+                    }
+                }
+            }
+        }
     }
 
     private var streakCard: some View {
@@ -130,6 +152,8 @@ struct Onboarding5: View {
                 Image(systemName: done ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(done ? OnboardingTheme.grow : Color(hex: "4C5F7E"))
+                    .scaleEffect(done ? 1.0 : 0.85)
+                    .opacity(done ? 1.0 : 0.9)
             }
             .padding(.vertical, 14)
         }

@@ -735,7 +735,8 @@ class CoreDataModel: NSObject {
                    objectUpdate.setValue(Verses, forKey: "verse")
              }
             else {
-                let user = NSManagedObject(entity: userEntity!, insertInto: managedContext)
+                guard let userEntity = userEntity else { return }
+                let user = NSManagedObject(entity: userEntity, insertInto: managedContext)
                     user.setValue(bookVerse, forKey: "bookVerse")
                     user.setValue(notes, forKey: "note")
                     user.setValue("#000000", forKey: "color_id")
@@ -1389,11 +1390,11 @@ class CoreDataModel: NSObject {
     // Split Codedata
     func seperateByArray(SeperateValue: String) -> Array<String> {
         let seperatedValue =  SeperateValue.components(separatedBy: "_")
-        let color  = seperatedValue[1]
-        let note  = seperatedValue[2]
-        let verse  = seperatedValue[3]
-        let bookmark  = seperatedValue[4]
-        let underline  = seperatedValue[5]
+        let color  = seperatedValue.count > 1 ? seperatedValue[1] : ""
+        let note  = seperatedValue.count > 2 ? seperatedValue[2] : ""
+        let verse  = seperatedValue.count > 3 ? seperatedValue[3] : ""
+        let bookmark  = seperatedValue.count > 4 ? seperatedValue[4] : ""
+        let underline  = seperatedValue.count > 5 ? seperatedValue[5] : ""
         return [color,note,verse,bookmark,underline]
     }
     

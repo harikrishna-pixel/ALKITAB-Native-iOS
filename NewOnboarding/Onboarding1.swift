@@ -28,51 +28,60 @@ struct Onboarding1: View {
                 Image("onboarding1_bg")
                     .resizable()
                     .scaledToFill()
-                    .frame(width: geometry.size.width, height: geometry.size.height + 48)
-                    .offset(y: -28)
+                    .frame(width: geometry.size.width, height: geometry.size.height)
                     .clipped()
-
-                OnboardingTheme.darkPageGradient
-                    .opacity(0.55)
                     .edgesIgnoringSafeArea(.all)
 
+                // Light top-to-bottom wash only — keep sunrise + book clear (reference).
                 LinearGradient(
-                    colors: [Color.black.opacity(0.15), Color.black.opacity(0.45)],
+                    colors: [
+                        Color.black.opacity(0.22),
+                        Color.clear,
+                        Color.black.opacity(0.35)
+                    ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
                 .edgesIgnoringSafeArea(.all)
 
                 VStack(spacing: 0) {
-                    // Pin Skip below the status bar (not inside ScrollView).
                     OnboardingTopBar()
                         .padding(.horizontal, 20)
-                        .padding(.top, max(geometry.safeAreaInsets.top, 54) + 28)
+                        .padding(.top, max(geometry.safeAreaInsets.top, 54) + 20)
 
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 0) {
-                            Spacer(minLength: geometry.size.height * 0.12)
+                    VStack(spacing: 0) {
+                        // Nudge title block down toward the book top (reference).
+                        Spacer(minLength: geometry.size.height * 0.16)
 
-                            OnboardingBrandTag()
+                        Text(OnboardingTheme.brandTitle)
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(4.2)
+                            .foregroundColor(Color.white.opacity(0.85))
 
-                            OnboardingSerifTitle(
-                                lines: ["Scripture", "Made Clear"],
-                                goldWord: "Clear",
-                                size: min(geometry.size.width * 0.1, 41)
-                            )
-                            .padding(.horizontal, 24)
+                        OnboardingSerifTitle(
+                            lines: ["Scripture", "Made Clear"],
+                            goldWord: "Clear",
+                            size: min(geometry.size.width * 0.1, 41)
+                        )
+                        .padding(.top, 10)
+                        .padding(.horizontal, 24)
 
-                            OnboardingGoldOrnament()
+                        OnboardingGoldOrnament()
+                            .padding(.top, 10)
 
-                            OnboardingLede(
-                                text: "Read and remember God's Word\nin clear, modern English.",
-                                onDark: true
-                            )
+                        // Fully visible subtitle (was too dim against the sky / glow).
+                        Text("Read and remember God's Word\nclearly and simply.")
+                            .font(.system(size: 15, weight: .medium))
+                            .lineSpacing(4)
+                            .foregroundColor(Color.white.opacity(0.95))
+                            .multilineTextAlignment(.center)
+                            .shadow(color: Color.black.opacity(0.45), radius: 3, x: 0, y: 1)
+                            .padding(.top, 12)
                             .padding(.horizontal, 32)
 
-                            Spacer(minLength: 20)
-                        }
+                        Spacer(minLength: geometry.size.height * 0.28)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     OnboardingPrimaryButton(title: "Continue") {
                         requestTrackingThenContinue()
@@ -90,7 +99,6 @@ struct Onboarding1: View {
 
                     OnboardingPageDots(current: 0, total: 5, onDark: true)
                         .padding(.top, 14)
-                        // Nudge Continue a little higher.
                         .padding(.bottom, max(geometry.safeAreaInsets.bottom, 34) + 36)
                 }
             }
@@ -126,6 +134,18 @@ struct UIKitNavigationHelper {
         }
 
         if #available(iOS 15.0, *) {
+            // Offline + no cached Yearly/Lifetime prices → skip blank paywall for these users.
+            let cachedYearly = UserDefaults.standard.string(forKey: "PriceTag2") ?? ""
+            let cachedLifetime = UserDefaults.standard.string(forKey: "PriceTag3") ?? ""
+            let hasYearly = !cachedYearly.isEmpty || !StoreManager.shared.price2.isEmpty
+            let hasLifetime = !cachedLifetime.isEmpty || !StoreManager.shared.price3.isEmpty
+            let offline = !NetworkManager.sharedInstance.isConnectedToInternet()
+            if offline && !hasYearly && !hasLifetime {
+                UserDefaults.standard.set(true, forKey: "PremiumPayViewed")
+                navigateToReaderViewController()
+                return
+            }
+
             let subscriptionView = BibleSubscriptionView()
             let hostingController = UIHostingController(rootView: subscriptionView)
             navigationController.pushViewController(hostingController, animated: true)

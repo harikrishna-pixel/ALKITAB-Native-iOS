@@ -20,6 +20,7 @@ struct BibleSubscriptionView: View {
     @State private var showExitOffer = false
     @State private var exitOfferTimeRemaining = 600 // 10 minutes in seconds
     @State private var exitOfferTimerTask: Task<Void, Never>?
+    @State private var didSkipMissingPrices = false
     // FIXED: Parameters for navigation behavior
     var isPresentedFromOnboarding: Bool = true
     var dismissHandler: (() -> Void)?  // ADDED: For UIKit dismiss
@@ -39,254 +40,217 @@ struct BibleSubscriptionView: View {
     
     var body: some View {
         ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [Color(hex: "FFFFFF"), Color(hex: "E8EEFF")]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            Image("paywall_bible_glow")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
             
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    // MARK: - Header with Close Button
-                    
-                    ZStack{
-                        Image("bible_with_sparkles")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 80)
-                          
-                            .edgesIgnoringSafeArea(.top)
-                        // MARK: - Close Button (Commented out - may be used later)
-                        
+            VStack(spacing: 0) {
+                    // MARK: - Top bar (Close + Restore)
+                    HStack {
                         if showCloseButton {
-                                     HStack {
-                                         Spacer()
-                                         Button(action: {
-                                             // Try to sync exit offer price from shared instance if local is empty
-                                             if storeManager.exitOfferPrice.isEmpty && StoreManager.shared.isExitOfferProductLoaded {
-                                                 storeManager.exitOfferPrice = StoreManager.shared.exitOfferPrice
-                                                 storeManager.exitOfferOriginalPrice = StoreManager.shared.exitOfferOriginalPrice
-                                                 storeManager.isExitOfferProductLoaded = true
-                                                 print("🔄 [BibleSubscriptionView] Synced exit offer price from shared instance")
-                                             }
-                                             
-                                             // Check if we should show exit offer
-                                             if shouldShowExitOffer() {
-                                                 // Ensure start time is saved (timer may have started in background)
-                                                 if UserDefaults.standard.object(forKey: exitOfferStartTimeKey) == nil {
-                                                     saveExitOfferStartTime()
-                                                 }
-                                                 // Get current remaining time (timer continues running)
-                                                 exitOfferTimeRemaining = getRemainingTime()
-                                                 
-                                                 // Only show exit offer if time hasn't expired
-                                                 if exitOfferTimeRemaining > 0 {
-                                                     withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                                         showExitOffer = true
-                                                     }
-                                                     handleCloseAction()
-//                                                     startExitOfferTimer()
-                                                 } else {
-                                                     // Time expired, just close
-                                                     clearExitOfferData()
-                                                     handleCloseAction()
-                                                 }
-                                             } else {
-                                                 // Exit offer not available, just close (no error shown)
-                                                 print("🔒 [BibleSubscriptionView] Exit offer not available, closing IAP")
-                                                 handleCloseAction()
-                                             }
-                                         }) {
-                                             Image(systemName: "xmark")
-                                                 .font(.system(size: 14, weight: .semibold))
-                                                 .foregroundColor(Color(hex: "333333"))
-                                                 .frame(width: 32, height: 32)
-                                                 .background(Color.black.opacity(0.08))
-                                                 .clipShape(Circle())
-                                         }
-                                         .padding(.trailing, 20)
-                                     }
-                                     .transition(.opacity)
-                                 }
+                            Button(action: {
+                                if storeManager.exitOfferPrice.isEmpty && StoreManager.shared.isExitOfferProductLoaded {
+                                    storeManager.exitOfferPrice = StoreManager.shared.exitOfferPrice
+                                    storeManager.exitOfferOriginalPrice = StoreManager.shared.exitOfferOriginalPrice
+                                    storeManager.isExitOfferProductLoaded = true
+                                    print("🔄 [BibleSubscriptionView] Synced exit offer price from shared instance")
+                                }
+                                
+                                if shouldShowExitOffer() {
+                                    if UserDefaults.standard.object(forKey: exitOfferStartTimeKey) == nil {
+                                        saveExitOfferStartTime()
+                                    }
+                                    exitOfferTimeRemaining = getRemainingTime()
+                                    
+                                    if exitOfferTimeRemaining > 0 {
+                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                            showExitOffer = true
+                                        }
+                                        handleCloseAction()
+                                    } else {
+                                        clearExitOfferData()
+                                        handleCloseAction()
+                                    }
+                                } else {
+                                    print("🔒 [BibleSubscriptionView] Exit offer not available, closing IAP")
+                                    handleCloseAction()
+                                }
+                            }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 34, height: 34)
+                                    .background(Color.white.opacity(0.18))
+                                    .clipShape(Circle())
+                            }
+                            .transition(.opacity)
+                        } else {
+                            Color.clear.frame(width: 34, height: 34)
+                        }
                         
+                        Spacer()
                         
+                        Button(action: {
+                            showLoader = true
+                            storeManager.restorePurchases()
+                        }) {
+                            Text("Restore")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(Color.white.opacity(0.18))
+                                .clipShape(Capsule())
+                        }
+                        .disabled(storeManager.isLoading)
                     }
-                
+                    .padding(.horizontal, 18)
+                    .padding(.top, 28)
                     
-                    // MARK: - Title
-                    Text("Let God's Word Guide Every Day")
-                        .font(.system(size: 28, weight: .bold))
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(2)
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 32)
-                        .padding(.bottom, 16)
-                    
-                    // MARK: - Features List
-                    VStack(alignment: .leading, spacing: 14) {
-                        FeatureRow(iconName: "no_ads_icon", text: "Focus on God's voice - no ads, no noise")
-                        FeatureRow(iconName: "daily_verses_icon", text: "Daily Verses that uplift and guide you")
-                        FeatureRow(iconName: "bible_library_icon", text: "Your Personal Bible Library")
-                        FeatureRow(iconName: "quiz_icon", text: "Challenge Your Faith with Bible Quizzes")
+                    // MARK: - Overlay title (over sky / book art)
+                    VStack(spacing: 2) {
+                        Text("Go Deeper")
+                            .foregroundColor(.white)
+                        Text("in God's Word")
+                            .foregroundColor(Color(hex: "F0C75E"))
                     }
-                    .padding(.horizontal, 28)
-                    .padding(.bottom, 16)
-                    
-                    // MARK: - Divider
-                    HStack(spacing: 10) {
-                        Rectangle()
-                            .fill(Color(red: 0.7, green: 0.7, blue: 0.7))
-                            .frame(height: 1)
-                        
-                        Text("Choose Your Faith Plan")
-                            .font(.system(size: 15))
-                            .italic()
-                            .foregroundColor(Color(red: 0.4, green: 0.4, blue: 0.4))
-                            .fixedSize()
-                        
-                        Rectangle()
-                            .fill(Color(red: 0.7, green: 0.7, blue: 0.7))
-                            .frame(height: 1)
-                    }
+                    .font(.system(size: isSmallDevice ? 26 : 30, weight: .bold, design: .serif))
+                    .multilineTextAlignment(.center)
+                    .shadow(color: Color.black.opacity(0.35), radius: 2, x: 0, y: 1)
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 12)
+                    .padding(.top, 62)
                     
-                    // MARK: - Subscription Plans
-                    VStack(spacing: 12) {
-                        YearlyPlanCard(
-                            price: storeManager.price2,
-                            originalPrice: storeManager.originalPrice2,
-                            isSelected: selectedPlan == .yearly,
-                            isLoading: storeManager.isLoading2,
-                            isSmallDevice: isSmallDevice,
-                            showOffer: offer_enabled == "1",
-                            action: {
-                                selectedPlan = .yearly
-                            }
-                        )
-                        
-                        LifetimePlanCard(
-                            price: storeManager.price3,
-                            originalPrice: storeManager.originalPrice3,
-                            isSelected: selectedPlan == .lifetime,
-                            isLoading: storeManager.isLoading3,
-                            isSmallDevice: isSmallDevice,
-                            showOffer: offer_enabled == "1",
-                            action: {
-                                selectedPlan = .lifetime
-                            }
-                        )
+                    VStack(spacing: 2) {
+                        Text("Powerful study tools to help you")
+                        Text("read, understand and grow.")
                     }
-                    .padding(.horizontal, 20)
+                    .font(.system(size: isSmallDevice ? 12 : 13, weight: .medium))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .shadow(color: Color.black.opacity(0.5), radius: 3, x: 0, y: 1)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 28)
+                    .padding(.top, 8)
+                    
+                    // Leave book art visible; 6 boxes sit lower on the navy zone.
+                    Color.clear
+                        .frame(height: isSmallDevice ? 108 : 130)
+                    
+                    // MARK: - Feature grid (2 x 3) — reference place & size
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 8),
+                        GridItem(.flexible(), spacing: 8),
+                        GridItem(.flexible(), spacing: 8)
+                    ], spacing: 8) {
+                        PaywallFeatureTile(systemIcon: "doc.text.magnifyingglass", iconColor: Color(hex: "4DA3FF"), title: "Unlimited AI Explanations")
+                        PaywallFeatureTile(systemIcon: "doc.plaintext", iconColor: Color(hex: "4CD964"), title: "Unlimited Chapter Summaries")
+                        PaywallFeatureTile(systemIcon: "bubble.left.and.bubble.right.fill", iconColor: Color(hex: "B07CFF"), title: "Ask Bible AI")
+                        PaywallFeatureTile(systemIcon: "gamecontroller.fill", iconColor: Color(hex: "FF9F0A"), title: "Unlimited Quiz Generation")
+                        PaywallFeatureTile(systemIcon: "nosign", iconColor: Color(hex: "FF453A"), title: "Ad-Free Reading")
+                        PaywallFeatureTile(systemIcon: "book.fill", iconColor: Color(hex: "64D2FF"), title: "Clean Reading Experience")
+                    }
+                    .padding(.horizontal, 14)
                     .padding(.bottom, 10)
                     
-                    // MARK: - Fine Print
-                    Text(selectedPlan == .lifetime ? "One-time purchase • Lifetime access" : "No hidden charges • Renew manually • Cancel anytime")
-                        .font(.system(size: 13))
-                        .foregroundColor(Color(red: 0.5, green: 0.5, blue: 0.5))
-                        .padding(.bottom, 10)
+                    // MARK: - Plans (Monthly / Yearly / Lifetime)
+                    HStack(alignment: .top, spacing: 8) {
+                        PaywallPlanCardView(
+                            style: .monthly,
+                            title: "Monthly",
+                            priceLine: monthlyPriceDisplay,
+                            secondaryLine: "3-Day Free Trial",
+                            tertiaryLine: "You won't be charged today",
+                            isSelected: selectedPlan == .monthly,
+                            isLoading: storeManager.isLoading1,
+                            action: { selectedPlan = .monthly }
+                        )
+                        
+                        PaywallPlanCardView(
+                            style: .yearly,
+                            title: "Yearly",
+                            priceLine: yearlyPriceDisplay,
+                            secondaryLine: yearlySaveLine,
+                            tertiaryLine: yearlyPerMonthLine,
+                            isSelected: selectedPlan == .yearly,
+                            isLoading: storeManager.isLoading2,
+                            action: { selectedPlan = .yearly }
+                        )
+                        
+                        PaywallPlanCardView(
+                            style: .lifetime,
+                            title: "Lifetime Study",
+                            priceLine: lifetimePriceDisplay,
+                            secondaryLine: "One-time payment",
+                            tertiaryLine: "Ad-free reading only AI features use credits",
+                            isSelected: selectedPlan == .lifetime,
+                            isLoading: storeManager.isLoading3,
+                            action: { selectedPlan = .lifetime }
+                        )
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.top, 2)
+                    .padding(.bottom, 12)
                     
-                    // MARK: - CTA Button
+                    // MARK: - CTA
                     Button(action: {
                         handlePurchaseAction()
                     }) {
                         HStack(spacing: 8) {
-//                            Text(selectedPlan == .yearly ? "Start My Free Trial" : "Get Lifetime Access")
-                            Text("Continue")
-                                .font(.system(size: 17, weight: .semibold))
-                            
+                            Text(ctaTitle)
+                                .font(.system(size: 17, weight: .bold))
                             Image(systemName: "arrow.right")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.system(size: 15, weight: .bold))
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(Color(hex: "1C46B2"))
-                        .cornerRadius(27)
+                        .frame(height: isSmallDevice ? 48 : 52)
+                        .background(Color(hex: "2F6BFF"))
+                        .cornerRadius(16)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 8)
                     .disabled(storeManager.isLoading)
                     
-                    // MARK: - Continue with Free Version Button
-                    Button(action: {
-                        // Try to sync exit offer price from shared instance if local is empty
-                        if storeManager.exitOfferPrice.isEmpty && StoreManager.shared.isExitOfferProductLoaded {
-                            storeManager.exitOfferPrice = StoreManager.shared.exitOfferPrice
-                            storeManager.exitOfferOriginalPrice = StoreManager.shared.exitOfferOriginalPrice
-                            storeManager.isExitOfferProductLoaded = true
-                            print("🔄 [BibleSubscriptionView] Synced exit offer price from shared instance")
-                        }
-                        
-                        // Check if we should show exit offer
-                        if shouldShowExitOffer() {
-                            // Ensure start time is saved (timer may have started in background)
-                            if UserDefaults.standard.object(forKey: exitOfferStartTimeKey) == nil {
-                                saveExitOfferStartTime()
-                            }
-                            // Get current remaining time (timer continues running)
-                            exitOfferTimeRemaining = getRemainingTime()
-                            
-                            // Only show exit offer if time hasn't expired
-                            if exitOfferTimeRemaining > 0 {
-//                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-//                                    showExitOffer = true
-//                                }
-//                                startExitOfferTimer()
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                    handleCloseAction()
-                                }
-                                
-                            } else {
-                                // Time expired, just close
-                                clearExitOfferData()
-                                handleCloseAction()
-                            }
-                        } else {
-                            // Exit offer not available, just close (no error shown)
-                            print("🔒 [BibleSubscriptionView] Exit offer not available, closing IAP")
-                            handleCloseAction()
-                        }
-                    }) {
-                        Text("Continue Free Version")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(Color.black.opacity(0.5))
-                            //.underline()
+                    Text(ctaSubtitle)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 8)
+                    
+                    HStack(spacing: 20) {
+                        Label("Cancel anytime", systemImage: "checkmark.shield.fill")
+                        Label("Secure payment", systemImage: "lock.fill")
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.85))
+                    .padding(.bottom, 8)
                     
                     // MARK: - Footer Links
-                    HStack(spacing: 0) {
+                    HStack(spacing: 8) {
                         Button("Terms of Use") {
                             storeManager.openTerms()
                         }
-                        .font(.system(size: 13))
-                        .foregroundColor(Color(red: 0.5, green: 0.5, blue: 0.5))
-                        
-                        Spacer()
-                        
-                        Button("Restore") {
-                            showLoader = true
-                            storeManager.restorePurchases()
-                        }
-                        .font(.system(size: 13))
-                        .foregroundColor(Color(red: 0.5, green: 0.5, blue: 0.5))
-                        .disabled(storeManager.isLoading)
-                        
-                        Spacer()
-                        
+                        Text("|").foregroundColor(Color.white.opacity(0.35))
                         Button("Privacy Policy") {
                             storeManager.openPrivacy()
                         }
-                        .font(.system(size: 13))
-                        .foregroundColor(Color(red: 0.5, green: 0.5, blue: 0.5))
+                        Text("|").foregroundColor(Color.white.opacity(0.35))
+                        Button("Restore Purchase") {
+                            showLoader = true
+                            storeManager.restorePurchases()
+                        }
+                        .disabled(storeManager.isLoading)
                     }
-                    .padding(.horizontal, 28)
-                    .padding(.bottom, 32)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.7))
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
+                    
+                    Spacer(minLength: 0)
                 }
-            }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             
             // MARK: - Loader Overlay
             if showLoader || storeManager.isLoading {
@@ -306,47 +270,6 @@ struct BibleSubscriptionView: View {
             // MARK: - Exit Offer Modal
             // Only show exit offer if prices are available (shouldShowExitOffer already checks this)
             if showExitOffer && !storeManager.exitOfferPrice.isEmpty && !storeManager.exitOfferOriginalPrice.isEmpty {
-//                handleCloseAction()
-//                ExitOfferView(
-//                    originalPrice: storeManager.exitOfferOriginalPrice,
-//                    discountedPrice: storeManager.exitOfferPrice,
-//                    discountText: storeManager.exitOfferDiscountText,
-//                    planText: storeManager.exitOfferPlanText,
-//                    timeRemaining: exitOfferTimeRemaining,
-//                    hasError: false, // We only show if prices are available
-//                    onPurchase: {
-//                        print("💳 [BibleSubscriptionView] Exit offer CTA tapped")
-//                        print("   → Exit offer product ID: '\(SUBSCRIPTIONID_ExitOffer)'")
-//                        print("   → Exit offer product loaded: \(storeManager.isExitOfferProductLoaded)")
-//                        print("   → Exit offer price: '\(storeManager.exitOfferPrice)'")
-//                        
-//                        // FIXED: Verify product is actually available before attempting purchase
-//                        // Sync from shared instance if needed
-//                        storeManager.syncExitOfferProductIfNeeded()
-//                        
-//                        // Check if product is available after syncing
-//                        if !storeManager.isExitOfferProductAvailable {
-//                            print("   ❌ Exit offer product is still not available after sync, cannot purchase")
-//                            storeManager.showAlert(title: "Product Not Ready", message: "Please wait a moment and try again.")
-//                            return
-//                        }
-//                        
-//                        print("   ✅ Exit offer product verified, proceeding with purchase")
-//                        showLoader = true
-//                        storeManager.purchaseProduct(with: SUBSCRIPTIONID_ExitOffer)
-//                    },
-//                    onDismiss: {
-//                        // Timer continues in background - start time is already saved
-//                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-//                            showExitOffer = false
-//                        }
-//                        exitOfferTimerTask?.cancel()
-//                        exitOfferTimerTask = nil
-//                        handleCloseAction()
-//                    }
-//                )
-//                .transition(.move(edge: .bottom).combined(with: .opacity))
-//                .zIndex(1000)
             }
             
         }
@@ -361,6 +284,9 @@ struct BibleSubscriptionView: View {
               }
               
               setupStoreManager()
+              DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                  skipPaywallIfMissingPrices()
+              }
               
               // Start timer in background if conditions are met, but don't show exit offer automatically
               // Exit offer will only show when user taps X icon
@@ -389,10 +315,68 @@ struct BibleSubscriptionView: View {
                 navigateToReaderViewController()
             }
         }
+        .onChange(of: storeManager.isLoading2) { _ in skipPaywallIfMissingPrices() }
+        .onChange(of: storeManager.isLoading3) { _ in skipPaywallIfMissingPrices() }
+        .onChange(of: storeManager.isLoading) { _ in skipPaywallIfMissingPrices() }
+        .onChange(of: storeManager.hasProductLoadError) { _ in skipPaywallIfMissingPrices() }
+        .onChange(of: storeManager.price2) { _ in skipPaywallIfMissingPrices() }
+        .onChange(of: storeManager.price3) { _ in skipPaywallIfMissingPrices() }
         .onDisappear {
             exitOfferTimerTask?.cancel()
             exitOfferTimerTask = nil
         }
+    }
+    
+    // MARK: - Paywall display helpers (UI only)
+    private var monthlyPriceDisplay: String {
+        let p = storeManager.price1.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag1") ?? "") : storeManager.price1
+        return p.isEmpty ? "—" : "\(p.cleanPrice()) / month"
+    }
+    
+    private var yearlyPriceDisplay: String {
+        let p = storeManager.price2.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag2") ?? "") : storeManager.price2
+        return p.isEmpty ? "—" : "\(p.cleanPrice()) / year"
+    }
+    
+    private var lifetimePriceDisplay: String {
+        let p = storeManager.price3.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag3") ?? "") : storeManager.price3
+        return p.isEmpty ? "—" : p.cleanPrice()
+    }
+    
+    private var yearlyPerMonthLine: String {
+        let p = storeManager.price2.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag2") ?? "") : storeManager.price2
+        let stripped = p.strippedtext.replacingOccurrences(of: ",", with: "")
+        guard let value = Double(stripped), value > 0 else { return "" }
+        let monthly = value / 12.0
+        let symbol = p.cleanPrice().prefix { !$0.isNumber && $0 != "." && $0 != "," }
+        return String(format: "%@%.2f / month", String(symbol), monthly)
+    }
+    
+    private var yearlySaveLine: String {
+        let monthly = storeManager.price1.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag1") ?? "") : storeManager.price1
+        let yearly = storeManager.price2.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag2") ?? "") : storeManager.price2
+        let m = Double(monthly.strippedtext.replacingOccurrences(of: ",", with: "")) ?? 0
+        let y = Double(yearly.strippedtext.replacingOccurrences(of: ",", with: "")) ?? 0
+        guard m > 0, y > 0, (m * 12) > y else { return "" }
+        let save = Int(((m * 12) - y).rounded())
+        let symbol = yearly.cleanPrice().prefix { !$0.isNumber && $0 != "." && $0 != "," }
+        return "Save \(symbol)\(save)"
+    }
+    
+    private var ctaTitle: String {
+        selectedPlan == .lifetime ? "Continue" : "Start 3-Day Free Trial"
+    }
+    
+    private var ctaSubtitle: String {
+        if selectedPlan == .lifetime {
+            return "One-time purchase • Lifetime access"
+        }
+        let monthly = storeManager.price1.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag1") ?? "") : storeManager.price1
+        if selectedPlan == .yearly {
+            let yearly = storeManager.price2.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag2") ?? "") : storeManager.price2
+            return "Then \(yearly.isEmpty ? "—" : yearly.cleanPrice())/year. Auto-renews unless cancelled."
+        }
+        return "Then \(monthly.isEmpty ? "—" : monthly.cleanPrice())/month. Auto-renews unless cancelled."
     }
     
     // MARK: - Setup StoreManager
@@ -434,12 +418,37 @@ struct BibleSubscriptionView: View {
             showLoader = false
         }
     }
+
+    /// Onboarding only: if Yearly + Lifetime prices never arrive, skip blank paywall.
+    private func skipPaywallIfMissingPrices() {
+        guard isPresentedFromOnboarding, !didSkipMissingPrices else { return }
+
+        let yearly = storeManager.price2.isEmpty
+            ? (UserDefaults.standard.string(forKey: "PriceTag2") ?? "")
+            : storeManager.price2
+        let lifetime = storeManager.price3.isEmpty
+            ? (UserDefaults.standard.string(forKey: "PriceTag3") ?? "")
+            : storeManager.price3
+        guard yearly.isEmpty && lifetime.isEmpty else { return }
+
+        let stillLoading = storeManager.isLoading || storeManager.isLoading2 || storeManager.isLoading3
+        guard !stillLoading else { return }
+
+        let offline = !NetworkManager.sharedInstance.isConnectedToInternet()
+        guard offline || storeManager.hasProductLoadError else { return }
+
+        didSkipMissingPrices = true
+        print("⏭️ [BibleSubscriptionView] Skipping onboarding paywall — no Yearly/Lifetime prices available")
+        handleCloseAction()
+    }
     
     // MARK: - Handle Purchase Action
     private func handlePurchaseAction() {
         showLoader = true
         
-        if selectedPlan == .yearly {
+        if selectedPlan == .monthly {
+            storeManager.purchaseProduct(with: SUBSCRIPTIONID_Six_month)
+        } else if selectedPlan == .yearly {
             storeManager.purchaseProduct(with: SUBSCRIPTIONID_OneYear)
         } else if selectedPlan == .lifetime {
             storeManager.purchaseProduct(with: SUBSCRIPTIONID_LifeTime)
@@ -706,6 +715,128 @@ extension String {
 }
 
 // Supporting views remain the same...
+struct PaywallFeatureTile: View {
+    let systemIcon: String
+    let iconColor: Color
+    let title: String
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: systemIcon)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(iconColor)
+                .frame(width: 34, height: 34)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(iconColor.opacity(0.18))
+                )
+            Text(title)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: 78)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(hex: "0B1B3A").opacity(0.88))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                )
+        )
+    }
+}
+
+struct PaywallPlanCardView: View {
+    enum Style {
+        case monthly
+        case yearly
+        case lifetime
+    }
+
+    let style: Style
+    let title: String
+    let priceLine: String
+    let secondaryLine: String
+    let tertiaryLine: String
+    let isSelected: Bool
+    let isLoading: Bool
+    let action: () -> Void
+
+    private var accent: Color { Color(hex: "2F6BFF") }
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Text(title)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(Color(hex: "1A1A1A"))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+
+                if isLoading {
+                    ActivityIndicator(isAnimating: .constant(true), style: .medium)
+                        .frame(height: 36)
+                } else {
+                    Text(priceLine)
+                        .font(.system(size: style == .lifetime ? 15 : 14, weight: .bold))
+                        .foregroundColor(accent)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.65)
+                        .multilineTextAlignment(.center)
+
+                    if !secondaryLine.isEmpty {
+                        Text(secondaryLine)
+                            .font(.system(size: 11, weight: style == .yearly ? .bold : .semibold))
+                            .foregroundColor(style == .yearly ? Color(hex: "E53935") : accent)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.7)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    if !tertiaryLine.isEmpty {
+                        Text(tertiaryLine)
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(Color(hex: "6B6B6B"))
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.7)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 118)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(isSelected ? accent : Color.clear, lineWidth: isSelected ? 2.5 : 0)
+            )
+            .shadow(color: isSelected ? accent.opacity(0.45) : Color.black.opacity(0.15), radius: isSelected ? 10 : 4, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .overlay(alignment: .top) {
+            if style == .yearly {
+                Text("Best Value")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(accent))
+                    .offset(y: -12)
+            }
+        }
+    }
+}
+
 struct FeatureRow: View {
     let iconName: String
     let text: String
@@ -1025,6 +1156,7 @@ struct LifetimePlanCard: View {
 
 
 enum SubscriptionPlan {
+    case monthly
     case yearly
     case lifetime
 }

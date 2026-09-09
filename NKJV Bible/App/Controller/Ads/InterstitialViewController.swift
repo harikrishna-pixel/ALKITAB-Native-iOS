@@ -157,6 +157,7 @@ extension InterstitialViewController  {
     
     func didFailToLoadWithError(_ error: Error!) {
         print("did Fail To Load With Error")
+        self.CloseVc()
     }
     
     func didOpen(with adInfo: ISAdInfo!) {
@@ -169,6 +170,7 @@ extension InterstitialViewController  {
     
     func didFailToShowWithError(_ error: Error!, andAdInfo adInfo: ISAdInfo!) {
         print("did Fail To Show With Error")
+        self.CloseVc()
     }
     
     func didClick(with adInfo: ISAdInfo!) {
@@ -177,6 +179,7 @@ extension InterstitialViewController  {
     
     func didClose(with adInfo: ISAdInfo!) {
         print("did Close")
+        self.CloseVc()
     }
     
     

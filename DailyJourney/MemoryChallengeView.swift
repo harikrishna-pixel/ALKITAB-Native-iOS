@@ -79,7 +79,7 @@ struct MemoryChallengeView: View {
 
             VStack(spacing: 10) {
                 Button(action: checkAnswer) {
-                    Text(isReviewMode || isCorrect ? "Done" : "Check Answer")
+                    Text(primaryCTATitle)
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -88,7 +88,7 @@ struct MemoryChallengeView: View {
                         .cornerRadius(27)
                 }
 
-                if !isReviewMode {
+                if !isReviewMode && !isCorrect {
                     HStack {
                         Button(action: clearAnswers) {
                             HStack(spacing: 6) {
@@ -119,6 +119,13 @@ struct MemoryChallengeView: View {
         .background(Color(hex: "F7F8FC").ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: buildChallenge)
+    }
+
+    private var primaryCTATitle: String {
+        if isReviewMode || isCorrect {
+            return onProceed != nil ? "Continue to Reflection" : "Done"
+        }
+        return "Check Answer"
     }
 
     private var progressBar: some View {
@@ -210,11 +217,7 @@ struct MemoryChallengeView: View {
 
     private func checkAnswer() {
         if isReviewMode || isCorrect {
-            if let onProceed = onProceed {
-                onProceed()
-            } else {
-                onDone()
-            }
+            continueJourney()
             return
         }
         guard blankIndices.allSatisfy({ filled[$0] != nil }) else {
@@ -239,9 +242,19 @@ struct MemoryChallengeView: View {
             )
             store.markMemoryCompleted(state: state)
             store.markVerseCompleted()
+            // Keep the guided journey moving without returning to Home.
+            continueJourney()
         } else {
             isCorrect = false
             feedback = "Not quite — try again."
+        }
+    }
+
+    private func continueJourney() {
+        if let onProceed = onProceed {
+            onProceed()
+        } else {
+            onDone()
         }
     }
 

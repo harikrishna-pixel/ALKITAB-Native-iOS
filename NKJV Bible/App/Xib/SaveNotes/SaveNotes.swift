@@ -50,8 +50,10 @@ class SaveNotes: UIView, UITextViewDelegate {
         
         FrameWidth.constant = (isIpad ? 440:330)
         
-        self.PopupframeBook.font = UIFont(name:UserDefaults.standard.string(forKey: "FontName")!, size: 15)
-        self.Popupframetext.font = UIFont(name:UserDefaults.standard.string(forKey: "FontName")!, size: 15)
+        let fontName = UserDefaults.standard.string(forKey: "FontName") ?? "Euphemia UCAS"
+        let noteFont = UIFont(name: fontName, size: 15) ?? UIFont.systemFont(ofSize: 15)
+        self.PopupframeBook.font = noteFont
+        self.Popupframetext.font = noteFont
         
         
     }
@@ -59,7 +61,7 @@ class SaveNotes: UIView, UITextViewDelegate {
     
     @IBAction func NotNow(_ sender: Any) {
 
-        if self.NotNowBtn.titleLabel?.text! ==  "Delete" {
+        if self.NotNowBtn.titleLabel?.text ==  "Delete" {
             CoreDataModel.sharedInstance.coreDataInsertNote(CDBookSavedInfo, bookVerse: "\(self.Bookname)-\(self.ChapterNo)", notes: "", Verses: self.VerseStr)
             App_Protocol.DelegateVersesMenuPopup?.ChangeNote(Notetxt: "", true)
             App_Protocol.delegateReaderSource?.ReloadBibleData(ChapterNo:UserDefaults.standard.integer(forKey: "BookChapter"))
@@ -89,13 +91,17 @@ class SaveNotes: UIView, UITextViewDelegate {
             self.makeToast("Enter notes to save", duration: 2.0, position: .bottom)
         } else {
                     
-            App_Protocol.DelegateVersesMenuPopup?.ChangeNote(Notetxt: self.NoteTxtVu.text!, false)
+            App_Protocol.DelegateVersesMenuPopup?.ChangeNote(Notetxt: self.NoteTxtVu.text ?? "", false)
             
             // Check if this is an update or new save based on button title
             let isUpdate = (self.SaveBtn.titleLabel?.text == "Update")
             
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
-                CoreDataModel.sharedInstance.coreDataInsertNote(CDBookSavedInfo, bookVerse: "\(self.Bookname)-\(self.ChapterNo)", notes: self.NoteTxtVu.text, Verses: self.VerseStr)
+                CoreDataModel.sharedInstance.coreDataInsertNote(CDBookSavedInfo, bookVerse: "\(self.Bookname)-\(self.ChapterNo)", notes: self.NoteTxtVu.text ?? "", Verses: self.VerseStr)
+                
+                // Toast on a live view before dismissing notes (avoids toast-after-remove crash/stack).
+                let message = isUpdate ? "Update notes successfully" : "Notes Saved Successfully"
+                UIApplication.shared.keyWindow?.rootViewController?.view.makeToast(message, duration: 2.0, position: .bottom)
                 
                 if self.isSlideCard {
                     App_Protocol.DelegateSlideCard?.CloseVc()
@@ -103,10 +109,6 @@ class SaveNotes: UIView, UITextViewDelegate {
                 } else {
                     App_Protocol.delegateReader?.CloseView()
                 }
-                
-                // Show appropriate toast message
-                let message = isUpdate ? "Update notes successfully" : "Notes Saved Successfully"
-                self.makeToast(message, duration: 2.0, position: .bottom)
                 
                 App_Protocol.delegateReaderSource?.ReloadBibleData(ChapterNo:UserDefaults.standard.integer(forKey: "BookChapter"))
                 

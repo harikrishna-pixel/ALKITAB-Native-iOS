@@ -557,6 +557,10 @@ extension WalletViewController {
                     SKPaymentQueue.default().finishTransaction(transaction as! SKPaymentTransaction)
                     
                     self.LoaderVu.isHidden = true
+                    // User closed the purchase sheet without buying — no error message.
+                    if let skError = trans.error as? SKError, skError.code == .paymentCancelled {
+                        break
+                    }
                     self.LoaderComplete(LoaderMsg: "Something went wrong", LoaderImg: "error")
                     DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+1) {
                         self.dismiss(animated: false, completion: nil)

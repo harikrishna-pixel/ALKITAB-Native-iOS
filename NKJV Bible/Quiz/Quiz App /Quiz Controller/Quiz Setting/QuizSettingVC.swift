@@ -29,6 +29,8 @@ class QuizSettingVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
         
         self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
+        // Switches don't navigate; suppress blue cell highlight flash on toggle/tap.
+        self.QuizSettingsTable.allowsSelection = false
         
         
         // Do any additional setup after loading the view.
@@ -70,6 +72,7 @@ class QuizSettingVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
 
 
              self.QuizSettingsCell!.MusicSwitch.isOn = UserDefaults.standard.bool(forKey: "MusicSwitch")
+             self.QuizSettingsCell!.MusicSwitch.removeTarget(self, action: #selector(MusicSwitch_Action), for: .valueChanged)
              self.QuizSettingsCell!.MusicSwitch.addTarget(self, action: #selector(MusicSwitch_Action), for: .valueChanged)
 
 
@@ -79,6 +82,7 @@ class QuizSettingVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
              self.QuizSettingsCell = (self.QuizSettingsTable.dequeueReusableCell(withIdentifier: "tone") as! QuizSettingsTableCell?)
 
              self.QuizSettingsCell!.ToneSwitch.isOn = UserDefaults.standard.bool(forKey: "ToneSwitch")
+             self.QuizSettingsCell!.ToneSwitch.removeTarget(self, action: #selector(ToneSwitch_Action), for: .valueChanged)
              self.QuizSettingsCell!.ToneSwitch.addTarget(self, action: #selector(ToneSwitch_Action), for: .valueChanged)
 
              return self.QuizSettingsCell!
@@ -87,6 +91,7 @@ class QuizSettingVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
              self.QuizSettingsCell = (self.QuizSettingsTable.dequeueReusableCell(withIdentifier: "vibration") as! QuizSettingsTableCell?)
 
              self.QuizSettingsCell!.VibrationSwitch.isOn = UserDefaults.standard.bool(forKey: "VibSwitch")
+             self.QuizSettingsCell!.VibrationSwitch.removeTarget(self, action: #selector(VibSwitch_Action), for: .valueChanged)
              self.QuizSettingsCell!.VibrationSwitch.addTarget(self, action: #selector(VibSwitch_Action), for: .valueChanged)
 
              return self.QuizSettingsCell!
@@ -126,7 +131,6 @@ class QuizSettingVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
             UserDefaults.standard.set(true, forKey: "MusicSwitch")
             MusicBgFile.sharedInstance.playSound()
         }
-        self.QuizSettingsTable.reloadSections(IndexSet(integer: 1), with: .none)
     }
     
     @objc func ToneSwitch_Action() {
@@ -135,7 +139,6 @@ class QuizSettingVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
         } else {
             UserDefaults.standard.set(true, forKey: "ToneSwitch")
         }
-        self.QuizSettingsTable.reloadSections(IndexSet(integer: 2), with: .none)
     }
     
     @objc func VibSwitch_Action() {
@@ -145,7 +148,6 @@ class QuizSettingVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
             UserDefaults.standard.set(true, forKey: "VibSwitch")
             Vibration.heavy.vibrate()
         }
-        self.QuizSettingsTable.reloadSections(IndexSet(integer: 3), with: .none)
     }
     
      

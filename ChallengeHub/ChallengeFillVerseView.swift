@@ -26,6 +26,7 @@ struct ChallengeFillVerseView: View {
     @State private var walletTick = 0
     @State private var toast: String?
     @State private var hiddenBank: Set<String> = []
+    @State private var outOfLives = false
 
     private var totalRounds: Int { max(1, rounds.count) }
     private var activeVerse: ChallengeVerseContext {
@@ -34,64 +35,76 @@ struct ChallengeFillVerseView: View {
     }
 
     var body: some View {
-        ChallengeOldStyleShell(
-            screenTitle: ChallengeKind.fillVerse.title,
-            onBack: onClose,
-            lives: lives,
-            questionNumber: roundIndex + 1,
-            questionTotal: totalRounds,
-            caption: "Tap the correct words to complete the verse.",
-            primaryTitle: correct ? (roundIndex + 1 >= totalRounds ? "Done" : "Next") : "Check Answer",
-            primaryEnabled: true,
-            onPrimary: check,
-            fiftyFiftyEnabled: !usedFifty && !correct,
-            hintEnabled: !usedHint && !correct,
-            skipEnabled: !correct,
-            onLifeline: handleLifeline,
-            walletTick: walletTick
-        ) {
-            VStack(alignment: .leading, spacing: 16) {
-                ChallengeQuizContentHeader(
-                    reference: activeVerse.reference,
-                    instruction: sessionConfig == nil
-                        ? "Fill in the blanks to complete today's verse."
-                        : "Fill in the blanks to complete the verse."
+        Group {
+            if outOfLives {
+                ChallengeOldStyleResult(
+                    title: "Out of Lives!",
+                    scoreText: "Your Score: \(roundIndex)/\(totalRounds)",
+                    subtitle: "Good try! Keep practicing.",
+                    onDone: onClose
                 )
+            } else {
+                ChallengeOldStyleShell(
+                    screenTitle: ChallengeKind.fillVerse.title,
+                    onBack: onClose,
+                    lives: lives,
+                    questionNumber: roundIndex + 1,
+                    questionTotal: totalRounds,
+                    caption: "Tap the correct words to complete the verse.",
+                    primaryTitle: correct ? (roundIndex + 1 >= totalRounds ? "Done" : "Next") : "Check Answer",
+                    primaryEnabled: lives > 0 || correct,
+                    onPrimary: check,
+                    fiftyFiftyEnabled: !usedFifty && !correct && lives > 0,
+                    hintEnabled: !usedHint && !correct && lives > 0,
+                    skipEnabled: !correct && lives > 0,
+                    onLifeline: handleLifeline,
+                    walletTick: walletTick
+                ) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        ChallengeQuizContentHeader(
+                            reference: activeVerse.reference,
+                            instruction: sessionConfig == nil
+                                ? "Fill in the blanks to complete today's verse."
+                                : "Fill in the blanks to complete the verse."
+                        )
 
-                ChallengeFillVerseBoard(
-                    tokens: tokens,
-                    blankIndices: blanks,
-                    filled: filled,
-                    selectedBlank: selectedBlank,
-                    isLocked: correct,
-                    isWrongBlank: isWrongFill,
-                    onTapBlank: { index in
-                        if selectedBlank == index, filled[index] != nil {
-                            filled[index] = nil
-                            feedback = nil
-                        } else {
-                            selectedBlank = index
+                        ChallengeFillVerseBoard(
+                            tokens: tokens,
+                            blankIndices: blanks,
+                            filled: filled,
+                            selectedBlank: selectedBlank,
+                            isLocked: correct || lives == 0,
+                            isWrongBlank: isWrongFill,
+                            onTapBlank: { index in
+                                guard lives > 0, !correct else { return }
+                                if selectedBlank == index, filled[index] != nil {
+                                    filled[index] = nil
+                                    feedback = nil
+                                } else {
+                                    selectedBlank = index
+                                }
+                            }
+                        )
+
+                        ChallengeWordBankGrid(
+                            words: bank,
+                            hiddenWords: hiddenBank,
+                            isWrongWord: isWrongBankWord,
+                            isLocked: correct || lives == 0,
+                            onSelect: pick
+                        )
+
+                        if let feedback = feedback {
+                            Text(feedback)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(correct ? Color(hex: "1B7A3D") : Color(hex: "D70015"))
+                        }
+                        if let toast = toast {
+                            Text(toast)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(Color(hex: "D70015"))
                         }
                     }
-                )
-
-                ChallengeWordBankGrid(
-                    words: bank,
-                    hiddenWords: hiddenBank,
-                    isWrongWord: isWrongBankWord,
-                    isLocked: correct,
-                    onSelect: pick
-                )
-
-                if let feedback = feedback {
-                    Text(feedback)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(correct ? Color(hex: "1B7A3D") : Color(hex: "D70015"))
-                }
-                if let toast = toast {
-                    Text(toast)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Color(hex: "D70015"))
                 }
             }
         }
@@ -147,6 +160,7 @@ struct ChallengeFillVerseView: View {
     }
 
     private func pick(_ word: String) {
+        guard lives > 0, !correct else { return }
         let target: Int?
         if let selectedBlank {
             target = selectedBlank
@@ -172,6 +186,7 @@ struct ChallengeFillVerseView: View {
             onClose()
             return
         }
+        guard lives > 0 else { return }
         guard blanks.allSatisfy({ filled[$0] != nil }) else {
             feedback = "Fill all the blanks first."
             return
@@ -187,7 +202,10 @@ struct ChallengeFillVerseView: View {
             lives = max(0, lives - 1)
             selectedBlank = blanks.first
             if lives == 0 {
-                feedback = "Out of lives. Try again tomorrow."
+                feedback = "Out of Lives!"
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                    outOfLives = true
+                }
             }
         }
     }

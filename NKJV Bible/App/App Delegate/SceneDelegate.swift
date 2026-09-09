@@ -33,8 +33,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
         
         
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+1.0) {
-            switch self.window!.rootViewController?.children.last {
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+1.0) { [weak self] in
+            guard let window = self?.window else { return }
+            switch window.rootViewController?.children.last {
             case is QuizMainPageVC:
                     if UserDefaults.standard.bool(forKey: "MusicSwitch") {
                         MusicBgFile.sharedInstance.player?.play()

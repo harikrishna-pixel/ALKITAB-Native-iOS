@@ -326,10 +326,11 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     func ChangeNote(Notetxt:String,_ Status:Bool) {
         self.Notetxt = Notetxt
         
+        let theme = self.Themecolor ?? UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
         self.NoteImg.image = Notetxt.isEmpty ? UIImage(named: "UNotes"):UIImage(named: "FNotes")
-        ImageTint.sharedInstance.imageTintcolorMethod(img: self.NoteImg, colorVu: Notetxt.isEmpty ? UIColor.gray:self.Themecolor!)
+        ImageTint.sharedInstance.imageTintcolorMethod(img: self.NoteImg, colorVu: Notetxt.isEmpty ? UIColor.gray : theme)
         
-            self.makeToast("Notes \(Status ? "Deleted":"Saved") Successfully!", duration: 2.0, position: .center)
+        UIApplication.shared.keyWindow?.rootViewController?.view.makeToast("Notes \(Status ? "Deleted":"Saved") Successfully!", duration: 2.0, position: .center)
         
     }
     
@@ -411,8 +412,15 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     
     
     @IBAction func NoteAction(_ sender: Any) {
+        guard let verses = BookVerse, VersePosition >= 1, VersePosition <= verses.count else { return }
         
-        App_Protocol.delegateReader?.NoteNib(VersePosition: VersePosition, BookName: BookName, Pageindex: Pageindex, BookVerse: BookVerse!, note:Notetxt)
+        let versePosition = VersePosition
+        let bookName = BookName
+        let pageindex = Pageindex
+        let note = Notetxt
+        
+        App_Protocol.delegateReader?.CloseMenu()
+        App_Protocol.delegateReader?.NoteNib(VersePosition: versePosition, BookName: bookName, Pageindex: pageindex, BookVerse: verses, note: note)
         App_Protocol.delegateReaderSource?.ReloadBibleData(ChapterNo:UserDefaults.standard.integer(forKey: "BookChapter"))
         UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "OfferClick")+1, forKey: "OfferClick")
         

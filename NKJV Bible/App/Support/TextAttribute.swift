@@ -107,7 +107,7 @@ class TextAttribute: NSObject {
         
         
         let textfontSize = CGFloat(UserDefaults.standard.float(forKey: "FontSize"))
-        let Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor")
+        let Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
         
       let attributedString = NSMutableAttributedString(string: string)
         
@@ -139,7 +139,7 @@ class TextAttribute: NSObject {
         if Bookmark {
             var Bookmark = NSTextAttachment()
             
-            Bookmark.image = self.resizeImage(image: UIImage(named: "UBookmark")!, targetSize: CGSizeMake(textfontSize-2, textfontSize-2), Themecolor: Themecolor!)
+            Bookmark.image = self.resizeImage(image: UIImage(named: "UBookmark")!, targetSize: CGSizeMake(textfontSize-2, textfontSize-2), Themecolor: Themecolor)
             
             let BookmarkString = NSAttributedString(attachment: Bookmark)
             attributedString.append(BookmarkString)
@@ -147,7 +147,7 @@ class TextAttribute: NSObject {
         
         if Note {
             let notes = NSTextAttachment()
-            notes.image = self.resizeImage(image: UIImage(named: "UNotes")!, targetSize: CGSizeMake(textfontSize-2, textfontSize-2), Themecolor: Themecolor!)
+            notes.image = self.resizeImage(image: UIImage(named: "UNotes")!, targetSize: CGSizeMake(textfontSize-2, textfontSize-2), Themecolor: Themecolor)
             let notesString = NSAttributedString(attachment: notes)
             attributedString.append(notesString)
         }

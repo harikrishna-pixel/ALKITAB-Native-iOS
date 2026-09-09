@@ -229,11 +229,38 @@ struct DailyVerseSnapshot {
     let text: String
     var imageName: String
 
+    private static let shownVerseDateKey = "DailyJourney.shownVerseDate"
+    private static let shownVerseReferenceKey = "DailyJourney.shownVerseReference"
+    private static let shownVerseTextKey = "DailyJourney.shownVerseText"
+
+    /// Loads today's verse once and pins it for the calendar day so Home reloads
+    /// (e.g. after dismissing fullscreen) do not swap to a different Core Data row.
     static func loadCurrent() -> DailyVerseSnapshot {
+        let today = DailyJourneyStore.shared.todayKey
+        let defaults = UserDefaults.standard
+
+        if defaults.string(forKey: shownVerseDateKey) == today,
+           let reference = defaults.string(forKey: shownVerseReferenceKey),
+           let text = defaults.string(forKey: shownVerseTextKey),
+           !reference.isEmpty {
+            return DailyVerseSnapshot(
+                reference: reference,
+                text: text,
+                imageName: HomeVerseImage
+            )
+        }
+
         NotificationList_data.sharedInstance.UpdateDailyVerse()
         let parts = DailyVerseLanguageConversion.sharedInstance.DailyVerseLAst().components(separatedBy: "_")
         let reference = parts.count >= 1 ? parts[0] : ""
         let text = parts.count >= 3 ? parts[2] : (parts.count >= 2 ? parts[1] : "")
+
+        if !reference.isEmpty {
+            defaults.set(today, forKey: shownVerseDateKey)
+            defaults.set(reference, forKey: shownVerseReferenceKey)
+            defaults.set(text, forKey: shownVerseTextKey)
+        }
+
         return DailyVerseSnapshot(
             reference: reference,
             text: text,

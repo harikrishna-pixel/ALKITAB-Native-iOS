@@ -29,13 +29,14 @@ class GetReceptKey: NSObject {
     
     func convertData(date:String) -> Date {
         let inputFormatter = DateFormatter()
+        inputFormatter.locale = Locale(identifier: "en_US_POSIX")
         inputFormatter.dateFormat = "dd-MM-yyyy"
-        let showDate = inputFormatter.date(from: date)
+        guard let showDate = inputFormatter.date(from: date) else {
+            return Date()
+        }
         inputFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
-        let resultString = inputFormatter.string(from: showDate!)
-        let showDate1 = inputFormatter.date(from: resultString)
-        
-        return showDate1!
+        let resultString = inputFormatter.string(from: showDate)
+        return inputFormatter.date(from: resultString) ?? showDate
     }
     
 }

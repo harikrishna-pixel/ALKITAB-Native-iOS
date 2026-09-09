@@ -5,6 +5,7 @@
 
 import UIKit
 import Toast_Swift
+import IQKeyboardManager
 
 private struct AIChatMessage {
     enum Role {
@@ -60,9 +61,17 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         App_Protocol.delegateReader?.hideBottomMenu(Status: true)
+        // AI Chat owns keyboard inset; disable global IQKeyboard so the whole screen does not shift/stack.
+        IQKeyboardManager.shared().isEnabled = false
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        IQKeyboardManager.shared().isEnabled = true
     }
 
     deinit {
+        IQKeyboardManager.shared().isEnabled = true
         NotificationCenter.default.removeObserver(self)
     }
 
@@ -292,14 +301,16 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     private func refreshFollowUpSuggestions() {
+        // Keep suggestion height unchanged while waiting for a reply to avoid layout jump.
+        if isSending {
+            suggestionStack.isUserInteractionEnabled = false
+            return
+        }
+        suggestionStack.isUserInteractionEnabled = true
+
         suggestionStack.arrangedSubviews.forEach {
             suggestionStack.removeArrangedSubview($0)
             $0.removeFromSuperview()
-        }
-
-        guard !isSending else {
-            suggestionContainer.isHidden = true
-            return
         }
 
         let chips: [String]
@@ -428,6 +439,9 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     @objc private func keyboardWillChange(_ notification: Notification) {
+        // Ignore keyboard churn while share sheet (or any modal) is up — avoids stack/jump on return.
+        guard presentedViewController == nil else { return }
+
         guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
               let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double else {
             return
@@ -472,7 +486,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         typingLabel.isHidden = false
         refreshFollowUpSuggestions()
         reloadChatAndScrollToBottom(animated: true)
-        view.endEditing(false)
+        // Keep keyboard/composer frame stable while the reply loads (avoids screen jump).
 
         let payload = buildInput(for: text)
         OpenAIChatService.shared.send(input: payload) { [weak self] result in
@@ -528,7 +542,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             let rowCount = self.tableView.numberOfRows(inSection: 0)
             guard rowCount > 0 else { return }
 
-            self.view.layoutIfNeeded()
+            // Layout only the table so the chat shell/background does not reflow/jump.
             self.tableView.layoutIfNeeded()
 
             let indexPath = IndexPath(row: rowCount - 1, section: 0)
@@ -569,6 +583,12 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             let activityVC = UIActivityViewController(activityItems: [text], applicationActivities: nil)
             activityVC.popoverPresentationController?.sourceView = self.view
             activityVC.popoverPresentationController?.sourceRect = CGRect(x: self.view.bounds.midX, y: self.view.bounds.maxY, width: 0, height: 0)
+            activityVC.completionWithItemsHandler = { [weak self] _, _, _, _ in
+                // Re-apply composer inset after share dismiss without IQKeyboard fighting the layout.
+                guard let self = self else { return }
+                self.composerBottomConstraint?.constant = 0
+                self.view.layoutIfNeeded()
+            }
             self.present(activityVC, animated: true, completion: nil)
         }
         return cell

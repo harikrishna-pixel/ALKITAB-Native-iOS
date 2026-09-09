@@ -442,7 +442,7 @@ struct OnboardingSerifTitle: View {
     var onDark: Bool = true
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: alignment == .leading ? .leading : .center, spacing: 0) {
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 if let goldWord = goldWord, line.contains(goldWord) {
                     let parts = line.components(separatedBy: goldWord)

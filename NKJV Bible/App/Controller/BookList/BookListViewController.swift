@@ -72,7 +72,7 @@ class BookListViewController: UIViewController, UITableViewDelegate, UITableView
             BibleBooks = NewTestament
         }
         
-        self.ScrollCollectionView(BookIntex: self.BibleBooks.firstIndex(of: getBook)!)
+        // Do not auto-scroll selected book to middle — keeps list position stable when reopening from Home.
         
         AudioBookTableView.reloadData()
         App_Protocol.delegateBook = self

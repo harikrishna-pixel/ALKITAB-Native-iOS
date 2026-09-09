@@ -458,6 +458,8 @@ struct ChallengeOldStyleShell<Content: View>: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .layoutPriority(2)
             }
+            // Small lift only — keep middle space for Verse Match cards.
+            .padding(.bottom, 8)
             .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

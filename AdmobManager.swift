@@ -17,7 +17,8 @@ class AdmobManager : NSObject {
     var vc : UIViewController?
     var RewardAd = ""
     var Interstitial_ID = ""
-
+    /// When true, show interstitial as soon as the next `didLoad` arrives.
+    private var pendingInterstitialShow = false
 
      
 }
@@ -39,20 +40,34 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
     }
     
     
-    func IronSource_Interstitial_ShowAds(vw : UIViewController) {
+    func IronSource_Interstitial_ShowAds(vw : UIViewController, waitForLoadIfNeeded: Bool = false) {
         vc = vw
         if IronSource.hasInterstitial() {
+            pendingInterstitialShow = false
             DispatchQueue.main.async {
                 IronSource.showInterstitial(with: vw)
             }
+        } else if waitForLoadIfNeeded {
+            // Verse Image 20/30…: wait for load, then show — no Loading VC.
+            pendingInterstitialShow = true
+            IronSource_Interstitial_AdLoad()
+        } else {
+            pendingInterstitialShow = false
+            IronSource_Interstitial_AdLoad()
         }
     }
     
     func didLoad(with adInfo: ISAdInfo!) {
         print("interstitial Did Load ")
+        guard pendingInterstitialShow, let host = vc, IronSource.hasInterstitial() else { return }
+        pendingInterstitialShow = false
+        DispatchQueue.main.async {
+            IronSource.showInterstitial(with: host)
+        }
     }
     
     func didFailToLoadWithError(_ error: Error!) {
+        pendingInterstitialShow = false
         var dispatchAfter = DispatchTimeInterval.seconds(ADS_DURATION*60)
         
         if RewardAd == "Tryagain" {
@@ -97,8 +112,9 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
     }
     
     func didFailToShowWithError(_ error: Error!, andAdInfo adInfo: ISAdInfo!) {
-        var dispatchAfter = DispatchTimeInterval.seconds(ADS_DURATION*60)
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+dispatchAfter) {
+        pendingInterstitialShow = false
+        // Reload promptly so Verse Image 20/30… can show again.
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.5) {
             self.IronSource_Interstitial_AdLoad()
         }
         
@@ -125,6 +141,7 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
             App_Protocol.DelegateSplash?.OpenAd()
             Interstitial_ID = ""
         }
+        var dispatchAfter = DispatchTimeInterval.seconds(ADS_DURATION*60)
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+dispatchAfter) {
             self.IronSource_Reward_AdLoad()
         }
@@ -137,13 +154,15 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
     
     func didClose(with adInfo: ISAdInfo!) {
         
+        pendingInterstitialShow = false
+        
         if Interstitial_ID == "OpenSplash" {
             App_Protocol.DelegateSplash?.OpenAd()
             Interstitial_ID = ""
         }
         
-        var dispatchAfter = DispatchTimeInterval.seconds(ADS_DURATION*60)
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+dispatchAfter) {
+        // Reload immediately so the next 10th/20th/30th Verse Image trigger has an ad ready.
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.5) {
             self.IronSource_Interstitial_AdLoad()
         }
         

@@ -12,7 +12,8 @@ struct ReflectionView: View {
 
     @State private var selectedOption: Int?
     @State private var text: String = ""
-    @State private var isReviewMode = false
+    /// True when reflection was already completed before this visit (edit / review day).
+    @State private var wasAlreadyCompleted = false
 
     private let options: [(icon: String, title: String)] = [
         ("heart.fill", "I feel encouraged"),
@@ -27,7 +28,7 @@ struct ReflectionView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text(isReviewMode ? "Your Reflection" : "My Reflection")
+                    Text(wasAlreadyCompleted ? "Your Reflection" : "My Reflection")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.black)
 
@@ -35,8 +36,8 @@ struct ReflectionView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(Color(hex: "1C46B2"))
 
-                    Text(isReviewMode
-                          ? "Here’s what you saved today. Resets tomorrow."
+                    Text(wasAlreadyCompleted
+                          ? "You can still add or change your reflection today."
                           : "What spoke to you? What will you take from today's verse?")
                         .font(.system(size: 15))
                         .foregroundColor(Color.black.opacity(0.55))
@@ -44,9 +45,7 @@ struct ReflectionView: View {
                     VStack(spacing: 10) {
                         ForEach(Array(options.enumerated()), id: \.offset) { index, option in
                             Button(action: {
-                                if !isReviewMode {
-                                    selectedOption = index
-                                }
+                                selectedOption = index
                             }) {
                                 HStack(spacing: 12) {
                                     Image(systemName: option.icon)
@@ -68,17 +67,16 @@ struct ReflectionView: View {
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .disabled(isReviewMode)
                         }
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(isReviewMode ? "Your thoughts" : "Write your thoughts...")
+                        Text(wasAlreadyCompleted ? "Your thoughts" : "Write your thoughts...")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(Color.black.opacity(0.45))
 
                         ZStack(alignment: .topLeading) {
-                            if text.isEmpty && !isReviewMode {
+                            if text.isEmpty {
                                 Text("A short note to yourself...")
                                     .foregroundColor(Color.black.opacity(0.3))
                                     .padding(.top, 12)
@@ -87,8 +85,6 @@ struct ReflectionView: View {
                             TextEditor(text: $text)
                                 .frame(minHeight: 120)
                                 .padding(8)
-                                .disabled(isReviewMode)
-                                .opacity(isReviewMode ? 0.95 : 1)
                         }
                         .background(Color.white)
                         .cornerRadius(14)
@@ -97,15 +93,13 @@ struct ReflectionView: View {
                                 .stroke(Color.black.opacity(0.08), lineWidth: 1)
                         )
 
-                        if !isReviewMode {
-                            Text("\(min(text.count, 300))/300")
-                                .font(.system(size: 12))
-                                .foregroundColor(Color.black.opacity(0.35))
-                                .frame(maxWidth: .infinity, alignment: .trailing)
-                        }
+                        Text("\(min(text.count, 300))/300")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color.black.opacity(0.35))
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                     }
 
-                    if isReviewMode {
+                    if wasAlreadyCompleted {
                         Text("Completed for today")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(Color(hex: "1B7A3D"))
@@ -115,14 +109,8 @@ struct ReflectionView: View {
             }
 
             VStack(spacing: 10) {
-                Button(action: {
-                    if isReviewMode {
-                        onDone()
-                    } else {
-                        save()
-                    }
-                }) {
-                    Text(isReviewMode ? "Done" : "Save Reflection")
+                Button(action: save) {
+                    Text(wasAlreadyCompleted ? "Done" : "Save Reflection")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -131,7 +119,7 @@ struct ReflectionView: View {
                         .cornerRadius(27)
                 }
 
-                if !isReviewMode {
+                if !wasAlreadyCompleted {
                     Button(action: skip) {
                         Text("Skip for Today")
                             .font(.system(size: 15, weight: .medium))
@@ -146,21 +134,14 @@ struct ReflectionView: View {
         .background(Color(hex: "F7F8FC").ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            if store.reflectionCompleted {
-                isReviewMode = true
-                text = String(store.reflectionText.prefix(300))
-                selectedOption = store.reflectionOptionIndex
-                if selectedOption == nil {
-                    selectedOption = options.firstIndex(where: { store.reflectionText.contains($0.title) })
-                }
-            } else {
-                isReviewMode = false
-                text = String(store.reflectionText.prefix(300))
-                selectedOption = store.reflectionOptionIndex
+            wasAlreadyCompleted = store.reflectionCompleted
+            text = String(store.reflectionText.prefix(300))
+            selectedOption = store.reflectionOptionIndex
+            if selectedOption == nil {
+                selectedOption = options.firstIndex(where: { store.reflectionText.contains($0.title) })
             }
         }
         .onChange(of: text) { newValue in
-            guard !isReviewMode else { return }
             if newValue.count > 300 {
                 text = String(newValue.prefix(300))
             }
@@ -173,7 +154,7 @@ struct ReflectionView: View {
                 Capsule().fill(Color.black.opacity(0.08))
                 Capsule()
                     .fill(Color(hex: "1C46B2"))
-                    .frame(width: geo.size.width * (isReviewMode ? 1.0 : 0.75))
+                    .frame(width: geo.size.width * (wasAlreadyCompleted || store.reflectionCompleted ? 1.0 : 0.75))
             }
         }
         .frame(height: 4)
@@ -192,6 +173,7 @@ struct ReflectionView: View {
                 combined = "\(label). \(combined)"
             }
         }
+        // Re-saving after completion only updates content; streak reward is already guarded for today.
         store.markReflectionCompleted(text: combined, optionIndex: selectedOption)
         store.markVerseCompleted()
         onDone()

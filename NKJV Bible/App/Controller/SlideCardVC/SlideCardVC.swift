@@ -42,6 +42,11 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
     weak var SubscriptionVu: SubscriptionPopup?
     weak var NoteVu: SaveNotes?
 
+    /// Slide Card: first Save this app session → IS interstitial once.
+    private static var didShowSlideCardSaveAdThisSession = false
+    /// Slide Card: Save count this session (IS at 10, 20, 30…).
+    private static var slideCardSaveCountThisSession = 0
+
     var BookFilter:Array<String> = []
     var myView:UIView?
     var BookArrayTitle:String = ""
@@ -82,12 +87,14 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
     var VerseListVc: VerseListView?
     
     var Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
+    private let pageControl = UIPageControl()
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
         App_Protocol.DelegateSlideCard = self
         self.Config()
+        self.setupPageControl()
         self.BannerConstrain.constant = FrameConstrains //(StatusbarHeight > 30 ? 90:70)
         // Do any additional setup after loading the view.
         
@@ -105,7 +112,51 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
             self.AdInfo.setImage(UIImage(named: PaymentHistory.sharedInstance.paymentInfo() ?  "ad-free" : "AdInfo"), for: .normal)
         }
         
+        self.CardCollectionCell.showsHorizontalScrollIndicator = false
+        self.CardCollectionCell.showsVerticalScrollIndicator = false
+        self.polishMenuBarAppearance()
         
+        if PaymentHistory.sharedInstance.paymentInfo() {
+            AdmobManager.shared.IronSource_Interstitial_AdLoad()
+        }
+        
+    }
+    
+    /// Larger, clearer bottom action icons/labels (UI only).
+    private func polishMenuBarAppearance() {
+        for constraint in MenuBar.constraints where constraint.firstAttribute == .height && constraint.secondItem == nil {
+            constraint.constant = 78
+        }
+        
+        func apply(to view: UIView) {
+            if let label = view as? UILabel {
+                label.font = UIFont.systemFont(ofSize: 12, weight: .semibold)
+                label.adjustsFontSizeToFitWidth = true
+                label.minimumScaleFactor = 0.8
+                label.textColor = .white
+            } else if let imageView = view as? UIImageView {
+                imageView.contentMode = .scaleAspectFit
+                imageView.tintColor = .white
+                // Storyboard ties icon height to the label (~13pt). Drop that and use a clearer size.
+                if let parent = imageView.superview {
+                    for constraint in parent.constraints {
+                        let targetsImage =
+                            (constraint.firstItem as? UIView) === imageView && constraint.firstAttribute == .height
+                        if targetsImage {
+                            constraint.isActive = false
+                        }
+                    }
+                }
+                imageView.constraints
+                    .filter { $0.firstAttribute == .height }
+                    .forEach { $0.isActive = false }
+                if !imageView.constraints.contains(where: { $0.firstAttribute == .height && abs($0.constant - 22) < 0.1 }) {
+                    imageView.heightAnchor.constraint(equalToConstant: 22).isActive = true
+                }
+            }
+            view.subviews.forEach { apply(to: $0) }
+        }
+        apply(to: MenuBar)
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -145,6 +196,7 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
         
         
         self.SelectedPath = Int(BookArray[BookArray.count-1])!
+        self.updatePageControl()
     }
 
     
@@ -212,6 +264,7 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
         
 
         self.CardCollectionCell.reloadData()
+        self.updatePageControl()
     }
     
     
@@ -458,28 +511,31 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
     @IBAction func Note_Action(_ sender: Any) {
         
         self.CloseHighlite()
+        guard SelectedPath >= 0, SelectedPath < VerseArray.count else { return }
         let bookVerse = String(format: "\(BookName)-\(self.ChaterNumber):%d", self.SelectedPath+1)
          
         self.myView = UIView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height))
         self.view.addSubview(self.myView!)
         self.NoteVu = SaveNotes.fromNib(named: "SaveNotes")
-        self.NoteVu!.VerseStr = self.VerseArray[self.SelectedPath]
-            if BookFilter.count > 0 && BookFilter.contains(bookVerse) {
-                let indexOfVerse = self.BookFilter.firstIndex(of: bookVerse)
+        guard let noteVu = self.NoteVu, let overlay = self.myView else { return }
+        noteVu.VerseStr = self.VerseArray[self.SelectedPath]
+            if BookFilter.count > 0 && BookFilter.contains(bookVerse),
+               let indexOfVerse = self.BookFilter.firstIndex(of: bookVerse),
+               indexOfVerse < self.BibleSavedVerses.count {
                 
-                let SplitCellData = CoreDataModel.sharedInstance.seperateByArray(SeperateValue: self.BibleSavedVerses[indexOfVerse!])
+                let SplitCellData = CoreDataModel.sharedInstance.seperateByArray(SeperateValue: self.BibleSavedVerses[indexOfVerse])
                 
-                self.NoteVu!.Note = SplitCellData[1]
+                noteVu.Note = SplitCellData.count > 1 ? SplitCellData[1] : ""
             } else {
-                self.NoteVu!.Note = ""
+                noteVu.Note = ""
             }
 
-             self.NoteVu!.isSlideCard = true
-             self.NoteVu!.Bookname = BookName
-             self.NoteVu!.ChapterNo = "\(ChaterNumber):\(self.SelectedPath+1)"
-             self.NoteVu!.frame = self.myView!.bounds
-             self.NoteVu!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-             self.myView!.addSubview(self.NoteVu!)
+             noteVu.isSlideCard = true
+             noteVu.Bookname = BookName
+             noteVu.ChapterNo = "\(ChaterNumber):\(self.SelectedPath+1)"
+             noteVu.frame = overlay.bounds
+             noteVu.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+             overlay.addSubview(noteVu)
         }
         
         
@@ -648,18 +704,24 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
 
                }
                
-               if PaymentHistory.sharedInstance.paymentInfo() {
-                   if UNITY_ENABLE {
-                       DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.2) {
-                           UnityAdClass.sharedInstance.sourceVC = self
-                           UnityAdClass.sharedInstance.LoadAdCatagory = "INTERSTITIAL"
-                           UnityAdClass.sharedInstance.loadInterstitial_UnityAds()
-                           UNITY_ENABLE = false
-                       }
-                   }
-               }
+               // IronSource: 1st Save this session + every 10th Save (10, 20, 30…).
+               self.showSlideCardSaveInterstitialIfNeeded()
            }
        }
+
+    /// Non-subscribers: first Save once, then again at Save counts 10, 20, 30… this session.
+    private func showSlideCardSaveInterstitialIfNeeded() {
+        guard PaymentHistory.sharedInstance.paymentInfo() else { return }
+        Self.slideCardSaveCountThisSession += 1
+        let count = Self.slideCardSaveCountThisSession
+        let isFirstSave = !Self.didShowSlideCardSaveAdThisSession
+        let isTenthSave = (count % 10 == 0)
+        guard isFirstSave || isTenthSave else { return }
+        if isFirstSave {
+            Self.didShowSlideCardSaveAdThisSession = true
+        }
+        AdmobManager.shared.IronSource_Interstitial_ShowAds(vw: self, waitForLoadIfNeeded: true)
+    }
 
     
 
@@ -951,8 +1013,38 @@ extension SlideCardVC {
         self.SwipeOn = false
         self.ImageTab = 0
         
+        self.updatePageControl()
         self.SelectedBookmark()
                         
+    }
+    
+    
+    private func setupPageControl() {
+        guard pageControl.superview == nil else {
+            updatePageControl()
+            return
+        }
+        
+        pageControl.translatesAutoresizingMaskIntoConstraints = false
+        pageControl.hidesForSinglePage = false
+        pageControl.isUserInteractionEnabled = false
+        pageControl.currentPageIndicatorTintColor = .white
+        pageControl.pageIndicatorTintColor = UIColor.white.withAlphaComponent(0.35)
+        view.addSubview(pageControl)
+        
+        NSLayoutConstraint.activate([
+            pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            pageControl.bottomAnchor.constraint(equalTo: MenuBar.topAnchor, constant: -8),
+            pageControl.heightAnchor.constraint(equalToConstant: 20)
+        ])
+        updatePageControl()
+    }
+    
+    private func updatePageControl() {
+        let count = max(VerseArray.count, 1)
+        pageControl.numberOfPages = count
+        pageControl.currentPage = min(max(SelectedPath, 0), count - 1)
+        pageControl.isHidden = count <= 1
     }
     
     

@@ -100,14 +100,15 @@ class SelectionViewController: UIViewController, QuizSelect {
         
         self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
-        self.WalletMoney.text =  "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
         self.BlankAlert.textColor = self.Themecolor
         
         
+        // One-time welcome coins (100). Set flag first so a double viewDidLoad cannot grant twice.
         if !UserDefaults.standard.bool(forKey: "NotFirstTime") {
-            UserDefaults.standard.set(UserDefaults.standard.integer(forKey: "WalletMoney")+500, forKey: "WalletMoney")
             UserDefaults.standard.set(true, forKey: "NotFirstTime")
+            UserDefaults.standard.set(UserDefaults.standard.integer(forKey: "WalletMoney") + 100, forKey: "WalletMoney")
         }
+        self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
         
         if !UserDefaults.standard.bool(forKey: "FirstTime") {
 

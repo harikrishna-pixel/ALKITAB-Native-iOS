@@ -122,26 +122,34 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 
   func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
     {
-      
       switch (indexPath.section) {
                 
       
       case 0:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "Recent Arrivals") as! SettingsTableCell?)
-          self.SettingsCell!.Notifications.textColor = (Themecolor == BGNightMode ? .white:.black)
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "Recent Arrivals") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.Notifications?.textColor = (Themecolor == BGNightMode ? .white:.black)
 //          self.SettingsCell!.selectionStyle = UITableViewCell.SelectionStyle.none
-          return self.SettingsCell!
+          return cell
       case 1:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "empty") as! SettingsTableCell?)
-          self.SettingsCell!.selectionStyle = UITableViewCell.SelectionStyle.none
-          self.SettingsCell!.Notification.textColor = (Themecolor == BGNightMode ? .black:SettingTitleColor)
-          self.SettingsCell!.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
-          return self.SettingsCell!
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "empty") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.selectionStyle = UITableViewCell.SelectionStyle.none
+          cell.Notification?.textColor = (Themecolor == BGNightMode ? .black:SettingTitleColor)
+          cell.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
+          return cell
           
       case 2:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "time") as! SettingsTableCell?)
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "time") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
           let dateStr = UserDefaults.standard.string(forKey: "NotifiTime") ?? "08:00"
-          self.SettingsCell!.NotificationTime.textColor = (Themecolor == BGNightMode ? .white:.black)
+          cell.NotificationTime?.textColor = (Themecolor == BGNightMode ? .white:.black)
           
           
 //          if is24Hour() {
@@ -164,51 +172,70 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           
 //          self.SettingsCell!.NotifiTime.textColor = (Themecolor == BGNightMode ? .white:.gray)
           
-          return self.SettingsCell!
+          return cell
           
       case 3:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "empty3") as! SettingsTableCell?)
-          self.SettingsCell!.selectionStyle = UITableViewCell.SelectionStyle.none
-          self.SettingsCell!.FontTheme.textColor = (Themecolor == BGNightMode ? .black:SettingTitleColor)
-          self.SettingsCell!.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
-          return self.SettingsCell!
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "empty3") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.selectionStyle = UITableViewCell.SelectionStyle.none
+          cell.FontTheme?.textColor = (Themecolor == BGNightMode ? .black:SettingTitleColor)
+          cell.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
+          return cell
           
       case 4:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "Font") as! SettingsTableCell?)
-            self.SettingsCell!.FontStyle.text = UserDefaults.standard.string(forKey: "FontName") ?? "Euphemia UCAS"
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "Font") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+            cell.FontStyle?.text = UserDefaults.standard.string(forKey: "FontName") ?? "Euphemia UCAS"
           
-          self.SettingsCell!.FontType.textColor = (Themecolor == BGNightMode ? .white:.black)
+          cell.FontType?.textColor = (Themecolor == BGNightMode ? .white:.black)
           
-          self.SettingsCell!.FontStyle.textColor = (Themecolor == BGNightMode ? .white:.gray)
-          ImageTint.sharedInstance.imageTintcolorMethod(img: self.SettingsCell!.arrow1!, colorVu: (Themecolor == BGNightMode ? .white:.gray))
+          cell.FontStyle?.textColor = (Themecolor == BGNightMode ? .white:.gray)
+          if let arrow = cell.arrow1 {
+              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
+          }
                 
-          return self.SettingsCell!
+          return cell
           
       case 5:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "Theme") as! SettingsTableCell?)
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "Theme") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
           
-          self.SettingsCell!.themeColor.ThemeColor()
-          self.SettingsCell!.themeColor.backgroundColor = Themecolor
+          cell.themeColor?.ThemeColor()
+          cell.themeColor?.backgroundColor = Themecolor
           
-          self.SettingsCell!.Theme.textColor = (Themecolor == BGNightMode ? .white:.black)
+          cell.Theme?.textColor = (Themecolor == BGNightMode ? .white:.black)
           
-          return self.SettingsCell!
+          return cell
           
       case 6:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "empty1") as! SettingsTableCell?)
-          self.SettingsCell!.selectionStyle = UITableViewCell.SelectionStyle.none
-          self.SettingsCell!.AboutApp.text = "FEATURES"
-          self.SettingsCell!.AboutApp.textColor = (Themecolor == BGNightMode ? .black:SettingTitleColor)
-          self.SettingsCell!.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
-          return self.SettingsCell!
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "empty1") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.selectionStyle = UITableViewCell.SelectionStyle.none
+          cell.AboutApp?.text = "FEATURES"
+          cell.AboutApp?.textColor = (Themecolor == BGNightMode ? .black:SettingTitleColor)
+          cell.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
+          return cell
           
       case 7:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as! SettingsTableCell?)
-          self.SettingsCell!.Feedback.text = "AI Chat"
-          self.SettingsCell!.Feedback.textColor = (Themecolor == BGNightMode ? .white:.black)
-          ImageTint.sharedInstance.imageTintcolorMethod(img: self.SettingsCell!.arrow2!, colorVu: (Themecolor == BGNightMode ? .white:.gray))
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.Feedback?.text = "AI Chat"
+          cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
+          if let arrow = cell.arrow2 {
+              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
+          }
           
-          return self.SettingsCell!
+          return cell
 
 //      case 8:
 //          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as! SettingsTableCell?)
@@ -218,52 +245,80 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 //          return self.SettingsCell!
       
       case 9:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "empty2") as! SettingsTableCell?)
-          self.SettingsCell!.selectionStyle = UITableViewCell.SelectionStyle.none
-          self.SettingsCell!.Support.text = "ABOUT & SUPPORT"
-          self.SettingsCell!.Support.textColor = (Themecolor == BGNightMode ? .black:SettingTitleColor)
-          self.SettingsCell!.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
-          return self.SettingsCell!
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "empty2") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.selectionStyle = UITableViewCell.SelectionStyle.none
+          cell.Support?.text = "ABOUT & SUPPORT"
+          cell.Support?.textColor = (Themecolor == BGNightMode ? .black:SettingTitleColor)
+          cell.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
+          return cell
 
       case 10:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as! SettingsTableCell?)
-          self.SettingsCell!.Feedback.text = "Feedback"
-          self.SettingsCell!.Feedback.textColor = (Themecolor == BGNightMode ? .white:.black)
-          ImageTint.sharedInstance.imageTintcolorMethod(img: self.SettingsCell!.arrow2!, colorVu: (Themecolor == BGNightMode ? .white:.gray))
-          return self.SettingsCell!
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.Feedback?.text = "Feedback"
+          cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
+          if let arrow = cell.arrow2 {
+              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
+          }
+          return cell
               
       case 11:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "About") as! SettingsTableCell?)
-          self.SettingsCell!.AboutUs.textColor = (Themecolor == BGNightMode ? .white:.black)
-          ImageTint.sharedInstance.imageTintcolorMethod(img: self.SettingsCell!.arrow3!, colorVu: (Themecolor == BGNightMode ? .white:.gray))
-          return self.SettingsCell!
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "About") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.AboutUs?.textColor = (Themecolor == BGNightMode ? .white:.black)
+          if let arrow = cell.arrow3 {
+              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
+          }
+          return cell
           
       case 12:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "Rateus") as! SettingsTableCell?)
-          self.SettingsCell!.RateUs.textColor = (Themecolor == BGNightMode ? .white:.black)
-          return self.SettingsCell!
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "Rateus") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.RateUs?.textColor = (Themecolor == BGNightMode ? .white:.black)
+          return cell
           
       case 13:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "moreApp") as! SettingsTableCell?)
-          self.SettingsCell!.MoreApp.textColor = (Themecolor == BGNightMode ? .white:.black)
-          return self.SettingsCell!
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "moreApp") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.MoreApp?.textColor = (Themecolor == BGNightMode ? .white:.black)
+          return cell
       
       case 14:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "Help") as! SettingsTableCell?)
-          self.SettingsCell!.Help.textColor = (Themecolor == BGNightMode ? .white:.black)
-          return self.SettingsCell!
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "Help") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.Help?.textColor = (Themecolor == BGNightMode ? .white:.black)
+          return cell
 
       case 15:
-          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as! SettingsTableCell?)
-          self.SettingsCell!.Feedback.text = "Log Out"
-          self.SettingsCell!.Feedback.textColor = (Themecolor == BGNightMode ? .white:.black)
-          ImageTint.sharedInstance.imageTintcolorMethod(img: self.SettingsCell!.arrow2!, colorVu: (Themecolor == BGNightMode ? .white:.gray))
-          return self.SettingsCell!
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.Feedback?.text = "Log Out"
+          cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
+          if let arrow = cell.arrow2 {
+              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
+          }
+          return cell
                   
-      default: break
+      default:
+          break
       }
 
-      return self.SettingsCell!
+      return UITableViewCell()
     }
   
   

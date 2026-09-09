@@ -11,7 +11,10 @@ import Photos
 final class DailyJourneyHomeViewController: UIViewController {
 
     private var hostingController: UIHostingController<DailyJourneyHomeView>?
-    private weak var journeyModalHost: UIViewController?
+    /// First journey modal in the stack (dismiss this presenter’s presented VC to close the whole flow).
+    private var journeyRoot: UIViewController?
+    /// Topmost journey modal currently visible.
+    private var journeyModalHost: UIViewController?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -65,7 +68,8 @@ final class DailyJourneyHomeViewController: UIViewController {
                 self?.presentVerseFullscreen(verse: verse, onUpdated: onUpdated)
             },
             onOpenMemoryChallenge: { [weak self] verse in
-                self?.presentMemoryChallenge(verse: verse, proceedToReflection: false)
+                let proceed = !DailyJourneyStore.shared.reflectionCompleted
+                self?.presentMemoryChallenge(verse: verse, proceedToReflection: proceed)
             },
             onOpenReflection: { [weak self] verse in
                 self?.presentReflection(verse: verse)
@@ -86,132 +90,158 @@ final class DailyJourneyHomeViewController: UIViewController {
         return top
     }
 
-    private func presentFromOutsideNavigateframe(
+    /// Stacks journey steps on top of each other so Home never appears between steps.
+    /// Home is only revealed when `dismissJourneyModal` tears down the whole stack.
+    private func presentJourneyModal(
         _ viewController: UIViewController,
         animated: Bool = true,
         completion: (() -> Void)? = nil
     ) {
         viewController.modalPresentationStyle = .fullScreen
-        journeyModalHost = viewController
-        topModalPresenter().present(viewController, animated: animated, completion: completion)
+
+        let work = { [weak self] in
+            guard let self = self else { return }
+
+            if let existingTop = self.journeyModalHost {
+                var presenter = existingTop
+                while let presented = presenter.presentedViewController {
+                    presenter = presented
+                }
+                presenter.present(viewController, animated: animated, completion: completion)
+                self.journeyModalHost = viewController
+                return
+            }
+
+            let presenter = self.topModalPresenter()
+            self.journeyRoot = viewController
+            self.journeyModalHost = viewController
+            presenter.present(viewController, animated: animated, completion: completion)
+        }
+
+        if Thread.isMainThread {
+            work()
+        } else {
+            DispatchQueue.main.async(execute: work)
+        }
     }
 
+    private func presentFromOutsideNavigateframe(
+        _ viewController: UIViewController,
+        animated: Bool = true,
+        completion: (() -> Void)? = nil
+    ) {
+        presentJourneyModal(viewController, animated: animated, completion: completion)
+    }
+
+    /// Dismisses the entire journey stack (Verse / Memory / Reflection / Streak) at once.
     private func dismissJourneyModal(completion: (() -> Void)? = nil) {
-        if let host = journeyModalHost {
-            journeyModalHost = nil
-            host.dismiss(animated: true, completion: completion)
+        let root = journeyRoot ?? journeyModalHost
+        journeyRoot = nil
+        journeyModalHost = nil
+
+        guard let root = root else {
+            completion?()
             return
         }
-        topModalPresenter().presentedViewController?.dismiss(animated: true, completion: completion)
+
+        let finish: () -> Void = {
+            completion?()
+        }
+
+        if let presenting = root.presentingViewController {
+            presenting.dismiss(animated: true, completion: finish)
+        } else if root.presentedViewController != nil || root.isBeingPresented == false {
+            root.dismiss(animated: true, completion: finish)
+        } else {
+            finish()
+        }
     }
 
     private func presentVerseFullscreen(
         verse: DailyVerseSnapshot,
         onUpdated: @escaping (DailyVerseSnapshot) -> Void
     ) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-
-            var current = verse
-            let vc = DailyVerseFullscreenViewController(verse: current)
-            vc.onClose = { [weak vc] in
-                vc?.dismiss(animated: true, completion: nil)
-            }
-            vc.onForward = { [weak vc] in
-                current.cycleWallpaper()
-                DailyJourneyStore.shared.markVerseCompleted()
-                vc?.update(with: current)
-                onUpdated(current)
-            }
-            vc.onContinue = { [weak self, weak vc] in
-                let store = DailyJourneyStore.shared
-                store.reload()
-                let verseSnapshot = current
-                if store.allStepsComplete {
-                    vc?.dismiss(animated: true, completion: nil)
-                } else if store.memoryCompleted {
-                    vc?.dismiss(animated: true) {
-                        self?.presentReflection(verse: verseSnapshot)
-                    }
-                } else {
-                    vc?.dismiss(animated: true) {
-                        self?.presentMemoryChallenge(
-                            verse: verseSnapshot,
-                            proceedToReflection: !store.reflectionCompleted
-                        )
-                    }
-                }
-            }
-
-            self.presentFromOutsideNavigateframe(vc)
+        var current = verse
+        let vc = DailyVerseFullscreenViewController(verse: current)
+        vc.onClose = { [weak self] in
+            self?.dismissJourneyModal()
         }
+        vc.onForward = { [weak vc] in
+            current.cycleWallpaper()
+            DailyJourneyStore.shared.markVerseCompleted()
+            vc?.update(with: current)
+            onUpdated(current)
+        }
+        vc.onContinue = { [weak self] in
+            let store = DailyJourneyStore.shared
+            store.reload()
+            let verseSnapshot = current
+            if store.allStepsComplete {
+                self?.dismissJourneyModal()
+            } else if store.memoryCompleted {
+                self?.presentReflection(verse: verseSnapshot)
+            } else {
+                self?.presentMemoryChallenge(
+                    verse: verseSnapshot,
+                    proceedToReflection: !store.reflectionCompleted
+                )
+            }
+        }
+
+        presentJourneyModal(vc)
     }
 
     private func presentMemoryChallenge(verse: DailyVerseSnapshot, proceedToReflection: Bool) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-
-            let root = NavigationView {
-                MemoryChallengeView(
-                    verse: verse,
-                    store: .shared,
-                    onDone: { [weak self] in
-                        self?.dismissJourneyModal()
-                    },
-                    onProceed: proceedToReflection ? { [weak self] in
-                        self?.dismissJourneyModal {
-                            self?.presentReflection(verse: verse)
-                        }
-                    } : nil
-                )
-            }
-            .navigationViewStyle(StackNavigationViewStyle())
-
-            let host = UIHostingController(rootView: root)
-            self.presentFromOutsideNavigateframe(host)
+        let root = NavigationView {
+            MemoryChallengeView(
+                verse: verse,
+                store: .shared,
+                onDone: { [weak self] in
+                    self?.dismissJourneyModal()
+                },
+                onProceed: proceedToReflection ? { [weak self] in
+                    self?.presentReflection(verse: verse)
+                } : nil
+            )
         }
+        .navigationViewStyle(StackNavigationViewStyle())
+
+        let host = UIHostingController(rootView: root)
+        presentJourneyModal(host)
     }
 
     private func presentReflection(verse: DailyVerseSnapshot) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
+        let shouldAutoShowStreak = !DailyJourneyStore.shared.allStepsComplete
 
-            let shouldAutoShowStreak = !DailyJourneyStore.shared.allStepsComplete
-
-            let root = NavigationView {
-                ReflectionView(
-                    verse: verse,
-                    store: .shared,
-                    onDone: { [weak self] in
-                        self?.dismissJourneyModal {
-                            if shouldAutoShowStreak, DailyJourneyStore.shared.allStepsComplete {
-                                self?.presentStreakComplete()
-                            }
-                        }
+        let root = NavigationView {
+            ReflectionView(
+                verse: verse,
+                store: .shared,
+                onDone: { [weak self] in
+                    if shouldAutoShowStreak, DailyJourneyStore.shared.allStepsComplete {
+                        self?.presentStreakComplete()
+                    } else {
+                        self?.dismissJourneyModal()
                     }
-                )
-            }
-            .navigationViewStyle(StackNavigationViewStyle())
-
-            let host = UIHostingController(rootView: root)
-            self.presentFromOutsideNavigateframe(host)
+                }
+            )
         }
+        .navigationViewStyle(StackNavigationViewStyle())
+
+        let host = UIHostingController(rootView: root)
+        presentJourneyModal(host)
     }
 
     private func presentStreakComplete() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-
-            let root = NavigationView {
-                StreakCompleteView(store: .shared) { [weak self] in
-                    self?.dismissJourneyModal()
-                }
+        let root = NavigationView {
+            StreakCompleteView(store: .shared) { [weak self] in
+                self?.dismissJourneyModal()
             }
-            .navigationViewStyle(StackNavigationViewStyle())
-
-            let host = UIHostingController(rootView: root)
-            self.presentFromOutsideNavigateframe(host)
         }
+        .navigationViewStyle(StackNavigationViewStyle())
+
+        let host = UIHostingController(rootView: root)
+        presentJourneyModal(host)
     }
 
     private func continueReading() {
