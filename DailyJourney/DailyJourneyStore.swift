@@ -134,6 +134,7 @@ final class DailyJourneyStore: ObservableObject {
         savedMemory = state
         memoryCompleted = true
         updateStreakIfNeeded()
+        OnboardingNotificationScheduler.refreshConditionalReminders()
     }
 
     func markReflectionCompleted(text: String, optionIndex: Int? = nil) {
@@ -160,6 +161,7 @@ final class DailyJourneyStore: ObservableObject {
         if last == today {
             // Still ensure today's date is recorded locally
             persistStreakDates(adding: today, defaults: defaults)
+            OnboardingNotificationScheduler.refreshConditionalReminders()
             return
         }
 
@@ -174,6 +176,7 @@ final class DailyJourneyStore: ObservableObject {
         persistStreakDates(adding: today, defaults: defaults)
         defaults.synchronize()
         objectWillChange.send()
+        OnboardingNotificationScheduler.refreshConditionalReminders()
     }
 
     private func persistStreakDates(adding today: String, defaults: UserDefaults) {

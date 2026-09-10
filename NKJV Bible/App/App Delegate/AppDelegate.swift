@@ -43,6 +43,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
 
+        // One-time welcome coins (100). Same keys as Quiz SelectionViewController —
+        // grant at launch so Challenge Hub / Wallet never start at 0 for new installs.
+        if !UserDefaults.standard.bool(forKey: "NotFirstTime") {
+            UserDefaults.standard.set(true, forKey: "NotFirstTime")
+            UserDefaults.standard.set(UserDefaults.standard.integer(forKey: "WalletMoney") + 100, forKey: "WalletMoney")
+        }
+
         
         if FIREBASE_ENABLE {
             FirebaseApp.configure()
@@ -246,7 +253,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             where: { $0.isKeyWindow })?.rootViewController
         if let rootViewController = rootViewController {
         }
-
+        OnboardingNotificationScheduler.refreshConditionalReminders()
     }
 
     
@@ -764,6 +771,7 @@ extension AppDelegate {
                 lastTimeKey: "LastNotificationTime4",
                 quizTime: true
             )
+            OnboardingNotificationScheduler.refreshConditionalReminders()
             
           
             

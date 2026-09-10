@@ -607,8 +607,15 @@
 		A1B2C3D42F46A10100000001 /* OnboardingShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000011 /* OnboardingShared.swift */; };
 		A1B2C3D42F46A10100000002 /* Onboarding5.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000012 /* Onboarding5.swift */; };
 		A1B2C3D42F46A10100000003 /* OnboardingNotificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */; };
+		A1B2C3D42F46A10100000026 /* OnboardingNotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000036 /* OnboardingNotificationScheduler.swift */; };
 		A1B2C3D42F46A10100000004 /* OnboardingCreateAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000014 /* OnboardingCreateAccountView.swift */; };
 		A1B2C3D42F46A10100000005 /* OnboardingAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000015 /* OnboardingAuthManager.swift */; };
+		A1B2C3D42F46A10100000020 /* AuthHubConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000030 /* AuthHubConfig.swift */; };
+		A1B2C3D42F46A10100000021 /* AuthHubAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000031 /* AuthHubAPI.swift */; };
+		A1B2C3D42F46A10100000022 /* AuthHubSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000032 /* AuthHubSession.swift */; };
+		A1B2C3D42F46A10100000023 /* AuthHubSecrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000033 /* AuthHubSecrets.swift */; };
+		A1B2C3D42F46A10100000024 /* AuthHubEmailAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000034 /* AuthHubEmailAuthView.swift */; };
+		A1B2C3D42F46A10100000025 /* AuthHubProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000035 /* AuthHubProfileView.swift */; };
 		A2G00A032F13E3240097A8E3 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = A2G00A022F13E3240097A8E3 /* GoogleSignIn */; };
 		B18CE61E303DAE26001FA16C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */; };
 		B1A3D241304AC9B100FD5D0C /* 5.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D23B304AC9B100FD5D0C /* 5.png */; };
@@ -1282,8 +1289,15 @@
 		A1B2C3D42F46A10100000011 /* OnboardingShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingShared.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000012 /* Onboarding5.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding5.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingNotificationView.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000036 /* OnboardingNotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingNotificationScheduler.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000014 /* OnboardingCreateAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCreateAccountView.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000015 /* OnboardingAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAuthManager.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000030 /* AuthHubConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubConfig.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000031 /* AuthHubAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubAPI.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000032 /* AuthHubSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubSession.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000033 /* AuthHubSecrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubSecrets.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000034 /* AuthHubEmailAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubEmailAuthView.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000035 /* AuthHubProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubProfileView.swift; sourceTree = "<group>"; };
 		B13B6D6A8DF1821F657CBFAA /* Pods-NKJV Bible.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NKJV Bible.debug.xcconfig"; path = "Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible.debug.xcconfig"; sourceTree = "<group>"; };
 		B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		B1A3D237304AC9B100FD5D0C /* 1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 1.png; sourceTree = "<group>"; };
@@ -3530,8 +3544,15 @@
 				6F9FDDDB2EEFFEA600CE0114 /* Onboarding4.swift */,
 				A1B2C3D42F46A10100000012 /* Onboarding5.swift */,
 				A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */,
+				A1B2C3D42F46A10100000036 /* OnboardingNotificationScheduler.swift */,
 				A1B2C3D42F46A10100000014 /* OnboardingCreateAccountView.swift */,
 				A1B2C3D42F46A10100000015 /* OnboardingAuthManager.swift */,
+				A1B2C3D42F46A10100000030 /* AuthHubConfig.swift */,
+				A1B2C3D42F46A10100000031 /* AuthHubAPI.swift */,
+				A1B2C3D42F46A10100000032 /* AuthHubSession.swift */,
+				A1B2C3D42F46A10100000033 /* AuthHubSecrets.swift */,
+				A1B2C3D42F46A10100000034 /* AuthHubEmailAuthView.swift */,
+				A1B2C3D42F46A10100000035 /* AuthHubProfileView.swift */,
 				A1B2C3D42F46A10100000011 /* OnboardingShared.swift */,
 				6F9FDDE02EEFFEDD00CE0114 /* BibleSubscriptionView.swift */,
 				6F9FDDE22EEFFF2400CE0114 /* StoreManager.swift */,
@@ -4313,8 +4334,15 @@
 				A1B2C3D42F46A10100000001 /* OnboardingShared.swift in Sources */,
 				A1B2C3D42F46A10100000002 /* Onboarding5.swift in Sources */,
 				A1B2C3D42F46A10100000003 /* OnboardingNotificationView.swift in Sources */,
+				A1B2C3D42F46A10100000026 /* OnboardingNotificationScheduler.swift in Sources */,
 				A1B2C3D42F46A10100000004 /* OnboardingCreateAccountView.swift in Sources */,
 				A1B2C3D42F46A10100000005 /* OnboardingAuthManager.swift in Sources */,
+				A1B2C3D42F46A10100000020 /* AuthHubConfig.swift in Sources */,
+				A1B2C3D42F46A10100000021 /* AuthHubAPI.swift in Sources */,
+				A1B2C3D42F46A10100000022 /* AuthHubSession.swift in Sources */,
+				A1B2C3D42F46A10100000023 /* AuthHubSecrets.swift in Sources */,
+				A1B2C3D42F46A10100000024 /* AuthHubEmailAuthView.swift in Sources */,
+				A1B2C3D42F46A10100000025 /* AuthHubProfileView.swift in Sources */,
 				B2C3D4E52F46B20100000001 /* DailyJourneyStore.swift in Sources */,
 				B2C3D4E52F46B20100000002 /* DailyJourneyHomeView.swift in Sources */,
 				B2C3D4E52F46B20100000003 /* MemoryChallengeView.swift in Sources */,

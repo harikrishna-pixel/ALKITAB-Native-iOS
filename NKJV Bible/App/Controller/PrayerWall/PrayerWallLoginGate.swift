@@ -8,7 +8,7 @@ import UIKit
 
 enum PrayerWallLoginGate {
     static var isLoggedIn: Bool {
-        UserDefaults.standard.bool(forKey: "OnboardingLoggedIn")
+        AuthHubSession.isLoggedIn || UserDefaults.standard.bool(forKey: "OnboardingLoggedIn")
     }
 
     /// If logged in, runs `action` immediately. Otherwise shows a login required alert, then the login sheet.

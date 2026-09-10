@@ -19,6 +19,10 @@ class AdmobManager : NSObject {
     var Interstitial_ID = ""
     /// When true, show interstitial as soon as the next `didLoad` arrives.
     private var pendingInterstitialShow = false
+    /// When true, show rewarded as soon as an ad becomes available.
+    private var pendingRewardedShow = false
+    private var pendingRewardedPollTimer: Timer?
+    private var pendingRewardedAttempts = 0
 
      
 }
@@ -197,15 +201,18 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
     
     func hasAvailableAd(with adInfo: ISAdInfo!) {
         print("has Available Ad")
+        // Availability callback means a rewarded ad is ready — show if Skip/reward was waiting.
+        tryShowPendingRewardedIfPossible()
     }
     
-    func hasNoAvailableAd() {        
-        if RewardAd != "" {
-            (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Ad not Available", duration: 2.0, position: .bottom)
-        }
+    func hasNoAvailableAd() {
+        // Do NOT clear pending here. IronSource reports "no ad" while a load is in progress;
+        // cancelling immediately made Gift Card Skip always fail. Timeout poll handles final fail.
+        print("has No Available Ad (ignored while pending=\(pendingRewardedShow))")
     }
     
     func didReceiveReward(forPlacement placementInfo: ISPlacementInfo!, with adInfo: ISAdInfo!) {
+        clearPendingRewardedShow()
         
         if RewardAd == "OpenCard" {
             UserDefaults.standard.setValue(Date().string(format: "MM/dd/yy HH:mm:ss"), forKey: "CardAdTime")
@@ -243,32 +250,85 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
 
     func IronSource_Reward_ShowAds(vw : UIViewController, RewardAd:String) {
         self.RewardAd = RewardAd
-        if IronSource.hasInterstitial() {
+        vc = vw
+        // Ready → show now. Not ready → keep intent, load, poll until ready or timeout.
+        if IronSource.hasRewardedVideo() {
+            clearPendingRewardedShow()
             DispatchQueue.main.async {
                 IronSource.showRewardedVideo(with: vw)
             }
         } else {
-            (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Ad not Available", duration: 2.0, position: .bottom)
-            
-            if self.RewardAd == "Tryagain" {
-                QuizProtocol.ResultProtocoldelegate?.AdNotAvailable()
-            } else if self.RewardAd == "FreeCoins" {
-                QuizProtocol.WalletProtocoldelegate?.AdNotAvailable()
-            } else if self.RewardAd == "MainFreeCoins" {
-                QuizProtocol.QuizMaindelegate?.AdNotAvailable()
-            } else if self.RewardAd == "WatchAd" {
-               App_Protocol.UnituAdCallDelegate?.NoAdClosed()
-            } else if self.RewardAd == "Scratch" {
-                QuizProtocol.CardDelegate?.AdNotAvailable()
-            } else if self.RewardAd == "ImageWatermark" {
-                ImageAppProtocol.ImageTxtEditDelegate?.AdNotAvailable()
-            } else if self.RewardAd == "OpenCard" {
-                App_Protocol.CardShowdelegate?.AdNotAvailable()
-                self.RewardAd = ""
-            } else if self.RewardAd == "SubscrbViewController" {
-                App_Protocol.UnituAdCallDelegate?.NoAdClosed()
+            pendingRewardedShow = true
+            pendingRewardedAttempts = 0
+            IronSource_Reward_AdLoad()
+            startPendingRewardedPoll()
+        }
+    }
+    
+    private func tryShowPendingRewardedIfPossible() {
+        guard pendingRewardedShow, let host = vc else { return }
+        guard IronSource.hasRewardedVideo() else { return }
+        clearPendingRewardedShow()
+        DispatchQueue.main.async {
+            IronSource.showRewardedVideo(with: host)
+        }
+    }
+    
+    private func startPendingRewardedPoll() {
+        pendingRewardedPollTimer?.invalidate()
+        let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            guard self.pendingRewardedShow else {
+                self.clearPendingRewardedShow()
+                return
             }
-            
+            self.pendingRewardedAttempts += 1
+            if IronSource.hasRewardedVideo() {
+                self.tryShowPendingRewardedIfPossible()
+                return
+            }
+            // Re-kick load every ~3s while waiting.
+            if self.pendingRewardedAttempts % 6 == 0 {
+                self.IronSource_Reward_AdLoad()
+            }
+            // Give up after ~15 seconds.
+            if self.pendingRewardedAttempts >= 30 {
+                self.clearPendingRewardedShow()
+                DispatchQueue.main.async {
+                    (UIApplication.shared.keyWindow?.rootViewController)?.view.makeToast("Ad not Available", duration: 2.0, position: .bottom)
+                    self.notifyRewardedAdNotAvailable()
+                }
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        pendingRewardedPollTimer = timer
+    }
+    
+    private func clearPendingRewardedShow() {
+        pendingRewardedShow = false
+        pendingRewardedAttempts = 0
+        pendingRewardedPollTimer?.invalidate()
+        pendingRewardedPollTimer = nil
+    }
+    
+    private func notifyRewardedAdNotAvailable() {
+        if RewardAd == "Tryagain" {
+            QuizProtocol.ResultProtocoldelegate?.AdNotAvailable()
+        } else if RewardAd == "FreeCoins" {
+            QuizProtocol.WalletProtocoldelegate?.AdNotAvailable()
+        } else if RewardAd == "MainFreeCoins" {
+            QuizProtocol.QuizMaindelegate?.AdNotAvailable()
+        } else if RewardAd == "WatchAd" {
+            App_Protocol.UnituAdCallDelegate?.NoAdClosed()
+        } else if RewardAd == "Scratch" {
+            QuizProtocol.CardDelegate?.AdNotAvailable()
+        } else if RewardAd == "ImageWatermark" {
+            ImageAppProtocol.ImageTxtEditDelegate?.AdNotAvailable()
+        } else if RewardAd == "OpenCard" {
+            App_Protocol.CardShowdelegate?.AdNotAvailable()
+            RewardAd = ""
+        } else if RewardAd == "SubscrbViewController" {
+            App_Protocol.UnituAdCallDelegate?.NoAdClosed()
         }
     }
     

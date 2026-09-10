@@ -99,7 +99,11 @@ class QuizSettingVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
          case 4:
              self.QuizSettingsCell = (self.QuizSettingsTable.dequeueReusableCell(withIdentifier: "FAQ") as! QuizSettingsTableCell?)
              
+             self.QuizSettingsCell!.FaQBtn.removeTarget(nil, action: nil, for: .allEvents)
              self.QuizSettingsCell!.FaQBtn.addTarget(self, action: #selector(FAQFrame), for: .touchUpInside)
+             self.QuizSettingsCell!.FaQBtn.addTarget(self, action: #selector(faqTouchDown(_:)), for: .touchDown)
+             self.QuizSettingsCell!.FaQBtn.addTarget(self, action: #selector(faqTouchEnded(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit])
+             self.QuizSettingsCell!.selectionStyle = .none
 
              return self.QuizSettingsCell!
              
@@ -118,6 +122,18 @@ class QuizSettingVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
         self.FAQView!.frame = self.view.bounds
         self.FAQView!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         self.view.addSubview(self.FAQView!)
+    }
+
+    @objc private func faqTouchDown(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.08) {
+            sender.backgroundColor = UIColor.black.withAlphaComponent(0.08)
+        }
+    }
+
+    @objc private func faqTouchEnded(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.12) {
+            sender.backgroundColor = .clear
+        }
     }
     
     

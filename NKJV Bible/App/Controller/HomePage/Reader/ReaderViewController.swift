@@ -1986,22 +1986,15 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     func ConstrainChange(Top: CGFloat, bottom: CGFloat) {
-        // Apply verse-area inset without animation so Mark as Read / Get Summary
-        // don't slide or resize when scrolling to the chapter bottom.
+        // No animation — Mark as Read / Get Summary must not slide or jump at chapter bottom.
         let verseBottom = (Top < 0.0 ? 0.0 : -72.0)
         UIView.performWithoutAnimation {
             self.VeresViewBottom.constant = verseBottom
-            self.view.layoutIfNeeded()
-        }
-        
-        UIView.animate(withDuration: 0.6, animations: { [weak self] in
-            guard let self = self else { return }
             self.topBannerConstant.constant = Top
             self.BottomMenyConstrain.constant = bottom
             self.MenuConstrain.constant = bottom >= 20 ? 20 : 0
             self.view.layoutIfNeeded()
-         }, completion: { finished in
-            })
+        }
     }
      
     

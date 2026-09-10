@@ -64,6 +64,13 @@ class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDa
     
     var BookCell:BookTableCell?
     var TestamentCell:TestamentTableCell?
+
+    private let searchSpinner: UIActivityIndicatorView = {
+        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.hidesWhenStopped = true
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        return spinner
+    }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -105,7 +112,29 @@ class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDa
         
         self.PositionTOBook()
         self.SearchViewCreate()
+        self.setupSearchSpinner(theme: Themecolor)
         
+    }
+
+    private func setupSearchSpinner(theme: UIColor) {
+        searchSpinner.color = (theme == BGNightMode ? .white : .gray)
+        view.addSubview(searchSpinner)
+        NSLayoutConstraint.activate([
+            searchSpinner.centerXAnchor.constraint(equalTo: SearchListFrame.centerXAnchor),
+            searchSpinner.centerYAnchor.constraint(equalTo: SearchListFrame.centerYAnchor)
+        ])
+    }
+
+    private func setSearchLoading(_ loading: Bool) {
+        if loading {
+            searchSpinner.startAnimating()
+            view.bringSubviewToFront(searchSpinner)
+        } else {
+            searchSpinner.stopAnimating()
+        }
+        SearchTxt.isEnabled = !loading
+        Book.isUserInteractionEnabled = !loading
+        Testament.isUserInteractionEnabled = !loading
     }
     
     
@@ -428,22 +457,33 @@ extension  SearchViewController {
         DispatchQueue.main.async {
             self.SearchTxt.resignFirstResponder()
             self.SearchCollectionMVC?.removeFromSuperview()
-            if self.SearchTxt.text!.count >= 3 {
-                self.arraySearchList.removeAll()
-                self.SearchBookText()
-                for i in 0 ..< self.SearchedList.count {
-                    let verse = self.SearchedList[i].components(separatedBy: "_")[0]
-                    let searchstr = self.SearchTxt.text!
-                    if verse.localizedCaseInsensitiveContains(searchstr) {
-                    self.arraySearchList.append(self.SearchedList[i])
-                    } else if verse.contains(searchstr) {
-                        self.arraySearchList.append(verse)
+            let query = self.SearchTxt.text ?? ""
+            if query.count >= 3 {
+                self.setSearchLoading(true)
+                DispatchQueue.global(qos: .userInitiated).async {
+                    self.arraySearchList.removeAll()
+                    self.SearchBookText()
+                    var matched: [String] = []
+                    for i in 0 ..< self.SearchedList.count {
+                        let verse = self.SearchedList[i].components(separatedBy: "_")[0]
+                        if verse.localizedCaseInsensitiveContains(query) {
+                            matched.append(self.SearchedList[i])
+                        } else if verse.contains(query) {
+                            matched.append(verse)
+                        }
+                    }
+                    DispatchQueue.main.async {
+                        self.arraySearchList = matched
+                        self.setSearchLoading(false)
+                        self.CollecrtionNibinit()
                     }
                 }
-            } else if self.SearchTxt.text!.count > 0  {
+            } else if query.count > 0 {
                 self.view.makeToast("Incorrect word ", duration: 2.0, position: .bottom)
+                self.CollecrtionNibinit()
+            } else {
+                self.CollecrtionNibinit()
             }
-            self.CollecrtionNibinit()
         }
     }
 }

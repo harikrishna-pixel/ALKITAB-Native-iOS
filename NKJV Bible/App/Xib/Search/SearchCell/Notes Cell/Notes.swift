@@ -34,6 +34,8 @@ final class ExplanationLibraryCell: UICollectionViewCell {
 
     let menuBtn = UIButton(type: .custom)
     private let cardView = UIView()
+    private let menuCircle = UIView()
+    private let chevronCircle = UIView()
     private let menuImageView = UIImageView()
     private let chevronImageView = UIImageView()
     private let referenceLabel = UILabel()
@@ -43,6 +45,10 @@ final class ExplanationLibraryCell: UICollectionViewCell {
     private let explanationBodyLabel = UILabel()
     private var explanationBottomConstraint: NSLayoutConstraint?
     private var verseBottomCollapsedConstraint: NSLayoutConstraint?
+
+    private static let actionCircleSize: CGFloat = 36
+    private static let actionIconPointSize: CGFloat = 15
+    private static let actionHitSize: CGFloat = 44
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -88,10 +94,15 @@ final class ExplanationLibraryCell: UICollectionViewCell {
             ]
         )
 
-        chevronImageView.image = UIImage(systemName: isExpanded ? "chevron.up" : "chevron.down")?.withRenderingMode(.alwaysTemplate)
-        chevronImageView.tintColor = isExpanded ? themeColor : (isNight ? UIColor.white.withAlphaComponent(0.55) : UIColor(white: 0.55, alpha: 1))
-        menuImageView.image = UIImage(systemName: "ellipsis")?.withRenderingMode(.alwaysTemplate)
+        let symbolConfig = UIImage.SymbolConfiguration(pointSize: Self.actionIconPointSize, weight: .semibold)
+        chevronImageView.image = UIImage(systemName: isExpanded ? "chevron.up" : "chevron.down", withConfiguration: symbolConfig)?.withRenderingMode(.alwaysTemplate)
+        chevronImageView.tintColor = isExpanded ? themeColor : (isNight ? UIColor.white.withAlphaComponent(0.7) : UIColor(white: 0.35, alpha: 1))
+        menuImageView.image = UIImage(systemName: "ellipsis", withConfiguration: symbolConfig)?.withRenderingMode(.alwaysTemplate)
         menuImageView.tintColor = menuTint
+
+        let circleFill = isNight ? UIColor.white.withAlphaComponent(0.12) : UIColor(red: 0.90, green: 0.93, blue: 0.97, alpha: 1)
+        menuCircle.backgroundColor = circleFill
+        chevronCircle.backgroundColor = circleFill
 
         cardView.backgroundColor = isNight ? DarkModeColor : .white
         let border = isExpanded
@@ -141,8 +152,8 @@ final class ExplanationLibraryCell: UICollectionViewCell {
             verseHeight = min(full, ceil(verseFont.lineHeight * 2))
         }
 
-        // pads + header + verse + bottom pad
-        var height: CGFloat = 8 + 14 + 22 + 8 + verseHeight + 14 + 8
+        // pads + header (action circles) + verse + bottom pad
+        var height: CGFloat = 8 + 12 + Self.actionCircleSize + 8 + verseHeight + 14 + 8
 
         if isExpanded {
             let paragraph = NSMutableParagraphStyle()
@@ -176,15 +187,28 @@ final class ExplanationLibraryCell: UICollectionViewCell {
         referenceLabel.textAlignment = .left
         cardView.addSubview(referenceLabel)
 
+        func styleCircle(_ view: UIView) {
+            view.translatesAutoresizingMaskIntoConstraints = false
+            view.layer.cornerRadius = Self.actionCircleSize / 2
+            view.clipsToBounds = true
+            view.isUserInteractionEnabled = false
+            cardView.addSubview(view)
+        }
+        styleCircle(chevronCircle)
+        styleCircle(menuCircle)
+
         chevronImageView.translatesAutoresizingMaskIntoConstraints = false
         chevronImageView.contentMode = .scaleAspectFit
+        chevronImageView.isUserInteractionEnabled = false
         cardView.addSubview(chevronImageView)
 
         menuImageView.translatesAutoresizingMaskIntoConstraints = false
         menuImageView.contentMode = .scaleAspectFit
+        menuImageView.isUserInteractionEnabled = false
         cardView.addSubview(menuImageView)
 
         menuBtn.translatesAutoresizingMaskIntoConstraints = false
+        menuBtn.accessibilityLabel = "More"
         cardView.addSubview(menuBtn)
 
         verseLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -214,27 +238,37 @@ final class ExplanationLibraryCell: UICollectionViewCell {
             cardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
             cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
 
-            chevronImageView.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
-            chevronImageView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
-            chevronImageView.widthAnchor.constraint(equalToConstant: 14),
-            chevronImageView.heightAnchor.constraint(equalToConstant: 14),
+            chevronCircle.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
+            chevronCircle.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -12),
+            chevronCircle.widthAnchor.constraint(equalToConstant: Self.actionCircleSize),
+            chevronCircle.heightAnchor.constraint(equalToConstant: Self.actionCircleSize),
 
-            menuImageView.centerYAnchor.constraint(equalTo: chevronImageView.centerYAnchor),
-            menuImageView.trailingAnchor.constraint(equalTo: chevronImageView.leadingAnchor, constant: -10),
-            menuImageView.widthAnchor.constraint(equalToConstant: 16),
-            menuImageView.heightAnchor.constraint(equalToConstant: 16),
+            chevronImageView.centerXAnchor.constraint(equalTo: chevronCircle.centerXAnchor),
+            chevronImageView.centerYAnchor.constraint(equalTo: chevronCircle.centerYAnchor),
+            chevronImageView.widthAnchor.constraint(equalToConstant: 20),
+            chevronImageView.heightAnchor.constraint(equalToConstant: 20),
 
-            menuBtn.centerXAnchor.constraint(equalTo: menuImageView.centerXAnchor),
-            menuBtn.centerYAnchor.constraint(equalTo: menuImageView.centerYAnchor),
-            menuBtn.widthAnchor.constraint(equalToConstant: 36),
-            menuBtn.heightAnchor.constraint(equalToConstant: 36),
+            menuCircle.centerYAnchor.constraint(equalTo: chevronCircle.centerYAnchor),
+            menuCircle.trailingAnchor.constraint(equalTo: chevronCircle.leadingAnchor, constant: -8),
+            menuCircle.widthAnchor.constraint(equalToConstant: Self.actionCircleSize),
+            menuCircle.heightAnchor.constraint(equalToConstant: Self.actionCircleSize),
 
-            referenceLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 14),
+            menuImageView.centerXAnchor.constraint(equalTo: menuCircle.centerXAnchor),
+            menuImageView.centerYAnchor.constraint(equalTo: menuCircle.centerYAnchor),
+            menuImageView.widthAnchor.constraint(equalToConstant: 20),
+            menuImageView.heightAnchor.constraint(equalToConstant: 20),
+
+            menuBtn.centerXAnchor.constraint(equalTo: menuCircle.centerXAnchor),
+            menuBtn.centerYAnchor.constraint(equalTo: menuCircle.centerYAnchor),
+            menuBtn.widthAnchor.constraint(equalToConstant: Self.actionHitSize),
+            menuBtn.heightAnchor.constraint(equalToConstant: Self.actionHitSize),
+
+            referenceLabel.centerYAnchor.constraint(equalTo: chevronCircle.centerYAnchor),
             referenceLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 14),
-            referenceLabel.trailingAnchor.constraint(equalTo: menuImageView.leadingAnchor, constant: -8),
+            referenceLabel.trailingAnchor.constraint(equalTo: menuCircle.leadingAnchor, constant: -8),
             referenceLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 22),
 
-            verseLabel.topAnchor.constraint(equalTo: referenceLabel.bottomAnchor, constant: 8),
+            verseLabel.topAnchor.constraint(equalTo: chevronCircle.bottomAnchor, constant: 10),
             verseLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 14),
             verseLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
 

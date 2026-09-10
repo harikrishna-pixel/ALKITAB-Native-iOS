@@ -378,7 +378,6 @@ struct ChallengeOldStyleShell<Content: View>: View {
     var contentScrollDisabled: Bool = false
     @ViewBuilder var content: () -> Content
 
-    @Environment(\.challengeSwitchAction) private var onChangeChallenge
     @State private var refreshTick = 0
 
     private var accent: Color { ChallengeQuizTheme.accent }
@@ -501,22 +500,6 @@ struct ChallengeOldStyleShell<Content: View>: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
             Spacer(minLength: 4)
-            if let onChangeChallenge {
-                Button(action: onChangeChallenge) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.system(size: 12, weight: .semibold))
-                        Text("Change")
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.white.opacity(0.22))
-                    .cornerRadius(14)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
             coinPill
         }
         .padding(.horizontal, 12)

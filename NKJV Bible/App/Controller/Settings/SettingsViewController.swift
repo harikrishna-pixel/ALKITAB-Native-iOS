@@ -7,6 +7,7 @@
 
 import UIKit
 import StoreKit
+import SwiftUI
 
 class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, Setting {
 
@@ -108,7 +109,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 return 0
             }
         } else if section == 15 {
-            return UserDefaults.standard.bool(forKey: "OnboardingLoggedIn") ? 1 : 0
+            return 1
         } else if section == 8 {
             // Open Chat hidden from Settings
             return 0
@@ -307,7 +308,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
               return UITableViewCell()
           }
           self.SettingsCell = cell
-          cell.Feedback?.text = "Log Out"
+          cell.Feedback?.text = "Profile"
           cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
           if let arrow = cell.arrow2 {
               ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
@@ -395,7 +396,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                  }
 
       case 15:
-          self.confirmLogOut()
+          self.openProfile()
           
       default:
         break
@@ -534,6 +535,16 @@ extension SettingsViewController {
         } else {
             self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
         }
+    }
+
+    @objc func openProfile() {
+        let root = AuthHubProfileView(onBack: { [weak self] in
+            self?.navigationController?.popViewController(animated: true)
+            self?.dismiss(animated: true, completion: nil)
+        })
+        let host = UIHostingController(rootView: root)
+        host.title = "Profile"
+        navigationController?.pushViewController(host, animated: true)
     }
 
     @objc func confirmLogOut() {

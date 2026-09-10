@@ -59,11 +59,11 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     private var getExplanationAdded = false
     private var actionRowPinned = false
     private var bottomRowAligned = false
-    private static let getExplanationTopInset: CGFloat = 12
+    private static let getExplanationTopInset: CGFloat = 8
     private static let getExplanationHorizontalInset: CGFloat = 20
-    private static let getExplanationButtonHeight: CGFloat = 44
-    private static let getExplanationBookNameGap: CGFloat = 4
-    private static let bookNameActionRowGap: CGFloat = 4
+    private static let getExplanationButtonHeight: CGFloat = 40
+    private static let getExplanationBookNameGap: CGFloat = 2
+    private static let bookNameActionRowGap: CGFloat = 2
     private static var getExplanationExtraHeight: CGFloat {
         getExplanationTopInset + getExplanationButtonHeight + getExplanationBookNameGap
     }
@@ -116,7 +116,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         
         self.BookNameTxt.text =  "\(BookName)-\(Pageindex-1):\(VersePosition)"
         
-        FrameHeight.constant = (isIpad ? 380 : 360) + Self.getExplanationExtraHeight
+        FrameHeight.constant = (isIpad ? 368 : 348) + Self.getExplanationExtraHeight
         getExplanationButton?.backgroundColor = Themecolor
         
         
@@ -199,6 +199,15 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         button.backgroundColor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
         button.layer.cornerRadius = 10
         button.clipsToBounds = true
+        // Mild AI cue (same symbol language as AI Chat).
+        let symbolConfig = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+        if let aiIcon = UIImage(systemName: "sparkles", withConfiguration: symbolConfig) {
+            button.setImage(aiIcon, for: .normal)
+            button.tintColor = UIColor.white.withAlphaComponent(0.95)
+            button.semanticContentAttribute = .forceLeftToRight
+            button.imageEdgeInsets = UIEdgeInsets(top: 0, left: -2, bottom: 0, right: 6)
+            button.titleEdgeInsets = UIEdgeInsets(top: 0, left: 6, bottom: 0, right: -2)
+        }
         button.addTarget(self, action: #selector(GetExplanationAction(_:)), for: .touchUpInside)
         MainView.addSubview(button)
         getExplanationButton = button
