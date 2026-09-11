@@ -51,189 +51,7 @@ struct BibleSubscriptionView: View {
     private let exitOfferTimerDuration = 600 // 10 minutes in seconds
     
     var body: some View {
-        ZStack {
-            // Bounce/overscroll fill
-            Color(hex: "061228").ignoresSafeArea()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .allowsHitTesting(false)
-            
-            GeometryReader { geo in
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        // Space for pinned close overlay (button is outside ScrollView so it stays visible).
-                        Color.clear
-                            .frame(height: 34)
-                            .padding(.horizontal, isPad ? 28 : 18)
-                            .padding(.top, topSafeInset + 8)
-                        
-                        VStack(spacing: isPad ? 4 : 2) {
-                            Text("Go Deeper")
-                                .foregroundColor(.white)
-                            Text("in God's Word")
-                                .foregroundColor(Color(hex: "F0C75E"))
-                        }
-                        .font(.system(size: isPad ? 36 : (isSmallDevice ? 26 : 30), weight: .bold, design: .serif))
-                        .multilineTextAlignment(.center)
-                        .shadow(color: Color.black.opacity(0.35), radius: 2, x: 0, y: 1)
-                        .padding(.horizontal, 24)
-                        .padding(.top, isPad ? 8 : 28)
-                        
-                        VStack(spacing: 2) {
-                            Text("Powerful study tools to help you")
-                            Text("read, understand and grow.")
-                        }
-                        .font(.system(size: isPad ? 16 : (isSmallDevice ? 12 : 13), weight: .medium))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .shadow(color: Color.black.opacity(0.5), radius: 3, x: 0, y: 1)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 28)
-                        .padding(.top, isPad ? 8 : 6)
-                        
-                        // Tighter gap so features / plans / CTA sit a bit higher (closer to old layout).
-                        if isPad {
-                            Spacer(minLength: 20)
-                        } else {
-                            Color.clear
-                                .frame(height: isSmallDevice ? 72 : 88)
-                        }
-                        
-                        LazyVGrid(columns: [
-                            GridItem(.flexible(), spacing: isPad ? 12 : 8),
-                            GridItem(.flexible(), spacing: isPad ? 12 : 8),
-                            GridItem(.flexible(), spacing: isPad ? 12 : 8)
-                        ], spacing: isPad ? 12 : 8) {
-                            PaywallFeatureTile(systemIcon: "doc.text.magnifyingglass", iconColor: Color(hex: "4DA3FF"), title: "Unlimited AI Explanations")
-                            PaywallFeatureTile(systemIcon: "doc.plaintext", iconColor: Color(hex: "4CD964"), title: "Unlimited Chapter Summaries")
-                            PaywallFeatureTile(systemIcon: "bubble.left.and.bubble.right.fill", iconColor: Color(hex: "B07CFF"), title: "Ask Bible AI")
-                            PaywallFeatureTile(systemIcon: "gamecontroller.fill", iconColor: Color(hex: "FF9F0A"), title: "Unlimited Quiz Generation")
-                            PaywallFeatureTile(systemIcon: "nosign", iconColor: Color(hex: "FF453A"), title: "Ad-Free Reading")
-                            PaywallFeatureTile(systemIcon: "book.fill", iconColor: Color(hex: "64D2FF"), title: "Clean Reading Experience")
-                        }
-                        .padding(.horizontal, isPad ? 8 : 14)
-                        .padding(.bottom, isPad ? 8 : 8)
-                        
-                        if isPad {
-                            Spacer(minLength: 16)
-                        }
-                        
-                        PaywallPlanAndCTASection(
-                            planSelection: planSelection,
-                            storeManager: storeManager,
-                            monthlyPriceDisplay: monthlyPriceDisplay,
-                            yearlyPriceDisplay: yearlyPriceDisplay,
-                            lifetimePriceDisplay: lifetimePriceDisplay,
-                            yearlySaveLine: yearlySaveLine,
-                            yearlyPerMonthLine: yearlyPerMonthLine,
-                            isPad: isPad,
-                            isSmallDevice: isSmallDevice,
-                            onPurchase: { handlePurchaseAction() }
-                        )
-                        
-                        if isPad {
-                            Spacer(minLength: 16)
-                        }
-                        
-                        HStack(spacing: 20) {
-                            Label("Cancel anytime", systemImage: "checkmark.shield.fill")
-                            Label("Secure payment", systemImage: "lock.fill")
-                        }
-                        .font(.system(size: isPad ? 13 : 12, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.85))
-                        .padding(.bottom, isPad ? 10 : 8)
-                        
-                        HStack(spacing: 8) {
-                            Button("Terms of Use") {
-                                storeManager.openTerms()
-                            }
-                            Text("|").foregroundColor(Color.white.opacity(0.35))
-                            Button("Privacy Policy") {
-                                storeManager.openPrivacy()
-                            }
-                            Text("|").foregroundColor(Color.white.opacity(0.35))
-                            Button("Restore Purchase") {
-                                showLoader = true
-                                storeManager.restorePurchases()
-                            }
-                            .disabled(storeManager.isLoading)
-                        }
-                        .font(.system(size: isPad ? 13 : 12, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.7))
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, isPad ? max(geo.safeAreaInsets.bottom, 16) + 8 : 24)
-                        
-                        if isPad {
-                            Spacer(minLength: 8)
-                        }
-                    }
-                    .frame(maxWidth: isPad ? 720 : .infinity)
-                    .frame(
-                        maxWidth: .infinity,
-                        minHeight: geo.size.height,
-                        alignment: isPad ? .center : .top
-                    )
-                    .padding(.horizontal, isPad ? 48 : 0)
-                    // Glow fills under status bar at rest; scrolls away so navy shows.
-                    .background(
-                        Image("paywall_bible_glow")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: geo.size.width, height: geo.size.height)
-                            .clipped()
-                            .allowsHitTesting(false),
-                        alignment: .top
-                    )
-                }
-                .frame(width: geo.size.width, height: geo.size.height)
-                .ignoresSafeArea(edges: .top)
-            }
-            .ignoresSafeArea(edges: .top)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            if showLoader {
-                ZStack {
-                    Color.black.opacity(0.35).ignoresSafeArea()
-                    
-                    VStack(spacing: 16) {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(1.2)
-                        Text("Processing...")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                    }
-                    .padding(30)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .zIndex(60)
-            }
-            
-            // MARK: - Exit Offer Modal
-            // Only show exit offer if prices are available (shouldShowExitOffer already checks this)
-            if showExitOffer && !storeManager.exitOfferPrice.isEmpty && !storeManager.exitOfferOriginalPrice.isEmpty {
-            }
-        }
-        // Pinned to the window (not the scroll view). ignoresSafeArea so it does not
-        // jump when the scroll view's safe-area insets change.
-        .overlay(alignment: .topTrailing) {
-            Button(action: handlePaywallCloseTap) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 34, height: 34)
-                    .background(Color.white.opacity(0.22))
-                    .clipShape(Circle())
-                    .contentShape(Circle())
-            }
-            .buttonStyle(PlainButtonStyle())
-            .fixedSize()
-            .accessibilityLabel("Close")
-            .opacity(showCloseButton ? 1 : 0)
-            .disabled(!showCloseButton)
-            .padding(.trailing, isPad ? 28 : 18)
-            .padding(.top, topSafeInset + 8)
-            .ignoresSafeArea()
-        }
+        paywallRoot
         .navigationBarHidden(true)
         
         .onAppear {
@@ -297,6 +115,90 @@ struct BibleSubscriptionView: View {
             exitOfferTimerTask?.cancel()
             exitOfferTimerTask = nil
         }
+    }
+    
+    private var paywallRoot: some View {
+        ZStack {
+            Color(hex: "061228").ignoresSafeArea()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .allowsHitTesting(false)
+            
+            GeometryReader { geo in
+                ScrollView(showsIndicators: false) {
+                    PaywallScrollStackView(
+                        planSelection: planSelection,
+                        storeManager: storeManager,
+                        monthlyPriceDisplay: monthlyPriceDisplay,
+                        yearlyPriceDisplay: yearlyPriceDisplay,
+                        lifetimePriceDisplay: lifetimePriceDisplay,
+                        yearlySaveLine: yearlySaveLine,
+                        yearlyPerMonthLine: yearlyPerMonthLine,
+                        isPad: isPad,
+                        isSmallDevice: isSmallDevice,
+                        topSafeInset: topSafeInset,
+                        geoSize: geo.size,
+                        bottomInset: geo.safeAreaInsets.bottom,
+                        onPurchase: { handlePurchaseAction() },
+                        onRestore: {
+                            showLoader = true
+                            storeManager.restorePurchases()
+                        }
+                    )
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+                .ignoresSafeArea(edges: .top)
+            }
+            .ignoresSafeArea(edges: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            if showLoader {
+                paywallLoaderOverlay
+            }
+            
+            if showExitOffer && !storeManager.exitOfferPrice.isEmpty && !storeManager.exitOfferOriginalPrice.isEmpty {
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            paywallCloseButton
+        }
+    }
+    
+    private var paywallLoaderOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.35).ignoresSafeArea()
+            VStack(spacing: 16) {
+                SwiftUI.ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(1.2)
+                Text("Processing...")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.white)
+            }
+            .padding(30)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .zIndex(60)
+    }
+    
+    private var paywallCloseButton: some View {
+        Button(action: handlePaywallCloseTap) {
+            Image(systemName: "xmark")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white)
+                .frame(width: 34, height: 34)
+                .background(Color.white.opacity(0.22))
+                .clipShape(Circle())
+                .contentShape(Circle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        .fixedSize()
+        .accessibilityLabel("Close")
+        .opacity(showCloseButton ? 1 : 0)
+        .disabled(!showCloseButton)
+        .padding(.trailing, isPad ? 28 : 18)
+        .padding(.top, topSafeInset + 8)
+        .ignoresSafeArea()
     }
     
     // MARK: - Paywall display helpers (UI only)
@@ -696,6 +598,159 @@ extension String {
             }
         }
         return trimmed
+    }
+}
+
+// MARK: - Paywall scroll stack (extracted so the compiler can type-check)
+@available(iOS 15.0, *)
+private struct PaywallScrollStackView: View {
+    @ObservedObject var planSelection: PaywallPlanSelection
+    @ObservedObject var storeManager: StoreManager
+    let monthlyPriceDisplay: String
+    let yearlyPriceDisplay: String
+    let lifetimePriceDisplay: String
+    let yearlySaveLine: String
+    let yearlyPerMonthLine: String
+    let isPad: Bool
+    let isSmallDevice: Bool
+    let topSafeInset: CGFloat
+    let geoSize: CGSize
+    let bottomInset: CGFloat
+    let onPurchase: () -> Void
+    let onRestore: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            closeSpacer
+            titleBlock
+            subtitleBlock
+            featureSpacing
+            featureGrid
+            if isPad { Spacer(minLength: 16) }
+            planAndCTA
+            if isPad { Spacer(minLength: 16) }
+            trustRow
+            legalRow
+            if isPad { Spacer(minLength: 8) }
+        }
+        .frame(maxWidth: isPad ? 720 : .infinity)
+        .frame(maxWidth: .infinity, minHeight: geoSize.height, alignment: isPad ? .center : .top)
+        .padding(.horizontal, isPad ? 48 : 0)
+        .background(glowBackground, alignment: .top)
+    }
+
+    private var closeSpacer: some View {
+        Color.clear
+            .frame(height: 34)
+            .padding(.horizontal, isPad ? 28 : 18)
+            .padding(.top, topSafeInset + 8)
+    }
+
+    private var titleBlock: some View {
+        VStack(spacing: isPad ? 4 : 2) {
+            Text("Go Deeper").foregroundColor(.white)
+            Text("in God's Word").foregroundColor(Color(hex: "F0C75E"))
+        }
+        .font(.system(size: isPad ? 36 : (isSmallDevice ? 26 : 30), weight: .bold, design: .serif))
+        .multilineTextAlignment(.center)
+        .shadow(color: Color.black.opacity(0.35), radius: 2, x: 0, y: 1)
+        .padding(.horizontal, 24)
+        .padding(.top, isPad ? 8 : 28)
+    }
+
+    private var subtitleBlock: some View {
+        VStack(spacing: 2) {
+            Text("Powerful study tools to help you")
+            Text("read, understand and grow.")
+        }
+        .font(.system(size: isPad ? 16 : (isSmallDevice ? 12 : 13), weight: .medium))
+        .foregroundColor(.white)
+        .multilineTextAlignment(.center)
+        .shadow(color: Color.black.opacity(0.5), radius: 3, x: 0, y: 1)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, 28)
+        .padding(.top, isPad ? 8 : 6)
+    }
+
+    @ViewBuilder
+    private var featureSpacing: some View {
+        if isPad {
+            Spacer(minLength: 20)
+        } else {
+            Color.clear.frame(height: isSmallDevice ? 72 : 88)
+        }
+    }
+
+    private var featureGrid: some View {
+        LazyVGrid(columns: [
+            GridItem(.flexible(), spacing: isPad ? 12 : 8),
+            GridItem(.flexible(), spacing: isPad ? 12 : 8),
+            GridItem(.flexible(), spacing: isPad ? 12 : 8)
+        ], spacing: isPad ? 12 : 8) {
+            PaywallFeatureTile(systemIcon: "doc.text.magnifyingglass", iconColor: Color(hex: "4DA3FF"), title: "Unlimited AI Explanations")
+            PaywallFeatureTile(systemIcon: "doc.plaintext", iconColor: Color(hex: "4CD964"), title: "Unlimited Chapter Summaries")
+            PaywallFeatureTile(systemIcon: "bubble.left.and.bubble.right.fill", iconColor: Color(hex: "B07CFF"), title: "Ask Bible AI")
+            PaywallFeatureTile(systemIcon: "gamecontroller.fill", iconColor: Color(hex: "FF9F0A"), title: "Unlimited Quiz Generation")
+            PaywallFeatureTile(systemIcon: "nosign", iconColor: Color(hex: "FF453A"), title: "Ad-Free Reading")
+            PaywallFeatureTile(systemIcon: "book.fill", iconColor: Color(hex: "64D2FF"), title: "Clean Reading Experience")
+        }
+        .padding(.horizontal, isPad ? 8 : 14)
+        .padding(.bottom, isPad ? 8 : 8)
+    }
+
+    private var planAndCTA: some View {
+        PaywallPlanAndCTASection(
+            planSelection: planSelection,
+            storeManager: storeManager,
+            monthlyPriceDisplay: monthlyPriceDisplay,
+            yearlyPriceDisplay: yearlyPriceDisplay,
+            lifetimePriceDisplay: lifetimePriceDisplay,
+            yearlySaveLine: yearlySaveLine,
+            yearlyPerMonthLine: yearlyPerMonthLine,
+            isPad: isPad,
+            isSmallDevice: isSmallDevice,
+            onPurchase: onPurchase
+        )
+    }
+
+    private var trustRow: some View {
+        HStack(spacing: 20) {
+            Label("Cancel anytime", systemImage: "checkmark.shield.fill")
+            Label("Secure payment", systemImage: "lock.fill")
+        }
+        .font(.system(size: isPad ? 13 : 12, weight: .medium))
+        .foregroundColor(Color.white.opacity(0.85))
+        .padding(.bottom, isPad ? 10 : 8)
+    }
+
+    private var legalRow: some View {
+        HStack(spacing: 8) {
+            Button(action: { storeManager.openTerms() }) {
+                Text("Terms of Use")
+            }
+            Text("|")
+            Button(action: { storeManager.openPrivacy() }) {
+                Text("Privacy Policy")
+            }
+            Text("|")
+            Button(action: onRestore) {
+                Text("Restore Purchase")
+            }
+            .disabled(storeManager.isLoading)
+        }
+        .font(.system(size: isPad ? 13 : 12, weight: .medium))
+        .foregroundColor(Color.white.opacity(0.7))
+        .padding(.horizontal, 16)
+        .padding(.bottom, isPad ? max(bottomInset, 16) + 8 : 24)
+    }
+
+    private var glowBackground: some View {
+        Image("paywall_bible_glow")
+            .resizable()
+            .scaledToFill()
+            .frame(width: geoSize.width, height: geoSize.height)
+            .clipped()
+            .allowsHitTesting(false)
     }
 }
 
