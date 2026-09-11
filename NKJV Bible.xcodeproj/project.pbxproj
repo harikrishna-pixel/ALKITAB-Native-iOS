@@ -3651,6 +3651,7 @@
 			buildConfigurationList = 01370BF02941E68F0042B718 /* Build configuration list for PBXNativeTarget "ALKITAB Bible" */;
 			buildPhases = (
 				8563E6A7AD5432E1CF13A7F5 /* [CP] Check Pods Manifest.lock */,
+				A1B2C3D42F46A10100000091 /* Ensure AuthHubSecrets.swift */,
 				01370BD52941E68C0042B718 /* Sources */,
 				01370BD62941E68C0042B718 /* Frameworks */,
 				01370BD72941E68C0042B718 /* Resources */,
@@ -4116,6 +4117,28 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		A1B2C3D42F46A10100000091 /* Ensure AuthHubSecrets.swift */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/NewOnboarding/AuthHubSecrets.example.swift",
+			);
+			name = "Ensure AuthHubSecrets.swift";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/NewOnboarding/AuthHubSecrets.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "SECRETS=\"${SRCROOT}/NewOnboarding/AuthHubSecrets.swift\"\nEXAMPLE=\"${SRCROOT}/NewOnboarding/AuthHubSecrets.example.swift\"\nif [ ! -f \"$SECRETS\" ]; then\n  if [ ! -f \"$EXAMPLE\" ]; then\n    echo \"error: AuthHubSecrets.swift is missing and AuthHubSecrets.example.swift was not found.\" >&2\n    exit 1\n  fi\n  cp \"$EXAMPLE\" \"$SECRETS\"\n  echo \"warning: Created NewOnboarding/AuthHubSecrets.swift from the example stub. Fill in AuthHub credentials.\"\nfi\n";
+			showEnvVarsInLog = 0;
+		};
 		3B737897E87FDC12C234B0C0 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
