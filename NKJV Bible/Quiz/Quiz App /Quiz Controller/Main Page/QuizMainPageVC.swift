@@ -523,7 +523,9 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
             }
             
             DispatchQueue.main.async {
-                if self.SelectedVc {
+                if self.navigationController?.viewControllers.contains(where: { $0 is QuizOrChallengeChooserViewController }) == true {
+                    self.navigationController?.popToViewController(ofClass: QuizOrChallengeChooserViewController.self)
+                } else if self.SelectedVc {
                     self.navigationController?.popToViewController(ofClass: SelectionViewController.self)
                 } else {
                     self.navigationController?.popToViewController(ofClass: ReaderViewController.self)

@@ -12,8 +12,7 @@ struct BibleSubscriptionView: View {
     @Environment(\.dismiss) private var dismiss
     
     @StateObject private var storeManager = StoreManager()
-    
-    @State private var selectedPlan: SubscriptionPlan = .yearly
+    @StateObject private var planSelection = PaywallPlanSelection()
     @State private var showLoader = false
     @State private var shouldNavigateToReader = false
     @State private var showCloseButton = true
@@ -55,6 +54,8 @@ struct BibleSubscriptionView: View {
         ZStack {
             // Bounce/overscroll fill
             Color(hex: "061228").ignoresSafeArea()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .allowsHitTesting(false)
             
             GeometryReader { geo in
                 ScrollView(showsIndicators: false) {
@@ -116,73 +117,22 @@ struct BibleSubscriptionView: View {
                             Spacer(minLength: 16)
                         }
                         
-                        HStack(alignment: .top, spacing: isPad ? 14 : 8) {
-                            PaywallPlanCardView(
-                                style: .monthly,
-                                title: "Monthly",
-                                priceLine: monthlyPriceDisplay,
-                                secondaryLine: "3-Day Free Trial",
-                                tertiaryLine: "You won't be charged today",
-                                isSelected: selectedPlan == .monthly,
-                                isLoading: storeManager.isLoading1,
-                                action: { selectedPlan = .monthly }
-                            )
-                            
-                            PaywallPlanCardView(
-                                style: .yearly,
-                                title: "Yearly",
-                                priceLine: yearlyPriceDisplay,
-                                secondaryLine: yearlySaveLine,
-                                tertiaryLine: yearlyPerMonthLine,
-                                isSelected: selectedPlan == .yearly,
-                                isLoading: storeManager.isLoading2,
-                                action: { selectedPlan = .yearly }
-                            )
-                            
-                            PaywallPlanCardView(
-                                style: .lifetime,
-                                title: "Lifetime Study",
-                                priceLine: lifetimePriceDisplay,
-                                secondaryLine: "One-time payment",
-                                tertiaryLine: "Ad-free reading only AI features use credits",
-                                isSelected: selectedPlan == .lifetime,
-                                isLoading: storeManager.isLoading3,
-                                action: { selectedPlan = .lifetime }
-                            )
-                        }
-                        .padding(.horizontal, isPad ? 8 : 12)
-                        .padding(.top, isPad ? 4 : 2)
-                        .padding(.bottom, isPad ? 8 : 10)
+                        PaywallPlanAndCTASection(
+                            planSelection: planSelection,
+                            storeManager: storeManager,
+                            monthlyPriceDisplay: monthlyPriceDisplay,
+                            yearlyPriceDisplay: yearlyPriceDisplay,
+                            lifetimePriceDisplay: lifetimePriceDisplay,
+                            yearlySaveLine: yearlySaveLine,
+                            yearlyPerMonthLine: yearlyPerMonthLine,
+                            isPad: isPad,
+                            isSmallDevice: isSmallDevice,
+                            onPurchase: { handlePurchaseAction() }
+                        )
                         
                         if isPad {
                             Spacer(minLength: 16)
                         }
-                        
-                        Button(action: {
-                            handlePurchaseAction()
-                        }) {
-                            HStack(spacing: 8) {
-                                Text(ctaTitle)
-                                    .font(.system(size: isPad ? 18 : 17, weight: .bold))
-                                Image(systemName: "arrow.right")
-                                    .font(.system(size: 15, weight: .bold))
-                            }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: isPad ? 56 : (isSmallDevice ? 48 : 52))
-                            .background(Color(hex: "2F6BFF"))
-                            .cornerRadius(16)
-                        }
-                        .padding(.horizontal, isPad ? 8 : 18)
-                        .padding(.bottom, isPad ? 12 : 8)
-                        .disabled(storeManager.isLoading)
-                        
-                        Text(ctaSubtitle)
-                            .font(.system(size: isPad ? 13 : 12, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.8))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, isPad ? 10 : 8)
                         
                         HStack(spacing: 20) {
                             Label("Cancel anytime", systemImage: "checkmark.shield.fill")
@@ -229,7 +179,8 @@ struct BibleSubscriptionView: View {
                             .resizable()
                             .scaledToFill()
                             .frame(width: geo.size.width, height: geo.size.height)
-                            .clipped(),
+                            .clipped()
+                            .allowsHitTesting(false),
                         alignment: .top
                     )
                 }
@@ -237,13 +188,15 @@ struct BibleSubscriptionView: View {
                 .ignoresSafeArea(edges: .top)
             }
             .ignoresSafeArea(edges: .top)
-            
-            // MARK: - Loader Overlay (purchase/restore only — not product price loading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             if showLoader {
                 ZStack {
                     Color.black.opacity(0.35).ignoresSafeArea()
                     
                     VStack(spacing: 16) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.2)
                         Text("Processing...")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
@@ -251,36 +204,35 @@ struct BibleSubscriptionView: View {
                     .padding(30)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .zIndex(60)
             }
             
             // MARK: - Exit Offer Modal
             // Only show exit offer if prices are available (shouldShowExitOffer already checks this)
             if showExitOffer && !storeManager.exitOfferPrice.isEmpty && !storeManager.exitOfferOriginalPrice.isEmpty {
             }
-            
-            // MARK: - Close (top-most so it stays visible above scroll + loader)
-            VStack {
-                HStack {
-                    Spacer()
-                    Button(action: handlePaywallCloseTap) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 34, height: 34)
-                            .background(Color.white.opacity(0.22))
-                            .clipShape(Circle())
-                    }
-                    .accessibilityLabel("Close")
-                    .opacity(showCloseButton ? 1 : 0)
-                    .disabled(!showCloseButton)
-                }
-                .padding(.horizontal, isPad ? 28 : 18)
-                .padding(.top, topSafeInset + 8)
-                Spacer(minLength: 0)
+        }
+        // Pinned to the window (not the scroll view). ignoresSafeArea so it does not
+        // jump when the scroll view's safe-area insets change.
+        .overlay(alignment: .topTrailing) {
+            Button(action: handlePaywallCloseTap) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 34, height: 34)
+                    .background(Color.white.opacity(0.22))
+                    .clipShape(Circle())
+                    .contentShape(Circle())
             }
-            .ignoresSafeArea(edges: .top)
-            .zIndex(50)
-            
+            .buttonStyle(PlainButtonStyle())
+            .fixedSize()
+            .accessibilityLabel("Close")
+            .opacity(showCloseButton ? 1 : 0)
+            .disabled(!showCloseButton)
+            .padding(.trailing, isPad ? 28 : 18)
+            .padding(.top, topSafeInset + 8)
+            .ignoresSafeArea()
         }
         .navigationBarHidden(true)
         
@@ -322,6 +274,17 @@ struct BibleSubscriptionView: View {
         .onChange(of: shouldNavigateToReader) { newValue in
             if newValue {
                 navigateToReaderViewController()
+            }
+        }
+        .onChange(of: storeManager.showAlert) { showing in
+            if showing {
+                showLoader = false
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            // Apple purchase sheet is on screen — hide the paywall loader.
+            if showLoader {
+                showLoader = false
             }
         }
         .onChange(of: storeManager.isLoading2) { _ in skipPaywallIfMissingPrices() }
@@ -370,22 +333,6 @@ struct BibleSubscriptionView: View {
         let save = Int(((m * 12) - y).rounded())
         let symbol = yearly.cleanPrice().prefix { !$0.isNumber && $0 != "." && $0 != "," }
         return "Save \(symbol)\(save)"
-    }
-    
-    private var ctaTitle: String {
-        selectedPlan == .lifetime ? "Continue" : "Start 3-Day Free Trial"
-    }
-    
-    private var ctaSubtitle: String {
-        if selectedPlan == .lifetime {
-            return "One-time purchase • Lifetime access"
-        }
-        let monthly = storeManager.price1.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag1") ?? "") : storeManager.price1
-        if selectedPlan == .yearly {
-            let yearly = storeManager.price2.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag2") ?? "") : storeManager.price2
-            return "Then \(yearly.isEmpty ? "—" : yearly.cleanPrice())/year. Auto-renews unless cancelled."
-        }
-        return "Then \(monthly.isEmpty ? "—" : monthly.cleanPrice())/month. Auto-renews unless cancelled."
     }
     
     // MARK: - Setup StoreManager
@@ -455,11 +402,11 @@ struct BibleSubscriptionView: View {
     private func handlePurchaseAction() {
         showLoader = true
         
-        if selectedPlan == .monthly {
+        if planSelection.plan == .monthly {
             storeManager.purchaseProduct(with: SUBSCRIPTIONID_Six_month)
-        } else if selectedPlan == .yearly {
+        } else if planSelection.plan == .yearly {
             storeManager.purchaseProduct(with: SUBSCRIPTIONID_OneYear)
-        } else if selectedPlan == .lifetime {
+        } else if planSelection.plan == .lifetime {
             storeManager.purchaseProduct(with: SUBSCRIPTIONID_LifeTime)
         }
     }
@@ -794,6 +741,103 @@ struct PaywallFeatureTile: View {
     }
 }
 
+@available(iOS 15.0, *)
+private struct PaywallPlanAndCTASection: View {
+    @ObservedObject var planSelection: PaywallPlanSelection
+    @ObservedObject var storeManager: StoreManager
+    let monthlyPriceDisplay: String
+    let yearlyPriceDisplay: String
+    let lifetimePriceDisplay: String
+    let yearlySaveLine: String
+    let yearlyPerMonthLine: String
+    let isPad: Bool
+    let isSmallDevice: Bool
+    let onPurchase: () -> Void
+
+    private var ctaTitle: String {
+        switch planSelection.plan {
+        case .lifetime:
+            return "Continue"
+        case .monthly, .yearly:
+            return "Start 3-Day Free Trial"
+        }
+    }
+
+    private var ctaSubtitle: String {
+        switch planSelection.plan {
+        case .lifetime:
+            return "One-time purchase • Lifetime access"
+        case .yearly:
+            let yearly = storeManager.price2.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag2") ?? "") : storeManager.price2
+            return "Then \(yearly.isEmpty ? "—" : yearly.cleanPrice())/year. Auto-renews unless cancelled."
+        case .monthly:
+            let monthly = storeManager.price1.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag1") ?? "") : storeManager.price1
+            return "Then \(monthly.isEmpty ? "—" : monthly.cleanPrice())/month. Auto-renews unless cancelled."
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: isPad ? 14 : 8) {
+                PaywallPlanCardView(
+                    style: .monthly,
+                    title: "Monthly",
+                    priceLine: monthlyPriceDisplay,
+                    secondaryLine: "3-Day Free Trial",
+                    tertiaryLine: "You won't be charged today",
+                    isLoading: storeManager.isLoading1,
+                    planSelection: planSelection
+                )
+                PaywallPlanCardView(
+                    style: .yearly,
+                    title: "Yearly",
+                    priceLine: yearlyPriceDisplay,
+                    secondaryLine: yearlySaveLine,
+                    tertiaryLine: yearlyPerMonthLine,
+                    isLoading: storeManager.isLoading2,
+                    planSelection: planSelection
+                )
+                PaywallPlanCardView(
+                    style: .lifetime,
+                    title: "Lifetime Study",
+                    priceLine: lifetimePriceDisplay,
+                    secondaryLine: "One-time payment",
+                    tertiaryLine: "Ad-free reading only AI features use credits",
+                    isLoading: storeManager.isLoading3,
+                    planSelection: planSelection
+                )
+            }
+            .padding(.horizontal, isPad ? 8 : 12)
+            .padding(.top, isPad ? 4 : 2)
+            .padding(.bottom, isPad ? 8 : 10)
+
+            Button(action: onPurchase) {
+                HStack(spacing: 8) {
+                    Text(ctaTitle)
+                        .font(.system(size: isPad ? 18 : 17, weight: .bold))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 15, weight: .bold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: isPad ? 56 : (isSmallDevice ? 48 : 52))
+                .background(Color(hex: "2F6BFF"))
+                .cornerRadius(16)
+            }
+            .padding(.horizontal, isPad ? 8 : 18)
+            .padding(.bottom, isPad ? 12 : 8)
+            .disabled(storeManager.isLoading)
+
+            Text(ctaSubtitle)
+                .font(.system(size: isPad ? 13 : 12, weight: .medium))
+                .foregroundColor(Color.white.opacity(0.8))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+                .padding(.bottom, isPad ? 10 : 8)
+        }
+    }
+}
+
 struct PaywallPlanCardView: View {
     enum Style {
         case monthly
@@ -806,17 +850,26 @@ struct PaywallPlanCardView: View {
     let priceLine: String
     let secondaryLine: String
     let tertiaryLine: String
-    let isSelected: Bool
     let isLoading: Bool
-    let action: () -> Void
+    @ObservedObject var planSelection: PaywallPlanSelection
 
     private var accent: Color { Color(hex: "2F6BFF") }
     private var isPad: Bool {
         UIDevice.current.userInterfaceIdiom == .pad
     }
+    private var plan: SubscriptionPlan {
+        switch style {
+        case .monthly: return .monthly
+        case .yearly: return .yearly
+        case .lifetime: return .lifetime
+        }
+    }
+    private var isSelected: Bool { planSelection.plan == plan }
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            planSelection.plan = plan
+        } label: {
             VStack(spacing: isPad ? 8 : 6) {
                 Text(title)
                     .font(.system(size: isPad ? 15 : 13, weight: .bold))
@@ -863,9 +916,10 @@ struct PaywallPlanCardView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? accent : Color.clear, lineWidth: isSelected ? 2.5 : 0)
+                    .stroke(isSelected ? accent : Color.black.opacity(0.12), lineWidth: isSelected ? 3 : 1)
             )
             .shadow(color: isSelected ? accent.opacity(0.45) : Color.black.opacity(0.15), radius: isSelected ? 10 : 4, y: 2)
+            .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(PlainButtonStyle())
         .overlay(alignment: .top) {
@@ -877,6 +931,7 @@ struct PaywallPlanCardView: View {
                     .padding(.vertical, 4)
                     .background(Capsule().fill(accent))
                     .offset(y: -12)
+                    .allowsHitTesting(false)
             }
         }
     }
@@ -1200,7 +1255,11 @@ struct LifetimePlanCard: View {
 
 
 
-enum SubscriptionPlan {
+final class PaywallPlanSelection: ObservableObject {
+    @Published var plan: SubscriptionPlan = .yearly
+}
+
+enum SubscriptionPlan: Equatable {
     case monthly
     case yearly
     case lifetime

@@ -308,7 +308,7 @@ class SelectionViewController: UIViewController, QuizSelect {
     
     
     @IBAction func Back(_ sender: Any) {
-        navigationController?.popToViewController(ofClass: ReaderViewController.self)
+        navigationController?.popToQuizHubIfPresent(fallback: ReaderViewController.self)
     }
     
     @IBAction func Start(_ sender: Any) {
@@ -354,7 +354,7 @@ class SelectionViewController: UIViewController, QuizSelect {
             verse: verse,
             sessionConfig: config,
             onClose: { [weak self] in
-                self?.navigationController?.popViewController(animated: true)
+                self?.navigationController?.popToQuizHubIfPresent(fallback: SelectionViewController.self)
             },
             onOpenLegacyQuiz: { [weak self] in
                 guard let self = self else { return }

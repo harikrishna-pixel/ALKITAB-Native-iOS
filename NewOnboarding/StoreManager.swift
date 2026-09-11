@@ -552,7 +552,9 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         hasRestoredTransactions = false
         isLoading = true
         
-        RestoreClass.shared.restoreData(NavigateStatus: false)
+        if RestoreClass.shared.SourceVC != nil {
+            RestoreClass.shared.restoreData(NavigateStatus: false)
+        }
         
         // FIXED: Add observer before restore
         SKPaymentQueue.default().add(self)
@@ -927,7 +929,6 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
             case .restored:
                 SKPaymentQueue.default().finishTransaction(transaction)
                 hasRestoredTransactions = true
-                self.SetPaymentDAte()
                 isLoading = false
                 
             case .deferred, .purchasing:
@@ -942,16 +943,38 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     func paymentQueueRestoreCompletedTransactionsFinished(_ queue: SKPaymentQueue) {
         isLoading = false
         
-        if hasRestoredTransactions {
-            showAlert(title: "Restore Successful", message: "Your purchases have been restored successfully!")
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                self.onRestoreSuccess?()
+        if !hasRestoredTransactions {
+            DispatchQueue.main.async {
+                self.showRestoreToast("No active plan is found")
+                self.onRestoreFailed?()
             }
-        } else {
-            showAlert(title: "No Purchases Found", message: "No previous purchases were found to restore.")
-            onRestoreFailed?()
+            return
         }
+        
+        PaymentHistory.sharedInstance.Getpayment(completion: {
+            DispatchQueue.main.async {
+                let endDate = CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI)
+                var isActive = false
+                if !endDate.isEmpty {
+                    let showDate1 = GetReceptKey.shared.convertData(date: endDate)
+                    let isLifetime = (IS_SUBSCRIPTION_ENABLE == 1 && SUBSCRIPTIONID_LifeTime != "" &&
+                                      UserDefaults.standard.string(forKey: "PaymentId") ?? "" == SUBSCRIPTIONID_LifeTime)
+                    isActive = showDate1.isGreaterThan(Date()) || isLifetime
+                }
+                
+                if isActive {
+                    App_Protocol.delegateReader?.paymentStatus()
+                    App_Protocol.DelegateSlideCard?.paymentStatus()
+                    ImageAppProtocol.ImageTxtEditDelegate?.CheckPay()
+                    self.showRestoreToast("Restored successfully! Valid till \(endDate)")
+                    self.onRestoreSuccess?()
+                    self.onPurchaseSuccess?()
+                } else {
+                    self.showRestoreToast("No active plan is found")
+                    self.onRestoreFailed?()
+                }
+            }
+        })
     }
     
     func paymentQueue(_ queue: SKPaymentQueue, restoreCompletedTransactionsFailedWithError error: Error) {
@@ -1009,6 +1032,14 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
                 exitOfferOriginalPrice = price3
             }
         }
+    }
+    
+    private func showRestoreToast(_ message: String) {
+        let window = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+        window?.rootViewController?.view.makeToast(message, duration: 2.0, position: .bottom)
     }
     
     private func calculateOriginalPrice(price: String, discount: Float) -> String {

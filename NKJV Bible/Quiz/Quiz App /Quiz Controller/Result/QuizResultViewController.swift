@@ -92,7 +92,7 @@ class QuizResultViewController: UIViewController {
     
     
     @IBAction func Back(_ sender: Any) {
-        navigationController?.popToViewController(ofClass: SelectionViewController.self)
+        navigationController?.popToQuizHubIfPresent(fallback: SelectionViewController.self)
 //        navigationController?.popViewController(animated: true)
     }
     
@@ -146,6 +146,14 @@ extension UINavigationController {
   func popToViewController(ofClass: AnyClass, animated: Bool = true) {
     if let vc = viewControllers.last(where: { $0.isKind(of: ofClass) }) {
       popToViewController(vc, animated: animated)
+    }
+  }
+
+  func popToQuizHubIfPresent(fallback: AnyClass, animated: Bool = true) {
+    if viewControllers.contains(where: { $0 is QuizOrChallengeChooserViewController }) {
+      popToViewController(ofClass: QuizOrChallengeChooserViewController.self, animated: animated)
+    } else {
+      popToViewController(ofClass: fallback, animated: animated)
     }
   }
 }

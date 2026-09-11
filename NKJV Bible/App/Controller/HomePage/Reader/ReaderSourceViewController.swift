@@ -223,10 +223,7 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
              // Ensure DotLine is visible (especially for iPad)
              cell.DotLine.isHidden = false
              
-             // Add dashed line after layout to ensure correct bounds
-             DispatchQueue.main.async {
-                 cell.DotLine.addDashedLine()
-             }
+             cell.DotLine.addDashedLine()
             
              if UserDefaults.standard.string(forKey: "SecondLanguage") ?? "" != ""  && APP_TYPE != "1" {
                  BibleTxt = "\n\n\(self.SecondBibleList.count > indexPath.row ? self.SecondBibleList[indexPath.row]:"")"

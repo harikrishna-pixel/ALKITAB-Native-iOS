@@ -44,16 +44,18 @@ class BibleVerseCC: UICollectionViewCell {
         return layoutAttributes
     }
 
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        DotLine.layer.sublayers?.forEach { if $0 is CAShapeLayer { $0.removeFromSuperlayer() } }
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
         
         // Re-draw dashed line when layout changes to ensure correct bounds
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.DotLine.layer.sublayers?.forEach { if $0 is CAShapeLayer { $0.removeFromSuperlayer() } }
-            if !self.DotLine.isHidden {
-                self.DotLine.addDashedLine()
-            }
+        DotLine.layer.sublayers?.forEach { if $0 is CAShapeLayer { $0.removeFromSuperlayer() } }
+        if !DotLine.isHidden {
+            DotLine.addDashedLine()
         }
     }
     

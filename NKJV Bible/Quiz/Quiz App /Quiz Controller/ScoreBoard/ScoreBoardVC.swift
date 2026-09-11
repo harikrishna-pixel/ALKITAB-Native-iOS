@@ -107,7 +107,7 @@ class ScoreBoardVC: UIViewController {
     
     
     @IBAction func Back(_ sender: Any) {
-        navigationController?.popToViewController(ofClass: SelectionViewController.self)
+        navigationController?.popToQuizHubIfPresent(fallback: SelectionViewController.self)
     }
     
    

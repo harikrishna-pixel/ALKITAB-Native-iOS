@@ -40,6 +40,7 @@ extension UIView {
 
     func addDashedLine() {
         self.backgroundColor! = UIColor.clear
+        layer.sublayers?.removeAll { $0 is CAShapeLayer }
         let path = CGMutablePath()
         let shapeLayer = CAShapeLayer()
         shapeLayer.lineWidth = UIView.DashWidth
