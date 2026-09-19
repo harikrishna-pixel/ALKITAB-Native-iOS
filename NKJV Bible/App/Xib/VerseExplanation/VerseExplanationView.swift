@@ -46,6 +46,9 @@ final class VerseExplanationView: UIView {
     private let footerContainer = UIView()
     private let footerDivider = UIView()
     private let actionStack = UIStackView()
+    private var footerIconHolders: [UIView] = []
+    private var footerImageViews: [UIImageView] = []
+    private var footerLabels: [UILabel] = []
     private var cardBottomConstraint: NSLayoutConstraint?
     private var verseContainerHeightConstraint: NSLayoutConstraint?
 
@@ -198,8 +201,8 @@ final class VerseExplanationView: UIView {
         actionStack.translatesAutoresizingMaskIntoConstraints = false
         actionStack.axis = .horizontal
         actionStack.distribution = .fillEqually
-        actionStack.spacing = 16
-        actionStack.isHidden = true
+        actionStack.spacing = 8
+        actionStack.isHidden = false
 
         footerContainer.translatesAutoresizingMaskIntoConstraints = false
         footerContainer.backgroundColor = themeColor == BGNightMode ? BGNightMode : .white
@@ -212,12 +215,15 @@ final class VerseExplanationView: UIView {
         footerContainer.addSubview(footerDivider)
 
         let copyAction = makeActionButton(title: "Copy", imageName: "CopyNewImg", action: #selector(copyTapped))
-        let readAction = makeActionButton(title: "Read", imageName: "reloadVerse", action: #selector(readTapped))
+        let readAction = makeActionButton(title: "Read", imageName: "read", action: #selector(readTapped))
         let shareAction = makeActionButton(title: "Share", imageName: "shareVerse", action: #selector(shareTapped))
+        let saveAction = makeActionButton(title: "Save", imageName: "save", action: #selector(saveTapped))
         actionStack.addArrangedSubview(copyAction)
         actionStack.addArrangedSubview(readAction)
         actionStack.addArrangedSubview(shareAction)
+        actionStack.addArrangedSubview(saveAction)
         footerContainer.addSubview(actionStack)
+        setActionsEnabled(false)
 
         cardBottomConstraint = cardView.bottomAnchor.constraint(equalTo: bottomAnchor)
 
@@ -306,8 +312,8 @@ final class VerseExplanationView: UIView {
             footerDivider.heightAnchor.constraint(equalToConstant: 1),
 
             actionStack.topAnchor.constraint(equalTo: footerDivider.bottomAnchor, constant: 10),
-            actionStack.leadingAnchor.constraint(equalTo: footerContainer.leadingAnchor, constant: 28),
-            actionStack.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor, constant: -28),
+            actionStack.leadingAnchor.constraint(equalTo: footerContainer.leadingAnchor, constant: 16),
+            actionStack.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor, constant: -16),
             actionStack.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -tabBarOverlap),
             actionStack.heightAnchor.constraint(equalToConstant: 68)
         ])
@@ -353,6 +359,9 @@ final class VerseExplanationView: UIView {
 
         let tint = themeColor == BGNightMode ? UIColor.white : themeColor
         ImageTint.sharedInstance.imageTintcolorMethod(img: imageView, colorVu: tint)
+        footerIconHolders.append(iconHolder)
+        footerImageViews.append(imageView)
+        footerLabels.append(label)
 
         NSLayoutConstraint.activate([
             iconHolder.topAnchor.constraint(equalTo: container.topAnchor),
@@ -377,6 +386,33 @@ final class VerseExplanationView: UIView {
         ])
 
         return container
+    }
+
+    private var actionActiveColor: UIColor {
+        themeColor == BGNightMode ? .white : themeColor
+    }
+
+    private var actionMildColor: UIColor {
+        themeColor == BGNightMode
+            ? UIColor.white.withAlphaComponent(0.35)
+            : UIColor.black.withAlphaComponent(0.28)
+    }
+
+    private func setActionsEnabled(_ enabled: Bool) {
+        actionStack.isUserInteractionEnabled = enabled
+        let tint = enabled ? actionActiveColor : actionMildColor
+        let holderColor = enabled
+            ? (themeColor == BGNightMode ? UIColor.white.withAlphaComponent(0.1) : themeColor.withAlphaComponent(0.1))
+            : (themeColor == BGNightMode ? UIColor.white.withAlphaComponent(0.06) : UIColor.black.withAlphaComponent(0.06))
+        for holder in footerIconHolders {
+            holder.backgroundColor = holderColor
+        }
+        for imageView in footerImageViews {
+            ImageTint.sharedInstance.imageTintcolorMethod(img: imageView, colorVu: tint)
+        }
+        for label in footerLabels {
+            label.textColor = tint
+        }
     }
 
     private func applyContent() {
@@ -430,12 +466,6 @@ final class VerseExplanationView: UIView {
             switch result {
             case .success(let text):
                 self.explanationText = text
-                CoreDataModel.sharedInstance.saveVerseExplanation(
-                    bookVerse: self.verseReference,
-                    bibleVersion: self.bibleVersion,
-                    explanationText: text,
-                    verse: self.verseText
-                )
                 self.showSuccess(text)
             case .failure(let error):
                 self.showError(error.localizedDescription)
@@ -472,9 +502,10 @@ final class VerseExplanationView: UIView {
         contentLabel.isHidden = true
         errorLabel.isHidden = true
         retryButton.isHidden = true
-        actionStack.isHidden = true
-        footerDivider.isHidden = true
-        footerContainer.isHidden = true
+        actionStack.isHidden = false
+        footerDivider.isHidden = false
+        footerContainer.isHidden = false
+        setActionsEnabled(false)
         loadingIndicator.startAnimating()
     }
 
@@ -488,6 +519,7 @@ final class VerseExplanationView: UIView {
         actionStack.isHidden = false
         footerDivider.isHidden = false
         footerContainer.isHidden = false
+        setActionsEnabled(true)
         scrollView.isScrollEnabled = true
         scrollView.showsVerticalScrollIndicator = true
         scrollView.contentOffset = .zero
@@ -515,9 +547,10 @@ final class VerseExplanationView: UIView {
         errorLabel.isHidden = false
         errorLabel.text = message
         retryButton.isHidden = false
-        actionStack.isHidden = true
-        footerDivider.isHidden = true
-        footerContainer.isHidden = true
+        actionStack.isHidden = false
+        footerDivider.isHidden = false
+        footerContainer.isHidden = false
+        setActionsEnabled(false)
     }
 
     @objc private func retryTapped() {
@@ -535,11 +568,28 @@ final class VerseExplanationView: UIView {
     }
 
     @objc private func copyTapped() {
+        guard !explanationText.isEmpty else { return }
         UIPasteboard.general.string = "\(explanationText)\n\n\(verseText)\n\n\(verseReference.replacingOccurrences(of: "-", with: " "))\n\n\(APP_LINK)"
         makeToast("Copied successfully", duration: 2.0, position: .center)
     }
 
+    @objc private func saveTapped() {
+        guard !explanationText.isEmpty else { return }
+        CoreDataModel.sharedInstance.saveVerseExplanation(
+            bookVerse: verseReference,
+            bibleVersion: bibleVersion,
+            explanationText: explanationText,
+            verse: verseText
+        )
+        App_Protocol.delegateReader?.AlertFrame(
+            AlertNote: "Saved to My Library",
+            Vers: verseText,
+            Title: verseReference.replacingOccurrences(of: "-", with: " ")
+        )
+    }
+
     @objc private func readTapped() {
+        guard !explanationText.isEmpty else { return }
         let readReference = verseReference.replacingOccurrences(of: "-", with: " ")
         UserDefaults.standard.set(readReference, forKey: "readdata")
         App_Protocol.delegateReader?.CloseMenu()
@@ -550,6 +600,7 @@ final class VerseExplanationView: UIView {
     }
 
     @objc private func shareTapped() {
+        guard !explanationText.isEmpty else { return }
         // Display order only: verse + reference, then "Explanation", then explanation text.
         // Uses the same shared(VerseStr:Bookname:) path — no share/fetch logic changes.
         let reference = verseReference.replacingOccurrences(of: "-", with: " ")

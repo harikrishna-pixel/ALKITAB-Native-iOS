@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import IQKeyboardManager
 
 struct ReflectionView: View {
     let verse: DailyVerseSnapshot
@@ -134,12 +135,16 @@ struct ReflectionView: View {
         .background(Color(hex: "F7F8FC").ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+            IQKeyboardManager.shared().isEnabled = false
             wasAlreadyCompleted = store.reflectionCompleted
             text = String(store.reflectionText.prefix(300))
             selectedOption = store.reflectionOptionIndex
             if selectedOption == nil {
                 selectedOption = options.firstIndex(where: { store.reflectionText.contains($0.title) })
             }
+        }
+        .onDisappear {
+            IQKeyboardManager.shared().isEnabled = true
         }
         .onChange(of: text) { newValue in
             if newValue.count > 300 {

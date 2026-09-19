@@ -53,7 +53,8 @@ struct Onboarding1: View {
                 VStack(spacing: 0) {
                     OnboardingTopBar()
                         .padding(.horizontal, 20)
-                        .padding(.top, geometry.safeAreaInsets.top + 8)
+                        .padding(.top, 8)
+                        .offset(y: topSafeInset)
 
                     VStack(spacing: 0) {
                         Text(OnboardingTheme.brandTitle)
@@ -112,6 +113,16 @@ struct Onboarding1: View {
         }
         .edgesIgnoringSafeArea(.all)
         .navigationBarHidden(true)
+    }
+
+    /// GeometryReader reports 0 after ignoresSafeArea; use the window so Skip clears the status bar.
+    private var topSafeInset: CGFloat {
+        let window = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+        let inset = window?.safeAreaInsets.top ?? 0
+        return inset > 0 ? inset : 54
     }
 
     private func requestTrackingThenContinue() {
