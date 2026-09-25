@@ -28,7 +28,7 @@ enum AuthHubAPIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notConfigured:
-            return "AuthHub credentials are missing. Fill AuthHubSecrets.swift (appID, clientID, clientSecret)."
+            return "AuthHub credentials are missing. Set AUTHHUB_APP_ID in AppConfig.swift and CLIENT_ID / CLIENT_SECRET in AuthHub.env."
         case .network(let message), .server(let message):
             return message
         case .invalidResponse:

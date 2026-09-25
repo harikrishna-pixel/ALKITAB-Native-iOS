@@ -618,6 +618,7 @@
 		A1B2C3D42F46A10100000025 /* AuthHubProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000035 /* AuthHubProfileView.swift */; };
 		A2G00A032F13E3240097A8E3 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = A2G00A022F13E3240097A8E3 /* GoogleSignIn */; };
 		B18CE61E303DAE26001FA16C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */; };
+		A1B2C3D42F46A10100000041 /* AuthHub.env in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000040 /* AuthHub.env */; };
 		B1A3D241304AC9B100FD5D0C /* 5.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D23B304AC9B100FD5D0C /* 5.png */; };
 		B1A3D242304AC9B100FD5D0C /* 2.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D238304AC9B100FD5D0C /* 2.png */; };
 		B1A3D243304AC9B100FD5D0C /* 6.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D23C304AC9B100FD5D0C /* 6.png */; };
@@ -1296,6 +1297,7 @@
 		A1B2C3D42F46A10100000031 /* AuthHubAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubAPI.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000032 /* AuthHubSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubSession.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000033 /* AuthHubSecrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubSecrets.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000040 /* AuthHub.env */ = {isa = PBXFileReference; lastKnownFileType = text; path = AuthHub.env; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000034 /* AuthHubEmailAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubEmailAuthView.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000035 /* AuthHubProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubProfileView.swift; sourceTree = "<group>"; };
 		B13B6D6A8DF1821F657CBFAA /* Pods-NKJV Bible.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NKJV Bible.debug.xcconfig"; path = "Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible.debug.xcconfig"; sourceTree = "<group>"; };
@@ -3551,6 +3553,7 @@
 				A1B2C3D42F46A10100000031 /* AuthHubAPI.swift */,
 				A1B2C3D42F46A10100000032 /* AuthHubSession.swift */,
 				A1B2C3D42F46A10100000033 /* AuthHubSecrets.swift */,
+				A1B2C3D42F46A10100000040 /* AuthHub.env */,
 				A1B2C3D42F46A10100000034 /* AuthHubEmailAuthView.swift */,
 				A1B2C3D42F46A10100000035 /* AuthHubProfileView.swift */,
 				A1B2C3D42F46A10100000011 /* OnboardingShared.swift */,
@@ -3766,6 +3769,7 @@
 				0144EEC22A90CD530022EABF /* fontAlign.xib in Resources */,
 				017C398F2A40401C004C64FA /* gift-card.png in Resources */,
 				B18CE61E303DAE26001FA16C /* GoogleService-Info.plist in Resources */,
+				A1B2C3D42F46A10100000041 /* AuthHub.env in Resources */,
 				0144EEB02A90CD530022EABF /* colour.png in Resources */,
 				014A0D162955BE3C008CC1AB /* SpeechframeCell.xib in Resources */,
 				0180DDE329499F6B00F0C508 /* Cera Pro Black Italic.otf in Resources */,
@@ -4136,7 +4140,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "SECRETS=\"${SRCROOT}/NewOnboarding/AuthHubSecrets.swift\"\nEXAMPLE=\"${SRCROOT}/NewOnboarding/AuthHubSecrets.example.swift\"\nif [ ! -f \"$SECRETS\" ]; then\n  if [ ! -f \"$EXAMPLE\" ]; then\n    echo \"error: AuthHubSecrets.swift is missing and AuthHubSecrets.example.swift was not found.\" >&2\n    exit 1\n  fi\n  cp \"$EXAMPLE\" \"$SECRETS\"\n  echo \"warning: Created NewOnboarding/AuthHubSecrets.swift from the example stub. Fill in AuthHub credentials.\"\nfi\n";
+			shellScript = "SECRETS=\"${SRCROOT}/NewOnboarding/AuthHubSecrets.swift\"\nEXAMPLE=\"${SRCROOT}/NewOnboarding/AuthHubSecrets.example.swift\"\nif [ ! -f \"$SECRETS\" ]; then\n  if [ ! -f \"$EXAMPLE\" ]; then\n    echo \"error: AuthHubSecrets.swift is missing and AuthHubSecrets.example.swift was not found.\" >&2\n    exit 1\n  fi\n  cp \"$EXAMPLE\" \"$SECRETS\"\n  echo \"warning: Created NewOnboarding/AuthHubSecrets.swift from the example stub.\"\nfi\nENVFILE=\"${SRCROOT}/NewOnboarding/AuthHub.env\"\nENVEXAMPLE=\"${SRCROOT}/NewOnboarding/AuthHub.env.example\"\nif [ ! -f \"$ENVFILE\" ]; then\n  if [ ! -f \"$ENVEXAMPLE\" ]; then\n    echo \"error: AuthHub.env is missing and AuthHub.env.example was not found.\" >&2\n    exit 1\n  fi\n  cp \"$ENVEXAMPLE\" \"$ENVFILE\"\n  echo \"warning: Created NewOnboarding/AuthHub.env from the example. Fill in CLIENT_ID and CLIENT_SECRET.\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		3B737897E87FDC12C234B0C0 /* [CP] Copy Pods Resources */ = {

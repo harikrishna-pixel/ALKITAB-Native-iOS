@@ -21,6 +21,7 @@ let API_Switch = "1"  // API ON
 
 var APPNAME_SPLASH = "Alkitab Bible"
 let APPLE_ID = "1666813160"
+let AUTHHUB_APP_ID = "ffbfc793-5d4a-11f0-a362-fa163e8c011b"
 var FEEDBACKMAIL = "support@bibleoffice.com"
 
 

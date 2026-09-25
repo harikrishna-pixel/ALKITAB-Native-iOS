@@ -1,3 +1,4 @@
 # Local API secrets — never commit
 NewOnboarding/AuthHubSecrets.swift
+NewOnboarding/AuthHub.env
 Secrets.swift

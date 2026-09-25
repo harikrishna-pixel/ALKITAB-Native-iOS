@@ -1,10 +1,6 @@
 //
 //  AuthHubSecrets.example.swift
-//  Copy to AuthHubSecrets.swift and fill values. Do not commit real secrets.
+//  Credentials are not stored here.
+//  App ID: AUTHHUB_APP_ID in AppConfig.swift
+//  Client ID and client secret: copy AuthHub.env.example to AuthHub.env and fill them.
 //
-
-enum AuthHubSecrets {
-    static let appID = ""
-    static let clientID = ""
-    static let clientSecret = ""
-}
