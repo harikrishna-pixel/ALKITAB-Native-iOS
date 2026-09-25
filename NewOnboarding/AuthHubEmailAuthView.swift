@@ -30,6 +30,8 @@ struct AuthHubEmailAuthView: View {
     @State private var errorMessage: String?
     @State private var infoMessage: String?
     @State private var showForgot = false
+    @State private var isPasswordVisible = false
+    @State private var isConfirmPasswordVisible = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -66,9 +68,9 @@ struct AuthHubEmailAuthView: View {
                             field("Name", text: $name)
                         }
                         field("Email", text: $email, keyboard: .emailAddress)
-                        secureField("Password", text: $password)
+                        secureField("Password", text: $password, isVisible: $isPasswordVisible)
                         if mode == .signUp {
-                            secureField("Confirm Password", text: $confirmPassword)
+                            secureField("Confirm Password", text: $confirmPassword, isVisible: $isConfirmPasswordVisible)
                             field("Friend's referral code (optional)", text: $referralCode)
                         }
 
@@ -162,13 +164,34 @@ struct AuthHubEmailAuthView: View {
             .padding(.horizontal, 26)
     }
 
-    private func secureField(_ title: String, text: Binding<String>) -> some View {
-        SecureField(title, text: text)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 14)
-            .background(Color(hex: "F5F6FA"))
-            .cornerRadius(12)
-            .padding(.horizontal, 26)
+    private func secureField(
+        _ title: String,
+        text: Binding<String>,
+        isVisible: Binding<Bool>
+    ) -> some View {
+        HStack(spacing: 8) {
+            Group {
+                if isVisible.wrappedValue {
+                    TextField(title, text: text)
+                } else {
+                    SecureField(title, text: text)
+                }
+            }
+            .autocapitalization(.none)
+            .disableAutocorrection(true)
+
+            Button(action: { isVisible.wrappedValue.toggle() }) {
+                Image(systemName: isVisible.wrappedValue ? "eye.fill" : "eye.slash.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(OnboardingTheme.textSecondary)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+        .background(Color(hex: "F5F6FA"))
+        .cornerRadius(12)
+        .padding(.horizontal, 26)
     }
 
     private func submit() {
