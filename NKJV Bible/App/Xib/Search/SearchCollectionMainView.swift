@@ -129,7 +129,7 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
                 let explanation = parts.count > 2 ? parts[2] : ""
                 let fontName = UserDefaults.standard.string(forKey: "FontName")
                 let verseFont = UIFont(name: fontName ?? "", size: CGFloat(fontsize)) ?? UIFont.systemFont(ofSize: CGFloat(fontsize))
-                let bodyFont = UIFont(name: fontName ?? "", size: 14) ?? UIFont.systemFont(ofSize: 14)
+                let bodyFont = verseFont
                 let isExpanded = (expandedExplanationIndex == indexPath.row)
                 let height = ExplanationLibraryCell.preferredHeight(
                     width: self.SearchCollectionVu.frame.width,
@@ -234,7 +234,7 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
                 let isNight = (Themecolor == BGNightMode)
                 let fontName = UserDefaults.standard.string(forKey: "FontName")
                 let verseFont = UIFont(name: fontName ?? "", size: CGFloat(fontsize)) ?? UIFont.systemFont(ofSize: CGFloat(fontsize))
-                let bodyFont = UIFont(name: fontName ?? "", size: 14) ?? UIFont.systemFont(ofSize: 14)
+                let bodyFont = verseFont
                 let reference = (parts.first ?? "").replacingOccurrences(of: "-", with: " ")
                 let isExpanded = (expandedExplanationIndex == indexPath.row)
 

@@ -18,8 +18,7 @@ struct AuthHubProfileView: View {
     @State private var displayEmail = AuthHubSession.email ?? ""
     @State private var referralCode = AuthHubSession.referralCode ?? ""
     @State private var referralCount = AuthHubSession.referralCount
-    @State private var showAuthSheet = false
-    @State private var authMode: AuthHubEmailMode = .login
+    @State private var authRequest: AuthHubProfileAuthRequest?
     @State private var copied = false
     @State private var showLogoutConfirm = false
 
@@ -71,8 +70,17 @@ struct AuthHubProfileView: View {
         .background(Color.white.ignoresSafeArea())
         .navigationBarHidden(true)
         .onAppear { refreshFromSession(); refreshProfileIfNeeded() }
-        .sheet(isPresented: $showAuthSheet) {
-            authSheet
+        .sheet(item: $authRequest) { request in
+            AuthHubProfileAuthSheet(
+                initialMode: request.mode,
+                onSuccess: {
+                    authRequest = nil
+                    refreshFromSession()
+                },
+                onCancel: {
+                    authRequest = nil
+                }
+            )
         }
         .alert(isPresented: $showLogoutConfirm) {
             Alert(
@@ -112,8 +120,7 @@ struct AuthHubProfileView: View {
                 .multilineTextAlignment(.center)
 
             Button(action: {
-                authMode = .login
-                showAuthSheet = true
+                authRequest = AuthHubProfileAuthRequest(mode: .login)
             }) {
                 Text("Login")
                     .font(.system(size: 16.5, weight: .bold))
@@ -126,8 +133,7 @@ struct AuthHubProfileView: View {
             .padding(.top, 8)
 
             Button(action: {
-                authMode = .signUp
-                showAuthSheet = true
+                authRequest = AuthHubProfileAuthRequest(mode: .signUp)
             }) {
                 Text("Sign Up")
                     .font(.system(size: 15, weight: .semibold))
@@ -196,33 +202,6 @@ struct AuthHubProfileView: View {
         }
     }
 
-    private var authSheet: some View {
-        VStack(spacing: 0) {
-            Picker("", selection: $authMode) {
-                Text("Login").tag(AuthHubEmailMode.login)
-                Text("Sign Up").tag(AuthHubEmailMode.signUp)
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
-
-            AuthHubEmailAuthView(
-                mode: authMode,
-                onAuthSuccess: {
-                    // Stay on Profile after login — do not jump to IAP/reader.
-                    DispatchQueue.main.async {
-                        showAuthSheet = false
-                        refreshFromSession()
-                    }
-                },
-                onCancel: {
-                    showAuthSheet = false
-                }
-            )
-        }
-        .background(Color.white.ignoresSafeArea())
-    }
-
     private func refreshFromSession() {
         isLoggedIn = AuthHubSession.isLoggedIn || UserDefaults.standard.bool(forKey: "OnboardingLoggedIn")
         displayName = AuthHubSession.name ?? ""
@@ -250,5 +229,45 @@ struct AuthHubProfileView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             copied = false
         }
+    }
+}
+
+private struct AuthHubProfileAuthRequest: Identifiable {
+    let id = UUID()
+    let mode: AuthHubEmailMode
+}
+
+private struct AuthHubProfileAuthSheet: View {
+    let initialMode: AuthHubEmailMode
+    let onSuccess: () -> Void
+    let onCancel: () -> Void
+
+    @State private var mode: AuthHubEmailMode
+
+    init(initialMode: AuthHubEmailMode, onSuccess: @escaping () -> Void, onCancel: @escaping () -> Void) {
+        self.initialMode = initialMode
+        self.onSuccess = onSuccess
+        self.onCancel = onCancel
+        _mode = State(initialValue: initialMode)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Picker("", selection: $mode) {
+                Text("Login").tag(AuthHubEmailMode.login)
+                Text("Sign Up").tag(AuthHubEmailMode.signUp)
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+
+            AuthHubEmailAuthView(
+                mode: mode,
+                onAuthSuccess: onSuccess,
+                onCancel: onCancel
+            )
+            .id(mode)
+        }
+        .background(Color.white.ignoresSafeArea())
     }
 }

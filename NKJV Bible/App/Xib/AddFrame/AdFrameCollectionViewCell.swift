@@ -11,6 +11,7 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
 
     @IBOutlet weak var MarkAsReadBtn:UIButton!
     @IBOutlet weak var SummaryButton:UIButton!
+    private var isMarkedRead = false
     
 //    @IBOutlet weak var BibleAllOffice:UIButton!
     
@@ -22,6 +23,7 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
         self.contentView.translatesAutoresizingMaskIntoConstraints = false
         // Initialization code
         self.setupSummaryButton()
+        self.setupMarkAsReadButton()
     }
     
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
@@ -41,6 +43,7 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
                 self.applyGradientToSummaryButton()
             }
         }
+        self.applyMarkAsReadAppearance()
     }
     
     func setupSummaryButton() {
@@ -68,12 +71,52 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
             }
         }
         
-        // Get theme color with 0.2 opacity
         let themeColor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
-        let themeColorWithOpacity = themeColor.withAlphaComponent(0.2)
-        
-        // Set solid background color (no gradient)
-        summaryButton.backgroundColor = themeColorWithOpacity
+        let isNight = themeColor.toHexString() == BGNightMode.toHexString()
+        if isNight {
+            summaryButton.backgroundColor = .white
+            summaryButton.setTitleColor(.black, for: .normal)
+            summaryButton.layer.borderColor = UIColor.white.cgColor
+        } else {
+            summaryButton.backgroundColor = themeColor.withAlphaComponent(0.2)
+            summaryButton.setTitleColor(.black, for: .normal)
+            summaryButton.layer.borderColor = themeColor.cgColor
+        }
+    }
+
+    func setMarkAsRead(_ isRead: Bool) {
+        isMarkedRead = isRead
+        applyMarkAsReadAppearance()
+    }
+
+    func setupMarkAsReadButton() {
+        guard let button = MarkAsReadBtn else { return }
+        button.layer.cornerRadius = 20
+        button.clipsToBounds = true
+        let themeColor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
+        button.layer.borderColor = themeColor.cgColor
+        button.layer.borderWidth = 1
+        applyMarkAsReadAppearance()
+    }
+
+    func applyMarkAsReadAppearance() {
+        guard let button = MarkAsReadBtn else { return }
+        let themeColor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
+        if button.bounds.height > 0 {
+            button.layer.cornerRadius = button.bounds.height / 2
+        }
+        button.clipsToBounds = true
+        button.layer.borderWidth = 1
+        button.layer.borderColor = themeColor.cgColor
+        if isMarkedRead {
+            button.backgroundColor = themeColor
+            button.setTitle("Marked as Read", for: .normal)
+            button.setTitleColor(.white, for: .normal)
+        } else {
+            button.backgroundColor = themeColor.withAlphaComponent(0.2)
+            button.setTitle("Mark as Read", for: .normal)
+            button.setTitleColor(.black, for: .normal)
+        }
     }
 
  

@@ -192,16 +192,7 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
 
             let cell = self.BibleCollectionView.dequeueReusableCell(withReuseIdentifier: "AdFrameCollectionViewCell", for: indexPath) as! AdFrameCollectionViewCell
             
-            if self.MarkAsReadArray.contains("\(Book)-\(self.Pageindex)") {
-                cell.MarkAsReadBtn.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
-                cell.MarkAsReadBtn.setTitle("Marked as Read", for: .normal)
-                cell.MarkAsReadBtn.setTitleColor(.white, for: .normal)
-            } else {
-                cell.MarkAsReadBtn.setTitle("Mark as Read", for: .normal)
-                cell.MarkAsReadBtn.backgroundColor = .systemGray6
-                cell.MarkAsReadBtn.setTitleColor(.black, for: .normal)
-                
-            }
+            cell.setMarkAsRead(self.MarkAsReadArray.contains("\(Book)-\(self.Pageindex)"))
 
               cell.MarkAsReadBtn.addTarget(self, action: #selector(MarkAsReadAction), for: .touchUpInside)
               cell.SummaryButton.addTarget(self, action: #selector(SummaryAction), for: .touchUpInside)
@@ -296,15 +287,7 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
         // BUG FIX (MARK AS READ CRASH): NEW CODE - Get existing cell safely, or just reload
         if let footer = self.BibleCollectionView.cellForItem(at: indexPaths1 as IndexPath) as? AdFrameCollectionViewCell {
             // Cell is visible - update it directly
-            if self.MarkAsReadArray.contains("\(Book)-\(self.Pageindex)") {
-                footer.MarkAsReadBtn.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
-                footer.MarkAsReadBtn.setTitle("Marked as Read", for: .normal)
-                footer.MarkAsReadBtn.setTitleColor(.white, for: .normal)
-            } else {
-                footer.MarkAsReadBtn.setTitle("Mark as Read", for: .normal)
-                footer.MarkAsReadBtn.backgroundColor = .systemGray6
-                footer.MarkAsReadBtn.setTitleColor(.black, for: .normal)
-            }
+            footer.setMarkAsRead(self.MarkAsReadArray.contains("\(Book)-\(self.Pageindex)"))
         }
         
         // BUG FIX (DOUBLE POPUP): OLD CODE - Called MarkAsReadPopup() twice (once inside if let, once outside)

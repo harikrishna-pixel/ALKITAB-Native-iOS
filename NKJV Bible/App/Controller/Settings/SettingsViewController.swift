@@ -383,10 +383,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           }
       case 14:
           if NetworkManager.sharedInstance.isConnectedToInternet() {
-                     if let url = URL(string: FAQ), UIApplication.shared.canOpenURL(url) {
-                         UIApplication.shared.open(url, options: [:]) { success in
-                             print(success ? "URL was opened successfully." : "Failed to open URL.")
-                         }
+                     if let url = URL(string: FAQ) {
+                         UIApplication.shared.open(url, options: [:], completionHandler: nil)
                      } else {
                          self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
                      }

@@ -285,6 +285,8 @@ struct AuthHubForgotPasswordView: View {
     @State private var isBusy = false
     @State private var errorMessage: String?
     @State private var infoMessage: String?
+    @State private var isPasswordVisible = false
+    @State private var isConfirmPasswordVisible = false
 
     var body: some View {
         NavigationView {
@@ -309,14 +311,8 @@ struct AuthHubForgotPasswordView: View {
                         .cornerRadius(12)
                 }
                 if step >= 2 {
-                    SecureField("New password", text: $password)
-                        .padding()
-                        .background(Color(hex: "F5F6FA"))
-                        .cornerRadius(12)
-                    SecureField("Confirm password", text: $confirmPassword)
-                        .padding()
-                        .background(Color(hex: "F5F6FA"))
-                        .cornerRadius(12)
+                    secureField("New password", text: $password, isVisible: $isPasswordVisible)
+                    secureField("Confirm password", text: $confirmPassword, isVisible: $isConfirmPasswordVisible)
                 }
 
                 if let errorMessage = errorMessage {
@@ -350,6 +346,34 @@ struct AuthHubForgotPasswordView: View {
                 if email.isEmpty { email = initialEmail }
             }
         }
+    }
+
+    private func secureField(
+        _ title: String,
+        text: Binding<String>,
+        isVisible: Binding<Bool>
+    ) -> some View {
+        HStack(spacing: 8) {
+            Group {
+                if isVisible.wrappedValue {
+                    TextField(title, text: text)
+                } else {
+                    SecureField(title, text: text)
+                }
+            }
+            .autocapitalization(.none)
+            .disableAutocorrection(true)
+
+            Button(action: { isVisible.wrappedValue.toggle() }) {
+                Image(systemName: isVisible.wrappedValue ? "eye.fill" : "eye.slash.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(OnboardingTheme.textSecondary)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding()
+        .background(Color(hex: "F5F6FA"))
+        .cornerRadius(12)
     }
 
     private var stepTitle: String {

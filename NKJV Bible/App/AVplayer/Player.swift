@@ -127,11 +127,10 @@ extension ReaderViewController: AVplayerProtocol {
         self.AVstartTime.text = String(format: "%d:%02i",minutes,self.currentTime)
         self.AVTimeRemain.text = String(format: "%d:%02i",Duration_in_minute,Duration_in_Second)
         
-        // Only update slider value when not dragging to prevent conflict with user interaction
-        if SwitchStatus == "Play" {
-            AVswitch.value = Float(self.currentTimeacu)
+        // Move the thumb with playback. Skip only while the user is dragging.
+        if !isUserInteractingWithSlider, currentTimeacu.isFinite {
+            AVswitch.setValue(Float(self.currentTimeacu), animated: true)
         }
-        // When SwitchStatus == "Moving", slider value is controlled by user drag
         
         if Int(self.AVswitch.value) == Int(self.AVswitch.maximumValue) || Int(self.AVswitch.value) == Int(self.AVswitch.maximumValue) {
             timer?.invalidate()

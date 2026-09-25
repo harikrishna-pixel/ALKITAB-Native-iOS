@@ -8,6 +8,7 @@
 
 import Foundation
 import IronSource
+import Toast_Swift
  
 class AdmobManager : NSObject {
    
@@ -73,6 +74,7 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
     func didFailToLoadWithError(_ error: Error!) {
         pendingInterstitialShow = false
         var dispatchAfter = DispatchTimeInterval.seconds(ADS_DURATION*60)
+        showAdUnavailableToastIfNeeded()
         
         if RewardAd == "Tryagain" {
             QuizProtocol.ResultProtocoldelegate?.AdNotAvailable()
@@ -117,6 +119,7 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
     
     func didFailToShowWithError(_ error: Error!, andAdInfo adInfo: ISAdInfo!) {
         pendingInterstitialShow = false
+        showAdUnavailableToastIfNeeded()
         // Reload promptly so Verse Image 20/30… can show again.
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.5) {
             self.IronSource_Interstitial_AdLoad()
@@ -260,6 +263,7 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
         } else {
             pendingRewardedShow = true
             pendingRewardedAttempts = 0
+            showAdWaitToastIfNeeded()
             IronSource_Reward_AdLoad()
             startPendingRewardedPoll()
         }
@@ -295,7 +299,6 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
             if self.pendingRewardedAttempts >= 30 {
                 self.clearPendingRewardedShow()
                 DispatchQueue.main.async {
-                    (UIApplication.shared.keyWindow?.rootViewController)?.view.makeToast("Ad not Available", duration: 2.0, position: .bottom)
                     self.notifyRewardedAdNotAvailable()
                 }
             }
@@ -311,7 +314,44 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
         pendingRewardedPollTimer = nil
     }
     
+    private func showAdWaitToastIfNeeded() {
+        switch RewardAd {
+        case "Tryagain", "FreeCoins", "MainFreeCoins", "WatchAd", "Scratch", "ImageWatermark", "OpenCard", "SubscrbViewController":
+            DispatchQueue.main.async {
+                self.visibleToastView()?.makeToast("Please wait for few secs..", duration: 2.0, position: .top)
+            }
+        default:
+            break
+        }
+    }
+
+    private func showAdUnavailableToastIfNeeded() {
+        switch RewardAd {
+        case "Tryagain", "FreeCoins", "MainFreeCoins", "WatchAd", "Scratch", "ImageWatermark", "OpenCard", "SubscrbViewController":
+            DispatchQueue.main.async {
+                self.visibleToastView()?.makeToast("Ad is not available", duration: 2.0, position: .top)
+            }
+        default:
+            break
+        }
+    }
+
+    private func visibleToastView() -> UIView? {
+        var controller = vc ?? UIApplication.shared.keyWindow?.rootViewController
+        while let presented = controller?.presentedViewController, presented.isBeingDismissed == false {
+            controller = presented
+        }
+        if let tab = controller as? UITabBarController {
+            controller = tab.selectedViewController ?? tab
+        }
+        if let nav = controller as? UINavigationController {
+            controller = nav.visibleViewController ?? nav
+        }
+        return controller?.view
+    }
+
     private func notifyRewardedAdNotAvailable() {
+        showAdUnavailableToastIfNeeded()
         if RewardAd == "Tryagain" {
             QuizProtocol.ResultProtocoldelegate?.AdNotAvailable()
         } else if RewardAd == "FreeCoins" {

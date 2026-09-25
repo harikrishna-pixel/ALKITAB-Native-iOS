@@ -371,38 +371,24 @@ extension WalletViewController {
     
     
     @IBAction func TermsAndCondition(_ sender: Any) {
-        
-        if NetworkManager.sharedInstance.isConnectedToInternet() {
-                   if let url = URL(string: TermsURL), UIApplication.shared.canOpenURL(url) {
-                       UIApplication.shared.open(url, options: [:]) { success in
-                           print(success ? "URL was opened successfully." : "Failed to open URL.")
-                       }
-                   } else {
-                       self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
-                   }
-                   
-               } else {
-                   self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
-               }
-        
+        openWalletLink(TermsURL)
     }
     
     
     @IBAction func Privacy(_ sender: Any) {
-        
-        if NetworkManager.sharedInstance.isConnectedToInternet() {
-                   if let url = URL(string: PrivacyURL), UIApplication.shared.canOpenURL(url) {
-                       UIApplication.shared.open(url, options: [:]) { success in
-                           print(success ? "URL was opened successfully." : "Failed to open URL.")
-                       }
-                   } else {
-                       self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
-                   }
-                   
-               } else {
-                   self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
-               }
-        
+        openWalletLink(PrivacyURL)
+    }
+
+    private func openWalletLink(_ link: String) {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            return
+        }
+        guard let url = URL(string: link) else {
+            view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
+            return
+        }
+        UIApplication.shared.open(url, options: [:], completionHandler: nil)
     }
     
     @IBAction func FAQ(_ sender: Any) {

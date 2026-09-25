@@ -599,9 +599,11 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         if let touchEvent = event.allTouches?.first {
             switch touchEvent.phase {
             case .began:
+                isUserInteractingWithSlider = true
                 SwitchStatus = "Moving"
                 break
             case .moved:
+                isUserInteractingWithSlider = true
                 SwitchStatus = "Moving"
                 // Update time label immediately during drag to show real-time position
                 let seconds : Int64 = Int64(AVswitch.value)
@@ -621,6 +623,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                 // }
                 
                 // NEW FIXED CODE - Reset status immediately, then seek
+                isUserInteractingWithSlider = false
                 SwitchStatus = "Play"
                 
                 let seconds : Int64 = Int64(AVswitch.value)
@@ -658,25 +661,6 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                     self.AVstartTime.text = String(format: "%d:%02i",minutes,second)
                 }
                 break
-            }
-        } else {
-            // Handle programmatic value changes or events without touch info
-            // This ensures the slider works even when allTouches is empty
-            // This is important for iPad and SE devices where touch handling can be different
-            if playStatus == true {
-                let seconds : Int64 = Int64(AVswitch.value)
-                let minutes:Int = Int(seconds / 60) % 60
-                let second:Int = Int(seconds) % 60
-                self.AVstartTime.text = String(format: "%d:%02i",minutes,second)
-                
-                // Seek to the new position
-                let targetTime:CMTime = CMTimeMake(value: seconds, timescale: 1)
-                AudioPlayerService.sharedInstance.player?.seek(to: targetTime)
-                
-                if Int(self.AVswitch.value) == Int(self.AVswitch.maximumValue) {
-                    timer?.invalidate()
-                    ViewInit()
-                }
             }
         }
     }
@@ -1099,19 +1083,6 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             self.AudioVu.isHidden = false
             self.MenuVu.isHidden = false
         }
-        
-        if PaymentHistory.sharedInstance.paymentInfo() {
-            DispatchQueue.main.async {
-                if UserDefaults.standard.integer(forKey: "OfferClick") > Int(offer_count)! {
-                    if IS_SUBSCRIPTION_ENABLE == 1 {
-                        self.OfferScreen.isHidden = false
-                    }
-                }
-            }
-        }
-        
-        
-        
         
         if UserDefaults.standard.integer(forKey: "RateUSoneTime") >= 1 && !UserDefaults.standard.bool(forKey: "rateViewed") {
             if self.SelectedTab == "1" {

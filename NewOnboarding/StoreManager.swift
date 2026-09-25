@@ -1078,13 +1078,13 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     }
     
     func openTerms() {
-        if let url = URL(string: TermsURL), UIApplication.shared.canOpenURL(url) {
+        if let url = URL(string: TermsURL) {
             UIApplication.shared.open(url, options: [:])
         }
     }
     
     func openPrivacy() {
-        if let url = URL(string: PrivacyURL), UIApplication.shared.canOpenURL(url) {
+        if let url = URL(string: PrivacyURL) {
             UIApplication.shared.open(url, options: [:])
         }
     }

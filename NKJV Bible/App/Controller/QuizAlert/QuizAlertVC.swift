@@ -33,6 +33,10 @@ class QuizAlertVC: UIViewController, QuizAlert {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        let buttonFont = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        ReadButton.titleLabel?.font = buttonFont
+        YesButton.titleLabel?.font = buttonFont
+
         App_Protocol.QuizAlertdelegate = self
 
         BookTxt.text = bookname

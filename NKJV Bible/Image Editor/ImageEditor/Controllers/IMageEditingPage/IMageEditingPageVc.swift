@@ -7,6 +7,7 @@
 
 import UIKit
 import Photos
+import SwiftUI
 
 class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, ImageTxtEdit, UIColorPickerViewControllerDelegate {
   
@@ -190,11 +191,23 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
     
     @IBAction func Payment_Action(_ sender: Any) {
         if NetworkManager.sharedInstance.isConnectedToInternet() {
-            let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "SubscrbViewController") as! SubscrbViewController
-            vc.modalPresentationStyle = .overCurrentContext
-            vc.modalTransitionStyle = .crossDissolve
-            vc.presentVu = true
-            self.present(vc, animated: true, completion: nil)
+            if #available(iOS 15.0, *) {
+                var swiftUIView = BibleSubscriptionView(isPresentedFromOnboarding: false)
+                swiftUIView.dismissHandler = { [weak self] in
+                    self?.dismiss(animated: true) {
+                        self?.CheckPay()
+                    }
+                }
+                let hostingController = UIHostingController(rootView: swiftUIView)
+                hostingController.modalPresentationStyle = .fullScreen
+                self.present(hostingController, animated: true, completion: nil)
+            } else {
+                let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "SubscrbViewController") as! SubscrbViewController
+                vc.modalPresentationStyle = .overCurrentContext
+                vc.modalTransitionStyle = .crossDissolve
+                vc.presentVu = true
+                self.present(vc, animated: true, completion: nil)
+            }
         } else {
             self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
         }

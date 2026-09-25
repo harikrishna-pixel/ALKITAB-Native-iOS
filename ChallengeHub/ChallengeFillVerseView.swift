@@ -225,7 +225,9 @@ struct ChallengeFillVerseView: View {
             let distractors = bank.filter { word in
                 !correctWords.contains(where: { $0.caseInsensitiveCompare(word) == .orderedSame })
             }
-            hiddenBank = Set(distractors.prefix(max(distractors.count / 2, 1)))
+            let correctInBank = bank.count - distractors.count
+            let keepDistractors = max(0, 3 - correctInBank)
+            hiddenBank = Set(distractors.dropFirst(keepDistractors))
             toast = nil
         case .hint:
             guard ChallengeWallet.spend(ChallengeWallet.hintCost) else {

@@ -45,6 +45,8 @@ final class ExplanationLibraryCell: UICollectionViewCell {
     private let explanationBodyLabel = UILabel()
     private var explanationBottomConstraint: NSLayoutConstraint?
     private var verseBottomCollapsedConstraint: NSLayoutConstraint?
+    private var dividerBelowVerseConstraint: NSLayoutConstraint?
+    private var dividerBelowHeaderConstraint: NSLayoutConstraint?
 
     private static let actionCircleSize: CGFloat = 36
     private static let actionIconPointSize: CGFloat = 15
@@ -77,10 +79,12 @@ final class ExplanationLibraryCell: UICollectionViewCell {
         verseLabel.text = verseText
         verseLabel.font = verseFont ?? .systemFont(ofSize: 15)
         verseLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.9) : UIColor(white: 0.2, alpha: 1)
-        verseLabel.numberOfLines = isExpanded ? 0 : 2
+        verseLabel.numberOfLines = 2
+        verseLabel.isHidden = isExpanded
 
-        explanationTitleLabel.text = "Explanation"
-        explanationTitleLabel.textColor = themeColor
+        explanationTitleLabel.text = "Summary"
+        explanationTitleLabel.font = verseFont ?? .systemFont(ofSize: 15)
+        explanationTitleLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.55) : UIColor(white: 0.45, alpha: 1)
 
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = 4
@@ -116,9 +120,13 @@ final class ExplanationLibraryCell: UICollectionViewCell {
         explanationBodyLabel.isHidden = !isExpanded
         if isExpanded {
             verseBottomCollapsedConstraint?.isActive = false
+            dividerBelowVerseConstraint?.isActive = false
+            dividerBelowHeaderConstraint?.isActive = true
             explanationBottomConstraint?.isActive = true
         } else {
             explanationBottomConstraint?.isActive = false
+            dividerBelowHeaderConstraint?.isActive = false
+            dividerBelowVerseConstraint?.isActive = true
             verseBottomCollapsedConstraint?.isActive = true
         }
     }
@@ -134,26 +142,16 @@ final class ExplanationLibraryCell: UICollectionViewCell {
         let contentWidth = max(width - 52, 120)
         let verseWidth = contentWidth - 8
 
-        let verseHeight: CGFloat
-        if isExpanded {
-            verseHeight = ceil((verseText as NSString).boundingRect(
-                with: CGSize(width: verseWidth, height: .greatestFiniteMagnitude),
-                options: [.usesLineFragmentOrigin, .usesFontLeading],
-                attributes: [.font: verseFont],
-                context: nil
-            ).height)
-        } else {
-            let full = ceil((verseText as NSString).boundingRect(
-                with: CGSize(width: verseWidth, height: .greatestFiniteMagnitude),
-                options: [.usesLineFragmentOrigin, .usesFontLeading],
-                attributes: [.font: verseFont],
-                context: nil
-            ).height)
-            verseHeight = min(full, ceil(verseFont.lineHeight * 2))
-        }
+        let fullVerse = ceil((verseText as NSString).boundingRect(
+            with: CGSize(width: verseWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: verseFont],
+            context: nil
+        ).height)
+        let verseHeight = min(fullVerse, ceil(verseFont.lineHeight * 2))
 
-        // pads + header (action circles) + verse + bottom pad
-        var height: CGFloat = 8 + 12 + Self.actionCircleSize + 8 + verseHeight + 14 + 8
+        // pads + header (action circles) + collapsed verse preview + bottom pad
+        var height: CGFloat = 8 + 12 + Self.actionCircleSize + 8 + (isExpanded ? 0 : verseHeight) + 14 + 8
 
         if isExpanded {
             let paragraph = NSMutableParagraphStyle()
@@ -231,6 +229,11 @@ final class ExplanationLibraryCell: UICollectionViewCell {
         explanationBottomConstraint = explanationBottom
         let verseBottomCollapsed = verseLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -14)
         verseBottomCollapsedConstraint = verseBottomCollapsed
+        let dividerBelowVerse = divider.topAnchor.constraint(equalTo: verseLabel.bottomAnchor, constant: 12)
+        dividerBelowVerseConstraint = dividerBelowVerse
+        let dividerBelowHeader = divider.topAnchor.constraint(equalTo: chevronCircle.bottomAnchor, constant: 12)
+        dividerBelowHeaderConstraint = dividerBelowHeader
+        dividerBelowVerse.isActive = true
 
         NSLayoutConstraint.activate([
             cardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
@@ -272,7 +275,6 @@ final class ExplanationLibraryCell: UICollectionViewCell {
             verseLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 14),
             verseLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
 
-            divider.topAnchor.constraint(equalTo: verseLabel.bottomAnchor, constant: 12),
             divider.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 14),
             divider.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
             divider.heightAnchor.constraint(equalToConstant: 1),
