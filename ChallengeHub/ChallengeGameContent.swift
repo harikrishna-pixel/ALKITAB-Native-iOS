@@ -14,6 +14,17 @@ enum ChallengeKind: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Value sent as `contentType` on POST /api/challenges.
+    var apiContentType: String {
+        switch self {
+        case .quickQuiz: return "quiz"
+        case .trueFalse: return "true_or_false"
+        case .wordSearch: return "word_search"
+        case .fillVerse: return "fill_verse"
+        case .verseMatch: return "verse_match"
+        }
+    }
+
     var title: String {
         switch self {
         case .quickQuiz: return "Quick Quiz"

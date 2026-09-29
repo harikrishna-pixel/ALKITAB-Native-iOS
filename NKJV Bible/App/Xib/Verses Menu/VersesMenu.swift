@@ -101,7 +101,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         super.layoutSubviews()
         MainView.roundCorners(corners: [.topLeft, .topRight], radius: 30)
         hideVerseMenuCloseIcon()
-        hideExplainAdIconAndAlignBottomRow()
+        showCreateChallengeAndAlignBottomRow()
         if let getExplanationButton {
             MainView.bringSubviewToFront(getExplanationButton)
         }
@@ -167,7 +167,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         self.Bookmark.ViewBorder(color: UIColor.gray)
         self.ExplainView.ViewBorder(color: UIColor.gray)
         // Temporarily remove Explain (ad) icon from this menu.
-        hideExplainAdIconAndAlignBottomRow()
+        showCreateChallengeAndAlignBottomRow()
         
         
                 
@@ -178,13 +178,12 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         self.RefreshTxt.textColor = self.Themecolor!
         self.UnderlineTxt.textColor = self.Themecolor!
         self.ImageTxt.textColor = self.Themecolor!
-        // self.ExplainTxt.textColor = self.Themecolor!
-        // self.ExplainTxt.text = "Explain (ad)"
-        // Ensure single line and prevent truncation - font will scale down if needed
-        // self.ExplainTxt.numberOfLines = 1
-        // self.ExplainTxt.adjustsFontSizeToFitWidth = true
-        // self.ExplainTxt.minimumScaleFactor = 0.6
-        // self.ExplainTxt.lineBreakMode = .byClipping
+        self.ExplainTxt.textColor = self.Themecolor!
+        self.ExplainTxt.text = "Create Challenge"
+        self.ExplainTxt.numberOfLines = 2
+        self.ExplainTxt.adjustsFontSizeToFitWidth = true
+        self.ExplainTxt.minimumScaleFactor = 0.6
+        self.ExplainTxt.lineBreakMode = .byWordWrapping
     }
 
     private func setupGetExplanationButton() {
@@ -236,21 +235,17 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         Copy.superview?.superview as? UIStackView
     }
 
-    /// Temporarily remove Explain (ad). Bottom row is a true 3-column grid:
-    /// Copy / Reset / Share spaced evenly across the same width as the top row.
-    private func hideExplainAdIconAndAlignBottomRow() {
-        ExplainView.isHidden = true
-        ExplainTxt.isHidden = true
+    /// Bottom row: Copy / Reset / Share / Create Challenge, same width as the top row.
+    private func showCreateChallengeAndAlignBottomRow() {
+        ExplainView.isHidden = false
+        ExplainTxt.isHidden = false
+        ExplainTxt.text = "Create Challenge"
+        let symbol = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular)
+        ExplainImg.image = UIImage(systemName: "plus.circle.fill", withConfiguration: symbol)
+        ExplainImg.tintColor = Themecolor ?? PrimaryColor
 
         guard let topStack = topActionStackView(),
               let bottomStack = bottomActionStackView() else { return }
-
-        // Fully remove the 4th Explain column from the stack (not just hide content).
-        if let explainColumn = ExplainView.superview,
-           bottomStack.arrangedSubviews.contains(explainColumn) {
-            bottomStack.removeArrangedSubview(explainColumn)
-            explainColumn.removeFromSuperview()
-        }
 
         bottomStack.distribution = .fillEqually
         bottomStack.spacing = topStack.spacing
@@ -280,7 +275,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
             }.forEach { $0.isActive = false }
         }
 
-        // 3 icons evenly across the exact same horizontal span as the top row.
+        // Four actions across the same horizontal span as the top row.
         NSLayoutConstraint.activate([
             bottomStack.leadingAnchor.constraint(equalTo: topStack.leadingAnchor),
             bottomStack.trailingAnchor.constraint(equalTo: topStack.trailingAnchor),
@@ -547,13 +542,29 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     }
     
     @IBAction func ExplainAction(_ sender: Any) {
-        UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "OfferClick")+1, forKey: "OfferClick")
-        App_Protocol.delegateReader?.ExplanationNib(
-            VersePosition: VersePosition,
-            BookName: BookName,
-            Pageindex: Pageindex,
-            BookVerse: BookVerse!
-        )
+        openCreateChallenge()
+    }
+
+    private func openCreateChallenge() {
+        let chapter = max(1, Pageindex - 1)
+        let verseIndex = max(0, VersePosition - 1)
+        let text = (BookVerse != nil && verseIndex < BookVerse!.count) ? BookVerse![verseIndex] : ""
+        let reference = "\(BookName) \(chapter):\(VersePosition)"
+        let context = ChallengeVerseContext(reference: reference, text: text)
+        let config = ChallengeSessionConfig.verseDeep(book: BookName, chapter: chapter, questionCount: 3)
+
+        App_Protocol.delegateReader?.CloseMenu()
+
+        guard let presenter = OnboardingAuthManager.topViewController() else { return }
+        let flow = ChallengeCreateFlowViewController()
+        flow.sessionConfig = config
+        flow.verseContext = context
+        if let nav = presenter.navigationController ?? (presenter as? UINavigationController) {
+            nav.pushViewController(flow, animated: true)
+        } else {
+            flow.modalPresentationStyle = .fullScreen
+            presenter.present(flow, animated: true)
+        }
     }
 
     @IBAction func GetExplanationAction(_ sender: Any) {

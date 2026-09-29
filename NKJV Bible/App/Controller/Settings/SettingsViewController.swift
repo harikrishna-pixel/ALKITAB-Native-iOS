@@ -111,8 +111,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         } else if section == 15 {
             return 1
         } else if section == 8 {
-            // Open Chat hidden from Settings
-            return 0
+            return 1
         } else if section == 7 {
             return 1
         } else {
@@ -238,12 +237,17 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           
           return cell
 
-//      case 8:
-//          self.SettingsCell = (self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as! SettingsTableCell?)
-//          self.SettingsCell!.Feedback.text = "Open Chat"
-//          self.SettingsCell!.Feedback.textColor = (Themecolor == BGNightMode ? .white:.black)
-//          ImageTint.sharedInstance.imageTintcolorMethod(img: self.SettingsCell!.arrow2!, colorVu: (Themecolor == BGNightMode ? .white:.gray))
-//          return self.SettingsCell!
+      case 8:
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.Feedback?.text = "Challenge Attempts"
+          cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
+          if let arrow = cell.arrow2 {
+              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
+          }
+          return cell
       
       case 9:
           guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "empty2") as? SettingsTableCell else {
@@ -342,8 +346,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           App_Protocol.delegateReader?.hideBottomMenu(Status: true)
       case 7:
           self.openAIChat()
-//      case 8:
-//          self.openOpenChat()
+      case 8:
+          self.openChallengeAttempts()
       case 10:
           if NetworkManager.sharedInstance.isConnectedToInternet() {
               let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "FeedbackViewController") as! FeedbackViewController
@@ -517,6 +521,15 @@ extension SettingsViewController {
       App_Protocol.delegateReader?.AboutusCall()
   }
     
+    @objc func openChallengeAttempts() {
+        if NetworkManager.sharedInstance.isConnectedToInternet() {
+            let vc = ChallengeAttemptsViewController()
+            navigationController?.pushViewController(vc, animated: true)
+        } else {
+            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+        }
+    }
+
     @objc func openAIChat() {
         if NetworkManager.sharedInstance.isConnectedToInternet() {
             let vc = AIChatViewController()

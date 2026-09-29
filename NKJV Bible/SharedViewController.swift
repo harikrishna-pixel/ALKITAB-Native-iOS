@@ -28,6 +28,13 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
     var VerseImgData:Data?
 //    var VerseImg:UIImage?
     var Bookname:String?
+    /// Set when sharing a VerseDeep challenge. Falls back to the app link.
+    var challengeShareUrl: String?
+
+    private func outboundLink() -> String {
+        let custom = challengeShareUrl?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return custom.isEmpty ? APP_LINK : custom
+    }
     
     
     
@@ -175,7 +182,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
            composeVC.mailComposeDelegate = self
            composeVC.setToRecipients([])
            composeVC.setSubject(Bookname!)
-           composeVC.setMessageBody("\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(APP_LINK)", isHTML: false)
+           composeVC.setMessageBody("\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(outboundLink())", isHTML: false)
             
             
             if self.VerseImgName != nil && self.VerseImgName! != "" {
@@ -200,7 +207,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
     
     func WhatsappShare() {        
         
-        let urlWhats = "whatsapp://send?text=\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(APP_LINK)"
+        let urlWhats = "whatsapp://send?text=\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(outboundLink())"
           if let urlString = urlWhats.addingPercentEncoding(withAllowedCharacters: NSCharacterSet.urlQueryAllowed) {
               if let whatsappURL = NSURL(string: urlString) {
                   if UIApplication.shared.canOpenURL(whatsappURL as URL) {
@@ -277,7 +284,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
         
            if (MFMessageComposeViewController.canSendText()) {
                let controller = MFMessageComposeViewController()
-               controller.body = "\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(APP_LINK)"
+               controller.body = "\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(outboundLink())"
                controller.recipients = [" "]
                controller.messageComposeDelegate = self
                self.present(controller, animated: true, completion: nil)
@@ -296,7 +303,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
     
     // MARK:- Copy Text
     func CopyAction() {
-        UIPasteboard.general.string = "\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(APP_LINK)"
+        UIPasteboard.general.string = "\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(outboundLink())"
         self.view.makeToast("Copied successfully", duration: 2.0, position: .bottom)
         
     }
@@ -307,8 +314,8 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
     func Facebook() {
         
         let content = ShareLinkContent()
-        content.quote = "\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(APP_LINK)"
-        content.contentURL = URL(string: APP_LINK)!
+        content.quote = "\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(outboundLink())"
+        content.contentURL = URL(string: outboundLink()) ?? URL(string: APP_LINK)!
         
         let shareTxt = ShareDialog(viewController: self, content: content, delegate: self)
         shareTxt.delegate = self
@@ -361,7 +368,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
     
     func shared() {
         
-        let text = "\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(APP_LINK)"
+        let text = "\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(outboundLink())"
         let textShare = [ text ]
         let activityViewController = UIActivityViewController(activityItems: textShare as [Any] , applicationActivities: nil)
         activityViewController.popoverPresentationController?.sourceView = self.view // so that iPads won't crash

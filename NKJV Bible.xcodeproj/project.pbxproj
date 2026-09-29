@@ -535,12 +535,6 @@
 		01D52560295DA63F00DAC5F8 /* PlayfairDisplay-Black.otf in Resources */ = {isa = PBXBuildFile; fileRef = 01D5255A295DA63F00DAC5F8 /* PlayfairDisplay-Black.otf */; };
 		01D52561295DA63F00DAC5F8 /* PlayfairDisplay-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 01D5255B295DA63F00DAC5F8 /* PlayfairDisplay-Regular.otf */; };
 		01D52562295DA63F00DAC5F8 /* PlayfairDisplay-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 01D5255C295DA63F00DAC5F8 /* PlayfairDisplay-Italic.otf */; };
-		01D52563295DA6D900DAC5F8 /* PlayfairDisplay-BoldItalic.otf in Sources */ = {isa = PBXBuildFile; fileRef = 01D52557295DA63F00DAC5F8 /* PlayfairDisplay-BoldItalic.otf */; };
-		01D52564295DA6D900DAC5F8 /* PlayfairDisplay-Bold.otf in Sources */ = {isa = PBXBuildFile; fileRef = 01D52558295DA63F00DAC5F8 /* PlayfairDisplay-Bold.otf */; };
-		01D52565295DA6D900DAC5F8 /* PlayfairDisplay-BlackItalic.otf in Sources */ = {isa = PBXBuildFile; fileRef = 01D52559295DA63F00DAC5F8 /* PlayfairDisplay-BlackItalic.otf */; };
-		01D52566295DA6D900DAC5F8 /* PlayfairDisplay-Black.otf in Sources */ = {isa = PBXBuildFile; fileRef = 01D5255A295DA63F00DAC5F8 /* PlayfairDisplay-Black.otf */; };
-		01D52567295DA6D900DAC5F8 /* PlayfairDisplay-Regular.otf in Sources */ = {isa = PBXBuildFile; fileRef = 01D5255B295DA63F00DAC5F8 /* PlayfairDisplay-Regular.otf */; };
-		01D52568295DA6D900DAC5F8 /* PlayfairDisplay-Italic.otf in Sources */ = {isa = PBXBuildFile; fileRef = 01D5255C295DA63F00DAC5F8 /* PlayfairDisplay-Italic.otf */; };
 		01D6CCA62A4F0FA00084C824 /* MenuImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01D6CCA52A4F0F9F0084C824 /* MenuImage.swift */; };
 		01D822CE295FFDD30076CF93 /* CopYRightsVc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01D822CD295FFDD30076CF93 /* CopYRightsVc.swift */; };
 		01D822D1295FFF1D0076CF93 /* LoaderVc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01D822D0295FFF1D0076CF93 /* LoaderVc.swift */; };
@@ -653,6 +647,21 @@
 		C3D4E5F62F46C30100000033 /* ChallengeHubSetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000023 /* ChallengeHubSetupViewController.swift */; };
 		C3D4E5F62F46C30100000034 /* ChallengeHubPickerComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000024 /* ChallengeHubPickerComponents.swift */; };
 		C3D4E5F62F46C30100000035 /* QuizOrChallengeChooserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000025 /* QuizOrChallengeChooserView.swift */; };
+		C4E5F6072F47D40100000001 /* ChallengeCreateFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D40100000011 /* ChallengeCreateFlowView.swift */; };
+		C4E5F6072F47D40100000002 /* ChallengeCreateFlowViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D40100000012 /* ChallengeCreateFlowViewController.swift */; };
+		C4E5F6072F47D40100000003 /* ChallengeCreateTypePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D40100000013 /* ChallengeCreateTypePickerView.swift */; };
+		C4E5F6072F47D40100000004 /* ChallengeCreatedSuccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D40100000014 /* ChallengeCreatedSuccessView.swift */; };
+		C4E5F6072F47D40100000005 /* ChallengeGeneratingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D40100000015 /* ChallengeGeneratingView.swift */; };
+		C4E5F6072F47D40100000006 /* ChallengeInviteFriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D40100000016 /* ChallengeInviteFriendsView.swift */; };
+		C4E5F6072F47D40100000007 /* ChallengeQuestionCountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D40100000017 /* ChallengeQuestionCountView.swift */; };
+		C4E5F6072F47D40100000008 /* ChallengeSharedConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D40100000018 /* ChallengeSharedConfirmationView.swift */; };
+		C4E5F6072F47D40100000009 /* ChallengeVerseDeepPlayChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D40100000019 /* ChallengeVerseDeepPlayChrome.swift */; };
+		C4E5F6072F47D4010000000A /* ChallengeVerseDeepResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001A /* ChallengeVerseDeepResultView.swift */; };
+		C4E5F6072F47D4010000000B /* ChallengeVerseDeepTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001B /* ChallengeVerseDeepTheme.swift */; };
+		C4E5F6072F47D4010000000C /* ChallengeHubShareHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001C /* ChallengeHubShareHelper.swift */; };
+		C4E5F6072F47D4010000000D /* CreatorChallengeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */; };
+		C4E5F6072F47D4010000000E /* CreatorChallengeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */; };
+		C4E5F6072F47D4010000000F /* ChallengeAttemptsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001F /* ChallengeAttemptsViewController.swift */; };
 		D42E2B172BF79432006D4D18 /* puzzal Notification in Resources */ = {isa = PBXBuildFile; fileRef = D42E2B162BF79432006D4D18 /* puzzal Notification */; };
 /* End PBXBuildFile section */
 
@@ -1329,6 +1338,21 @@
 		C3D4E5F62F46C30100000016 /* ChallengeVerseMatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseMatchView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000017 /* ChallengeTrueFalseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeTrueFalseView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000018 /* ChallengeWordSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeWordSearchView.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D40100000011 /* ChallengeCreateFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreateFlowView.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D40100000012 /* ChallengeCreateFlowViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreateFlowViewController.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D40100000013 /* ChallengeCreateTypePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreateTypePickerView.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D40100000014 /* ChallengeCreatedSuccessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreatedSuccessView.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D40100000015 /* ChallengeGeneratingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeGeneratingView.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D40100000016 /* ChallengeInviteFriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeInviteFriendsView.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D40100000017 /* ChallengeQuestionCountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeQuestionCountView.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D40100000018 /* ChallengeSharedConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeSharedConfirmationView.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D40100000019 /* ChallengeVerseDeepPlayChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseDeepPlayChrome.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D4010000001A /* ChallengeVerseDeepResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseDeepResultView.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D4010000001B /* ChallengeVerseDeepTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseDeepTheme.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D4010000001C /* ChallengeHubShareHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubShareHelper.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorChallengeModels.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorChallengeService.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D4010000001F /* ChallengeAttemptsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeAttemptsViewController.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000019 /* ChallengeOldStyleChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeOldStyleChrome.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000021 /* ChallengeSessionConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeSessionConfig.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000022 /* ChallengeHubSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubSetupView.swift; sourceTree = "<group>"; };
@@ -1476,6 +1500,7 @@
 				01AIC20129FBD2210006BD11 /* OpenAIChat */,
 				01OPC20129FBD2210006BD21 /* OpenChat */,
 				01PRW20129FBD2210006BD21 /* PrayerWall */,
+				C4E5F6072F47D40200000020 /* CreatorChallenge */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -3604,6 +3629,34 @@
 			path = DailyJourney;
 			sourceTree = "<group>";
 		};
+		C4E5F6072F47D40100000020 /* VerseDeep */ = {
+			isa = PBXGroup;
+			children = (
+				C4E5F6072F47D40100000011 /* ChallengeCreateFlowView.swift */,
+				C4E5F6072F47D40100000012 /* ChallengeCreateFlowViewController.swift */,
+				C4E5F6072F47D40100000013 /* ChallengeCreateTypePickerView.swift */,
+				C4E5F6072F47D40100000014 /* ChallengeCreatedSuccessView.swift */,
+				C4E5F6072F47D40100000015 /* ChallengeGeneratingView.swift */,
+				C4E5F6072F47D40100000016 /* ChallengeInviteFriendsView.swift */,
+				C4E5F6072F47D40100000017 /* ChallengeQuestionCountView.swift */,
+				C4E5F6072F47D40100000018 /* ChallengeSharedConfirmationView.swift */,
+				C4E5F6072F47D40100000019 /* ChallengeVerseDeepPlayChrome.swift */,
+				C4E5F6072F47D4010000001A /* ChallengeVerseDeepResultView.swift */,
+				C4E5F6072F47D4010000001B /* ChallengeVerseDeepTheme.swift */,
+			);
+			path = VerseDeep;
+			sourceTree = "<group>";
+		};
+		C4E5F6072F47D40200000020 /* CreatorChallenge */ = {
+			isa = PBXGroup;
+			children = (
+				C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */,
+				C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */,
+				C4E5F6072F47D4010000001F /* ChallengeAttemptsViewController.swift */,
+			);
+			path = CreatorChallenge;
+			sourceTree = "<group>";
+		};
 		C3D4E5F62F46C30100000020 /* ChallengeHub */ = {
 			isa = PBXGroup;
 			children = (
@@ -3621,6 +3674,8 @@
 				C3D4E5F62F46C30100000017 /* ChallengeTrueFalseView.swift */,
 				C3D4E5F62F46C30100000018 /* ChallengeWordSearchView.swift */,
 				C3D4E5F62F46C30100000019 /* ChallengeOldStyleChrome.swift */,
+				C4E5F6072F47D4010000001C /* ChallengeHubShareHelper.swift */,
+				C4E5F6072F47D40100000020 /* VerseDeep */,
 			);
 			path = ChallengeHub;
 			sourceTree = "<group>";
@@ -4214,17 +4269,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				01D52563295DA6D900DAC5F8 /* PlayfairDisplay-BoldItalic.otf in Sources */,
 				01A473942AB33F5100902C05 /* NotificationList_data.swift in Sources */,
-				01D52564295DA6D900DAC5F8 /* PlayfairDisplay-Bold.otf in Sources */,
 				6F9FDDE32EEFFF2400CE0114 /* StoreManager.swift in Sources */,
-				01D52565295DA6D900DAC5F8 /* PlayfairDisplay-BlackItalic.otf in Sources */,
-				01D52566295DA6D900DAC5F8 /* PlayfairDisplay-Black.otf in Sources */,
 				01D822CE295FFDD30076CF93 /* CopYRightsVc.swift in Sources */,
-				01D52567295DA6D900DAC5F8 /* PlayfairDisplay-Regular.otf in Sources */,
 				017C39832A40401C004C64FA /* QuizProtocol.swift in Sources */,
 				019246792A69202E00D5CF27 /* ColorCell.swift in Sources */,
-				01D52568295DA6D900DAC5F8 /* PlayfairDisplay-Italic.otf in Sources */,
 				0144EF4D2A90CD530022EABF /* IMageEditingPageVc.swift in Sources */,
 				017C39792A40401C004C64FA /* CardView.swift in Sources */,
 				0144EEC02A90CD530022EABF /* FontCCell.swift in Sources */,
@@ -4394,6 +4443,21 @@
 				C3D4E5F62F46C30100000006 /* ChallengeVerseMatchView.swift in Sources */,
 				C3D4E5F62F46C30100000007 /* ChallengeTrueFalseView.swift in Sources */,
 				C3D4E5F62F46C30100000008 /* ChallengeWordSearchView.swift in Sources */,
+				C4E5F6072F47D40100000001 /* ChallengeCreateFlowView.swift in Sources */,
+				C4E5F6072F47D40100000002 /* ChallengeCreateFlowViewController.swift in Sources */,
+				C4E5F6072F47D40100000003 /* ChallengeCreateTypePickerView.swift in Sources */,
+				C4E5F6072F47D40100000004 /* ChallengeCreatedSuccessView.swift in Sources */,
+				C4E5F6072F47D40100000005 /* ChallengeGeneratingView.swift in Sources */,
+				C4E5F6072F47D40100000006 /* ChallengeInviteFriendsView.swift in Sources */,
+				C4E5F6072F47D40100000007 /* ChallengeQuestionCountView.swift in Sources */,
+				C4E5F6072F47D40100000008 /* ChallengeSharedConfirmationView.swift in Sources */,
+				C4E5F6072F47D40100000009 /* ChallengeVerseDeepPlayChrome.swift in Sources */,
+				C4E5F6072F47D4010000000A /* ChallengeVerseDeepResultView.swift in Sources */,
+				C4E5F6072F47D4010000000B /* ChallengeVerseDeepTheme.swift in Sources */,
+				C4E5F6072F47D4010000000C /* ChallengeHubShareHelper.swift in Sources */,
+				C4E5F6072F47D4010000000D /* CreatorChallengeModels.swift in Sources */,
+				C4E5F6072F47D4010000000E /* CreatorChallengeService.swift in Sources */,
+				C4E5F6072F47D4010000000F /* ChallengeAttemptsViewController.swift in Sources */,
 				01B12783294848B800D95467 /* FontCell.swift in Sources */,
 				0144EF482A90CD530022EABF /* ShareViewController.swift in Sources */,
 				01D985C929547B8B00A14035 /* WallpaperCollectionViewCell.swift in Sources */,

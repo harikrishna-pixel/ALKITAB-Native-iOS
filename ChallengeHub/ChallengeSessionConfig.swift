@@ -61,6 +61,25 @@ struct ChallengeSessionConfig {
         )
     }
 
+    static func verseDeep(book: String, chapter: Int, questionCount: Int) -> ChallengeSessionConfig {
+        markAsRead(book: book, chapter: chapter, difficulty: .medium)
+            .withQuestionCount(questionCount)
+    }
+
+    func withQuestionCount(_ count: Int) -> ChallengeSessionConfig {
+        let n = max(1, count)
+        return ChallengeSessionConfig(
+            bookName: bookName,
+            chapter: chapter,
+            difficulty: difficulty,
+            quickQuizCount: n,
+            fillQuestionCount: n,
+            trueFalseCount: n,
+            verseMatchCount: min(n, 5),
+            wordSearchCount: n
+        )
+    }
+
     func bibleChapterIndex() -> Int {
         chapter > 0 ? chapter - 1 : chapter
     }
