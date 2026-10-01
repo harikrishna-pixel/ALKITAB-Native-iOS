@@ -63,7 +63,15 @@ struct ChallengeCreateFlowView: View {
                     verseReference: verse.reference,
                     selectedCount: $questionCount,
                     onBack: { step = .pickType },
-                    onGenerate: { startGenerate() }
+                    onGenerate: {
+                        guard selectedKind.isPremium else {
+                            startGenerate()
+                            return
+                        }
+                        AIUsageLimiter.shared.requestAccess(.quiz) {
+                            startGenerate()
+                        }
+                    }
                 )
             case .generating:
                 ChallengeGeneratingView(verseReference: verse.reference)
@@ -179,6 +187,7 @@ struct ChallengeCreateFlowView: View {
         step = .generating
         shareSession.create(kind: selectedKind, verse: verse, questions: payload) { result in
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                AIUsageLimiter.shared.commit(.quiz)
                 switch result {
                 case .success:
                     step = .created

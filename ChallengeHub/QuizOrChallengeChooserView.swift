@@ -199,11 +199,14 @@ final class QuizOrChallengeChooserViewController: UIViewController {
                 self?.openSelection(destination: .bibleQuiz)
             },
             onOpenChallenge: { [weak self] kind in
-                if kind.isPremium && !ChallengeGameFactory.hasPremiumAccess {
-                    self?.openPaywall()
+                guard kind.isPremium else {
+                    self?.openSelection(destination: .challenge(kind))
                     return
                 }
-                self?.openSelection(destination: .challenge(kind))
+                AIUsageLimiter.shared.requestAccess(.quiz, from: self) {
+                    AIUsageLimiter.shared.commit(.quiz)
+                    self?.openSelection(destination: .challenge(kind))
+                }
             }
         )
 

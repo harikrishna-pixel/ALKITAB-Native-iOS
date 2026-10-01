@@ -73,14 +73,16 @@ struct ChallengeHubView: View {
                 kind: kind,
                 onCancel: { pendingKind = nil },
                 onStart: { config in
-                    if kind.isPremium && !ChallengeGameFactory.hasPremiumAccess {
+                    guard kind.isPremium else {
+                        onOpenChallenge(kind, config.primaryVerse(), config)
                         pendingKind = nil
-                        onOpenPremiumPaywall()
                         return
                     }
-                    let startVerse = config.primaryVerse()
-                    onOpenChallenge(kind, startVerse, config)
-                    pendingKind = nil
+                    AIUsageLimiter.shared.requestAccess(.quiz) {
+                        AIUsageLimiter.shared.commit(.quiz)
+                        onOpenChallenge(kind, config.primaryVerse(), config)
+                        pendingKind = nil
+                    }
                 }
             )
         }
@@ -114,7 +116,7 @@ struct ChallengeHubView: View {
 
                 if kind.isPremium {
                     HStack(spacing: 4) {
-                        Image(systemName: ChallengeGameFactory.hasPremiumAccess ? "crown.fill" : "lock.fill")
+                        Image(systemName: AIUsageLimiter.shared.isQuizUnlocked ? "crown.fill" : "lock.fill")
                             .font(.system(size: 11))
                         Text("Premium")
                             .font(.system(size: 12, weight: .semibold))
@@ -143,12 +145,15 @@ struct ChallengeHubView: View {
     }
 
     private func open(_ kind: ChallengeKind) {
-        if kind.isPremium && !ChallengeGameFactory.hasPremiumAccess {
-            onOpenPremiumPaywall()
-            return
-        }
         if let sessionConfig {
-            onOpenChallenge(kind, verse, sessionConfig)
+            guard kind.isPremium else {
+                onOpenChallenge(kind, verse, sessionConfig)
+                return
+            }
+            AIUsageLimiter.shared.requestAccess(.quiz) {
+                AIUsageLimiter.shared.commit(.quiz)
+                onOpenChallenge(kind, verse, sessionConfig)
+            }
             return
         }
         pendingKind = kind
@@ -211,13 +216,16 @@ struct ChallengeGameScreen: View {
                 current: activeKind,
                 sessionConfig: sessionConfig,
                 onSelect: { kind in
-                    if kind.isPremium && !ChallengeGameFactory.hasPremiumAccess {
+                    guard kind.isPremium, kind != activeKind else {
+                        activeKind = kind
                         showKindPicker = false
-                        onOpenPremiumPaywall()
                         return
                     }
-                    activeKind = kind
-                    showKindPicker = false
+                    AIUsageLimiter.shared.requestAccess(.quiz) {
+                        AIUsageLimiter.shared.commit(.quiz)
+                        activeKind = kind
+                        showKindPicker = false
+                    }
                 },
                 onDismiss: { showKindPicker = false }
             )
@@ -271,7 +279,7 @@ struct ChallengeKindPickerSheet: View {
 
                                 if kind.isPremium {
                                     HStack(spacing: 4) {
-                                        Image(systemName: ChallengeGameFactory.hasPremiumAccess ? "crown.fill" : "lock.fill")
+                                        Image(systemName: AIUsageLimiter.shared.isQuizUnlocked ? "crown.fill" : "lock.fill")
                                             .font(.system(size: 11))
                                         Text("Premium")
                                             .font(.system(size: 12, weight: .semibold))

@@ -219,6 +219,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
             button.trailingAnchor.constraint(equalTo: MainView.trailingAnchor, constant: -Self.getExplanationHorizontalInset),
             button.heightAnchor.constraint(equalToConstant: Self.getExplanationButtonHeight)
         ])
+        AIUsageLimiter.shared.applyLockBadge(to: button, feature: .explanation, tint: .white)
 
         hideVerseMenuCloseIcon()
         repositionBookNameBelowGetExplanationButton(button, gap: Self.getExplanationBookNameGap)
@@ -569,12 +570,15 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
 
     @IBAction func GetExplanationAction(_ sender: Any) {
         UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "OfferClick")+1, forKey: "OfferClick")
-        App_Protocol.delegateReader?.ExplanationNib(
-            VersePosition: VersePosition,
-            BookName: BookName,
-            Pageindex: Pageindex,
-            BookVerse: BookVerse!
-        )
+        AIUsageLimiter.shared.requestAccess(.explanation) { [weak self] in
+            guard let self = self else { return }
+            App_Protocol.delegateReader?.ExplanationNib(
+                VersePosition: self.VersePosition,
+                BookName: self.BookName,
+                Pageindex: self.Pageindex,
+                BookVerse: self.BookVerse!
+            )
+        }
     }
     
     

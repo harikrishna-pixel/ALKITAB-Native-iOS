@@ -559,6 +559,7 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         // FIXED: Add observer before restore
         SKPaymentQueue.default().add(self)
         SKPaymentQueue.default().restoreCompletedTransactions()
+        restoreLegacyPaidAppIfNeeded()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
             self.isLoading = false
@@ -944,6 +945,7 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         isLoading = false
         
         if !hasRestoredTransactions {
+            if LegacyPaidAppService.shared.isLegacyPaidAppUser { return }
             DispatchQueue.main.async {
                 self.showRestoreToast("No active plan is found")
                 self.onRestoreFailed?()
@@ -977,6 +979,23 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         })
     }
     
+    /// Re-checks the original paid-app download (AppTransaction) alongside the normal IAP restore.
+    private func restoreLegacyPaidAppIfNeeded() {
+        Task {
+            let status = await LegacyPaidAppService.shared.checkLegacyStatus(forceRefresh: true)
+            guard status == .legacyPaid else { return }
+            DispatchQueue.main.async {
+                App_Protocol.delegateReader?.paymentStatus()
+                App_Protocol.DelegateSlideCard?.paymentStatus()
+                ImageAppProtocol.ImageTxtEditDelegate?.CheckPay()
+                guard !self.hasRestoredTransactions else { return }
+                self.isLoading = false
+                self.showRestoreToast("Original app purchase restored")
+                self.onRestoreSuccess?()
+            }
+        }
+    }
+
     func paymentQueue(_ queue: SKPaymentQueue, restoreCompletedTransactionsFailedWithError error: Error) {
         isLoading = false
         RestoreClass.shared.restoreData(NavigateStatus: false)

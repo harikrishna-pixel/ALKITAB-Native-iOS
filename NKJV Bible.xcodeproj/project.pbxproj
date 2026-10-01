@@ -415,6 +415,7 @@
 		019450EE29711EED00940862 /* DailyVersesPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 019450ED29711EED00940862 /* DailyVersesPopup.swift */; };
 		019450F12971405300940862 /* SubscriptionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 019450F02971405300940862 /* SubscriptionViewController.swift */; };
 		019450F329715B9900940862 /* PaymentHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 019450F229715B9900940862 /* PaymentHistory.swift */; };
+		E7F8091A2F4AF70100000001 /* LegacyPaidAppService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */; };
 		019450F629715DED00940862 /* GetReceptKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 019450F529715DED00940862 /* GetReceptKey.swift */; };
 		019450F9297169F700940862 /* SubscriptionPopup.xib in Resources */ = {isa = PBXBuildFile; fileRef = 019450F8297169F700940862 /* SubscriptionPopup.xib */; };
 		019450FB29716A0900940862 /* SubscriptionPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 019450FA29716A0900940862 /* SubscriptionPopup.swift */; };
@@ -468,6 +469,7 @@
 		01AIC30129FBD2210006BD21 /* OpenAIChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AIC10129FBD2210006BD01 /* OpenAIChatService.swift */; };
 		01AIC30229FBD2210006BD22 /* AIChatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AIC10229FBD2210006BD02 /* AIChatViewController.swift */; };
 		01AIC30329FBD2210006BD23 /* OpenAIExplanationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AIC10329FBD2210006BD03 /* OpenAIExplanationService.swift */; };
+		D6E7F8092F49F60100000001 /* AIUsageLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */; };
 		01B1277E2948488E00D95467 /* FontStyleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B1277D2948488E00D95467 /* FontStyleViewController.swift */; };
 		01B12782294848B800D95467 /* FontCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 01B12780294848B800D95467 /* FontCell.xib */; };
 		01B12783294848B800D95467 /* FontCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B12781294848B800D95467 /* FontCell.swift */; };
@@ -1109,6 +1111,7 @@
 		019450ED29711EED00940862 /* DailyVersesPopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyVersesPopup.swift; sourceTree = "<group>"; };
 		019450F02971405300940862 /* SubscriptionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionViewController.swift; sourceTree = "<group>"; };
 		019450F229715B9900940862 /* PaymentHistory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PaymentHistory.swift; sourceTree = "<group>"; };
+		E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyPaidAppService.swift; sourceTree = "<group>"; };
 		019450F529715DED00940862 /* GetReceptKey.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GetReceptKey.swift; sourceTree = "<group>"; };
 		019450F8297169F700940862 /* SubscriptionPopup.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = SubscriptionPopup.xib; sourceTree = "<group>"; };
 		019450FA29716A0900940862 /* SubscriptionPopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionPopup.swift; sourceTree = "<group>"; };
@@ -1162,6 +1165,7 @@
 		01AIC10129FBD2210006BD01 /* OpenAIChatService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenAIChatService.swift; sourceTree = "<group>"; };
 		01AIC10229FBD2210006BD02 /* AIChatViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AIChatViewController.swift; sourceTree = "<group>"; };
 		01AIC10329FBD2210006BD03 /* OpenAIExplanationService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenAIExplanationService.swift; sourceTree = "<group>"; };
+		D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUsageLimiter.swift; sourceTree = "<group>"; };
 		01B1277D2948488E00D95467 /* FontStyleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontStyleViewController.swift; sourceTree = "<group>"; };
 		01B12780294848B800D95467 /* FontCell.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = FontCell.xib; sourceTree = "<group>"; };
 		01B12781294848B800D95467 /* FontCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FontCell.swift; sourceTree = "<group>"; };
@@ -2847,6 +2851,7 @@
 			children = (
 				019450F429715DED00940862 /* GetReceptKey */,
 				019450F229715B9900940862 /* PaymentHistory.swift */,
+				E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */,
 				019450F02971405300940862 /* SubscriptionViewController.swift */,
 				01B5E24C29F24533006ED871 /* PaymentPopupVC.swift */,
 				01B5E24E29F24E16006ED871 /* PayCell.swift */,
@@ -2965,6 +2970,7 @@
 			children = (
 				01AIC10129FBD2210006BD01 /* OpenAIChatService.swift */,
 				01AIC10329FBD2210006BD03 /* OpenAIExplanationService.swift */,
+				D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */,
 			);
 			path = OpenAIChat;
 			sourceTree = "<group>";
@@ -4359,6 +4365,7 @@
 				017C394E2A40401C004C64FA /* QuizWalletTableCell.swift in Sources */,
 				0144EEBB2A90CD530022EABF /* Filter.swift in Sources */,
 				019450F329715B9900940862 /* PaymentHistory.swift in Sources */,
+				E7F8091A2F4AF70100000001 /* LegacyPaidAppService.swift in Sources */,
 				018F8C1B294315C9005F9F30 /* PageSwipeVc.swift in Sources */,
 				017C397D2A40401C004C64FA /* ChapterCollectionViewCell.swift in Sources */,
 				01DBC6A8294DDFD100C02AA1 /* VerseNotification.swift in Sources */,
@@ -4505,6 +4512,7 @@
 				01GEM02529FBD2210006BD25 /* VerseExplanationView.swift in Sources */,
 				01AIC30129FBD2210006BD21 /* OpenAIChatService.swift in Sources */,
 				01AIC30329FBD2210006BD23 /* OpenAIExplanationService.swift in Sources */,
+				D6E7F8092F49F60100000001 /* AIUsageLimiter.swift in Sources */,
 				01AIC30229FBD2210006BD22 /* AIChatViewController.swift in Sources */,
 				01OPC30129FBD2210006BD31 /* OpenChatService.swift in Sources */,
 				01OPC30229FBD2210006BD32 /* OpenChatViewController.swift in Sources */,

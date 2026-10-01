@@ -54,6 +54,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if FIREBASE_ENABLE {
             FirebaseApp.configure()
         }
+
+        LegacyPaidAppService.shared.refreshAtLaunch()
         
         if UserDefaults.standard.integer(forKey: "Verses") >= 563 {
             UserDefaults.standard.set(1, forKey: "Verses")

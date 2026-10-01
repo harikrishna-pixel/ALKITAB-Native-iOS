@@ -33,7 +33,7 @@ class PaymentHistory: NSObject {
                 let showDate1 = GetReceptKey.shared.convertData(date: date)
         
         
-           if showDate1.isGreaterThan(Date()) || (IS_SUBSCRIPTION_ENABLE == 1 && SUBSCRIPTIONID_LifeTime != "" && UserDefaults.standard.string(forKey: "PaymentId") ?? "" == SUBSCRIPTIONID_LifeTime) || ADS_TYPE == 0 {
+           if showDate1.isGreaterThan(Date()) || (IS_SUBSCRIPTION_ENABLE == 1 && SUBSCRIPTIONID_LifeTime != "" && UserDefaults.standard.string(forKey: "PaymentId") ?? "" == SUBSCRIPTIONID_LifeTime) || ADS_TYPE == 0 || LegacyPaidAppService.shared.isLegacyPaidAppUser {
                return false
             } else {
                 return true
@@ -48,11 +48,21 @@ class PaymentHistory: NSObject {
                 }
                 let showDate1 = GetReceptKey.shared.convertData(date: date)
             
-           if showDate1.isGreaterThan(Date()) || (IS_SUBSCRIPTION_ENABLE == 1 && SUBSCRIPTIONID_LifeTime != "" && UserDefaults.standard.string(forKey: "PaymentId") ?? "" == SUBSCRIPTIONID_LifeTime) {
+           if showDate1.isGreaterThan(Date()) || (IS_SUBSCRIPTION_ENABLE == 1 && SUBSCRIPTIONID_LifeTime != "" && UserDefaults.standard.string(forKey: "PaymentId") ?? "" == SUBSCRIPTIONID_LifeTime) || LegacyPaidAppService.shared.isLegacyPaidAppUser {
                return false
             } else {
                 return true
             }
+    }
+
+    /// True only for an IAP / subscription that is currently paid (legacy paid-app status not included).
+    func hasActivePurchase() -> Bool {
+        var date = CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI)
+        if date == "" {
+            date = Date().string(format: "dd-MM-yyyy")
+        }
+        let showDate1 = GetReceptKey.shared.convertData(date: date)
+        return showDate1.isGreaterThan(Date()) || (IS_SUBSCRIPTION_ENABLE == 1 && SUBSCRIPTIONID_LifeTime != "" && UserDefaults.standard.string(forKey: "PaymentId") ?? "" == SUBSCRIPTIONID_LifeTime)
     }
     
     

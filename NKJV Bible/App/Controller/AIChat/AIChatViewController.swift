@@ -63,6 +63,13 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         App_Protocol.delegateReader?.hideBottomMenu(Status: true)
         // AI Chat owns keyboard inset; disable global IQKeyboard so the whole screen does not shift/stack.
         IQKeyboardManager.shared().isEnabled = false
+        refreshSendLock()
+    }
+
+    private func refreshSendLock() {
+        let sendConfig = UIImage.SymbolConfiguration(pointSize: 36, weight: .semibold)
+        let symbol = AIUsageLimiter.shared.isLocked(.aiChat) ? "lock.circle.fill" : "arrow.up.circle.fill"
+        sendButton.setImage(UIImage(systemName: symbol, withConfiguration: sendConfig), for: .normal)
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -477,6 +484,13 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             return
         }
 
+        AIUsageLimiter.shared.requestAccess(.aiChat, from: self) { [weak self] in
+            self?.sendMessage(text)
+        }
+    }
+
+    private func sendMessage(_ text: String) {
+        guard !isSending else { return }
         messages.append(AIChatMessage(role: .user, text: text))
         inputTextView.text = ""
         placeholderLabel.isHidden = false
@@ -496,6 +510,8 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
 
             switch result {
             case .success(let reply):
+                AIUsageLimiter.shared.commit(.aiChat)
+                self.refreshSendLock()
                 self.messages.append(AIChatMessage(role: .assistant, text: reply))
             case .failure(let error):
                 self.view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)

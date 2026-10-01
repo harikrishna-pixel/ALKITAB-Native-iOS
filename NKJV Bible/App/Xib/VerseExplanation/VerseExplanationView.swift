@@ -465,6 +465,7 @@ final class VerseExplanationView: UIView {
             self.isLoading = false
             switch result {
             case .success(let text):
+                AIUsageLimiter.shared.commit(.explanation)
                 self.explanationText = text
                 self.showSuccess(text)
             case .failure(let error):
@@ -489,6 +490,7 @@ final class VerseExplanationView: UIView {
             self.isLoading = false
             switch result {
             case .success(let text):
+                AIUsageLimiter.shared.commit(.chapterSummary)
                 self.explanationText = text
                 self.showSuccess(text)
             case .failure(let error):

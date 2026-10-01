@@ -196,6 +196,7 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
 
               cell.MarkAsReadBtn.addTarget(self, action: #selector(MarkAsReadAction), for: .touchUpInside)
               cell.SummaryButton.addTarget(self, action: #selector(SummaryAction), for: .touchUpInside)
+              AIUsageLimiter.shared.applyLockBadge(to: cell.SummaryButton, feature: .chapterSummary)
                           
              return cell
 
@@ -311,11 +312,14 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
     
     @objc func SummaryAction(sender: UIButton!) {
         UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "OfferClick")+1, forKey: "OfferClick")
-        App_Protocol.delegateReader?.ChapterSummaryNib(
-            BookName: Book,
-            Pageindex: Pageindex,
-            BookVerse: AudioBibleList
-        )
+        AIUsageLimiter.shared.requestAccess(.chapterSummary) { [weak self] in
+            guard let self = self else { return }
+            App_Protocol.delegateReader?.ChapterSummaryNib(
+                BookName: self.Book,
+                Pageindex: self.Pageindex,
+                BookVerse: self.AudioBibleList
+            )
+        }
     }
     
     
