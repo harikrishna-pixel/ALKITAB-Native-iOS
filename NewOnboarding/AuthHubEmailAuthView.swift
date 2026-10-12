@@ -117,20 +117,19 @@ struct AuthHubEmailAuthView: View {
                         .disabled(isBusy)
                         .padding(.horizontal, 26)
                         .padding(.top, 6)
+
+                        if let onCancel = onCancel {
+                            Button("Not Now", action: onCancel)
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(OnboardingTheme.textSecondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .disabled(isBusy)
+                        }
                     }
-                    .padding(.bottom, onCancel == nil ? 24 : 72)
+                    .padding(.bottom, 24)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-
-            if let onCancel = onCancel {
-                Button("Not Now", action: onCancel)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(OnboardingTheme.paperInk)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color(hex: "EEF2F8"))
-                    .disabled(isBusy)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -204,6 +203,10 @@ struct AuthHubEmailAuthView: View {
         }
         guard !trimmedEmail.isEmpty, !password.isEmpty else {
             errorMessage = "Email and password are required."
+            return
+        }
+        guard AuthHubEmailValidator.isValid(trimmedEmail) else {
+            errorMessage = AuthHubEmailValidator.invalidMessage
             return
         }
         if mode == .signUp {
@@ -400,6 +403,10 @@ struct AuthHubForgotPasswordView: View {
             errorMessage = "Email is required."
             return
         }
+        guard AuthHubEmailValidator.isValid(trimmed) else {
+            errorMessage = AuthHubEmailValidator.invalidMessage
+            return
+        }
         isBusy = true
         switch step {
         case 0:
@@ -439,5 +446,31 @@ struct AuthHubForgotPasswordView: View {
                 }
             }
         }
+    }
+}
+
+enum AuthHubEmailValidator {
+    static let invalidMessage = "Please enter a valid email address"
+
+    /// Common mistyped endings (e.g. "gmail.con", "yahoo.cmo") that pass a plain format check.
+    private static let typoEndings: Set<String> = [
+        "con", "cmo", "ocm", "vom", "xom", "cpm", "cim", "comm", "coom", "copm",
+        "gma", "gmai", "gmal", "gmial", "gml", "ney", "nte", "ogr", "orgg"
+    ]
+
+    /// Mistyped provider names (e.g. "gmial.com").
+    private static let typoDomains: Set<String> = [
+        "gmial", "gmal", "gmai", "gamil", "gnail", "gmaill", "yaho", "yahooo", "hotmial", "hotmal", "outlok", "iclod"
+    ]
+
+    static func isValid(_ email: String) -> Bool {
+        let pattern = "^[A-Z0-9a-z._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}$"
+        guard email.range(of: pattern, options: .regularExpression) != nil else { return false }
+        let domain = email.split(separator: "@").last.map { $0.lowercased() } ?? ""
+        let parts = domain.split(separator: ".").map(String.init)
+        guard let ending = parts.last, let provider = parts.first else { return false }
+        if typoEndings.contains(ending) { return false }
+        if typoDomains.contains(provider) { return false }
+        return true
     }
 }

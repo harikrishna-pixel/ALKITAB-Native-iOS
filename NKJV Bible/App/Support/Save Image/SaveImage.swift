@@ -15,6 +15,9 @@ class SaveImage: NSObject {
     static let sharedInstance = SaveImage()
     
     var status: PHAuthorizationStatus?
+
+    /// One-shot callback run only after the next successful save (after the toast); cleared on any non-saving path.
+    var onNextSaveSuccess: (() -> Void)?
       
     
     func Save(Mainview:UIViewController, saveImage:UIImage) {
@@ -36,14 +39,18 @@ class SaveImage: NSObject {
                         }
                         break
                     case .denied:
+                        self.onNextSaveSuccess = nil
                         self.AlertVc(Mainview:Mainview)
                     default:
+                        self.onNextSaveSuccess = nil
                       break
                     }
                 })
             case .restricted:
+                   self.onNextSaveSuccess = nil
                    self.AlertVc(Mainview:Mainview)
             case .denied:
+                   self.onNextSaveSuccess = nil
                    self.AlertVc(Mainview:Mainview)
                 break
             case .authorized:
@@ -63,10 +70,12 @@ class SaveImage: NSObject {
                 break
                 
             case .limited:
+                self.onNextSaveSuccess = nil
                 self.AlertVc(Mainview:Mainview)
                 break
                 
             default:
+                self.onNextSaveSuccess = nil
               break
             
             }
@@ -83,9 +92,13 @@ class SaveImage: NSObject {
                 (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Image saved successfully in Album!", duration: 2.0, position: .bottom)
                 Mainview.view.makeToast("Image saved successfully in Album!", duration: 2.0, position: .bottom)
 //                App_Protocol.delegateReader?.AlertFrame(AlertNote: "Image saved successfully in Album!",Vers:"",Title:"")
+                let onSaved = self.onNextSaveSuccess
+                self.onNextSaveSuccess = nil
+                onSaved?()
             }
 
         } else {
+            onNextSaveSuccess = nil
             Mainview.view.makeToast("Save Image now", duration: 2.0, position: .bottom)
         }
     }

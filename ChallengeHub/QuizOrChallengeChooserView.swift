@@ -203,7 +203,7 @@ final class QuizOrChallengeChooserViewController: UIViewController {
                     self?.openSelection(destination: .challenge(kind))
                     return
                 }
-                AIUsageLimiter.shared.requestAccess(.quiz, from: self) {
+                AIUsageLimiter.shared.requestAccess(.quiz, units: kind.questionCount(in: nil), from: self) {
                     AIUsageLimiter.shared.commit(.quiz)
                     self?.openSelection(destination: .challenge(kind))
                 }

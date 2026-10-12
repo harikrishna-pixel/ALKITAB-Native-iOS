@@ -64,6 +64,25 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         // AI Chat owns keyboard inset; disable global IQKeyboard so the whole screen does not shift/stack.
         IQKeyboardManager.shared().isEnabled = false
         refreshSendLock()
+        restoreChatLayout()
+    }
+
+    @objc private func appDidBecomeActive() {
+        guard view.window != nil, presentedViewController == nil else { return }
+        restoreChatLayout()
+    }
+
+    /// Screenshot / system share UI can leave the composer off-screen and the system nav bar visible.
+    private func restoreChatLayout() {
+        navigationController?.setNavigationBarHidden(true, animated: false)
+        if !inputTextView.isFirstResponder {
+            composerBottomConstraint?.constant = 0
+        }
+        if suggestionStack.arrangedSubviews.isEmpty {
+            refreshFollowUpSuggestions()
+        }
+        emptyStateView.isHidden = !messages.isEmpty
+        view.layoutIfNeeded()
     }
 
     private func refreshSendLock() {
@@ -90,7 +109,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         view.addSubview(bannerView)
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.text = "AI Chat"
+        titleLabel.text = "Your Bible Companion"
         titleLabel.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
         titleLabel.textColor = .white
         titleLabel.textAlignment = .center
@@ -167,7 +186,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         composerContainer.addSubview(sendButton)
 
         typingLabel.translatesAutoresizingMaskIntoConstraints = false
-        typingLabel.text = "AI is thinking..."
+        typingLabel.text = "Searching the Scriptures for you..."
         typingLabel.font = UIFont.systemFont(ofSize: 12)
         typingLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.6) : .darkGray
         typingLabel.isHidden = true
@@ -443,6 +462,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
 
     private func setupKeyboardObservers() {
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillChange(_:)), name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
 
     @objc private func keyboardWillChange(_ notification: Notification) {
@@ -455,7 +475,9 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         }
 
         let converted = view.convert(frame, from: nil)
-        let overlap = max(0, view.bounds.maxY - converted.minY)
+        // Keyboards from the screenshot editor / share extensions must not move the chat composer.
+        let ownsKeyboard = inputTextView.isFirstResponder && UIApplication.shared.applicationState == .active
+        let overlap = ownsKeyboard ? min(max(0, view.bounds.maxY - converted.minY), view.bounds.height / 2 + 100) : 0
         composerBottomConstraint?.constant = -overlap
 
         UIView.animate(withDuration: duration) {
@@ -480,7 +502,8 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         guard !text.isEmpty, !isSending else { return }
 
         if !NetworkManager.sharedInstance.isConnectedToInternet() {
-            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            // Bottom toasts sit behind the keyboard and show only as a gray box.
+            view.makeToast("No internet connection", duration: 2.0, position: .top)
             return
         }
 
@@ -514,7 +537,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
                 self.refreshSendLock()
                 self.messages.append(AIChatMessage(role: .assistant, text: reply))
             case .failure(let error):
-                self.view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+                self.view.makeToast(error.localizedDescription, duration: 2.5, position: .top)
             }
             self.tableView.reloadData()
             self.refreshFollowUpSuggestions()

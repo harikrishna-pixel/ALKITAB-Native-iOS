@@ -98,7 +98,8 @@ final class AIUsageLimiter {
     }
 
     /// Calls `onGranted` when the user may proceed. Call `commit(_:)` after the result succeeds.
-    func requestAccess(_ feature: AIUsageFeature, from host: UIViewController? = nil, onGranted: @escaping () -> Void) {
+    /// `units` multiplies the credit cost (e.g. number of quiz questions).
+    func requestAccess(_ feature: AIUsageFeature, units: Int = 1, from host: UIViewController? = nil, onGranted: @escaping () -> Void) {
         if hasUnlimitedPlan {
             pending[feature] = .unlimited
             onGranted()
@@ -110,7 +111,7 @@ final class AIUsageLimiter {
             return
         }
         DispatchQueue.main.async {
-            self.presentLimitReachedAlert(feature, from: host, onGranted: onGranted)
+            self.presentLimitReachedAlert(feature, cost: feature.creditCost * max(1, units), from: host, onGranted: onGranted)
         }
     }
 
@@ -144,11 +145,10 @@ final class AIUsageLimiter {
 
     // MARK: Alerts
 
-    private func presentLimitReachedAlert(_ feature: AIUsageFeature, from host: UIViewController?, onGranted: @escaping () -> Void) {
+    private func presentLimitReachedAlert(_ feature: AIUsageFeature, cost: Int, from host: UIViewController?, onGranted: @escaping () -> Void) {
         guard let presenter = host ?? OnboardingAuthManager.topViewController() else { return }
         if presenter.presentedViewController is UIAlertController { return }
 
-        let cost = feature.creditCost
         let freeText = feature.dailyFreeLimit == 1 ? "free \(feature.title)" : "\(feature.dailyFreeLimit) free \(feature.title) uses"
         let message = "You've used today's \(freeText). Use \(cost) credits (you have \(ChallengeWallet.coins)) or get unlimited with a plan."
 

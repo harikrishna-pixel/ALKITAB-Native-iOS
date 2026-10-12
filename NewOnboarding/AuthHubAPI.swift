@@ -25,7 +25,21 @@ enum AuthHubAPIError: LocalizedError {
     case server(String)
     case invalidResponse
 
+    /// User-facing text. Technical details stay in `debugDescription` for logs.
     var errorDescription: String? {
+        switch self {
+        case .notConfigured:
+            return "Sign up isn't available right now. Please try again later."
+        case .network:
+            return "Please check your internet connection and try again."
+        case .server(let message):
+            return Self.friendlyServerMessage(message)
+        case .invalidResponse:
+            return "Something went wrong. Please try again."
+        }
+    }
+
+    var debugDescription: String {
         switch self {
         case .notConfigured:
             return "AuthHub credentials are missing. Set AUTHHUB_APP_ID in AppConfig.swift and CLIENT_ID / CLIENT_SECRET in AuthHub.env."
@@ -34,6 +48,32 @@ enum AuthHubAPIError: LocalizedError {
         case .invalidResponse:
             return "Unexpected server response."
         }
+    }
+
+    /// Any error from the login / sign-up flow, as text a user can understand.
+    static func userMessage(for error: Error) -> String {
+        if let authError = error as? AuthHubAPIError {
+            print("[AuthHub] \(authError.debugDescription)")
+            return authError.errorDescription ?? "Something went wrong. Please try again."
+        }
+        let nsError = error as NSError
+        print("[AuthHub] \(nsError)")
+        if nsError.domain == NSURLErrorDomain {
+            return "Please check your internet connection and try again."
+        }
+        return "Something went wrong. Please try again."
+    }
+
+    /// Server validation messages (e.g. "The email has already been taken.") are shown as-is;
+    /// anything that looks technical is replaced with a generic message.
+    private static func friendlyServerMessage(_ message: String) -> String {
+        let lowered = message.lowercased()
+        let technicalHints = ["exception", "sql", "stack", "client", "secret", "token", "credential",
+                              "unauthenticated", "unauthorized", "server error", "request failed", "http", "null", "undefined"]
+        if message.isEmpty || message.count > 160 || technicalHints.contains(where: { lowered.contains($0) }) {
+            return "Something went wrong. Please try again."
+        }
+        return message
     }
 }
 
@@ -280,7 +320,8 @@ final class AuthHubAPI {
                     }
                     completion(.success(dict))
                 } catch {
-                    completion(.failure(AuthHubAPIError.network(error.localizedDescription)))
+                    print("[AuthHub] JSON decode failed: \(error)")
+                    completion(.failure(AuthHubAPIError.invalidResponse))
                 }
             }
         }.resume()

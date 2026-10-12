@@ -16,6 +16,7 @@ struct ChallengeHubView: View {
     @State private var verse = ChallengeVerseContext.loadToday()
     @State private var walletTick = 0
     @State private var pendingKind: ChallengeKind?
+    @State private var pendingStart: PendingChallengeStart?
 
     init(
         showBackButton: Bool = true,
@@ -68,19 +69,24 @@ struct ChallengeHubView: View {
             reloadVerse()
             walletTick += 1
         }
-        .sheet(item: $pendingKind) { kind in
+        .sheet(item: $pendingKind, onDismiss: {
+            // Push only after the sheet has fully closed — pushing during dismissal flickers.
+            guard let start = pendingStart else { return }
+            pendingStart = nil
+            onOpenChallenge(start.kind, start.config.primaryVerse(), start.config)
+        }) { kind in
             ChallengeStartSheet(
                 kind: kind,
                 onCancel: { pendingKind = nil },
                 onStart: { config in
                     guard kind.isPremium else {
-                        onOpenChallenge(kind, config.primaryVerse(), config)
+                        pendingStart = PendingChallengeStart(kind: kind, config: config)
                         pendingKind = nil
                         return
                     }
-                    AIUsageLimiter.shared.requestAccess(.quiz) {
+                    AIUsageLimiter.shared.requestAccess(.quiz, units: kind.questionCount(in: config)) {
                         AIUsageLimiter.shared.commit(.quiz)
-                        onOpenChallenge(kind, config.primaryVerse(), config)
+                        pendingStart = PendingChallengeStart(kind: kind, config: config)
                         pendingKind = nil
                     }
                 }
@@ -115,13 +121,9 @@ struct ChallengeHubView: View {
                 Spacer()
 
                 if kind.isPremium {
-                    HStack(spacing: 4) {
-                        Image(systemName: AIUsageLimiter.shared.isQuizUnlocked ? "crown.fill" : "lock.fill")
-                            .font(.system(size: 11))
-                        Text("Premium")
-                            .font(.system(size: 12, weight: .semibold))
-                    }
-                    .foregroundColor(Color(hex: "C9A227"))
+                    Text("Premium")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color(hex: "C9A227"))
                 } else {
                     Text("Free")
                         .font(.system(size: 12, weight: .bold))
@@ -150,7 +152,7 @@ struct ChallengeHubView: View {
                 onOpenChallenge(kind, verse, sessionConfig)
                 return
             }
-            AIUsageLimiter.shared.requestAccess(.quiz) {
+            AIUsageLimiter.shared.requestAccess(.quiz, units: kind.questionCount(in: sessionConfig)) {
                 AIUsageLimiter.shared.commit(.quiz)
                 onOpenChallenge(kind, verse, sessionConfig)
             }
@@ -158,6 +160,7 @@ struct ChallengeHubView: View {
         }
         pendingKind = kind
     }
+
 
     private func reloadVerse() {
         if let sessionConfig {
@@ -221,7 +224,7 @@ struct ChallengeGameScreen: View {
                         showKindPicker = false
                         return
                     }
-                    AIUsageLimiter.shared.requestAccess(.quiz) {
+                    AIUsageLimiter.shared.requestAccess(.quiz, units: kind.questionCount(in: sessionConfig)) {
                         AIUsageLimiter.shared.commit(.quiz)
                         activeKind = kind
                         showKindPicker = false
@@ -347,6 +350,7 @@ struct ChallengeStartSheet: View {
     @State private var difficulty: ChallengeDifficulty?
     @State private var showBookPicker = false
     @State private var showChapterPicker = false
+    @State private var questionCount: Int = 5
 
     private let themeColor = Color(UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor)
 
@@ -419,6 +423,22 @@ struct ChallengeStartSheet: View {
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(themeColor)
                     }
+
+                    Text(questionCountTitle)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(hex: "0B1B3A"))
+
+                    HStack(spacing: 10) {
+                        ForEach(kind.questionCountOptions, id: \.self) { count in
+                            questionCountButton(count)
+                        }
+                    }
+
+                    if let questionCostText {
+                        Text(questionCostText)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(themeColor)
+                    }
                 }
                 .padding(16)
             }
@@ -452,7 +472,7 @@ struct ChallengeStartSheet: View {
             .background(Color(hex: "F2F3F7"))
         }
         .background(Color(hex: "F2F3F7").ignoresSafeArea())
-        .sheet(isPresented: $showBookPicker) {
+        .fullScreenCover(isPresented: $showBookPicker) {
             ChallengeQuizPickerSheet(title: "Select Book", onClose: { showBookPicker = false }) {
                 ChallengeBookListPicker { selection in
                     bookName = selection.bookName
@@ -462,7 +482,7 @@ struct ChallengeStartSheet: View {
                 }
             }
         }
-        .sheet(isPresented: $showChapterPicker) {
+        .fullScreenCover(isPresented: $showChapterPicker) {
             ChallengeQuizPickerSheet(title: "Select Chapter", onClose: { showChapterPicker = false }) {
                 ChallengeChapterListPicker(chapterCount: chapterCount) { chapter in
                     chapterName = chapter
@@ -490,9 +510,71 @@ struct ChallengeStartSheet: View {
         .buttonStyle(PlainButtonStyle())
     }
 
+    private func questionCountButton(_ count: Int) -> some View {
+        let selected = questionCount == count
+        return Button(action: { questionCount = count }) {
+            Text("\(count)")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(selected ? .white : Color(hex: "0B1B3A"))
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(selected ? themeColor : Color.white)
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.black.opacity(0.08), lineWidth: selected ? 0 : 1)
+                )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private var questionCountTitle: String {
+        switch kind {
+        case .verseMatch: return "Pairs"
+        case .wordSearch: return "Words"
+        default: return "Questions"
+        }
+    }
+
+    private var questionCostText: String? {
+        guard kind.isPremium, !AIUsageLimiter.shared.hasUnlimitedPlan else { return nil }
+        if AIUsageLimiter.shared.freeUsesLeft(.quiz) > 0 {
+            return "Uses today's free quiz"
+        }
+        return "\(AIUsageFeature.quiz.creditCost * questionCount) credits (\(AIUsageFeature.quiz.creditCost) per question)"
+    }
+
     private func startTapped() {
         guard let difficulty, let chapter = Int(chapterName) else { return }
-        let config = ChallengeSessionConfig.markAsRead(book: bookName, chapter: chapter, difficulty: difficulty)
+        let config = ChallengeSessionConfig
+            .markAsRead(book: bookName, chapter: chapter, difficulty: difficulty)
+            .withQuestionCount(questionCount)
         onStart(config)
+    }
+}
+
+struct PendingChallengeStart {
+    let kind: ChallengeKind
+    let config: ChallengeSessionConfig
+}
+
+extension ChallengeKind {
+    /// Number of questions / pairs / words this kind plays with `config`; quiz credits are charged per question.
+    func questionCount(in config: ChallengeSessionConfig?) -> Int {
+        guard let config else {
+            return self == .verseMatch || self == .wordSearch ? 5 : 10
+        }
+        switch self {
+        case .quickQuiz: return config.quickQuizCount
+        case .fillVerse: return config.fillQuestionCount
+        case .trueFalse: return config.trueFalseCount
+        case .verseMatch: return config.verseMatchCount
+        case .wordSearch: return config.wordSearchCount
+        }
+    }
+
+    /// Question counts offered on the Start Challenge screen (Verse Match is capped at 5 pairs).
+    var questionCountOptions: [Int] {
+        self == .verseMatch ? [1, 3, 5] : [1, 3, 5, 10]
     }
 }

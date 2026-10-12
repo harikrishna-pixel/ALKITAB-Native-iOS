@@ -45,14 +45,23 @@ enum OnboardingNotificationScheduler {
         defaults.set(memory, forKey: PrefKey.memory)
         defaults.set(prayer, forKey: PrefKey.prayer)
 
-        // Map daily verse → existing Shift 1 at 7:00 AM only (matches UI; avoids 4 blasts).
-        defaults.set(dailyVerse || journey || memory || prayer ? "1" : "0", forKey: "NotifiStatue")
-        defaults.set(dailyVerse, forKey: "Shift1ON")
-        defaults.set(false, forKey: "Shift2ON")
-        defaults.set(false, forKey: "Shift3ON")
-        defaults.set(false, forKey: "Shift4ON")
+        // Notifications allowed in onboarding → enable the Settings times too.
+        // Night (20:00) stays off while the Journey reminder is on, so 8 PM only fires when the streak is incomplete.
+        let notificationsOn = dailyVerse || journey || memory || prayer
+        let shift1 = dailyVerse
+        let shift2 = notificationsOn
+        let shift3 = notificationsOn && !journey
+        let shift4 = notificationsOn
+        defaults.set(notificationsOn ? "1" : "0", forKey: "NotifiStatue")
+        defaults.set(shift1, forKey: "Shift1ON")
+        defaults.set(shift2, forKey: "Shift2ON")
+        defaults.set(shift3, forKey: "Shift3ON")
+        defaults.set(shift4, forKey: "Shift4ON")
         defaults.set("07:00", forKey: "Shift 1")
-        defaults.set(1, forKey: "PerDay")
+        if defaults.string(forKey: "Shift 2") == nil { defaults.set("16:00", forKey: "Shift 2") }
+        if defaults.string(forKey: "Shift 3") == nil { defaults.set("20:00", forKey: "Shift 3") }
+        if defaults.string(forKey: "Shift 4") == nil { defaults.set("14:00", forKey: "Shift 4") }
+        defaults.set([shift1, shift2, shift3, shift4].filter { $0 }.count, forKey: "PerDay")
 
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
             DispatchQueue.main.async {

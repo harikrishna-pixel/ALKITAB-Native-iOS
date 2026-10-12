@@ -10,6 +10,9 @@ import CoreMedia
 import StoreKit
 import SwiftUI
 
+/// Chapter ("Bookurl") the audio player was last opened for.
+private var readerAudioChapterKey = ""
+
 class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelegate, UIGestureRecognizerDelegate {
    
     
@@ -622,19 +625,26 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                 //     self.SwitchStatus = "Play"
                 // }
                 
-                // NEW FIXED CODE - Reset status immediately, then seek
-                isUserInteractingWithSlider = false
+                // Keep the timer from redrawing the old position until the seek has landed.
+                isUserInteractingWithSlider = true
                 SwitchStatus = "Play"
                 
-                let seconds : Int64 = Int64(AVswitch.value)
-                let targetTime:CMTime = CMTimeMake(value: seconds, timescale: 1)
+                let targetSeconds = Double(AVswitch.value)
+                let targetTime = CMTime(seconds: targetSeconds, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+                self.showSeekPosition(targetSeconds)
                 
                 // Store play status before seeking
                 let wasPlaying = playStatus && (AudioPlayerService.sharedInstance.player?.timeControlStatus == .playing)
                 
-                // Seek to new position
-                AudioPlayerService.sharedInstance.player?.seek(to: targetTime) { [weak self] finished in
+                // Seek to new position (exact, not the nearest keyframe)
+                AudioPlayerService.sharedInstance.player?.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
                     guard let self = self else { return }
+                    DispatchQueue.main.async {
+                        self.isUserInteractingWithSlider = false
+                        let now = AudioPlayerService.sharedInstance.playerItem?.currentTime().seconds ?? targetSeconds
+                        self.showSeekPosition(now.isFinite ? now : targetSeconds)
+                        AudioPlayerService.sharedInstance.setupNowPlaying()
+                    }
                     if finished {
                         // If was playing, ensure it continues playing after seek
                         if wasPlaying {
@@ -829,7 +839,18 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     @objc func playerAnimationAction() {
-        self.StopAv()
+        // Closing pauses (keeps position); reopening resumes from there unless the chapter changed.
+        if PLayerConstrain.constant == -200 {
+            let chapterKey = UserDefaults.standard.string(forKey: "Bookurl") ?? ""
+            if chapterKey != readerAudioChapterKey || AudioPlayerService.sharedInstance.playerItem == nil {
+                self.StopAv()
+            }
+            readerAudioChapterKey = chapterKey
+        } else {
+            self.AVpause()
+        }
+        // Let the reader stay scrollable / tappable while the player is open.
+        self.SwipeDisable.isUserInteractionEnabled = false
         if PLayerConstrain.constant == -200 {
             UIView.animate(withDuration: 0.4, animations: {
                 self.PLayerConstrain.constant = 10

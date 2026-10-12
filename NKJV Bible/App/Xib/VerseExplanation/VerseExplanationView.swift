@@ -40,6 +40,7 @@ final class VerseExplanationView: UIView {
     private let scrollView = UIScrollView()
     private let contentLabel = UILabel()
     private let loadingIndicator = UIActivityIndicatorView(style: .large)
+    private let loadingLabel = UILabel()
     private let errorLabel = UILabel()
     private let retryButton = UIButton(type: .system)
     private let closeButton = UIButton(type: .custom)
@@ -179,6 +180,13 @@ final class VerseExplanationView: UIView {
         loadingIndicator.color = themeColor == BGNightMode ? .white : themeColor
         cardView.addSubview(loadingIndicator)
 
+        loadingLabel.translatesAutoresizingMaskIntoConstraints = false
+        loadingLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        loadingLabel.textColor = themeColor == BGNightMode ? UIColor.white.withAlphaComponent(0.7) : UIColor(red: 0.45, green: 0.5, blue: 0.58, alpha: 1)
+        loadingLabel.textAlignment = .center
+        loadingLabel.isHidden = true
+        cardView.addSubview(loadingLabel)
+
         errorLabel.translatesAutoresizingMaskIntoConstraints = false
         errorLabel.font = UIFont.systemFont(ofSize: 15)
         errorLabel.textColor = themeColor == BGNightMode ? .white : .darkGray
@@ -294,6 +302,10 @@ final class VerseExplanationView: UIView {
 
             loadingIndicator.centerXAnchor.constraint(equalTo: contentContainer.centerXAnchor),
             loadingIndicator.centerYAnchor.constraint(equalTo: contentContainer.centerYAnchor),
+
+            loadingLabel.topAnchor.constraint(equalTo: loadingIndicator.bottomAnchor, constant: 12),
+            loadingLabel.leadingAnchor.constraint(equalTo: contentContainer.leadingAnchor, constant: 16),
+            loadingLabel.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor, constant: -16),
 
             errorLabel.topAnchor.constraint(equalTo: contentContainer.bottomAnchor, constant: 16),
             errorLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
@@ -509,10 +521,13 @@ final class VerseExplanationView: UIView {
         footerContainer.isHidden = false
         setActionsEnabled(false)
         loadingIndicator.startAnimating()
+        loadingLabel.text = displayMode == .chapterSummary ? "Getting chapter summary…" : "Getting explanation…"
+        loadingLabel.isHidden = false
     }
 
     private func showSuccess(_ text: String) {
         loadingIndicator.stopAnimating()
+        loadingLabel.isHidden = true
         scrollView.isHidden = false
         contentLabel.isHidden = false
         contentLabel.attributedText = styledExplanationText(text)
@@ -544,6 +559,7 @@ final class VerseExplanationView: UIView {
 
     private func showError(_ message: String) {
         loadingIndicator.stopAnimating()
+        loadingLabel.isHidden = true
         scrollView.isHidden = true
         contentLabel.isHidden = true
         errorLabel.isHidden = false
@@ -571,6 +587,13 @@ final class VerseExplanationView: UIView {
 
     @objc private func copyTapped() {
         guard !explanationText.isEmpty else { return }
+        if displayMode == .chapterSummary {
+            // verseText holds the whole chapter here — copy only the summary.
+            let title = screenTitle ?? verseReference.replacingOccurrences(of: "-", with: " ")
+            UIPasteboard.general.string = "\(title)\n\n\(explanationText)\n\n\(APP_LINK)"
+            makeToast("Copied successfully", duration: 2.0, position: .center)
+            return
+        }
         UIPasteboard.general.string = "\(explanationText)\n\n\(verseText)\n\n\(verseReference.replacingOccurrences(of: "-", with: " "))\n\n\(APP_LINK)"
         makeToast("Copied successfully", duration: 2.0, position: .center)
     }

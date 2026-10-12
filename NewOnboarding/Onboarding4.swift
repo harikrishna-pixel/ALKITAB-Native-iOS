@@ -8,6 +8,12 @@ import SwiftUI
 struct Onboarding4: View {
     @State private var explainRevealed = false
     @State private var navigateForward = false
+    @State private var typedCount = 0
+
+    private static let contextText = "Paul wrote this from a prison cell. He isn't promising you can achieve anything you set your mind to — he's saying he has learned to be content with plenty and with almost nothing, because his strength never came from his circumstances."
+    private static let quoteText = "\"I have learned how to be content with whatever I have.\"\n— verse 11"
+    private static let todayText = "The promise isn't that hard things stop coming. It's that you are given what you need to meet them — one day at a time, from a source outside yourself."
+    private static let totalTypedLength = contextText.count + quoteText.count + todayText.count
 
     var body: some View {
         GeometryReader { geometry in
@@ -126,7 +132,10 @@ struct Onboarding4: View {
     }
 
     private var explainButton: some View {
-        Button(action: { explainRevealed = true }) {
+        Button(action: {
+            explainRevealed = true
+            startTyping()
+        }) {
             HStack(spacing: 9) {
                 Text("✦")
                 Text("Explain This Verse")
@@ -182,12 +191,12 @@ struct Onboarding4: View {
             VStack(alignment: .leading, spacing: 15) {
                 sectionBlock(
                     title: "In context",
-                    body: "Paul wrote this from a prison cell. He isn't promising you can achieve anything you set your mind to — he's saying he has learned to be content with plenty and with almost nothing, because his strength never came from his circumstances."
+                    body: Self.contextText,
+                    visible: typedPart(Self.contextText, offset: 0)
                 )
 
-                Text("\"I have learned how to be content with whatever I have.\"\n— verse 11")
+                typedText(Self.quoteText, visible: typedPart(Self.quoteText, offset: Self.contextText.count), italic: true)
                     .font(.system(size: 15.5, weight: .regular, design: .serif))
-                    .italic()
                     .foregroundColor(Color(hex: "6B4B10"))
                     .padding(13)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -205,7 +214,8 @@ struct Onboarding4: View {
 
                 sectionBlock(
                     title: "What it means today",
-                    body: "The promise isn't that hard things stop coming. It's that you are given what you need to meet them — one day at a time, from a source outside yourself."
+                    body: Self.todayText,
+                    visible: typedPart(Self.todayText, offset: Self.contextText.count + Self.quoteText.count)
                 )
             }
             .padding(17)
@@ -232,16 +242,42 @@ struct Onboarding4: View {
         .shadow(color: Color(hex: "142848").opacity(0.07), radius: 12, x: 0, y: 8)
     }
 
-    private func sectionBlock(title: String, body: String) -> some View {
+    private func sectionBlock(title: String, body: String, visible: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title.uppercased())
                 .font(.system(size: 10, weight: .black))
                 .tracking(1.4)
                 .foregroundColor(Color(hex: "93A3BC"))
-            Text(body)
+            typedText(body, visible: visible)
                 .font(.system(size: 14.5))
                 .foregroundColor(Color(hex: "31435F"))
                 .lineSpacing(5)
+        }
+    }
+
+    // MARK: Typing effect
+
+    /// Full text reserves the final size (hidden) so the card does not grow while typing.
+    private func typedText(_ full: String, visible: String, italic: Bool = false) -> some View {
+        ZStack(alignment: .topLeading) {
+            (italic ? Text(full).italic() : Text(full)).hidden()
+            italic ? Text(visible).italic() : Text(visible)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func typedPart(_ text: String, offset: Int) -> String {
+        let count = min(max(typedCount - offset, 0), text.count)
+        return String(text.prefix(count))
+    }
+
+    private func startTyping() {
+        guard typedCount == 0 else { return }
+        Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { timer in
+            typedCount = min(typedCount + 2, Self.totalTypedLength)
+            if typedCount >= Self.totalTypedLength {
+                timer.invalidate()
+            }
         }
     }
 

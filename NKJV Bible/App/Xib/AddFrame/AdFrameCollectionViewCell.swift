@@ -108,6 +108,20 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
         button.clipsToBounds = true
         button.layer.borderWidth = 1
         button.layer.borderColor = themeColor.cgColor
+        if themeColor == BGNightMode {
+            // Night theme color matches the page background, so use light colors instead.
+            button.layer.borderColor = UIColor.white.cgColor
+            if isMarkedRead {
+                button.backgroundColor = .white
+                button.setTitle("Marked as Read", for: .normal)
+                button.setTitleColor(.black, for: .normal)
+            } else {
+                button.backgroundColor = UIColor.white.withAlphaComponent(0.15)
+                button.setTitle("Mark as Read", for: .normal)
+                button.setTitleColor(.white, for: .normal)
+            }
+            return
+        }
         if isMarkedRead {
             button.backgroundColor = themeColor
             button.setTitle("Marked as Read", for: .normal)

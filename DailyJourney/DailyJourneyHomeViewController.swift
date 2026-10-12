@@ -166,6 +166,12 @@ final class DailyJourneyHomeViewController: UIViewController {
         vc.onClose = { [weak self] in
             self?.dismissJourneyModal()
         }
+        vc.onShare = { [weak self, weak vc] in
+            self?.shareVerse(current, from: vc)
+        }
+        vc.onSave = { [weak self, weak vc] in
+            self?.bookmarkVerse(current, from: vc) { _ in }
+        }
         vc.onForward = { [weak vc] in
             current.cycleWallpaper()
             DailyJourneyStore.shared.markVerseCompleted()
@@ -273,7 +279,7 @@ final class DailyJourneyHomeViewController: UIViewController {
 
     // MARK: - Same share / save behavior as HomeController
 
-    private func shareVerse(_ verse: DailyVerseSnapshot) {
+    private func shareVerse(_ verse: DailyVerseSnapshot, from presenterOverride: UIViewController? = nil) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
@@ -293,6 +299,11 @@ final class DailyJourneyHomeViewController: UIViewController {
             vc.modalPresentationStyle = .overCurrentContext
             vc.modalTransitionStyle = .crossDissolve
 
+            if let presenterOverride = presenterOverride {
+                presenterOverride.present(vc, animated: true, completion: nil)
+                return
+            }
+
             // Present from this VC if possible (same as HomeController); otherwise climb to Reader / window.
             let presenter = self.sharePresenter()
             if presenter.presentedViewController != nil {
@@ -305,9 +316,9 @@ final class DailyJourneyHomeViewController: UIViewController {
         }
     }
 
-    private func bookmarkVerse(_ verse: DailyVerseSnapshot, completion: @escaping (Bool) -> Void) {
+    private func bookmarkVerse(_ verse: DailyVerseSnapshot, from presenterOverride: UIViewController? = nil, completion: @escaping (Bool) -> Void) {
         let image = renderVerseCardImage(verse)
-        let presenter = sharePresenter()
+        let presenter = presenterOverride ?? sharePresenter()
 
         let handleStatus: (PHAuthorizationStatus) -> Void = { newStatus in
             DispatchQueue.main.async {

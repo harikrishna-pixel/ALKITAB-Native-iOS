@@ -54,7 +54,7 @@ final class OnboardingAuthManager: NSObject, ObservableObject {
             self.isBusy = false
             switch result {
             case .failure(let error):
-                self.errorMessage = error.localizedDescription
+                self.errorMessage = AuthHubAPIError.userMessage(for: error)
             case .success(let user):
                 AuthHubSession.saveLogin(
                     email: user.email,

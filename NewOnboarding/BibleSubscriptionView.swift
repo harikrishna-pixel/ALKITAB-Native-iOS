@@ -66,6 +66,10 @@ struct BibleSubscriptionView: View {
               DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                   skipPaywallIfMissingPrices()
               }
+              // Offline, StoreKit can stay "loading" forever — skip if prices still haven't arrived.
+              DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                  skipPaywallIfMissingPrices(ignoreLoading: true)
+              }
               
               // Start timer in background if conditions are met, but don't show exit offer automatically
               // Exit offer will only show when user taps X icon
@@ -278,7 +282,7 @@ struct BibleSubscriptionView: View {
     }
 
     /// Onboarding only: if Yearly + Lifetime prices never arrive, skip blank paywall.
-    private func skipPaywallIfMissingPrices() {
+    private func skipPaywallIfMissingPrices(ignoreLoading: Bool = false) {
         guard isPresentedFromOnboarding, !didSkipMissingPrices else { return }
 
         let yearly = storeManager.price2.isEmpty
@@ -289,8 +293,10 @@ struct BibleSubscriptionView: View {
             : storeManager.price3
         guard yearly.isEmpty && lifetime.isEmpty else { return }
 
-        let stillLoading = storeManager.isLoading || storeManager.isLoading2 || storeManager.isLoading3
-        guard !stillLoading else { return }
+        if !ignoreLoading {
+            let stillLoading = storeManager.isLoading || storeManager.isLoading2 || storeManager.isLoading3
+            guard !stillLoading else { return }
+        }
 
         let offline = !NetworkManager.sharedInstance.isConnectedToInternet()
         guard offline || storeManager.hasProductLoadError else { return }
@@ -809,6 +815,17 @@ private struct PaywallPlanAndCTASection: View {
     let isSmallDevice: Bool
     let onPurchase: () -> Void
 
+    /// "Save X%" of Yearly versus paying Monthly for 12 months.
+    private var yearlySavePercentBadge: String {
+        let monthly = storeManager.price1.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag1") ?? "") : storeManager.price1
+        let yearly = storeManager.price2.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag2") ?? "") : storeManager.price2
+        let m = Double(monthly.strippedtext.replacingOccurrences(of: ",", with: "")) ?? 0
+        let y = Double(yearly.strippedtext.replacingOccurrences(of: ",", with: "")) ?? 0
+        guard m > 0, y > 0, (m * 12) > y else { return "" }
+        let percent = Int((((m * 12) - y) / (m * 12) * 100).rounded())
+        return percent > 0 ? "Save \(percent)%" : ""
+    }
+
     private var ctaTitle: String {
         switch planSelection.plan {
         case .lifetime:
@@ -850,7 +867,8 @@ private struct PaywallPlanAndCTASection: View {
                     secondaryLine: yearlySaveLine,
                     tertiaryLine: yearlyPerMonthLine,
                     isLoading: storeManager.isLoading2,
-                    planSelection: planSelection
+                    planSelection: planSelection,
+                    badgeText: yearlySavePercentBadge
                 )
                 PaywallPlanCardView(
                     style: .lifetime,
@@ -859,7 +877,8 @@ private struct PaywallPlanAndCTASection: View {
                     secondaryLine: "One-time payment",
                     tertiaryLine: "Ad-free reading only AI features use credits",
                     isLoading: storeManager.isLoading3,
-                    planSelection: planSelection
+                    planSelection: planSelection,
+                    badgeText: "Best Value"
                 )
             }
             .padding(.horizontal, isPad ? 8 : 12)
@@ -907,6 +926,7 @@ struct PaywallPlanCardView: View {
     let tertiaryLine: String
     let isLoading: Bool
     @ObservedObject var planSelection: PaywallPlanSelection
+    var badgeText: String? = nil
 
     private var accent: Color { Color(hex: "2F6BFF") }
     private var isPad: Bool {
@@ -978,8 +998,8 @@ struct PaywallPlanCardView: View {
         }
         .buttonStyle(PlainButtonStyle())
         .overlay(alignment: .top) {
-            if style == .yearly {
-                Text("Best Value")
+            if let badgeText, !badgeText.isEmpty {
+                Text(badgeText)
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 10)

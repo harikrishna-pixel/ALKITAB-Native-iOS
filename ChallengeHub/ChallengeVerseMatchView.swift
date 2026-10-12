@@ -102,7 +102,7 @@ struct ChallengeVerseMatchView: View {
                         .coordinateSpace(name: "matchBoard")
                         .onPreferenceChange(MatchAnchorKey.self) { anchors = $0 }
                         .frame(maxWidth: .infinity)
-                        .frame(height: boardHeight, alignment: .top)
+                        .frame(minHeight: 0, maxHeight: boardHeight, alignment: .top)
                         .clipped()
 
                         // Fixed-height slot so feedback never resizes the card / shifts chrome.
@@ -150,8 +150,8 @@ struct ChallengeVerseMatchView: View {
 
             Circle()
                 .fill(color ?? Color.black.opacity(0.18))
-                .frame(width: 14, height: 14)
-                .overlay(
+                    .frame(width: 14, height: 14)
+                    .overlay(
                     GeometryReader { g in
                         Color.clear.preference(
                             key: MatchAnchorKey.self,
@@ -160,8 +160,9 @@ struct ChallengeVerseMatchView: View {
                     }
                 )
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 72, maxHeight: 72, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 72, alignment: .leading)
         .background(Color.white)
         .cornerRadius(12)
         .overlay(
@@ -192,8 +193,9 @@ struct ChallengeVerseMatchView: View {
                 .foregroundColor(Color(hex: "0B1B3A"))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 72, maxHeight: 72, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 72, alignment: .leading)
         .background(Color.white)
         .cornerRadius(12)
         .overlay(

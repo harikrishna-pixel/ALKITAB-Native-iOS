@@ -10,6 +10,9 @@ struct Onboarding5: View {
     @State private var todaysVerseDone = false
     @State private var memoryChallengeDone = false
 
+    /// Index into `dayLabels` (Monday-first) for the day the user opens onboarding.
+    private let todayIndex: Int = (Calendar.current.component(.weekday, from: Date()) + 5) % 7
+
     private var journeyItems: [(String, Bool)] {
         [
             ("Today's Verse", todaysVerseDone),
@@ -69,6 +72,7 @@ struct Onboarding5: View {
         }
         .navigationBarHidden(true)
         .onAppear {
+            markOnboardingJourneyStepsCompleted()
             // Ticks appear one by one (first, then second).
             if !todaysVerseDone {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
@@ -108,18 +112,18 @@ struct Onboarding5: View {
                     VStack(spacing: 7) {
                         Text(day)
                             .font(.system(size: 10.5, weight: .bold))
-                            .foregroundColor(index == 0 ? .white : Color(hex: "7C93B8"))
+                            .foregroundColor(index == todayIndex ? .white : Color(hex: "7C93B8"))
                         Circle()
-                            .fill(index == 0 ? OnboardingTheme.gold : Color.clear)
+                            .fill(index == todayIndex ? OnboardingTheme.gold : Color.clear)
                             .overlay(
                                 Circle()
                                     .stroke(
-                                        index == 0 ? OnboardingTheme.gold : Color.white.opacity(0.2),
+                                        index == todayIndex ? OnboardingTheme.gold : Color.white.opacity(0.2),
                                         lineWidth: 1.5
                                     )
                             )
                             .frame(width: 28, height: 28)
-                            .shadow(color: index == 0 ? OnboardingTheme.gold.opacity(0.5) : .clear, radius: 9)
+                            .shadow(color: index == todayIndex ? OnboardingTheme.gold.opacity(0.5) : .clear, radius: 9)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -135,6 +139,26 @@ struct Onboarding5: View {
                         .stroke(Color.white.opacity(0.15), lineWidth: 1)
                 )
         )
+    }
+
+    /// The verse (Onboarding2) and memory challenge (Onboarding3) were just done in onboarding,
+    /// so record them in Today's Journey for the streak.
+    private func markOnboardingJourneyStepsCompleted() {
+        let store = DailyJourneyStore.shared
+        store.reload()
+        store.markVerseCompleted()
+        guard !store.memoryCompleted else { return }
+        let tokens = OnboardingBibleVerse.tokens
+        var filled: [String: String] = [:]
+        for index in OnboardingBibleVerse.blankIndices where tokens.indices.contains(index) {
+            filled[String(index)] = tokens[index]
+        }
+        store.markMemoryCompleted(state: MemoryChallengeSavedState(
+            displayTokens: tokens,
+            blankIndices: OnboardingBibleVerse.blankIndices,
+            wordBank: OnboardingBibleVerse.options,
+            filled: filled
+        ))
     }
 
     private func journeyRow(title: String, done: Bool, showDivider: Bool) -> some View {

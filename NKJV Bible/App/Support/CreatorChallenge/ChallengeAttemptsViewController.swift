@@ -20,6 +20,12 @@ final class ChallengeAttemptsViewController: UIViewController, UITableViewDataSo
     private let emptyLabel = UILabel()
     private let spinner = UIActivityIndicatorView(style: .large)
 
+    /// Shared nav bar state from the screen we came from (restored when leaving).
+    private var savedNavBarHidden: Bool?
+    private var savedTintColor: UIColor?
+    private var savedStandardAppearance: UINavigationBarAppearance?
+    private var savedScrollEdgeAppearance: UINavigationBarAppearance?
+
     init() {
         self.isNight = (UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor) == BGNightMode
         super.init(nibName: nil, bundle: nil)
@@ -33,6 +39,12 @@ final class ChallengeAttemptsViewController: UIViewController, UITableViewDataSo
         super.viewDidLoad()
         title = "Challenge Attempts"
         view.backgroundColor = isNight ? BGNightMode : UIColor(red: 0.96, green: 0.97, blue: 0.98, alpha: 1)
+        if let bar = navigationController?.navigationBar {
+            savedNavBarHidden = navigationController?.isNavigationBarHidden
+            savedTintColor = bar.tintColor
+            savedStandardAppearance = bar.standardAppearance.copy()
+            savedScrollEdgeAppearance = bar.scrollEdgeAppearance?.copy()
+        }
         setupNavigation()
         setupUI()
         loadChallenges()
@@ -40,7 +52,22 @@ final class ChallengeAttemptsViewController: UIViewController, UITableViewDataSo
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        navigationController?.setNavigationBarHidden(false, animated: animated)
+        // Own header (same style as other screens) instead of the system bar.
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // Only when going back (not when pushing the attempts detail screen).
+        guard isMovingFromParent, let nav = navigationController else { return }
+        if let savedStandardAppearance = savedStandardAppearance {
+            nav.navigationBar.standardAppearance = savedStandardAppearance
+        }
+        nav.navigationBar.scrollEdgeAppearance = savedScrollEdgeAppearance
+        nav.navigationBar.tintColor = savedTintColor
+        if let savedNavBarHidden = savedNavBarHidden {
+            nav.setNavigationBarHidden(savedNavBarHidden, animated: animated)
+        }
     }
 
     private func setupNavigation() {
@@ -60,7 +87,73 @@ final class ChallengeAttemptsViewController: UIViewController, UITableViewDataSo
         )
     }
 
+    /// Blue header matching AI Chat / other screens: BackArrow, centered title, plain refresh icon.
+    private func setupHeader() -> UIView {
+        let header = UIView()
+        header.translatesAutoresizingMaskIntoConstraints = false
+        header.backgroundColor = isNight ? DarkModeColor : themeColor
+        view.addSubview(header)
+
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = "Challenge Attempts"
+        titleLabel.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
+        titleLabel.textColor = .white
+        titleLabel.textAlignment = .center
+        header.addSubview(titleLabel)
+
+        let backImageView = UIImageView(image: UIImage(named: "BackArrow"))
+        backImageView.translatesAutoresizingMaskIntoConstraints = false
+        backImageView.contentMode = .scaleAspectFit
+        header.addSubview(backImageView)
+        ImageTint.sharedInstance.imageTintcolorMethod(img: backImageView, colorVu: .white)
+
+        let backButton = UIButton(type: .system)
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
+        header.addSubview(backButton)
+
+        let refreshButton = UIButton(type: .system)
+        refreshButton.translatesAutoresizingMaskIntoConstraints = false
+        refreshButton.setImage(UIImage(systemName: "arrow.clockwise", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)), for: .normal)
+        refreshButton.tintColor = .white
+        refreshButton.addTarget(self, action: #selector(loadChallenges), for: .touchUpInside)
+        header.addSubview(refreshButton)
+
+        let headerHeight: CGFloat = StatusbarHeight > 30 ? 90 : 70
+        NSLayoutConstraint.activate([
+            header.topAnchor.constraint(equalTo: view.topAnchor),
+            header.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            header.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            header.heightAnchor.constraint(equalToConstant: headerHeight),
+
+            titleLabel.centerXAnchor.constraint(equalTo: header.centerXAnchor),
+            titleLabel.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -15),
+
+            backImageView.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 30),
+            backImageView.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -15),
+            backImageView.widthAnchor.constraint(equalToConstant: 20),
+            backImageView.heightAnchor.constraint(equalToConstant: 20),
+
+            backButton.leadingAnchor.constraint(equalTo: header.leadingAnchor),
+            backButton.bottomAnchor.constraint(equalTo: header.bottomAnchor),
+            backButton.widthAnchor.constraint(equalToConstant: 75),
+            backButton.heightAnchor.constraint(equalToConstant: 44),
+
+            refreshButton.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
+            refreshButton.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+            refreshButton.widthAnchor.constraint(equalToConstant: 44),
+            refreshButton.heightAnchor.constraint(equalToConstant: 44)
+        ])
+        return header
+    }
+
+    @objc private func backTapped() {
+        navigationController?.popViewController(animated: true)
+    }
+
     private func setupUI() {
+        let header = setupHeader()
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .singleLine
@@ -87,7 +180,7 @@ final class ChallengeAttemptsViewController: UIViewController, UITableViewDataSo
         view.addSubview(spinner)
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.topAnchor.constraint(equalTo: header.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -108,8 +201,11 @@ final class ChallengeAttemptsViewController: UIViewController, UITableViewDataSo
             return
         }
 
-        spinner.startAnimating()
-        emptyLabel.isHidden = true
+        // On refresh keep the current rows on screen; only the first load shows the center spinner.
+        if challenges.isEmpty {
+            spinner.startAnimating()
+            emptyLabel.isHidden = true
+        }
 
         CreatorChallengeService.shared.listChallenges { [weak self] result in
             guard let self = self else { return }
@@ -124,10 +220,10 @@ final class ChallengeAttemptsViewController: UIViewController, UITableViewDataSo
                 print("[CreatorChallenge] listChallenges failed: \(error.localizedDescription)")
             case .success(let list):
                 let active = list.filter { ($0.status ?? "active").lowercased() != "deleted" }
-                self.challenges = active
-                self.attemptCounts = [:]
-                self.tableView.reloadData()
                 if active.isEmpty {
+                    self.challenges = active
+                    self.attemptCounts = [:]
+                    self.tableView.reloadData()
                     self.spinner.stopAnimating()
                     self.emptyLabel.text = "No challenges yet.\nCreate a challenge from Challenge Hub, then players’ attempts will show here."
                     self.emptyLabel.isHidden = false
@@ -160,6 +256,7 @@ final class ChallengeAttemptsViewController: UIViewController, UITableViewDataSo
         group.notify(queue: .main) { [weak self] in
             guard let self = self else { return }
             self.spinner.stopAnimating()
+            self.challenges = challenges
             self.attemptCounts = counts
             self.emptyLabel.isHidden = !self.challenges.isEmpty
             self.tableView.reloadData()
@@ -202,6 +299,8 @@ final class ChallengeAttemptsViewController: UIViewController, UITableViewDataSo
         tableView.deselectRow(at: indexPath, animated: true)
         let challenge = challenges[indexPath.row]
         let detail = ChallengeAttemptDetailViewController(challenge: challenge)
+        // Detail screen still uses the system bar for its back button.
+        navigationController?.setNavigationBarHidden(false, animated: true)
         navigationController?.pushViewController(detail, animated: true)
     }
 }

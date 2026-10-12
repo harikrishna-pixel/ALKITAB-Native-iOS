@@ -484,7 +484,7 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
         if self.myView! != nil {
             self.myView!.removeFromSuperview()
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
-                self.reloadCoreCollectionData(Index: self.SelectedPath)
+                self.reloadKeepingBackground(Index: self.SelectedPath)
 //                self.RefreshBtn.isEnabled = true
             }
         }
@@ -1077,6 +1077,21 @@ extension SlideCardVC {
 extension SlideCardVC {
     @objc func reloadNotedata() {
         self.reloadCoreCollectionData(Index: self.SelectedPath)
+    }
+
+    /// Same as `reloadCoreCollectionData`, but the card keeps the background image currently shown.
+    func reloadKeepingBackground(Index: Int) {
+        let indexPath = IndexPath(row: Index, section: 0)
+        let currentImage = (self.CardCollectionCell.cellForItem(at: indexPath) as? SlideCardCell)?.SliderImage.image
+        self.ReloadCoredata()
+        DispatchQueue.main.async {
+            self.CardCollectionCell.reloadItems(at: [indexPath])
+            let cell = self.CardCollectionCell.cellForItem(at: indexPath) as? SlideCardCell
+            cell?.transform = CGAffineTransform.identity
+            if let currentImage = currentImage {
+                cell?.SliderImage.image = currentImage
+            }
+        }
     }
 }
 

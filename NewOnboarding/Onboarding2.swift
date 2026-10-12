@@ -64,6 +64,12 @@ struct Onboarding2: View {
             }
         }
         .navigationBarHidden(true)
+        .onAppear {
+            DailyVerseSnapshot.pinForToday(
+                reference: OnboardingBibleVerse.reference,
+                text: OnboardingBibleVerse.text
+            )
+        }
     }
 }
 

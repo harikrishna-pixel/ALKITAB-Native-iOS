@@ -68,7 +68,7 @@ struct ChallengeCreateFlowView: View {
                             startGenerate()
                             return
                         }
-                        AIUsageLimiter.shared.requestAccess(.quiz) {
+                        AIUsageLimiter.shared.requestAccess(.quiz, units: questionCount) {
                             startGenerate()
                         }
                     }
@@ -279,14 +279,7 @@ private struct ChallengeCreatorPaywallView: View {
                         .cornerRadius(14)
                 }
                 .padding(.horizontal, 24)
-
-                Button(action: onNotNow) {
-                    Text("Not Now")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.7))
-                        .padding(.vertical, 16)
-                }
-                .padding(.bottom, 8)
+                .padding(.bottom, 24)
             }
         }
     }

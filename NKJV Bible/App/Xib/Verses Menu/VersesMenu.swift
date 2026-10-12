@@ -179,11 +179,12 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         self.UnderlineTxt.textColor = self.Themecolor!
         self.ImageTxt.textColor = self.Themecolor!
         self.ExplainTxt.textColor = self.Themecolor!
-        self.ExplainTxt.text = "Create Challenge"
-        self.ExplainTxt.numberOfLines = 2
-        self.ExplainTxt.adjustsFontSizeToFitWidth = true
-        self.ExplainTxt.minimumScaleFactor = 0.6
-        self.ExplainTxt.lineBreakMode = .byWordWrapping
+        // Match Copy / Reset / Share: one line, same font size, no shrinking.
+        self.ExplainTxt.text = "Challenge"
+        self.ExplainTxt.numberOfLines = 1
+        self.ExplainTxt.adjustsFontSizeToFitWidth = false
+        self.ExplainTxt.font = self.CopyTxt.font
+        self.ExplainTxt.lineBreakMode = .byTruncatingTail
     }
 
     private func setupGetExplanationButton() {
@@ -240,7 +241,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     private func showCreateChallengeAndAlignBottomRow() {
         ExplainView.isHidden = false
         ExplainTxt.isHidden = false
-        ExplainTxt.text = "Create Challenge"
+        ExplainTxt.text = "Challenge"
         let symbol = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular)
         ExplainImg.image = UIImage(systemName: "plus.circle.fill", withConfiguration: symbol)
         ExplainImg.tintColor = Themecolor ?? PrimaryColor

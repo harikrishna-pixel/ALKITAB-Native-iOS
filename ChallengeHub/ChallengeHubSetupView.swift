@@ -115,7 +115,7 @@ struct ChallengeHubSetupView: View {
             }
         }
         .background(Color(hex: "F2F3F7").ignoresSafeArea())
-        .sheet(isPresented: $showBookPicker) {
+        .fullScreenCover(isPresented: $showBookPicker) {
             ChallengeQuizPickerSheet(title: "Select Book", onClose: { showBookPicker = false }) {
                 ChallengeBookListPicker { selection in
                     bookName = selection.bookName
@@ -126,7 +126,7 @@ struct ChallengeHubSetupView: View {
                 }
             }
         }
-        .sheet(isPresented: $showChapterPicker) {
+        .fullScreenCover(isPresented: $showChapterPicker) {
             ChallengeQuizPickerSheet(title: "Select Chapter", onClose: { showChapterPicker = false }) {
                 ChallengeChapterListPicker(chapterCount: chapterCount) { chapter in
                     chapterName = chapter

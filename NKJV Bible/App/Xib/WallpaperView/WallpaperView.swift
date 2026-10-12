@@ -248,9 +248,13 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
         
                 
         let saveImage = self.WallpaperCell!.Walpaperframe.asImage()
+        // First Save this app session only → interstitial, shown after the "saved" toast (never over the permission alert).
+        NKJV_Bible.SaveImage.sharedInstance.onNextSaveSuccess = {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+                App_Protocol.delegateReader?.CallIndustrialAd()
+            }
+        }
         App_Protocol.delegateReader?.SliderCardPreview(Vereseimage: saveImage)
-        // First Save this app session only → IronSource interstitial.
-        App_Protocol.delegateReader?.CallIndustrialAd()
         
         
         status = PHPhotoLibrary.authorizationStatus(for: PHAccessLevel(rawValue: PHAccessLevel.RawValue(GETALL))!)

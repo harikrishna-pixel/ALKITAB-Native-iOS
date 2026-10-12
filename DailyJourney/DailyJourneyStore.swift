@@ -271,6 +271,17 @@ struct DailyVerseSnapshot {
         )
     }
 
+    /// Pins a verse as today's Home verse (used so the onboarding verse matches Home on day one).
+    /// Does nothing if a verse is already pinned for today.
+    static func pinForToday(reference: String, text: String) {
+        let today = DailyJourneyStore.shared.todayKey
+        let defaults = UserDefaults.standard
+        guard !reference.isEmpty, defaults.string(forKey: shownVerseDateKey) != today else { return }
+        defaults.set(today, forKey: shownVerseDateKey)
+        defaults.set(reference, forKey: shownVerseReferenceKey)
+        defaults.set(text, forKey: shownVerseTextKey)
+    }
+
     /// Cycles wallpaper the same way as HomeController wallpaper list (S1…S8).
     mutating func cycleWallpaper(backward: Bool = false) {
         var index = 1

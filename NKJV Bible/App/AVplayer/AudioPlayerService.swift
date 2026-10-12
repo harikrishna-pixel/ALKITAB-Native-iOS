@@ -154,6 +154,23 @@ class AudioPlayerService  {
    }
     
     
+    /// Exact seek to `seconds` (clamped to the track); completion runs on main once the player is there.
+    func seek(toSeconds seconds: Double, completion: @escaping () -> Void) {
+        guard let player = player else { return }
+        let duration = playerItem?.asset.duration.seconds ?? 0
+        var target = max(0, seconds)
+        if duration.isFinite, duration > 0 {
+            target = min(target, duration)
+        }
+        let time = CMTime(seconds: target, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { _ in
+            DispatchQueue.main.async {
+                self.setupNowPlaying()
+                completion()
+            }
+        }
+    }
+
     func TimeRemainAndCurrentTime() {
         let Duration_in_Second = Int(AudioPlayerService.sharedInstance.playerItem!.asset.duration.seconds)%60
         let Duration_in_minute:Int = Int(AudioPlayerService.sharedInstance.playerItem!.asset.duration.seconds / 60) % 60

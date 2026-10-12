@@ -58,6 +58,9 @@ enum ChallengeWallet {
             if let nav = top.navigationController {
                 nav.pushViewController(vc, animated: true)
             } else {
+                // From a sheet: open as its own full screen (not a stacked card); Back dismisses it.
+                vc.PresentVu = true
+                vc.modalPresentationStyle = .fullScreen
                 top.present(vc, animated: true)
             }
         }
@@ -379,6 +382,7 @@ struct ChallengeOldStyleShell<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     @State private var refreshTick = 0
+    @State private var showGiveUpAlert = false
 
     private var accent: Color { ChallengeQuizTheme.accent }
 
@@ -487,11 +491,19 @@ struct ChallengeOldStyleShell<Content: View>: View {
 
     private var headerBar: some View {
         HStack(spacing: 8) {
-            Button(action: onBack) {
+            Button(action: { showGiveUpAlert = true }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(width: 36, height: 36)
+            }
+            .alert(isPresented: $showGiveUpAlert) {
+                Alert(
+                    title: Text("Are you sure you want to give up?"),
+                    message: Text("Your progress in this challenge will be lost."),
+                    primaryButton: .destructive(Text("Give Up"), action: onBack),
+                    secondaryButton: .cancel(Text("Continue"))
+                )
             }
             Spacer(minLength: 4)
             Text(screenTitle)

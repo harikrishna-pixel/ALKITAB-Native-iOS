@@ -125,8 +125,8 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
         } else {
             if coreTitle == "Explanations" {
                 let parts = self.corevalueReverced[indexPath.row].components(separatedBy: ExplanationRecordDelimiter)
-                let verseText = parts.count > 3 ? parts[3] : ""
                 let explanation = parts.count > 2 ? parts[2] : ""
+                let verseText = explanationPreviewText(verse: parts.count > 3 ? parts[3] : "", explanation: explanation)
                 let fontName = UserDefaults.standard.string(forKey: "FontName")
                 let verseFont = UIFont(name: fontName ?? "", size: CGFloat(fontsize)) ?? UIFont.systemFont(ofSize: CGFloat(fontsize))
                 let bodyFont = verseFont
@@ -239,7 +239,7 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
                 let isExpanded = (expandedExplanationIndex == indexPath.row)
 
                 cell.configure(
-                    verseText: parts.count > 3 ? parts[3] : "",
+                    verseText: explanationPreviewText(verse: parts.count > 3 ? parts[3] : "", explanation: parts.count > 2 ? parts[2] : ""),
                     reference: reference,
                     explanation: parts.count > 2 ? parts[2] : "",
                     themeColor: isNight ? .white : Themecolor,
@@ -406,6 +406,14 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
         if scrollView.contentOffset.y >= 60 {
             lastContentOffset = scrollView.contentOffset.y
         }
+    }
+}
+
+extension SearchCollectionMainView {
+    /// Saved chapter summaries store the whole numbered chapter as the "verse" — preview the summary instead.
+    func explanationPreviewText(verse: String, explanation: String) -> String {
+        let isChapterSummary = verse.hasPrefix("1. ") && verse.contains("\n2. ")
+        return isChapterSummary ? explanation : verse
     }
 }
 

@@ -10,8 +10,12 @@ final class DailyVerseFullscreenViewController: UIViewController {
     var onClose: (() -> Void)?
     var onForward: (() -> Void)?
     var onContinue: (() -> Void)?
+    var onShare: (() -> Void)?
+    var onSave: (() -> Void)?
 
     private var verse: DailyVerseSnapshot
+    private let shareButton = UIButton(type: .custom)
+    private let saveButton = UIButton(type: .custom)
 
     private let backgroundImageView = UIImageView()
     private let gradientView = UIView()
@@ -65,6 +69,23 @@ final class DailyVerseFullscreenViewController: UIViewController {
         closeButton.layer.cornerRadius = 20
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         view.addSubview(closeButton)
+
+        // Share / Save — top-right, same style as the other verse image screens.
+        let accent = UIColor(red: 28 / 255, green: 70 / 255, blue: 178 / 255, alpha: 1)
+        [shareButton, saveButton].forEach { button in
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.backgroundColor = UIColor.white.withAlphaComponent(0.85)
+            button.tintColor = accent
+            button.layer.cornerRadius = 20
+            button.clipsToBounds = true
+            view.addSubview(button)
+        }
+        shareButton.setImage(UIImage(systemName: "square.and.arrow.up", withConfiguration: UIImage.SymbolConfiguration(pointSize: 15, weight: .medium)), for: .normal)
+        shareButton.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
+        saveButton.setImage(UIImage(named: "SaveBlue")?.withRenderingMode(.alwaysTemplate), for: .normal)
+        saveButton.imageView?.contentMode = .scaleAspectFit
+        saveButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+        saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
 
         // Reference — top center, uppercase + underline (mockup)
         referenceLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -134,9 +155,21 @@ final class DailyVerseFullscreenViewController: UIViewController {
             closeButton.widthAnchor.constraint(equalToConstant: 40),
             closeButton.heightAnchor.constraint(equalToConstant: 40),
 
+            saveButton.centerYAnchor.constraint(equalTo: closeButton.centerYAnchor),
+            saveButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            saveButton.widthAnchor.constraint(equalToConstant: 40),
+            saveButton.heightAnchor.constraint(equalToConstant: 40),
+
+            shareButton.centerYAnchor.constraint(equalTo: closeButton.centerYAnchor),
+            shareButton.trailingAnchor.constraint(equalTo: saveButton.leadingAnchor, constant: -10),
+            shareButton.widthAnchor.constraint(equalToConstant: 40),
+            shareButton.heightAnchor.constraint(equalToConstant: 40),
+
+            // Centered on screen; kept clear of the close / share buttons.
             referenceLabel.centerYAnchor.constraint(equalTo: closeButton.centerYAnchor, constant: -4),
-            referenceLabel.leadingAnchor.constraint(equalTo: closeButton.trailingAnchor, constant: 12),
-            referenceLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            referenceLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            referenceLabel.leadingAnchor.constraint(greaterThanOrEqualTo: closeButton.trailingAnchor, constant: 12),
+            referenceLabel.trailingAnchor.constraint(lessThanOrEqualTo: shareButton.leadingAnchor, constant: -12),
 
             referenceUnderline.topAnchor.constraint(equalTo: referenceLabel.bottomAnchor, constant: 6),
             referenceUnderline.centerXAnchor.constraint(equalTo: referenceLabel.centerXAnchor),
@@ -157,11 +190,19 @@ final class DailyVerseFullscreenViewController: UIViewController {
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: ctaButton.topAnchor, constant: -24),
 
-            verseLabel.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 36),
+            // Vertically centered in the middle band; scrolls only when the verse is taller than it.
+            verseLabel.topAnchor.constraint(greaterThanOrEqualTo: scrollView.contentLayoutGuide.topAnchor, constant: 24),
             verseLabel.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 28),
             verseLabel.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -28),
-            verseLabel.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -24),
-            verseLabel.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -56)
+            verseLabel.bottomAnchor.constraint(lessThanOrEqualTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -24),
+            verseLabel.centerYAnchor.constraint(equalTo: scrollView.contentLayoutGuide.centerYAnchor),
+            verseLabel.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -56),
+            scrollView.contentLayoutGuide.heightAnchor.constraint(greaterThanOrEqualTo: scrollView.frameLayoutGuide.heightAnchor),
+            {
+                let fit = scrollView.contentLayoutGuide.heightAnchor.constraint(equalTo: verseLabel.heightAnchor, constant: 48)
+                fit.priority = .defaultLow
+                return fit
+            }()
         ])
     }
 
@@ -252,5 +293,13 @@ final class DailyVerseFullscreenViewController: UIViewController {
 
     @objc private func continueTapped() {
         onContinue?()
+    }
+
+    @objc private func shareTapped() {
+        onShare?()
+    }
+
+    @objc private func saveTapped() {
+        onSave?()
     }
 }

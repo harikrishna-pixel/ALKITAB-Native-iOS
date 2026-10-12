@@ -22,7 +22,7 @@ struct OnboardingNotificationView: View {
                 VStack(spacing: 0) {
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 0) {
-                            Spacer(minLength: geometry.size.height * 0.08)
+                            Spacer(minLength: 12)
 
                             OnboardingSerifTitle(
                                 lines: ["Keep God's", "Word Close"],

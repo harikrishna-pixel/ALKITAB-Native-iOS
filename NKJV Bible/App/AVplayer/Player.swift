@@ -124,7 +124,10 @@ extension ReaderViewController: AVplayerProtocol {
         
         // NEW FIXED CODE - Always update time labels so they show correct times immediately
         // Format: minutes:seconds (e.g., 2:30)
-        self.AVstartTime.text = String(format: "%d:%02i",minutes,self.currentTime)
+        // While dragging / seeking the label already shows the target time — don't overwrite it.
+        if !isUserInteractingWithSlider {
+            self.AVstartTime.text = String(format: "%d:%02i",minutes,self.currentTime)
+        }
         self.AVTimeRemain.text = String(format: "%d:%02i",Duration_in_minute,Duration_in_Second)
         
         // Move the thumb with playback. Skip only while the user is dragging.
@@ -307,8 +310,8 @@ extension ReaderViewController: AVplayerProtocol {
         let startTime:Float = Float(self.AVstartTime.text!.replacingOccurrences(of: ":", with: "."))!
             
         if startTime+0.11 < remain {
-            AudioPlayerService.sharedInstance.seekForward(time: 10)
-            self.PLayerInfo()
+            let current = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? 0
+            self.seekAudio(to: current + 10)
         }
     }
     
@@ -316,9 +319,35 @@ extension ReaderViewController: AVplayerProtocol {
     
     @IBAction func AVBackward(_ sender: Any) {
         if AVswitch.value > 0.10 {
-            AudioPlayerService.sharedInstance.seekBackward(time: 10)
-            self.PLayerInfo()
+            let current = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? 0
+            self.seekAudio(to: current - 10)
         }
+    }
+
+    /// Shows the target position immediately (also while paused) and blocks the 1s timer
+    /// from redrawing the old time until the player has actually reached it.
+    func seekAudio(to seconds: Double) {
+        guard seconds.isFinite, AudioPlayerService.sharedInstance.player != nil else { return }
+        isUserInteractingWithSlider = true
+        showSeekPosition(seconds)
+        AudioPlayerService.sharedInstance.seek(toSeconds: seconds) { [weak self] in
+            guard let self = self else { return }
+            self.isUserInteractingWithSlider = false
+            AudioPlayerService.sharedInstance.TimeRemainAndCurrentTime()
+            if let now = AudioPlayerService.sharedInstance.playerItem?.currentTime().seconds, now.isFinite {
+                self.showSeekPosition(now)
+            }
+        }
+    }
+
+    func showSeekPosition(_ seconds: Double) {
+        guard seconds.isFinite else { return }
+        let duration = AudioPlayerService.sharedInstance.playerItem?.asset.duration.seconds ?? 0
+        let clamped = max(0, duration.isFinite && duration > 0 ? min(seconds, duration) : seconds)
+        self.currentTimeacu = clamped
+        self.currentTime = Int(clamped) % 60
+        self.AVstartTime.text = String(format: "%d:%02i", Int(clamped / 60) % 60, Int(clamped) % 60)
+        self.AVswitch.setValue(Float(clamped), animated: false)
     }
  
     
