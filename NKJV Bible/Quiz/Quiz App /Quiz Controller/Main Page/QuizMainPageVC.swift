@@ -138,9 +138,8 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
         self.proceedLbl.layer.cornerRadius = self.proceedLbl.frame.height/2
         self.proceedLbl.layer.masksToBounds = true
         
-        DispatchQueue.main.async {
-            self.initQuiz()
-        }
+        // Apply the theme before the screen appears, so Play Again does not flash the default color.
+        self.initQuiz()
         
         self.HintLbl.addInterlineSpacing(spacingValue: 1.5)
          

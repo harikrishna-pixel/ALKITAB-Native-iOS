@@ -50,7 +50,7 @@ struct ChallengeTrueFalseView: View {
                 ) {
                     VStack(alignment: .leading, spacing: 14) {
                         ChallengeQuizContentHeader(
-                            reference: verse.reference,
+                            reference: "",
                             instruction: "Choose True or False."
                         )
 

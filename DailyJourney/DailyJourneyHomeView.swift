@@ -515,7 +515,7 @@ struct DailyJourneyHomeView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(Color(hex: "1C46B2"))
+                    .background(Color(UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor))
                     .cornerRadius(20)
                 }
             }

@@ -277,14 +277,17 @@ enum ChallengeGameFactory {
         if let config {
             return chapterTrueFalse(config: config, fallback: ctx)
         }
-        let book = ctx.reference.components(separatedBy: " ").first ?? ""
-        return [
-            TrueFalseQuestion(statement: "Today's verse is from \(ctx.reference).", isTrue: true),
-            TrueFalseQuestion(statement: "Today's verse text is empty.", isTrue: ctx.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty),
-            TrueFalseQuestion(statement: "This verse is from the book of \(book.isEmpty ? "Scripture" : book).", isTrue: true),
-            TrueFalseQuestion(statement: "Today's verse is from Revelation 99:99.", isTrue: false),
-            TrueFalseQuestion(statement: "Reading Scripture helps us grow in God's Word.", isTrue: true)
-        ]
+        var questions: [TrueFalseQuestion] = []
+        if let q = verseTextStatement(for: ctx, makeTrue: true, otherWords: []) {
+            questions.append(q)
+        }
+        if let q = verseTextStatement(for: ctx, makeTrue: false, otherWords: ["mountain", "silver", "river", "garden", "morning", "kingdom"]) {
+            questions.append(q)
+        }
+        questions.append(TrueFalseQuestion(statement: "Reading Scripture helps us grow in God's Word.", isTrue: true))
+        questions.append(TrueFalseQuestion(statement: "Prayer is a way to talk with God.", isTrue: true))
+        questions.append(TrueFalseQuestion(statement: "The Bible teaches us to ignore those in need.", isTrue: false))
+        return questions
     }
 
     static func matchPairs(from ctx: ChallengeVerseContext, config: ChallengeSessionConfig? = nil) -> [VerseMatchPair] {
@@ -380,17 +383,29 @@ enum ChallengeGameFactory {
         let verses = config.chapterVerses()
         let pool = verses.isEmpty ? [fallback] : verses
         var questions: [QuickQuizQuestion] = []
-        var verseIndex = 0
+        var skipped: [QuickQuizQuestion] = []
+        var usedKeys = Set<String>()
 
-        while questions.count < config.quickQuizCount {
-            let ctx = pool[verseIndex % pool.count]
+        // Same prompt + same answer (e.g. "Which book…?" for every verse) counts as a repeat.
+        func key(_ q: QuickQuizQuestion) -> String {
+            let answer = q.options.indices.contains(q.correctIndex) ? q.options[q.correctIndex] : ""
+            return (q.prompt + "|" + answer).lowercased()
+        }
+
+        for ctx in pool.shuffled() {
             // Build from the chosen chapter verse — do not use the daily-verse-only path.
-            let batch = shuffledQuickQuiz(singleVerseQuickQuiz(from: ctx))
-            for question in batch where questions.count < config.quickQuizCount {
-                questions.append(question)
+            for question in shuffledQuickQuiz(singleVerseQuickQuiz(from: ctx)).shuffled() {
+                if usedKeys.insert(key(question)).inserted {
+                    questions.append(question)
+                } else {
+                    skipped.append(question)
+                }
             }
-            verseIndex += 1
-            if verseIndex > pool.count * 4 { break }
+            if questions.count >= config.quickQuizCount * 3 { break }
+        }
+        questions.shuffle()
+        if questions.count < config.quickQuizCount {
+            questions.append(contentsOf: skipped.prefix(config.quickQuizCount - questions.count))
         }
         return Array(questions.prefix(config.quickQuizCount))
     }
@@ -398,21 +413,21 @@ enum ChallengeGameFactory {
     private static func chapterTrueFalse(config: ChallengeSessionConfig, fallback: ChallengeVerseContext) -> [TrueFalseQuestion] {
         let verses = config.chapterVerses(minWords: 4)
         let pool = verses.isEmpty ? [fallback] : verses
+        let chapterWords = pool.flatMap { $0.significantWords }
         var questions: [TrueFalseQuestion] = []
+        let shuffledPool = pool.shuffled()
 
-        for (index, ctx) in pool.enumerated() {
-            let book = ctx.reference.components(separatedBy: " ").first ?? ""
-            questions.append(TrueFalseQuestion(statement: "This verse is from \(ctx.reference).", isTrue: true))
-            questions.append(TrueFalseQuestion(statement: "This verse is from Revelation 99:99.", isTrue: false))
-            questions.append(TrueFalseQuestion(statement: "The verse \"\(shortVerse(ctx.text))\" is from \(book).", isTrue: true))
-            questions.append(TrueFalseQuestion(statement: "Verse \(index + 1) in this chapter is empty.", isTrue: ctx.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
-            if questions.count >= config.trueFalseCount { break }
+        // One statement per verse first, so the same wording is not repeated within the set.
+        // A second pass only fills the set when the chapter has fewer verses than requested.
+        for pass in 0..<2 {
+            for (index, ctx) in shuffledPool.enumerated() where questions.count < config.trueFalseCount {
+                let wantTrue = (index + pass) % 2 == 0
+                if let q = verseTextStatement(for: ctx, makeTrue: wantTrue, otherWords: chapterWords) {
+                    questions.append(q)
+                }
+            }
         }
-
-        if questions.count < config.trueFalseCount {
-            questions.append(contentsOf: trueFalse(from: fallback).prefix(config.trueFalseCount - questions.count))
-        }
-        return Array(questions.prefix(config.trueFalseCount))
+        return Array(questions.shuffled().prefix(config.trueFalseCount))
     }
 
     private static func chapterMatchPairs(config: ChallengeSessionConfig, fallback: ChallengeVerseContext) -> [VerseMatchPair] {
@@ -436,6 +451,30 @@ enum ChallengeGameFactory {
             break
         }
         return Array(pairs.prefix(config.verseMatchCount))
+    }
+
+    /// "This verse reads: …" — either the real wording (true) or with one word swapped (false).
+    private static func verseTextStatement(for ctx: ChallengeVerseContext, makeTrue: Bool, otherWords: [String]) -> TrueFalseQuestion? {
+        let shown = shortVerse(ctx.text)
+        guard !shown.isEmpty else { return nil }
+        if makeTrue {
+            return TrueFalseQuestion(statement: "This verse reads: \"\(shown)\"", isTrue: true)
+        }
+
+        var tokens = shown.components(separatedBy: " ")
+        let cleanSet = Set(ctx.words.map { $0.lowercased() })
+        let candidates = tokens.indices.filter {
+            tokens[$0].trimmingCharacters(in: CharacterSet.alphanumerics.inverted).count >= 4
+        }
+        guard let target = candidates.randomElement() else { return nil }
+        let original = tokens[target].trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        guard var replacement = otherWords.shuffled().first(where: {
+            $0.count >= 4 && !cleanSet.contains($0.lowercased())
+        }) else { return nil }
+
+        replacement = original.first?.isUppercase == true ? replacement.capitalized : replacement.lowercased()
+        tokens[target] = tokens[target].replacingOccurrences(of: original, with: replacement)
+        return TrueFalseQuestion(statement: "This verse reads: \"\(tokens.joined(separator: " "))\"", isTrue: false)
     }
 
     private static func shortVerse(_ text: String) -> String {

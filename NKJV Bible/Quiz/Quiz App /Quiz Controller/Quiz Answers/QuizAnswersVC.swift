@@ -206,7 +206,6 @@ class QuizAnswersVC: UIViewController {
     }
     
     @IBAction func PlayAgain(_ sender: Any) {
-        QuizProtocol.QuizMaindelegate?.initQuiz()
         DispatchQueue.main.async {
             
             let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "QuizMainPageVC") as! QuizMainPageVC

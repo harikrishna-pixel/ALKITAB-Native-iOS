@@ -45,6 +45,8 @@ class QuizAlertVC: UIViewController, QuizAlert {
         AskQuiz.text = Quiztxt
 
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.LogoImage!, colorVu: Themecolor)
+        YesButton.backgroundColor = Themecolor
+        YesButton.setTitleColor(.white, for: .normal)
 
         Ch_Count = BibleContent.sharedInstance.AudioBibleListCount(
             selecterBookName: UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName

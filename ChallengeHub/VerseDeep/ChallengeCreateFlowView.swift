@@ -112,11 +112,14 @@ struct ChallengeCreateFlowView: View {
                     .id(playID)
                 }
             case .invite:
-                ChallengeInviteFriendsView(
+                ChallengeCreatorShareFlow(
                     shareUrl: shareSession.shareUrl ?? "",
-                    challengeTitle: shareSession.challengeTitle,
+                    challengeTitle: shareSession.challengeTitle.isEmpty ? "\(verse.reference) Challenge" : shareSession.challengeTitle,
+                    questionCount: questionCount,
+                    kindTitle: selectedKind.title,
                     onBack: { step = .created },
-                    onShared: { step = .shared }
+                    onShared: { step = .shared },
+                    onViewQuiz: { step = .playing }
                 )
             case .shared:
                 ChallengeSharedConfirmationView(

@@ -424,13 +424,15 @@ struct ChallengeStartSheet: View {
                             .foregroundColor(themeColor)
                     }
 
-                    Text(questionCountTitle)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(hex: "0B1B3A"))
+                    if kind != .quickQuiz {
+                        Text(questionCountTitle)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color(hex: "0B1B3A"))
 
-                    HStack(spacing: 10) {
-                        ForEach(kind.questionCountOptions, id: \.self) { count in
-                            questionCountButton(count)
+                        HStack(spacing: 10) {
+                            ForEach(kind.questionCountOptions, id: \.self) { count in
+                                questionCountButton(count)
+                            }
                         }
                     }
 
@@ -541,14 +543,15 @@ struct ChallengeStartSheet: View {
         if AIUsageLimiter.shared.freeUsesLeft(.quiz) > 0 {
             return "Uses today's free quiz"
         }
-        return "\(AIUsageFeature.quiz.creditCost * questionCount) credits (\(AIUsageFeature.quiz.creditCost) per question)"
+        let count = kind == .quickQuiz ? ChallengeSessionConfig.quickQuizFixedCount : questionCount
+        return "\(AIUsageFeature.quiz.creditCost * count) credits (\(AIUsageFeature.quiz.creditCost) per question)"
     }
 
     private func startTapped() {
         guard let difficulty, let chapter = Int(chapterName) else { return }
         let config = ChallengeSessionConfig
             .markAsRead(book: bookName, chapter: chapter, difficulty: difficulty)
-            .withQuestionCount(questionCount)
+            .withQuestionCount(kind == .quickQuiz ? ChallengeSessionConfig.quickQuizFixedCount : questionCount)
         onStart(config)
     }
 }
@@ -562,6 +565,7 @@ extension ChallengeKind {
     /// Number of questions / pairs / words this kind plays with `config`; quiz credits are charged per question.
     func questionCount(in config: ChallengeSessionConfig?) -> Int {
         guard let config else {
+            if self == .quickQuiz { return ChallengeSessionConfig.quickQuizFixedCount }
             return self == .verseMatch || self == .wordSearch ? 5 : 10
         }
         switch self {

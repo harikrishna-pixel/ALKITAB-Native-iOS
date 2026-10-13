@@ -39,7 +39,7 @@ struct ChallengeQuickQuizView: View {
                     lives: lives,
                     questionNumber: index + 1,
                     questionTotal: questions.count,
-                    caption: "Choose the correct answer.",
+                    caption: selected == nil ? "Choose the correct answer." : " ",
                     primaryTitle: revealed
                         ? (index + 1 >= questions.count ? "Finish" : "Next")
                         : "Check Answer",

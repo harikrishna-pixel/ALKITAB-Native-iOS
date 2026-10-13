@@ -72,8 +72,13 @@ final class ChallengeCreateFlowViewController: UIViewController {
 
     private func openMyChallenges() {
         if NetworkManager.sharedInstance.isConnectedToInternet() {
-            let vc = ChallengeAttemptsViewController()
-            navigationController?.pushViewController(vc, animated: true)
+            let hub = ChallengeCreatorHubView { [weak self] in
+                self?.navigationController?.popViewController(animated: true)
+            }
+            let host = UIHostingController(rootView: hub)
+            host.view.backgroundColor = .white
+            navigationController?.setNavigationBarHidden(true, animated: false)
+            navigationController?.pushViewController(host, animated: true)
         } else {
             view.makeToast("No internet connection", duration: 2.0, position: .bottom)
         }

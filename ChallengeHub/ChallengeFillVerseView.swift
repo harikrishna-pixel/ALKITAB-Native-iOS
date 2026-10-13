@@ -62,7 +62,7 @@ struct ChallengeFillVerseView: View {
                 ) {
                     VStack(alignment: .leading, spacing: 16) {
                         ChallengeQuizContentHeader(
-                            reference: activeVerse.reference,
+                            reference: "",
                             instruction: sessionConfig == nil
                                 ? "Fill in the blanks to complete today's verse."
                                 : "Fill in the blanks to complete the verse."

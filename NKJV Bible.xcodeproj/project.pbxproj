@@ -415,7 +415,6 @@
 		019450EE29711EED00940862 /* DailyVersesPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 019450ED29711EED00940862 /* DailyVersesPopup.swift */; };
 		019450F12971405300940862 /* SubscriptionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 019450F02971405300940862 /* SubscriptionViewController.swift */; };
 		019450F329715B9900940862 /* PaymentHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 019450F229715B9900940862 /* PaymentHistory.swift */; };
-		E7F8091A2F4AF70100000001 /* LegacyPaidAppService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */; };
 		019450F629715DED00940862 /* GetReceptKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 019450F529715DED00940862 /* GetReceptKey.swift */; };
 		019450F9297169F700940862 /* SubscriptionPopup.xib in Resources */ = {isa = PBXBuildFile; fileRef = 019450F8297169F700940862 /* SubscriptionPopup.xib */; };
 		019450FB29716A0900940862 /* SubscriptionPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 019450FA29716A0900940862 /* SubscriptionPopup.swift */; };
@@ -469,7 +468,6 @@
 		01AIC30129FBD2210006BD21 /* OpenAIChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AIC10129FBD2210006BD01 /* OpenAIChatService.swift */; };
 		01AIC30229FBD2210006BD22 /* AIChatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AIC10229FBD2210006BD02 /* AIChatViewController.swift */; };
 		01AIC30329FBD2210006BD23 /* OpenAIExplanationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AIC10329FBD2210006BD03 /* OpenAIExplanationService.swift */; };
-		D6E7F8092F49F60100000001 /* AIUsageLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */; };
 		01B1277E2948488E00D95467 /* FontStyleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B1277D2948488E00D95467 /* FontStyleViewController.swift */; };
 		01B12782294848B800D95467 /* FontCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 01B12780294848B800D95467 /* FontCell.xib */; };
 		01B12783294848B800D95467 /* FontCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B12781294848B800D95467 /* FontCell.swift */; };
@@ -603,7 +601,6 @@
 		A1B2C3D42F46A10100000001 /* OnboardingShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000011 /* OnboardingShared.swift */; };
 		A1B2C3D42F46A10100000002 /* Onboarding5.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000012 /* Onboarding5.swift */; };
 		A1B2C3D42F46A10100000003 /* OnboardingNotificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */; };
-		A1B2C3D42F46A10100000026 /* OnboardingNotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000036 /* OnboardingNotificationScheduler.swift */; };
 		A1B2C3D42F46A10100000004 /* OnboardingCreateAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000014 /* OnboardingCreateAccountView.swift */; };
 		A1B2C3D42F46A10100000005 /* OnboardingAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000015 /* OnboardingAuthManager.swift */; };
 		A1B2C3D42F46A10100000020 /* AuthHubConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000030 /* AuthHubConfig.swift */; };
@@ -612,9 +609,10 @@
 		A1B2C3D42F46A10100000023 /* AuthHubSecrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000033 /* AuthHubSecrets.swift */; };
 		A1B2C3D42F46A10100000024 /* AuthHubEmailAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000034 /* AuthHubEmailAuthView.swift */; };
 		A1B2C3D42F46A10100000025 /* AuthHubProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000035 /* AuthHubProfileView.swift */; };
+		A1B2C3D42F46A10100000026 /* OnboardingNotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000036 /* OnboardingNotificationScheduler.swift */; };
+		A1B2C3D42F46A10100000041 /* AuthHub.env in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000040 /* AuthHub.env */; };
 		A2G00A032F13E3240097A8E3 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = A2G00A022F13E3240097A8E3 /* GoogleSignIn */; };
 		B18CE61E303DAE26001FA16C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */; };
-		A1B2C3D42F46A10100000041 /* AuthHub.env in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000040 /* AuthHub.env */; };
 		B1A3D241304AC9B100FD5D0C /* 5.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D23B304AC9B100FD5D0C /* 5.png */; };
 		B1A3D242304AC9B100FD5D0C /* 2.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D238304AC9B100FD5D0C /* 2.png */; };
 		B1A3D243304AC9B100FD5D0C /* 6.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D23C304AC9B100FD5D0C /* 6.png */; };
@@ -660,11 +658,16 @@
 		C4E5F6072F47D40100000009 /* ChallengeVerseDeepPlayChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D40100000019 /* ChallengeVerseDeepPlayChrome.swift */; };
 		C4E5F6072F47D4010000000A /* ChallengeVerseDeepResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001A /* ChallengeVerseDeepResultView.swift */; };
 		C4E5F6072F47D4010000000B /* ChallengeVerseDeepTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001B /* ChallengeVerseDeepTheme.swift */; };
+		C4E5F6082F48E10100000001 /* ChallengeCreatorProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6082F48E10100000011 /* ChallengeCreatorProfileView.swift */; };
+		C4E5F6082F48E10100000002 /* ChallengeCreatorShareViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6082F48E10100000012 /* ChallengeCreatorShareViews.swift */; };
+		C4E5F6082F48E10100000003 /* ChallengeCreatorListsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6082F48E10100000013 /* ChallengeCreatorListsView.swift */; };
 		C4E5F6072F47D4010000000C /* ChallengeHubShareHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001C /* ChallengeHubShareHelper.swift */; };
 		C4E5F6072F47D4010000000D /* CreatorChallengeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */; };
 		C4E5F6072F47D4010000000E /* CreatorChallengeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */; };
 		C4E5F6072F47D4010000000F /* ChallengeAttemptsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001F /* ChallengeAttemptsViewController.swift */; };
 		D42E2B172BF79432006D4D18 /* puzzal Notification in Resources */ = {isa = PBXBuildFile; fileRef = D42E2B162BF79432006D4D18 /* puzzal Notification */; };
+		D6E7F8092F49F60100000001 /* AIUsageLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */; };
+		E7F8091A2F4AF70100000001 /* LegacyPaidAppService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1111,7 +1114,6 @@
 		019450ED29711EED00940862 /* DailyVersesPopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyVersesPopup.swift; sourceTree = "<group>"; };
 		019450F02971405300940862 /* SubscriptionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionViewController.swift; sourceTree = "<group>"; };
 		019450F229715B9900940862 /* PaymentHistory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PaymentHistory.swift; sourceTree = "<group>"; };
-		E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyPaidAppService.swift; sourceTree = "<group>"; };
 		019450F529715DED00940862 /* GetReceptKey.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GetReceptKey.swift; sourceTree = "<group>"; };
 		019450F8297169F700940862 /* SubscriptionPopup.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = SubscriptionPopup.xib; sourceTree = "<group>"; };
 		019450FA29716A0900940862 /* SubscriptionPopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionPopup.swift; sourceTree = "<group>"; };
@@ -1165,7 +1167,6 @@
 		01AIC10129FBD2210006BD01 /* OpenAIChatService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenAIChatService.swift; sourceTree = "<group>"; };
 		01AIC10229FBD2210006BD02 /* AIChatViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AIChatViewController.swift; sourceTree = "<group>"; };
 		01AIC10329FBD2210006BD03 /* OpenAIExplanationService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenAIExplanationService.swift; sourceTree = "<group>"; };
-		D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUsageLimiter.swift; sourceTree = "<group>"; };
 		01B1277D2948488E00D95467 /* FontStyleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontStyleViewController.swift; sourceTree = "<group>"; };
 		01B12780294848B800D95467 /* FontCell.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = FontCell.xib; sourceTree = "<group>"; };
 		01B12781294848B800D95467 /* FontCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FontCell.swift; sourceTree = "<group>"; };
@@ -1303,16 +1304,16 @@
 		A1B2C3D42F46A10100000011 /* OnboardingShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingShared.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000012 /* Onboarding5.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding5.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingNotificationView.swift; sourceTree = "<group>"; };
-		A1B2C3D42F46A10100000036 /* OnboardingNotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingNotificationScheduler.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000014 /* OnboardingCreateAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCreateAccountView.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000015 /* OnboardingAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAuthManager.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000030 /* AuthHubConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubConfig.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000031 /* AuthHubAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubAPI.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000032 /* AuthHubSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubSession.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000033 /* AuthHubSecrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubSecrets.swift; sourceTree = "<group>"; };
-		A1B2C3D42F46A10100000040 /* AuthHub.env */ = {isa = PBXFileReference; lastKnownFileType = text; path = AuthHub.env; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000034 /* AuthHubEmailAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubEmailAuthView.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000035 /* AuthHubProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubProfileView.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000036 /* OnboardingNotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingNotificationScheduler.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000040 /* AuthHub.env */ = {isa = PBXFileReference; lastKnownFileType = text; path = AuthHub.env; sourceTree = "<group>"; };
 		B13B6D6A8DF1821F657CBFAA /* Pods-NKJV Bible.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NKJV Bible.debug.xcconfig"; path = "Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible.debug.xcconfig"; sourceTree = "<group>"; };
 		B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		B1A3D237304AC9B100FD5D0C /* 1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 1.png; sourceTree = "<group>"; };
@@ -1342,6 +1343,12 @@
 		C3D4E5F62F46C30100000016 /* ChallengeVerseMatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseMatchView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000017 /* ChallengeTrueFalseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeTrueFalseView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000018 /* ChallengeWordSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeWordSearchView.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000019 /* ChallengeOldStyleChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeOldStyleChrome.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000021 /* ChallengeSessionConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeSessionConfig.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000022 /* ChallengeHubSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubSetupView.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000023 /* ChallengeHubSetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubSetupViewController.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000024 /* ChallengeHubPickerComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubPickerComponents.swift; sourceTree = "<group>"; };
+		C3D4E5F62F46C30100000025 /* QuizOrChallengeChooserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuizOrChallengeChooserView.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D40100000011 /* ChallengeCreateFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreateFlowView.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D40100000012 /* ChallengeCreateFlowViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreateFlowViewController.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D40100000013 /* ChallengeCreateTypePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreateTypePickerView.swift; sourceTree = "<group>"; };
@@ -1353,17 +1360,16 @@
 		C4E5F6072F47D40100000019 /* ChallengeVerseDeepPlayChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseDeepPlayChrome.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D4010000001A /* ChallengeVerseDeepResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseDeepResultView.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D4010000001B /* ChallengeVerseDeepTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseDeepTheme.swift; sourceTree = "<group>"; };
+		C4E5F6082F48E10100000011 /* ChallengeCreatorProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreatorProfileView.swift; sourceTree = "<group>"; };
+		C4E5F6082F48E10100000012 /* ChallengeCreatorShareViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreatorShareViews.swift; sourceTree = "<group>"; };
+		C4E5F6082F48E10100000013 /* ChallengeCreatorListsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreatorListsView.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D4010000001C /* ChallengeHubShareHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubShareHelper.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorChallengeModels.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorChallengeService.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D4010000001F /* ChallengeAttemptsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeAttemptsViewController.swift; sourceTree = "<group>"; };
-		C3D4E5F62F46C30100000019 /* ChallengeOldStyleChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeOldStyleChrome.swift; sourceTree = "<group>"; };
-		C3D4E5F62F46C30100000021 /* ChallengeSessionConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeSessionConfig.swift; sourceTree = "<group>"; };
-		C3D4E5F62F46C30100000022 /* ChallengeHubSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubSetupView.swift; sourceTree = "<group>"; };
-		C3D4E5F62F46C30100000023 /* ChallengeHubSetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubSetupViewController.swift; sourceTree = "<group>"; };
-		C3D4E5F62F46C30100000024 /* ChallengeHubPickerComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubPickerComponents.swift; sourceTree = "<group>"; };
-		C3D4E5F62F46C30100000025 /* QuizOrChallengeChooserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuizOrChallengeChooserView.swift; sourceTree = "<group>"; };
 		D42E2B162BF79432006D4D18 /* puzzal Notification */ = {isa = PBXFileReference; lastKnownFileType = file; path = "puzzal Notification"; sourceTree = "<group>"; };
+		D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUsageLimiter.swift; sourceTree = "<group>"; };
+		E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyPaidAppService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -3635,34 +3641,6 @@
 			path = DailyJourney;
 			sourceTree = "<group>";
 		};
-		C4E5F6072F47D40100000020 /* VerseDeep */ = {
-			isa = PBXGroup;
-			children = (
-				C4E5F6072F47D40100000011 /* ChallengeCreateFlowView.swift */,
-				C4E5F6072F47D40100000012 /* ChallengeCreateFlowViewController.swift */,
-				C4E5F6072F47D40100000013 /* ChallengeCreateTypePickerView.swift */,
-				C4E5F6072F47D40100000014 /* ChallengeCreatedSuccessView.swift */,
-				C4E5F6072F47D40100000015 /* ChallengeGeneratingView.swift */,
-				C4E5F6072F47D40100000016 /* ChallengeInviteFriendsView.swift */,
-				C4E5F6072F47D40100000017 /* ChallengeQuestionCountView.swift */,
-				C4E5F6072F47D40100000018 /* ChallengeSharedConfirmationView.swift */,
-				C4E5F6072F47D40100000019 /* ChallengeVerseDeepPlayChrome.swift */,
-				C4E5F6072F47D4010000001A /* ChallengeVerseDeepResultView.swift */,
-				C4E5F6072F47D4010000001B /* ChallengeVerseDeepTheme.swift */,
-			);
-			path = VerseDeep;
-			sourceTree = "<group>";
-		};
-		C4E5F6072F47D40200000020 /* CreatorChallenge */ = {
-			isa = PBXGroup;
-			children = (
-				C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */,
-				C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */,
-				C4E5F6072F47D4010000001F /* ChallengeAttemptsViewController.swift */,
-			);
-			path = CreatorChallenge;
-			sourceTree = "<group>";
-		};
 		C3D4E5F62F46C30100000020 /* ChallengeHub */ = {
 			isa = PBXGroup;
 			children = (
@@ -3684,6 +3662,37 @@
 				C4E5F6072F47D40100000020 /* VerseDeep */,
 			);
 			path = ChallengeHub;
+			sourceTree = "<group>";
+		};
+		C4E5F6072F47D40100000020 /* VerseDeep */ = {
+			isa = PBXGroup;
+			children = (
+				C4E5F6072F47D40100000011 /* ChallengeCreateFlowView.swift */,
+				C4E5F6072F47D40100000012 /* ChallengeCreateFlowViewController.swift */,
+				C4E5F6072F47D40100000013 /* ChallengeCreateTypePickerView.swift */,
+				C4E5F6072F47D40100000014 /* ChallengeCreatedSuccessView.swift */,
+				C4E5F6072F47D40100000015 /* ChallengeGeneratingView.swift */,
+				C4E5F6072F47D40100000016 /* ChallengeInviteFriendsView.swift */,
+				C4E5F6072F47D40100000017 /* ChallengeQuestionCountView.swift */,
+				C4E5F6072F47D40100000018 /* ChallengeSharedConfirmationView.swift */,
+				C4E5F6072F47D40100000019 /* ChallengeVerseDeepPlayChrome.swift */,
+				C4E5F6072F47D4010000001A /* ChallengeVerseDeepResultView.swift */,
+				C4E5F6072F47D4010000001B /* ChallengeVerseDeepTheme.swift */,
+				C4E5F6082F48E10100000011 /* ChallengeCreatorProfileView.swift */,
+				C4E5F6082F48E10100000012 /* ChallengeCreatorShareViews.swift */,
+				C4E5F6082F48E10100000013 /* ChallengeCreatorListsView.swift */,
+			);
+			path = VerseDeep;
+			sourceTree = "<group>";
+		};
+		C4E5F6072F47D40200000020 /* CreatorChallenge */ = {
+			isa = PBXGroup;
+			children = (
+				C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */,
+				C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */,
+				C4E5F6072F47D4010000001F /* ChallengeAttemptsViewController.swift */,
+			);
+			path = CreatorChallenge;
 			sourceTree = "<group>";
 		};
 		EFB127088675B0D9FB9CCA36 /* Frameworks */ = {
@@ -4182,28 +4191,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		A1B2C3D42F46A10100000091 /* Ensure AuthHubSecrets.swift */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/NewOnboarding/AuthHubSecrets.example.swift",
-			);
-			name = "Ensure AuthHubSecrets.swift";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(SRCROOT)/NewOnboarding/AuthHubSecrets.swift",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "SECRETS=\"${SRCROOT}/NewOnboarding/AuthHubSecrets.swift\"\nEXAMPLE=\"${SRCROOT}/NewOnboarding/AuthHubSecrets.example.swift\"\nif [ ! -f \"$SECRETS\" ]; then\n  if [ ! -f \"$EXAMPLE\" ]; then\n    echo \"error: AuthHubSecrets.swift is missing and AuthHubSecrets.example.swift was not found.\" >&2\n    exit 1\n  fi\n  cp \"$EXAMPLE\" \"$SECRETS\"\n  echo \"warning: Created NewOnboarding/AuthHubSecrets.swift from the example stub.\"\nfi\nENVFILE=\"${SRCROOT}/NewOnboarding/AuthHub.env\"\nENVEXAMPLE=\"${SRCROOT}/NewOnboarding/AuthHub.env.example\"\nif [ ! -f \"$ENVFILE\" ]; then\n  if [ ! -f \"$ENVEXAMPLE\" ]; then\n    echo \"error: AuthHub.env is missing and AuthHub.env.example was not found.\" >&2\n    exit 1\n  fi\n  cp \"$ENVEXAMPLE\" \"$ENVFILE\"\n  echo \"warning: Created NewOnboarding/AuthHub.env from the example. Fill in CLIENT_ID and CLIENT_SECRET.\"\nfi\n";
-			showEnvVarsInLog = 0;
-		};
 		3B737897E87FDC12C234B0C0 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -4245,6 +4232,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A1B2C3D42F46A10100000091 /* Ensure AuthHubSecrets.swift */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/NewOnboarding/AuthHubSecrets.example.swift",
+			);
+			name = "Ensure AuthHubSecrets.swift";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/NewOnboarding/AuthHubSecrets.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "SECRETS=\"${SRCROOT}/NewOnboarding/AuthHubSecrets.swift\"\nEXAMPLE=\"${SRCROOT}/NewOnboarding/AuthHubSecrets.example.swift\"\nif [ ! -f \"$SECRETS\" ]; then\n  if [ ! -f \"$EXAMPLE\" ]; then\n    echo \"error: AuthHubSecrets.swift is missing and AuthHubSecrets.example.swift was not found.\" >&2\n    exit 1\n  fi\n  cp \"$EXAMPLE\" \"$SECRETS\"\n  echo \"warning: Created NewOnboarding/AuthHubSecrets.swift from the example stub.\"\nfi\nENVFILE=\"${SRCROOT}/NewOnboarding/AuthHub.env\"\nENVEXAMPLE=\"${SRCROOT}/NewOnboarding/AuthHub.env.example\"\nif [ ! -f \"$ENVFILE\" ]; then\n  if [ ! -f \"$ENVEXAMPLE\" ]; then\n    echo \"error: AuthHub.env is missing and AuthHub.env.example was not found.\" >&2\n    exit 1\n  fi\n  cp \"$ENVEXAMPLE\" \"$ENVFILE\"\n  echo \"warning: Created NewOnboarding/AuthHub.env from the example. Fill in CLIENT_ID and CLIENT_SECRET.\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		B0182448161420A0B34257D7 /* [CP] Embed Pods Frameworks */ = {
@@ -4461,6 +4470,9 @@
 				C4E5F6072F47D40100000009 /* ChallengeVerseDeepPlayChrome.swift in Sources */,
 				C4E5F6072F47D4010000000A /* ChallengeVerseDeepResultView.swift in Sources */,
 				C4E5F6072F47D4010000000B /* ChallengeVerseDeepTheme.swift in Sources */,
+				C4E5F6082F48E10100000001 /* ChallengeCreatorProfileView.swift in Sources */,
+				C4E5F6082F48E10100000002 /* ChallengeCreatorShareViews.swift in Sources */,
+				C4E5F6082F48E10100000003 /* ChallengeCreatorListsView.swift in Sources */,
 				C4E5F6072F47D4010000000C /* ChallengeHubShareHelper.swift in Sources */,
 				C4E5F6072F47D4010000000D /* CreatorChallengeModels.swift in Sources */,
 				C4E5F6072F47D4010000000E /* CreatorChallengeService.swift in Sources */,
@@ -4771,7 +4783,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 57;
-				DEVELOPMENT_TEAM = RJB7JC328A;
+				DEVELOPMENT_TEAM = 5MWZCJ2Q4K;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "NKJV Bible/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Alkitab Bible";
@@ -4815,7 +4827,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 57;
-				DEVELOPMENT_TEAM = RJB7JC328A;
+				DEVELOPMENT_TEAM = 5MWZCJ2Q4K;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "NKJV Bible/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Alkitab Bible";

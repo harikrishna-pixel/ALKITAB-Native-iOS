@@ -95,9 +95,11 @@ struct ChallengeQuizContentHeader: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(reference)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(ChallengeQuizTheme.accent)
+            if !reference.isEmpty {
+                Text(reference)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(ChallengeQuizTheme.accent)
+            }
             Text(instruction)
                 .font(.system(size: 15))
                 .foregroundColor(Color.black.opacity(0.55))

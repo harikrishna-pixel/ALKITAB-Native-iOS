@@ -99,8 +99,8 @@ struct ChallengeWordSearchView: View {
                             colors: foundUIColors,
                             onFinishedPath: commitPath
                         )
-                        .frame(maxWidth: .infinity)
-                        .frame(height: boardHeight)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(minHeight: 140)
                         .allowsHitTesting(lives > 0)
 
                         if found.count == words.count && !words.isEmpty {
@@ -124,11 +124,6 @@ struct ChallengeWordSearchView: View {
         .navigationBarHidden(true)
         .onAppear(perform: build)
         .modifier(WordSearchSheetLock())
-    }
-
-    private var boardHeight: CGFloat {
-        // 7 rows × ~40pt + padding — keep the full A–Z grid on screen
-        CGFloat(size) * 42 + 24
     }
 
     private var foundUIColors: [String: UIColor] {

@@ -48,12 +48,15 @@ struct ChallengeSessionConfig {
     let verseMatchCount: Int
     let wordSearchCount: Int
 
+    /// Quick Quiz always plays this many questions (matches "5 Questions" in the Challenge Hub).
+    static let quickQuizFixedCount = 5
+
     static func markAsRead(book: String, chapter: Int, difficulty: ChallengeDifficulty) -> ChallengeSessionConfig {
         ChallengeSessionConfig(
             bookName: book,
             chapter: chapter,
             difficulty: difficulty,
-            quickQuizCount: 10,
+            quickQuizCount: Self.quickQuizFixedCount,
             fillQuestionCount: 10,
             trueFalseCount: 10,
             verseMatchCount: 5,

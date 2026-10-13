@@ -77,6 +77,7 @@ final class AIUsageLimiter {
     func applyLockBadge(to button: UIButton?, feature: AIUsageFeature, tint: UIColor? = nil) {
         guard let button = button else { return }
         let locked = isLocked(feature)
+        alignLockTitle(on: button, locked: locked)
         if let existing = button.viewWithTag(Self.lockBadgeTag) {
             existing.isHidden = !locked
             existing.tintColor = tint ?? button.currentTitleColor
@@ -92,9 +93,19 @@ final class AIUsageLimiter {
         badge.translatesAutoresizingMaskIntoConstraints = false
         button.addSubview(badge)
         NSLayoutConstraint.activate([
-            badge.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -14),
-            badge.centerYAnchor.constraint(equalTo: button.centerYAnchor)
+            badge.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -12),
+            badge.centerYAnchor.constraint(equalTo: button.centerYAnchor),
+            badge.widthAnchor.constraint(equalToConstant: 14),
+            badge.heightAnchor.constraint(equalToConstant: 14)
         ])
+    }
+
+    /// Shift a plain title left so the lock sits beside it. Buttons that already place an icon keep their insets.
+    private func alignLockTitle(on button: UIButton, locked: Bool) {
+        guard button.image(for: .normal) == nil else { return }
+        button.titleEdgeInsets = locked
+            ? UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 22)
+            : .zero
     }
 
     /// Calls `onGranted` when the user may proceed. Call `commit(_:)` after the result succeeds.
