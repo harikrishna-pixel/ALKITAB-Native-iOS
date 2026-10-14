@@ -20,7 +20,7 @@ struct AuthHubProfileView: View {
     @State private var referralCount = AuthHubSession.referralCount
     @State private var authRequest: AuthHubProfileAuthRequest?
     @State private var copied = false
-    @State private var showLogoutConfirm = false
+    @State private var activeAlert: ProfileAlert?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -82,16 +82,29 @@ struct AuthHubProfileView: View {
                 }
             )
         }
-        .alert(isPresented: $showLogoutConfirm) {
-            Alert(
-                title: Text("Log Out"),
-                message: Text("Are you sure you want to log out?"),
-                primaryButton: .destructive(Text("Log Out")) {
-                    OnboardingAuthManager.logOut()
-                    refreshFromSession()
-                },
-                secondaryButton: .cancel()
-            )
+        .alert(item: $activeAlert) { alert in
+            switch alert {
+            case .logout:
+                return Alert(
+                    title: Text("Log Out"),
+                    message: Text("Are you sure you want to log out?"),
+                    primaryButton: .destructive(Text("Log Out")) {
+                        OnboardingAuthManager.logOut()
+                        refreshFromSession()
+                    },
+                    secondaryButton: .cancel()
+                )
+            case .delete:
+                return Alert(
+                    title: Text("Delete Account"),
+                    message: Text("This removes your profile from this device."),
+                    primaryButton: .destructive(Text("Delete")) {
+                        OnboardingAuthManager.logOut()
+                        refreshFromSession()
+                    },
+                    secondaryButton: .cancel()
+                )
+            }
         }
     }
 
@@ -189,7 +202,7 @@ struct AuthHubProfileView: View {
             .background(Color(hex: "F5F6FA"))
             .cornerRadius(14)
 
-            Button(action: { showLogoutConfirm = true }) {
+            Button(action: { activeAlert = .logout }) {
                 Text("Log Out")
                     .font(.system(size: 16.5, weight: .bold))
                     .foregroundColor(.white)
@@ -199,6 +212,20 @@ struct AuthHubProfileView: View {
                     .cornerRadius(15)
             }
             .padding(.top, 8)
+
+            Button(action: { activeAlert = .delete }) {
+                Text("Delete Account")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color.red)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.white)
+                    .cornerRadius(15)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 15)
+                            .stroke(Color.red.opacity(0.45), lineWidth: 1)
+                    )
+            }
         }
     }
 
@@ -228,6 +255,18 @@ struct AuthHubProfileView: View {
         copied = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             copied = false
+        }
+    }
+}
+
+private enum ProfileAlert: Identifiable {
+    case logout
+    case delete
+
+    var id: Int {
+        switch self {
+        case .logout: return 0
+        case .delete: return 1
         }
     }
 }
