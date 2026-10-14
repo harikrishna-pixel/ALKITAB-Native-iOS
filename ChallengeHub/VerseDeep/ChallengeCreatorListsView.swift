@@ -27,6 +27,27 @@ final class ChallengeCreatorDirectory: ObservableObject {
         created.reduce(0) { $0 + (attemptCounts[$1.id] ?? 0) }
     }
 
+    private static let favoriteKey = "VerseDeepFavoriteQuizIds"
+
+    var favoriteIds: Set<String> {
+        Set(UserDefaults.standard.stringArray(forKey: Self.favoriteKey) ?? [])
+    }
+
+    var favorites: [ChallengeSummary] {
+        created.filter { favoriteIds.contains($0.id) }
+    }
+
+    func isFavorite(_ id: String) -> Bool {
+        favoriteIds.contains(id)
+    }
+
+    func toggleFavorite(_ id: String) {
+        var ids = favoriteIds
+        if ids.contains(id) { ids.remove(id) } else { ids.insert(id) }
+        UserDefaults.standard.set(Array(ids), forKey: Self.favoriteKey)
+        objectWillChange.send()
+    }
+
     var email: String {
         let stored = UserDefaults.standard.string(forKey: "OnboardingUserEmail")?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -98,11 +119,13 @@ final class ChallengeCreatorDirectory: ObservableObject {
     private func loadCounts(for list: [ChallengeSummary]) {
         let group = DispatchGroup()
         var counts: [String: Int] = [:]
+        var loadedAttempts: [String: [ChallengeAttempt]] = [:]
         for quiz in list {
             group.enter()
             CreatorChallengeService.shared.getAttempts(challengeId: quiz.id) { result in
                 if case .success(let attempts) = result {
                     counts[quiz.id] = attempts.count
+                    loadedAttempts[quiz.id] = attempts
                 } else {
                     counts[quiz.id] = 0
                 }
@@ -114,6 +137,7 @@ final class ChallengeCreatorDirectory: ObservableObject {
             self.isLoading = false
             self.challenges = list
             self.attemptCounts = counts
+            self.attemptsById = loadedAttempts
             self.message = nil
         }
     }
@@ -124,6 +148,7 @@ struct ChallengeCreatorQuizListView: View {
     let quizzes: [ChallengeSummary]
     @ObservedObject var directory: ChallengeCreatorDirectory
     var showsFilters: Bool
+    var draftFilters: Bool = false
     var onBack: () -> Void
     var onOpen: (ChallengeSummary) -> Void
 
@@ -132,7 +157,13 @@ struct ChallengeCreatorQuizListView: View {
 
     private var visible: [ChallengeSummary] {
         var list = quizzes
-        if filter == "Shared" {
+        if draftFilters {
+            if filter == "Drafts" {
+                list = list.filter { isDraft($0) }
+            } else if filter == "Completed" {
+                list = list.filter { !isDraft($0) }
+            }
+        } else if filter == "Shared" {
             list = list.filter { ($0.status ?? "active").lowercased() != "paused" }
         } else if filter == "Paused" {
             list = list.filter { ($0.status ?? "active").lowercased() == "paused" }
@@ -161,7 +192,7 @@ struct ChallengeCreatorQuizListView: View {
             }
             if showsFilters {
                 HStack(spacing: 8) {
-                    ForEach(["All", "Shared", "Paused"], id: \.self) { name in
+                    ForEach(draftFilters ? ["All", "Drafts", "Completed"] : ["All", "Shared", "Paused"], id: \.self) { name in
                         Button(action: { filter = name }) {
                             Text(name)
                                 .font(.system(size: 13, weight: .semibold))
@@ -229,14 +260,19 @@ struct ChallengeCreatorQuizListView: View {
                 Text("\(directory.attemptCounts[quiz.id] ?? 0) played")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(ChallengeVerseDeepTheme.blue)
+                if !showsFilters, let average = directory.averageScore(for: quiz.id) {
+                    Text("\(average)% completed")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(ChallengeVerseDeepTheme.muted)
+                }
             }
             Spacer()
-            Text((quiz.status ?? "active").lowercased() == "paused" ? "Paused" : "Shared")
+            Text(badgeTitle(quiz))
                 .font(.system(size: 11, weight: .bold))
-                .foregroundColor((quiz.status ?? "active").lowercased() == "paused" ? Color(hex: "8A5A00") : Color(hex: "1B7A3D"))
+                .foregroundColor(badgeIsWarm(quiz) ? Color(hex: "8A5A00") : Color(hex: "1B7A3D"))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background((quiz.status ?? "active").lowercased() == "paused" ? Color(hex: "FFF4D6") : Color(hex: "E8F8EE"))
+                .background(badgeIsWarm(quiz) ? Color(hex: "FFF4D6") : Color(hex: "E8F8EE"))
                 .clipShape(Capsule())
         }
         .padding(12)
@@ -245,6 +281,19 @@ struct ChallengeCreatorQuizListView: View {
         .shadow(color: Color.black.opacity(0.05), radius: 6, y: 2)
     }
 
+    private func isDraft(_ quiz: ChallengeSummary) -> Bool {
+        (quiz.shareUrl ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func badgeTitle(_ quiz: ChallengeSummary) -> String {
+        if draftFilters { return isDraft(quiz) ? "Draft" : "Completed" }
+        return (quiz.status ?? "active").lowercased() == "paused" ? "Paused" : "Shared"
+    }
+
+    private func badgeIsWarm(_ quiz: ChallengeSummary) -> Bool {
+        if draftFilters { return isDraft(quiz) }
+        return (quiz.status ?? "active").lowercased() == "paused"
+    }
 }
 
 struct ChallengeCreatorQuizDetailView: View {
@@ -252,8 +301,13 @@ struct ChallengeCreatorQuizDetailView: View {
     @ObservedObject var directory: ChallengeCreatorDirectory
     var onBack: () -> Void
     var onParticipants: () -> Void
+    var onAnalytics: () -> Void
 
     @State private var showShare = false
+
+    private var isDraft: Bool {
+        (quiz.shareUrl ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -268,12 +322,19 @@ struct ChallengeCreatorQuizDetailView: View {
                         .clipped()
                         .cornerRadius(16)
 
-                    Text(quiz.title ?? "Quiz")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
-                    Text("\(quiz.totalQuestions ?? 0) Questions · Shared")
+                    HStack {
+                        Text(quiz.title ?? "Quiz")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
+                        Spacer()
+                        Button(action: { directory.toggleFavorite(quiz.id) }) {
+                            Image(systemName: directory.isFavorite(quiz.id) ? "heart.fill" : "heart")
+                                .foregroundColor(Color(hex: "E85D4C"))
+                        }
+                    }
+                    Text(isDraft ? "Draft" : "\(quiz.totalQuestions ?? 0) Questions · Shared")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(ChallengeVerseDeepTheme.muted)
+                        .foregroundColor(isDraft ? Color(hex: "8A5A00") : ChallengeVerseDeepTheme.muted)
 
                     HStack(spacing: 10) {
                         statTile(value: "\(directory.attemptCounts[quiz.id] ?? 0)", label: "Participants")
@@ -281,11 +342,23 @@ struct ChallengeCreatorQuizDetailView: View {
                         statTile(value: averageText, label: "Avg Score")
                     }
 
-                    detailButton("Share Again", filled: true) { showShare = true }
-                    detailButton("Participants", filled: false, action: onParticipants)
-                    if (quiz.status ?? "active").lowercased() != "paused" {
-                        detailButton("Stop Sharing", filled: false, destructive: true) {
+                    if isDraft {
+                        detailButton("Continue Editing", filled: true, action: editingNote)
+                        detailButton("Preview", filled: false, action: editingNote)
+                        detailButton("Edit Details", filled: false, action: editingNote)
+                        detailButton("Regenerate Questions", filled: false, action: editingNote)
+                        detailButton("Delete Draft", filled: false, destructive: true) {
                             directory.pause(quiz)
+                        }
+                    } else {
+                        detailButton("Share Again", filled: true) { showShare = true }
+                        detailButton("View Quiz", filled: false) { openLink() }
+                        detailButton("Question Analytics", filled: false, action: onAnalytics)
+                        detailButton("Participants", filled: false, action: onParticipants)
+                        if (quiz.status ?? "active").lowercased() != "paused" {
+                            detailButton("Stop Sharing", filled: false, destructive: true) {
+                                directory.pause(quiz)
+                            }
                         }
                     }
                 }
@@ -312,6 +385,19 @@ struct ChallengeCreatorQuizDetailView: View {
             return "\(average)%"
         }
         return "—"
+    }
+
+    private func openLink() {
+        guard let raw = quiz.shareUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
+              let url = URL(string: raw), !raw.isEmpty else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("No share link yet", duration: 1.5, position: .bottom)
+            return
+        }
+        UIApplication.shared.open(url)
+    }
+
+    private func editingNote() {
+        OnboardingAuthManager.topViewController()?.view.makeToast("Edit questions from the preview while you are creating the quiz.", duration: 2.0, position: .bottom)
     }
 
     private func statTile(value: String, label: String) -> some View {

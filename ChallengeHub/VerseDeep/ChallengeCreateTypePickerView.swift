@@ -17,10 +17,10 @@ struct ChallengeCreateTypePickerView: View {
             header
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("Create From Scripture")
+                    Text("Create a New Quiz")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
-                    Text("Turn this verse into a challenge.")
+                    Text("Choose a quiz type to get started.")
                         .font(.system(size: 14))
                         .foregroundColor(ChallengeVerseDeepTheme.muted)
                     Text(verseReference)
@@ -39,10 +39,10 @@ struct ChallengeCreateTypePickerView: View {
                                         .foregroundColor(Color(hex: kind.iconTintHex))
                                 }
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(kind.title)
+                                    Text(typeTitle(kind))
                                         .font(.system(size: 16, weight: .bold))
                                         .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
-                                    Text(kind.subtitle)
+                                    Text(typeDetail(kind))
                                         .font(.system(size: 13))
                                         .foregroundColor(ChallengeVerseDeepTheme.muted)
                                 }
@@ -79,7 +79,7 @@ struct ChallengeCreateTypePickerView: View {
                 }
             }
             Spacer()
-            Text("Create Challenge")
+            Text("Create a New Quiz")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
             Spacer()
@@ -87,5 +87,25 @@ struct ChallengeCreateTypePickerView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
+    }
+
+    private func typeTitle(_ kind: ChallengeKind) -> String {
+        switch kind {
+        case .fillVerse: return "Fill in the Blanks"
+        case .quickQuiz: return "Multiple Choice"
+        case .trueFalse: return "True or False"
+        case .verseMatch: return "Match"
+        case .wordSearch: return "Verse Search"
+        }
+    }
+
+    private func typeDetail(_ kind: ChallengeKind) -> String {
+        switch kind {
+        case .fillVerse: return "Remember the missing words"
+        case .quickQuiz: return "Choose the correct answer"
+        case .trueFalse: return "Test your understanding"
+        case .verseMatch: return "Connect related words or ideas"
+        case .wordSearch: return "Find the correct verse or reference"
+        }
     }
 }

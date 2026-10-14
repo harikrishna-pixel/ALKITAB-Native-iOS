@@ -13,6 +13,7 @@ private enum ChallengeCreateStep: Equatable {
     case pickType
     case pickCount
     case generating
+    case preview
     case created
     case playing
     case invite
@@ -75,6 +76,14 @@ struct ChallengeCreateFlowView: View {
                 )
             case .generating:
                 ChallengeGeneratingView(verseReference: verse.reference)
+            case .preview:
+                ChallengeQuizPreviewView(
+                    verseReference: verse.reference,
+                    questions: $questions,
+                    onBack: { step = .pickCount },
+                    onRegenerate: { startGenerate() },
+                    onSave: { step = .created }
+                )
             case .created:
                 ChallengeCreatedSuccessView(
                     title: shareSession.challengeTitle.isEmpty ? "\(verse.reference) Challenge" : shareSession.challengeTitle,
@@ -187,13 +196,16 @@ struct ChallengeCreateFlowView: View {
             questions = built
             payload = ChallengeVerseDeepQuestionBuilder.apiPayload(from: built)
         }
+        if questions.isEmpty {
+            questions = previewQuestions(from: payload)
+        }
         step = .generating
         shareSession.create(kind: selectedKind, verse: verse, questions: payload) { result in
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 AIUsageLimiter.shared.commit(.quiz)
                 switch result {
                 case .success:
-                    step = .created
+                    step = .preview
                 case .failure(let error):
                     // Still allow local play even if API fails
                     OnboardingAuthManager.topViewController()?.view.makeToast(
@@ -201,9 +213,24 @@ struct ChallengeCreateFlowView: View {
                         duration: 2.0,
                         position: .bottom
                     )
-                    step = .created
+                    step = .preview
                 }
             }
+        }
+    }
+
+    /// Display-only copy of the questions already built for sharing. Does not change the payload.
+    private func previewQuestions(from payload: [ChallengeQuestionPayload]) -> [ChallengeVerseDeepPlayQuestion] {
+        let ids = ["a", "b", "c", "d", "e", "f"]
+        return payload.enumerated().map { index, item in
+            let options = item.options.map { $0.text }
+            let correct = ids.firstIndex(of: item.correctAnswer.lowercased()) ?? 0
+            return ChallengeVerseDeepPlayQuestion(
+                id: item.questionId.isEmpty ? "q\(index + 1)" : item.questionId,
+                prompt: item.question,
+                options: options,
+                correctIndex: options.isEmpty ? 0 : min(correct, options.count - 1)
+            )
         }
     }
 

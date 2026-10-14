@@ -108,7 +108,7 @@ struct ChallengeVerseDeepResultView: View {
             Spacer(minLength: 16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white.ignoresSafeArea())
+        .background(ChallengePhotoBackdrop(imageName: "VerseDeepHeroSunrise"))
     }
 
     private var confetti: some View {
@@ -142,7 +142,8 @@ struct ChallengeVerseDeepResultView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .background(Color(hex: "F7F8FA"))
+        .background(Color.white)
         .cornerRadius(14)
+        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
     }
 }

@@ -59,28 +59,42 @@ struct ChallengeCreatorShareFlow: View {
             ChallengeCreatorHeader(title: "Share Your Quiz?", onBack: onBack)
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("To let others play this quiz, VerseDeep will upload this quiz to our servers and generate a unique link.")
-                        .font(.system(size: 15))
-                        .foregroundColor(ChallengeVerseDeepTheme.muted)
+                    Image("VerseDeepHeroBible")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 160)
+                        .frame(maxWidth: .infinity)
+                        .clipped()
+                        .cornerRadius(16)
                         .padding(.top, 8)
 
-                    permissionRow(icon: "link", text: "Your quiz will be accessible via a unique link")
-                    permissionRow(icon: "person.2.fill", text: "You can track participants and view results")
-                    permissionRow(icon: "hand.raised.fill", text: "You can stop sharing anytime")
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("To let others play this quiz, VerseDeep will upload this quiz to our servers and generate a unique link.")
+                            .font(.system(size: 15))
+                            .foregroundColor(ChallengeVerseDeepTheme.muted)
 
-                    Button(action: { rememberChoice.toggle() }) {
-                        HStack(spacing: 10) {
-                            Image(systemName: rememberChoice ? "checkmark.square.fill" : "square")
-                                .foregroundColor(ChallengeVerseDeepTheme.blue)
-                            Text("Remember my choice")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
+                        permissionRow(icon: "link", text: "Your quiz will be accessible via a unique link")
+                        permissionRow(icon: "person.2.fill", text: "You can track participants and view results")
+                        permissionRow(icon: "hand.raised.fill", text: "You can stop sharing anytime")
+
+                        Button(action: { rememberChoice.toggle() }) {
+                            HStack(spacing: 10) {
+                                Image(systemName: rememberChoice ? "checkmark.square.fill" : "square")
+                                    .foregroundColor(ChallengeVerseDeepTheme.blue)
+                                Text("Remember my choice")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
+                            }
                         }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .padding(.top, 8)
+                    .padding(16)
+                    .background(Color.white)
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
             }
 
             VStack(spacing: 8) {
@@ -104,7 +118,7 @@ struct ChallengeCreatorShareFlow: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 16)
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(ChallengePhotoBackdrop(imageName: "VerseDeepHeroBible"))
     }
 
     private var shareOptions: some View {

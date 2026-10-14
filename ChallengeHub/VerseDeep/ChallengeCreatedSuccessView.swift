@@ -29,33 +29,41 @@ struct ChallengeCreatedSuccessView: View {
 
             Spacer()
 
-            ZStack {
-                ForEach(0..<8, id: \.self) { i in
-                    Circle()
-                        .fill([Color(hex: "7EB6FF"), Color(hex: "F5C16C"), Color(hex: "F08A8A"), ChallengeVerseDeepTheme.blue][i % 4])
-                        .frame(width: i % 2 == 0 ? 8 : 6, height: i % 2 == 0 ? 8 : 6)
-                        .offset(x: CGFloat([-70, 60, -40, 75, -20, 40, -80, 20][i]),
-                                y: CGFloat([-50, -40, -70, -10, 30, -60, 10, 40][i]))
-                }
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 72))
-                    .foregroundColor(ChallengeVerseDeepTheme.blue)
-            }
-            .frame(height: 120)
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 72))
+                .foregroundColor(Color(hex: "34C759"))
 
-            Text("Challenge Created!")
+            Text("Quiz Saved")
                 .font(.system(size: 26, weight: .bold))
                 .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
-                .padding(.top, 8)
-            Text(title)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
-                .multilineTextAlignment(.center)
-                .padding(.top, 6)
-            Text(detail)
-                .font(.system(size: 14))
+                .padding(.top, 12)
+            Text("Your quiz is saved as a draft.")
+                .font(.system(size: 15))
                 .foregroundColor(ChallengeVerseDeepTheme.muted)
-                .padding(.top, 2)
+                .padding(.top, 4)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Draft")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(Color(hex: "8A5A00"))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color(hex: "FFF4D6"))
+                    .cornerRadius(8)
+                Text(title)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
+                Text(detail)
+                    .font(.system(size: 14))
+                    .foregroundColor(ChallengeVerseDeepTheme.muted)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
 
             VStack(spacing: 12) {
                 Button(action: onPlay) {
@@ -89,7 +97,7 @@ struct ChallengeCreatedSuccessView: View {
             .padding(.bottom, 28)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white.ignoresSafeArea())
+        .background(ChallengePhotoBackdrop(imageName: "VerseDeepHeroSunrise"))
     }
 
     private func outlineButton(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
@@ -102,6 +110,8 @@ struct ChallengeCreatedSuccessView: View {
             .foregroundColor(ChallengeVerseDeepTheme.blue)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
+            .background(Color.white)
+            .cornerRadius(14)
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(ChallengeVerseDeepTheme.blue.opacity(0.35), lineWidth: 1.5)

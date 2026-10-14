@@ -637,35 +637,97 @@ struct ChallengeOldStyleResult: View {
     var onDone: () -> Void
 
     var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
+        VStack(spacing: 0) {
+            Spacer(minLength: 12)
+
+            ZStack {
+                Circle().fill(Color(hex: "7EB6FF")).frame(width: 8, height: 8).offset(x: -54, y: -28)
+                Circle().fill(Color(hex: "F5C16C")).frame(width: 6, height: 6).offset(x: 48, y: -24)
+                Circle().fill(Color(hex: "F08A8A")).frame(width: 5, height: 5).offset(x: -30, y: 30)
+                Circle().fill(ChallengeVerseDeepTheme.blue).frame(width: 6, height: 6).offset(x: 36, y: 26)
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 56))
+                    .foregroundColor(ChallengeVerseDeepTheme.gold)
+            }
+            .frame(height: 100)
+
             Text(title)
-                .font(.system(size: 24, weight: .bold))
-                .foregroundColor(Color(hex: "0B1B3A"))
+                .font(.system(size: 26, weight: .bold))
+                .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
                 .multilineTextAlignment(.center)
-            Text(scoreText)
-                .font(.system(size: 16))
-                .foregroundColor(Color.black.opacity(0.55))
-                .multilineTextAlignment(.center)
+                .padding(.top, 8)
+                .padding(.horizontal, 24)
+
+            if let score = parsedScore {
+                HStack(spacing: 10) {
+                    scoreCard(icon: "checkmark.circle.fill", tint: ChallengeVerseDeepTheme.green, value: "\(score.correct)/\(score.total)", label: "Correct")
+                    scoreCard(icon: "star.fill", tint: ChallengeVerseDeepTheme.gold, value: "\(score.percent)%", label: "Score")
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 22)
+            } else {
+                Text(scoreText)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color(hex: "F7F8FA"))
+                    .cornerRadius(14)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 22)
+            }
+
             if let subtitle {
                 Text(subtitle)
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color.black.opacity(0.45))
+                    .foregroundColor(ChallengeVerseDeepTheme.muted)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 28)
+                    .padding(.top, 16)
             }
+
             Button(action: onDone) {
                 Text("Done")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
-                    .background(ChallengeQuizTheme.accent)
-                    .cornerRadius(12)
+                    .background(ChallengeVerseDeepTheme.blue)
+                    .cornerRadius(14)
             }
-            .padding(.horizontal, 20)
-            Spacer()
+            .padding(.horizontal, 24)
+            .padding(.top, 28)
+
+            Spacer(minLength: 16)
         }
-        .background(Color(hex: "F2F3F7").ignoresSafeArea())
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(ChallengePhotoBackdrop(imageName: "VerseDeepHeroCross"))
+    }
+
+    private var parsedScore: (correct: Int, total: Int, percent: Int)? {
+        let numbers = scoreText.split { !$0.isNumber }.compactMap { Int($0) }
+        guard numbers.count >= 2, numbers[1] > 0 else { return nil }
+        let percent = Int((Double(numbers[0]) / Double(numbers[1]) * 100).rounded())
+        return (numbers[0], numbers[1], percent)
+    }
+
+    private func scoreCard(icon: String, tint: Color, value: String, label: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(tint)
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
+            Text(label)
+                .font(.system(size: 12))
+                .foregroundColor(ChallengeVerseDeepTheme.muted)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(Color.white)
+        .cornerRadius(14)
+        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
     }
 }

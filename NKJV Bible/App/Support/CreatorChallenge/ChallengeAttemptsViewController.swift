@@ -3,7 +3,7 @@
 //  NKJV Bible
 //
 //  Settings → Challenge Attempts
-//  Lists my challenges, then players who attempted each one.
+//  Opens the creator profile.
 //
 
 import UIKit
@@ -27,15 +27,15 @@ final class ChallengeAttemptsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Challenge Attempts"
-        view.backgroundColor = UIColor(red: 0.97, green: 0.97, blue: 0.99, alpha: 1)
+        title = "Profile"
+        view.backgroundColor = .white
         if let bar = navigationController?.navigationBar {
             savedNavBarHidden = navigationController?.isNavigationBarHidden
             savedTintColor = bar.tintColor
             savedStandardAppearance = bar.standardAppearance.copy()
             savedScrollEdgeAppearance = bar.scrollEdgeAppearance?.copy()
         }
-        let root = ChallengeAttemptsScreen { [weak self] in
+        let root = ChallengeCreatorHubView { [weak self] in
             self?.navigationController?.popViewController(animated: true)
         }
         let host = UIHostingController(rootView: root)
@@ -68,35 +68,5 @@ final class ChallengeAttemptsViewController: UIViewController {
         if let savedNavBarHidden = savedNavBarHidden {
             nav.setNavigationBarHidden(savedNavBarHidden, animated: animated)
         }
-    }
-}
-
-private struct ChallengeAttemptsScreen: View {
-    var onClose: () -> Void
-
-    @StateObject private var directory = ChallengeCreatorDirectory()
-    @State private var selectedId: String?
-
-    var body: some View {
-        Group {
-            if let selectedId = selectedId,
-               let quiz = directory.created.first(where: { $0.id == selectedId }) {
-                ChallengeCreatorParticipantsView(
-                    quiz: quiz,
-                    directory: directory,
-                    onBack: { self.selectedId = nil }
-                )
-            } else {
-                ChallengeCreatorQuizListView(
-                    title: "Challenge Attempts",
-                    quizzes: directory.created,
-                    directory: directory,
-                    showsFilters: true,
-                    onBack: onClose,
-                    onOpen: { selectedId = $0.id }
-                )
-            }
-        }
-        .onAppear { directory.reload() }
     }
 }

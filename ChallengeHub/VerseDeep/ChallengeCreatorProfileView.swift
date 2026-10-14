@@ -28,8 +28,11 @@ enum CreatorHubPage: Equatable {
     case created
     case shared
     case results
+    case favorites
+    case settings
     case detail(String)
     case participants(String)
+    case analytics(String)
 }
 
 struct ChallengeCreatorHeader: View {
@@ -82,6 +85,7 @@ struct ChallengeCreatorHubView: View {
                     quizzes: directory.created,
                     directory: directory,
                     showsFilters: true,
+                    draftFilters: true,
                     onBack: { page = .profile },
                     onOpen: {
                         listSource = .created
@@ -106,13 +110,35 @@ struct ChallengeCreatorHubView: View {
                     onBack: { page = .profile },
                     onOpen: { page = .participants($0.id) }
                 )
+            case .favorites:
+                ChallengeCreatorFavoritesView(
+                    directory: directory,
+                    onBack: { page = .profile },
+                    onOpen: {
+                        listSource = .favorites
+                        page = .detail($0.id)
+                    }
+                )
+            case .settings:
+                ChallengeCreatorSettingsView(onBack: { page = .profile })
             case .detail(let id):
                 if let quiz = directory.created.first(where: { $0.id == id }) {
                     ChallengeCreatorQuizDetailView(
                         quiz: quiz,
                         directory: directory,
                         onBack: { page = listSource },
-                        onParticipants: { page = .participants(id) }
+                        onParticipants: { page = .participants(id) },
+                        onAnalytics: { page = .analytics(id) }
+                    )
+                } else {
+                    missingQuiz(onBack: { page = .profile })
+                }
+            case .analytics(let id):
+                if let quiz = directory.created.first(where: { $0.id == id }) {
+                    ChallengeCreatorAnalyticsView(
+                        quiz: quiz,
+                        directory: directory,
+                        onBack: { page = .detail(id) }
                     )
                 } else {
                     missingQuiz(onBack: { page = .profile })
@@ -197,6 +223,20 @@ struct ChallengeCreatorProfileView: View {
                             count: directory.totalPlayers,
                             page: .results
                         )
+                        profileRow(
+                            icon: "heart.fill",
+                            tint: Color(hex: "E85D4C"),
+                            title: "Favorites",
+                            count: directory.favorites.count,
+                            page: .favorites
+                        )
+                        profileRow(
+                            icon: "gearshape.fill",
+                            tint: Color(hex: "5AC8FA"),
+                            title: "Settings",
+                            count: nil,
+                            page: .settings
+                        )
                     }
                     .padding(.horizontal, 20)
 
@@ -229,7 +269,7 @@ struct ChallengeCreatorProfileView: View {
         )
     }
 
-    private func profileRow(icon: String, tint: Color, title: String, count: Int, page: CreatorHubPage) -> some View {
+    private func profileRow(icon: String, tint: Color, title: String, count: Int?, page: CreatorHubPage) -> some View {
         Button(action: { onOpen(page) }) {
             HStack(spacing: 14) {
                 Image(systemName: icon)
@@ -242,13 +282,15 @@ struct ChallengeCreatorProfileView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
                 Spacer()
-                Text("\(count)")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(tint)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(tint.opacity(0.12))
-                    .clipShape(Capsule())
+                if let count = count {
+                    Text("\(count)")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(tint)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(tint.opacity(0.12))
+                        .clipShape(Capsule())
+                }
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(Color.black.opacity(0.25))

@@ -12,6 +12,7 @@ struct ChallengeQuestionCountView: View {
     var onBack: () -> Void
     var onGenerate: () -> Void
 
+    @State private var difficulty: ChallengeDifficulty = .easy
     private let counts = [1, 3, 5, 10]
 
     var body: some View {
@@ -40,14 +41,14 @@ struct ChallengeQuestionCountView: View {
                     }
                     .padding(.top, 12)
 
-                    Text(displayTitle)
+                    Text("Create from Scripture")
                         .font(.system(size: 26, weight: .bold))
                         .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
                         .multilineTextAlignment(.center)
                         .padding(.top, 18)
                         .padding(.horizontal, 24)
 
-                    Text("From \(verseReference)")
+                    Text("\(kind.title) · \(verseReference)")
                         .font(.system(size: 15))
                         .foregroundColor(ChallengeVerseDeepTheme.muted)
                         .padding(.top, 6)
@@ -82,6 +83,36 @@ struct ChallengeQuestionCountView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 14)
 
+                    Text("Difficulty")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 24)
+
+                    HStack(spacing: 12) {
+                        ForEach(ChallengeDifficulty.allCases) { level in
+                            Button(action: { difficulty = level }) {
+                                Text(level.title)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(difficulty == level ? .white : ChallengeVerseDeepTheme.blueDeep)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 44)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(difficulty == level ? ChallengeVerseDeepTheme.blue : Color.white)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(difficulty == level ? ChallengeVerseDeepTheme.blue : ChallengeVerseDeepTheme.cardBorder, lineWidth: 1.5)
+                                    )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 14)
+
                     Text("Up to \(selectedCount) quality question\(selectedCount == 1 ? "" : "s") can be created from this verse.")
                         .font(.system(size: 14))
                         .foregroundColor(ChallengeVerseDeepTheme.muted)
@@ -93,8 +124,8 @@ struct ChallengeQuestionCountView: View {
 
             Button(action: onGenerate) {
                 HStack(spacing: 8) {
-                    Image(systemName: "play.fill")
-                    Text("Generate \(selectedCount) Question\(selectedCount == 1 ? "" : "s")")
+                    Image(systemName: "sparkles")
+                    Text("Generate Questions")
                 }
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(.white)
@@ -107,9 +138,5 @@ struct ChallengeQuestionCountView: View {
             .padding(.bottom, 24)
         }
         .background(Color.white.ignoresSafeArea())
-    }
-
-    private var displayTitle: String {
-        "Create \(kind.title)"
     }
 }
