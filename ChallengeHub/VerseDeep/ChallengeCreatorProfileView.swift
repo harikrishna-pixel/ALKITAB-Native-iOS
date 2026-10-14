@@ -184,7 +184,7 @@ struct ChallengeCreatorProfileView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ChallengeCreatorHeader(title: "Profile", onBack: onClose)
+            ChallengeCreatorHeader(title: "Quiz profile", onBack: onClose)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 22) {
