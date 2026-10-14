@@ -165,15 +165,21 @@ final class AIUsageLimiter {
 
         let alert = UIAlertController(title: "Daily Free Limit Reached", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Use \(cost) Credits", style: .default) { [weak self] _ in
-            guard ChallengeWallet.coins >= cost else {
-                ChallengeWallet.openWalletScreen()
-                return
+            // The alert is still closing. Opening the Wallet on it freezes the screen.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                App_Protocol.delegateReader?.CloseMenu()
+                guard ChallengeWallet.coins >= cost else {
+                    ChallengeWallet.openWalletScreen()
+                    return
+                }
+                self?.pending[feature] = .credits(cost)
+                onGranted()
             }
-            self?.pending[feature] = .credits(cost)
-            onGranted()
         })
         alert.addAction(UIAlertAction(title: "Get Unlimited", style: .default) { [weak self] _ in
-            self?.presentPaywall()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                self?.presentPaywall()
+            }
         })
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         presenter.present(alert, animated: true)

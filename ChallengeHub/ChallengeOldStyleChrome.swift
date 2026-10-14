@@ -51,8 +51,12 @@ enum ChallengeWallet {
     /// Same route as classic Quiz coin button → Wallet screen.
     static func openWalletScreen() {
         DispatchQueue.main.async {
+            var top = OnboardingAuthManager.topViewController()
+            while top is UIAlertController {
+                top = top?.presentingViewController
+            }
             guard
-                let top = OnboardingAuthManager.topViewController(),
+                let top = top,
                 let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "WalletViewController") as? WalletViewController
             else { return }
             let container: UIViewController = top.navigationController ?? top
