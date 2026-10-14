@@ -55,7 +55,23 @@ enum ChallengeWallet {
                 let top = OnboardingAuthManager.topViewController(),
                 let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "WalletViewController") as? WalletViewController
             else { return }
-            if let nav = top.navigationController {
+            let container: UIViewController = top.navigationController ?? top
+            let isSheet = container.presentingViewController != nil
+                && container.modalPresentationStyle != .fullScreen
+                && container.modalPresentationStyle != .overFullScreen
+            if isSheet, let presenter = container.presentingViewController {
+                // Close the sheet first so Wallet is not stacked on top of it.
+                presenter.dismiss(animated: true) {
+                    guard let base = OnboardingAuthManager.topViewController() else { return }
+                    if let nav = base.navigationController ?? (base as? UINavigationController) {
+                        nav.pushViewController(vc, animated: true)
+                    } else {
+                        vc.PresentVu = true
+                        vc.modalPresentationStyle = .fullScreen
+                        base.present(vc, animated: true)
+                    }
+                }
+            } else if let nav = top.navigationController {
                 nav.pushViewController(vc, animated: true)
             } else {
                 // From a sheet: open as its own full screen (not a stacked card); Back dismisses it.

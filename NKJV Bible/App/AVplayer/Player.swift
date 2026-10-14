@@ -10,11 +10,21 @@ import Alamofire
 import AVFoundation
 import MediaPlayer
 
+/// Keeps a forward/back jump on screen until playback has actually reached it.
+enum ForwardSeekHold {
+    static var pinnedTime: Double?
+    static var pinUntil: Date?
+    /// True while code is moving the slider. That must not seek the audio.
+    static var isApplying = false
+}
+
 @available(iOS 13.4, *)
 extension ReaderViewController: AVplayerProtocol {
     
     
     func ViewInit() {
+        ForwardSeekHold.pinnedTime = nil
+        ForwardSeekHold.pinUntil = nil
         self.changeStatus()
         self.AVswitch.value = 0
         self.AVTimeRemain.text = "0:0"
@@ -24,7 +34,7 @@ extension ReaderViewController: AVplayerProtocol {
         self.currentTime = 1
         self.currentTimeacu = 0
         self.PlayPause(ImageName: "Play")
-        self.AVTitleText.text = String(format: "\(self.BookTxt.text!)-%02i", self.Pageindex)
+        self.AVTitleText.text = String(format: "\(UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName)-%02i", self.Pageindex)
         progressConfig()
         App_Protocol.delegateAVplayerProtocol = self
         self.updateNavButtons()
@@ -75,7 +85,8 @@ extension ReaderViewController: AVplayerProtocol {
         
         // NEW FIXED CODE - Just check if player is actually playing
         // Don't wait for playStatus flag as it might not be set immediately on first play
-        if AudioPlayerService.sharedInstance.player?.timeControlStatus == AVPlayer.TimeControlStatus.playing {
+        if AudioPlayerService.sharedInstance.player?.timeControlStatus == AVPlayer.TimeControlStatus.playing
+            || (AudioPlayerService.sharedInstance.player?.rate ?? 0) > 0 {
             self.PLayerInfo()
         }
     }
@@ -114,6 +125,22 @@ extension ReaderViewController: AVplayerProtocol {
         
         let Duration_in_Second = Int(playerItem.asset.duration.seconds) % 60
         let Duration_in_minute:Int = Int(playerItem.asset.duration.seconds / 60) % 60
+
+        // The old forward path called this right away and painted the pre-skip time, which sought the audio back.
+        if let pinned = ForwardSeekHold.pinnedTime {
+            let now = playerItem.currentTime().seconds
+            let expired = (ForwardSeekHold.pinUntil ?? .distantPast) < Date()
+            if expired || (now.isFinite && now + 1.5 >= pinned) {
+                ForwardSeekHold.pinnedTime = nil
+                ForwardSeekHold.pinUntil = nil
+            } else {
+                self.AVTimeRemain.text = String(format: "%d:%02i", Duration_in_minute, Duration_in_Second)
+                if abs(Double(AVswitch.value) - pinned) > 0.4 {
+                    showSeekPosition(pinned)
+                }
+                return
+            }
+        }
         
         // OLD BUGGY CODE - Was not updating time labels properly
         // Only updated when SwitchStatus == "Play", causing labels to show 0:0 initially
@@ -125,17 +152,23 @@ extension ReaderViewController: AVplayerProtocol {
         // NEW FIXED CODE - Always update time labels so they show correct times immediately
         // Format: minutes:seconds (e.g., 2:30)
         // While dragging / seeking the label already shows the target time — don't overwrite it.
-        if !isUserInteractingWithSlider {
+        // Hold only while the finger is on the slider; a stale seek flag must not freeze the time.
+        let holdPosition = isUserInteractingWithSlider && AVswitch.isTracking
+        if !holdPosition {
             self.AVstartTime.text = String(format: "%d:%02i",minutes,self.currentTime)
         }
         self.AVTimeRemain.text = String(format: "%d:%02i",Duration_in_minute,Duration_in_Second)
         
         // Move the thumb with playback. Skip only while the user is dragging.
-        if !isUserInteractingWithSlider, currentTimeacu.isFinite {
-            AVswitch.setValue(Float(self.currentTimeacu), animated: true)
+        if !holdPosition, currentTimeacu.isFinite {
+            ForwardSeekHold.isApplying = true
+            AVswitch.setValue(Float(self.currentTimeacu), animated: false)
+            ForwardSeekHold.isApplying = false
         }
         
-        if Int(self.AVswitch.value) == Int(self.AVswitch.maximumValue) || Int(self.AVswitch.value) == Int(self.AVswitch.maximumValue) {
+        let playedSeconds = playerItem.currentTime().seconds
+        let trackSeconds = playerItem.asset.duration.seconds
+        if trackSeconds.isFinite, trackSeconds > 1, playedSeconds.isFinite, playedSeconds >= trackSeconds - 0.35 {
             timer?.invalidate()
             ViewInit()
             if UserDefaults.standard.string(forKey: "Shuffle")  == "true" {
@@ -265,7 +298,7 @@ extension ReaderViewController: AVplayerProtocol {
                 App_Protocol.delegateReaderSource?.ReloadFont(ChapterNo:UserDefaults.standard.integer(forKey: "BookChapter"))
                 App_Protocol.delegateReader?.mainContainer()
             }
-            self.AVTitleText.text = String(format: "\(self.BookName)-\(self.Pageindex)")
+            self.AVTitleText.text = String(format: "\(UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName)-\(self.Pageindex)")
         } else {
             // at last chapter
             self.view.makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .bottom)
@@ -279,7 +312,7 @@ extension ReaderViewController: AVplayerProtocol {
             if self.Pageindex > 1 && self.pagecount >= self.Pageindex {
                 self.playStatus = false
                 self.Pageindex = self.Pageindex-1
-                self.AVTitleText.text = String(format: "\(self.BookName)-\(self.Pageindex)")
+                self.AVTitleText.text = String(format: "\(UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName)-\(self.Pageindex)")
                 BookURL.sharedInstance.bookURL(BookNo: String(self.Pageindex))
                 UserDefaults.standard.set(UserDefaults.standard.integer(forKey: "BookChapter")-1, forKey: "BookChapter")
                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
@@ -310,8 +343,13 @@ extension ReaderViewController: AVplayerProtocol {
         let startTime:Float = Float(self.AVstartTime.text!.replacingOccurrences(of: ":", with: "."))!
             
         if startTime+0.11 < remain {
-            let current = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? 0
-            self.seekAudio(to: current + 10)
+            let now = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? 0
+            AudioPlayerService.sharedInstance.seekForward(time: 10)
+            if now.isFinite {
+                ForwardSeekHold.pinnedTime = now + 10
+                ForwardSeekHold.pinUntil = Date().addingTimeInterval(2.5)
+                showSeekPosition(now + 10)
+            }
         }
     }
     
@@ -319,8 +357,13 @@ extension ReaderViewController: AVplayerProtocol {
     
     @IBAction func AVBackward(_ sender: Any) {
         if AVswitch.value > 0.10 {
-            let current = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? 0
-            self.seekAudio(to: current - 10)
+            let now = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? 0
+            AudioPlayerService.sharedInstance.seekBackward(time: 10)
+            if now.isFinite {
+                ForwardSeekHold.pinnedTime = max(0, now - 10)
+                ForwardSeekHold.pinUntil = Date().addingTimeInterval(2.5)
+                showSeekPosition(max(0, now - 10))
+            }
         }
     }
 
@@ -347,7 +390,9 @@ extension ReaderViewController: AVplayerProtocol {
         self.currentTimeacu = clamped
         self.currentTime = Int(clamped) % 60
         self.AVstartTime.text = String(format: "%d:%02i", Int(clamped / 60) % 60, Int(clamped) % 60)
+        ForwardSeekHold.isApplying = true
         self.AVswitch.setValue(Float(clamped), animated: false)
+        ForwardSeekHold.isApplying = false
     }
  
     

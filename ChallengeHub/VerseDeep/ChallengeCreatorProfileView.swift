@@ -175,6 +175,12 @@ struct ChallengeCreatorProfileView: View {
     @ObservedObject var directory: ChallengeCreatorDirectory
     var onClose: () -> Void
     var onOpen: (CreatorHubPage) -> Void
+    var onLoggedIn: (() -> Void)? = nil
+
+    @State private var allowsAccess = ChallengeQuizAccess.allowsChallenges
+    @State private var authRequest: ChallengeQuizAuthRequest?
+    @State private var profilePhoto = ChallengeQuizProfilePhoto.load()
+    @State private var showPhotoPicker = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -183,64 +189,114 @@ struct ChallengeCreatorProfileView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 22) {
                     VStack(spacing: 10) {
-                        Image("VerseDeepHeroPrayer")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 88, height: 88)
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(Color.white, lineWidth: 3))
-                            .shadow(color: Color.black.opacity(0.12), radius: 8, y: 3)
+                        Button(action: { showPhotoPicker = true }) {
+                            ZStack(alignment: .bottomTrailing) {
+                                Group {
+                                    if let profilePhoto = profilePhoto {
+                                        Image(uiImage: profilePhoto)
+                                            .resizable()
+                                            .scaledToFill()
+                                    } else {
+                                        Image("VerseDeepHeroPrayer")
+                                            .resizable()
+                                            .scaledToFill()
+                                    }
+                                }
+                                .frame(width: 88, height: 88)
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(Color.white, lineWidth: 3))
+                                .shadow(color: Color.black.opacity(0.12), radius: 8, y: 3)
 
-                        Text(directory.displayName)
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 28, height: 28)
+                                    .background(ChallengeVerseDeepTheme.blue)
+                                    .clipShape(Circle())
+                                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+
+                        Text(allowsAccess ? directory.displayName : "Quiz profile")
                             .font(.system(size: 22, weight: .bold))
                             .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
-                        Text(directory.email.isEmpty ? "Creator on this device" : directory.email)
+                        Text(allowsAccess ? (directory.email.isEmpty ? "Creator on this device" : directory.email) : "Log in or sign up to create challenges.")
                             .font(.system(size: 14))
                             .foregroundColor(ChallengeVerseDeepTheme.muted)
-                            .lineLimit(1)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
                     }
                     .padding(.top, 12)
 
-                    VStack(spacing: 12) {
-                        profileRow(
-                            icon: "square.and.pencil",
-                            tint: Color(hex: "1C46B2"),
-                            title: "My Created Quizzes",
-                            count: directory.created.count,
-                            page: .created
-                        )
-                        profileRow(
-                            icon: "square.and.arrow.up",
-                            tint: Color(hex: "34C759"),
-                            title: "My Shared Quizzes",
-                            count: directory.shared.count,
-                            page: .shared
-                        )
-                        profileRow(
-                            icon: "chart.bar.fill",
-                            tint: Color(hex: "F5A623"),
-                            title: "My Results",
-                            count: directory.totalPlayers,
-                            page: .results
-                        )
-                        profileRow(
-                            icon: "heart.fill",
-                            tint: Color(hex: "E85D4C"),
-                            title: "Favorites",
-                            count: directory.favorites.count,
-                            page: .favorites
-                        )
-                        profileRow(
-                            icon: "gearshape.fill",
-                            tint: Color(hex: "5AC8FA"),
-                            title: "Settings",
-                            count: nil,
-                            page: .settings
-                        )
+                    if allowsAccess {
+                        VStack(spacing: 12) {
+                            profileRow(
+                                icon: "square.and.pencil",
+                                tint: Color(hex: "1C46B2"),
+                                title: "My Created Quizzes",
+                                count: directory.created.count,
+                                page: .created
+                            )
+                            profileRow(
+                                icon: "square.and.arrow.up",
+                                tint: Color(hex: "34C759"),
+                                title: "My Shared Quizzes",
+                                count: directory.shared.count,
+                                page: .shared
+                            )
+                            profileRow(
+                                icon: "chart.bar.fill",
+                                tint: Color(hex: "F5A623"),
+                                title: "My Results",
+                                count: directory.totalPlayers,
+                                page: .results
+                            )
+                            profileRow(
+                                icon: "heart.fill",
+                                tint: Color(hex: "E85D4C"),
+                                title: "Favorites",
+                                count: directory.favorites.count,
+                                page: .favorites
+                            )
+                            profileRow(
+                                icon: "gearshape.fill",
+                                tint: Color(hex: "5AC8FA"),
+                                title: "Settings",
+                                count: nil,
+                                page: .settings
+                            )
+                        }
+                        .padding(.horizontal, 20)
+                    } else {
+                        VStack(spacing: 12) {
+                            Button(action: { authRequest = ChallengeQuizAuthRequest(mode: .login) }) {
+                                Text("Login")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(ChallengeVerseDeepTheme.blue)
+                                    .cornerRadius(14)
+                            }
+                            Button(action: { authRequest = ChallengeQuizAuthRequest(mode: .signUp) }) {
+                                Text("Sign Up")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(ChallengeVerseDeepTheme.blue)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(Color.white)
+                                    .cornerRadius(14)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .stroke(ChallengeVerseDeepTheme.blue, lineWidth: 1.5)
+                                    )
+                            }
+                        }
+                        .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
 
-                    if let message = directory.message, directory.created.isEmpty {
+                    if allowsAccess, let message = directory.message, directory.created.isEmpty {
                         Text(message)
                             .font(.system(size: 14))
                             .foregroundColor(ChallengeVerseDeepTheme.muted)
@@ -267,6 +323,25 @@ struct ChallengeCreatorProfileView: View {
             }
             .ignoresSafeArea()
         )
+        .onAppear { allowsAccess = ChallengeQuizAccess.allowsChallenges }
+        .sheet(isPresented: $showPhotoPicker) {
+            ChallengeQuizPhotoPicker { image in
+                ChallengeQuizProfilePhoto.save(image)
+                profilePhoto = image
+            }
+        }
+        .sheet(item: $authRequest) { request in
+            AuthHubEmailAuthView(
+                mode: request.mode,
+                onAuthSuccess: {
+                    ChallengeQuizAccess.noteLogin()
+                    allowsAccess = true
+                    authRequest = nil
+                    onLoggedIn?()
+                },
+                onCancel: { authRequest = nil }
+            )
+        }
     }
 
     private func profileRow(icon: String, tint: Color, title: String, count: Int?, page: CreatorHubPage) -> some View {
@@ -301,5 +376,26 @@ struct ChallengeCreatorProfileView: View {
             .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct ChallengeQuizAuthRequest: Identifiable {
+    let id = UUID()
+    let mode: AuthHubEmailMode
+}
+
+struct ChallengeQuizLoginGate: View {
+    var onBack: () -> Void
+    var onLoggedIn: () -> Void
+
+    @StateObject private var directory = ChallengeCreatorDirectory()
+
+    var body: some View {
+        ChallengeCreatorProfileView(
+            directory: directory,
+            onClose: onBack,
+            onOpen: { _ in },
+            onLoggedIn: onLoggedIn
+        )
     }
 }

@@ -120,11 +120,13 @@ struct ChallengeHubView: View {
 
                 Spacer()
 
-                if kind.isPremium {
-                    Text("Premium")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color(hex: "C9A227"))
-                } else {
+                // Premium label hidden for now.
+                // if kind.isPremium {
+                //     Text("Premium")
+                //         .font(.system(size: 12, weight: .semibold))
+                //         .foregroundColor(Color(hex: "C9A227"))
+                // } else
+                if !kind.isPremium {
                     Text("Free")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(.white)
@@ -280,15 +282,17 @@ struct ChallengeKindPickerSheet: View {
 
                                 Spacer()
 
-                                if kind.isPremium {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: AIUsageLimiter.shared.isQuizUnlocked ? "crown.fill" : "lock.fill")
-                                            .font(.system(size: 11))
-                                        Text("Premium")
-                                            .font(.system(size: 12, weight: .semibold))
-                                    }
-                                    .foregroundColor(Color(hex: "C9A227"))
-                                } else {
+                                // Premium label hidden for now.
+                                // if kind.isPremium {
+                                //     HStack(spacing: 4) {
+                                //         Image(systemName: AIUsageLimiter.shared.isQuizUnlocked ? "crown.fill" : "lock.fill")
+                                //             .font(.system(size: 11))
+                                //         Text("Premium")
+                                //             .font(.system(size: 12, weight: .semibold))
+                                //     }
+                                //     .foregroundColor(Color(hex: "C9A227"))
+                                // } else
+                                if !kind.isPremium {
                                     Text("Free")
                                         .font(.system(size: 12, weight: .bold))
                                         .foregroundColor(.white)

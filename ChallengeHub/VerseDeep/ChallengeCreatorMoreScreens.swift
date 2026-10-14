@@ -320,6 +320,7 @@ struct ChallengeCreatorSettingsView: View {
     @State private var notificationsOn = true
     @State private var showName = UserDefaults.standard.bool(forKey: "VerseDeepCreatorShowName")
     @State private var emailReports = UserDefaults.standard.bool(forKey: "VerseDeepCreatorEmailReports")
+    @State private var confirmSignOut = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -329,13 +330,7 @@ struct ChallengeCreatorSettingsView: View {
                     toggleRow("Notifications", "Quiz updates stay with your app notification settings.", isOn: $notificationsOn)
                     toggleRow("Show my name to participants", "Uses the name on your profile.", isOn: $showName)
                     toggleRow("Email me quiz reports", "Saved on this device.", isOn: $emailReports)
-                    navRow("Language", value: "English")
-                    navRow("Help & Support", value: "")
-                    navRow("Terms of Service", value: "")
-                    navRow("Privacy Policy", value: "")
-                    Button(action: {
-                        OnboardingAuthManager.topViewController()?.view.makeToast("Use account settings to sign out.", duration: 2.0, position: .bottom)
-                    }) {
+                    Button(action: { confirmSignOut = true }) {
                         HStack {
                             Text("Sign Out")
                                 .font(.system(size: 16, weight: .semibold))
@@ -350,6 +345,17 @@ struct ChallengeCreatorSettingsView: View {
             }
         }
         .background(Color.white.ignoresSafeArea())
+        .alert(isPresented: $confirmSignOut) {
+            Alert(
+                title: Text("Sign Out"),
+                message: Text("If you sign out, you can't create challenges."),
+                primaryButton: .destructive(Text("Sign Out")) {
+                    ChallengeQuizAccess.signOutOfQuiz()
+                    onBack()
+                },
+                secondaryButton: .cancel()
+            )
+        }
         .onChange(of: showName) { value in
             UserDefaults.standard.set(value, forKey: "VerseDeepCreatorShowName")
         }
@@ -373,23 +379,5 @@ struct ChallengeCreatorSettingsView: View {
                 .labelsHidden()
         }
         .padding(.vertical, 12)
-    }
-
-    private func navRow(_ title: String, value: String) -> some View {
-        HStack {
-            Text(title)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
-            Spacer()
-            if !value.isEmpty {
-                Text(value)
-                    .font(.system(size: 14))
-                    .foregroundColor(ChallengeVerseDeepTheme.muted)
-            }
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Color.black.opacity(0.25))
-        }
-        .padding(.vertical, 14)
     }
 }

@@ -5,6 +5,7 @@
 //  Created by Marberx Technologies on 12/11/25.
 import SwiftUI
 import StoreKit
+import Toast_Swift
 
 @available(iOS 15.0, *)
 struct BibleSubscriptionView: View {
@@ -308,6 +309,10 @@ struct BibleSubscriptionView: View {
     
     // MARK: - Handle Purchase Action
     private func handlePurchaseAction() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet(), !storeManager.isLoading else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("No internet connection. Please check your connection and try again.")
+            return
+        }
         showLoader = true
         
         if planSelection.plan == .monthly {
@@ -900,7 +905,6 @@ private struct PaywallPlanAndCTASection: View {
             }
             .padding(.horizontal, isPad ? 8 : 18)
             .padding(.bottom, isPad ? 12 : 8)
-            .disabled(storeManager.isLoading)
 
             Text(ctaSubtitle)
                 .font(.system(size: isPad ? 13 : 12, weight: .medium))

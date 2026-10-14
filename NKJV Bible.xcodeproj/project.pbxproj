@@ -662,6 +662,8 @@
 		C4E5F6082F48E10100000002 /* ChallengeCreatorShareViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6082F48E10100000012 /* ChallengeCreatorShareViews.swift */; };
 		C4E5F6082F48E10100000003 /* ChallengeCreatorListsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6082F48E10100000013 /* ChallengeCreatorListsView.swift */; };
 		C4E5F6082F48E10100000004 /* ChallengeCreatorMoreScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6082F48E10100000014 /* ChallengeCreatorMoreScreens.swift */; };
+		C4E5F6092F48E20100000005 /* ChallengeQuizAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6092F48E20100000015 /* ChallengeQuizAccess.swift */; };
+		C4E5F60A2F48E30100000006 /* ChallengeQuizProfilePhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F60A2F48E30100000016 /* ChallengeQuizProfilePhoto.swift */; };
 		C4E5F6072F47D4010000000C /* ChallengeHubShareHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001C /* ChallengeHubShareHelper.swift */; };
 		C4E5F6072F47D4010000000D /* CreatorChallengeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */; };
 		C4E5F6072F47D4010000000E /* CreatorChallengeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */; };
@@ -1365,6 +1367,8 @@
 		C4E5F6082F48E10100000012 /* ChallengeCreatorShareViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreatorShareViews.swift; sourceTree = "<group>"; };
 		C4E5F6082F48E10100000013 /* ChallengeCreatorListsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreatorListsView.swift; sourceTree = "<group>"; };
 		C4E5F6082F48E10100000014 /* ChallengeCreatorMoreScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreatorMoreScreens.swift; sourceTree = "<group>"; };
+		C4E5F6092F48E20100000015 /* ChallengeQuizAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeQuizAccess.swift; sourceTree = "<group>"; };
+		C4E5F60A2F48E30100000016 /* ChallengeQuizProfilePhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeQuizProfilePhoto.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D4010000001C /* ChallengeHubShareHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubShareHelper.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorChallengeModels.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorChallengeService.swift; sourceTree = "<group>"; };
@@ -3684,6 +3688,8 @@
 				C4E5F6082F48E10100000012 /* ChallengeCreatorShareViews.swift */,
 				C4E5F6082F48E10100000013 /* ChallengeCreatorListsView.swift */,
 				C4E5F6082F48E10100000014 /* ChallengeCreatorMoreScreens.swift */,
+				C4E5F6092F48E20100000015 /* ChallengeQuizAccess.swift */,
+				C4E5F60A2F48E30100000016 /* ChallengeQuizProfilePhoto.swift */,
 			);
 			path = VerseDeep;
 			sourceTree = "<group>";
@@ -4477,6 +4483,8 @@
 				C4E5F6082F48E10100000002 /* ChallengeCreatorShareViews.swift in Sources */,
 				C4E5F6082F48E10100000003 /* ChallengeCreatorListsView.swift in Sources */,
 				C4E5F6082F48E10100000004 /* ChallengeCreatorMoreScreens.swift in Sources */,
+				C4E5F6092F48E20100000005 /* ChallengeQuizAccess.swift in Sources */,
+				C4E5F60A2F48E30100000006 /* ChallengeQuizProfilePhoto.swift in Sources */,
 				C4E5F6072F47D4010000000C /* ChallengeHubShareHelper.swift in Sources */,
 				C4E5F6072F47D4010000000D /* CreatorChallengeModels.swift in Sources */,
 				C4E5F6072F47D4010000000E /* CreatorChallengeService.swift in Sources */,

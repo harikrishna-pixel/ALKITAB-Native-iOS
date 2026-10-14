@@ -115,6 +115,9 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
      var ChangeVoice:Bool = false
      var isAdjustingSlider: Bool = false // NEW: Prevent verse advance during slider adjustment
      var adjustmentStartIndex: Int = -1 // NEW: Track which verse index was playing when adjustment started
+     var spokenCharacterIndex: Int = 0
+     var speechStartIndex: Int = 0
+     var settingsResumeUtterance: AVSpeechUtterance?
     
      var StopStatus = false
     
@@ -274,8 +277,8 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
         Pitchswitch.value = Float(speechSettings[2]) ?? 1.0
         Rateswitch.value = Float(speechSettings[3]) ?? AVSpeechUtteranceDefaultSpeechRate
         
-        Pitchswitch.minimumTrackTintColor = UIColor.white.withAlphaComponent(0.4)
-        Rateswitch.minimumTrackTintColor = UIColor.white.withAlphaComponent(0.4)
+        Pitchswitch.minimumTrackTintColor = self.Themecolor ?? PrimaryColor
+        Rateswitch.minimumTrackTintColor = self.Themecolor ?? PrimaryColor
         
         // BUG FIX 6 (PITCH/SPEED NOT WORKING): Keep existing event-based handlers
         Pitchswitch.addTarget(self, action: #selector(PitchValChanged(slider:event:)), for: .valueChanged)
@@ -525,6 +528,8 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
         commandCenter.previousTrackCommand.removeTarget(nil)
     }
     func PlayTS(_ Verse:String) {
+        speechStartIndex = 0
+        spokenCharacterIndex = 0
         CurrentVerse = Verse
         CurrentIntex = self.Index
         self.synth.speak(self.Verse.text!)
@@ -548,6 +553,9 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
         // Clear slider adjustment flag when stopping
         self.isAdjustingSlider = false
         self.adjustmentStartIndex = -1
+        self.spokenCharacterIndex = 0
+        self.speechStartIndex = 0
+        self.settingsResumeUtterance = nil
     }
 
   
@@ -732,6 +740,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
             print("🎚 Pitch adjustment started at verse index: \(adjustmentStartIndex)")
         }
         SliderEnd = false
+        self.settingsResumeUtterance = nil
         synth.synth.stopSpeaking(at: .immediate)
         
         // Check touch phase if available (for devices that support it)
@@ -753,6 +762,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
             print("🎚 Speed adjustment started at verse index: \(adjustmentStartIndex)")
         }
         SliderEnd = false
+        self.settingsResumeUtterance = nil
         synth.synth.stopSpeaking(at: .immediate)
         
         // Check touch phase if available (for devices that support it)
@@ -773,6 +783,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
             adjustmentStartIndex = self.Index
             print("🎚 Pitch adjustment started at verse index: \(adjustmentStartIndex)")
         }
+        self.settingsResumeUtterance = nil
         synth.synth.stopSpeaking(at: .immediate)
         SliderEnd = true
         self.SpeechSettingsSave()
@@ -786,6 +797,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
             adjustmentStartIndex = self.Index
             print("🎚 Speed adjustment started at verse index: \(adjustmentStartIndex)")
         }
+        self.settingsResumeUtterance = nil
         synth.synth.stopSpeaking(at: .immediate)
         SliderEnd = true
         self.SpeechSettingsSave()
@@ -820,6 +832,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
 
     func SpeechSettingsSave() {
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.5) {
+            self.settingsResumeUtterance = nil
             self.synth.synth.stopSpeaking(at: .immediate)
         
             let speeches = CoreDataModel.sharedInstance.GetSavedSpeechSettings(entity: CDSpeechSetting)
@@ -842,15 +855,29 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
                     self.Index = self.adjustmentStartIndex
                 }
                 
-                print("   → Replaying verse at index \(self.Index) with new settings")
+                print("   → Continuing verse at index \(self.Index) with new settings")
                 
-                // Get the correct verse text for the current index
-                let correctVerseText = String(format: "%@", self.AudioBibleList[self.Index])
-                self.Verse.text = correctVerseText
-                self.PlayTS(correctVerseText)
-                
-                // CRITICAL FIX: Keep flag true, only clear it when this verse finishes
-                print("   ⏳ Waiting for verse to finish with new settings...")
+                let fullVerse = String(format: "%@", self.AudioBibleList[self.Index])
+                self.Verse.text = fullVerse
+                let verse = fullVerse as NSString
+                let start = min(max(0, self.spokenCharacterIndex), verse.length)
+                let remaining = verse.substring(from: start)
+                if remaining.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    self.isAdjustingSlider = false
+                    self.adjustmentStartIndex = -1
+                    self.speechStartIndex = 0
+                    self.spokenCharacterIndex = 0
+                    if self.Index < self.AudioBibleList.count - 1 {
+                        self.Index = self.Index + 1
+                        self.PlayOrder(TIntexIncrement: self.Index + 1)
+                    } else {
+                        self.StopSpeeking()
+                    }
+                } else {
+                    self.speechStartIndex = start
+                    self.synth.speak(remaining)
+                    self.settingsResumeUtterance = self.synth.myUtterance
+                }
             } else {
                 self.PlayPause(ImageName: "Play")
                 // Not playing, safe to clear flag immediately
@@ -893,11 +920,15 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
             print("🚫 Speech finished during slider adjustment (current index: \(self.Index), adjustment started at: \(self.adjustmentStartIndex))")
             
             // Check if this is the replay finishing (index matches where adjustment started)
-            if self.Index == self.adjustmentStartIndex {
-                print("   ✅ Replay at correct verse finished, clearing adjustment flag")
+            if utterance === self.settingsResumeUtterance {
+                print("   ✅ Resumed verse finished, continuing to the next verse")
+                self.settingsResumeUtterance = nil
                 self.isAdjustingSlider = false
                 self.adjustmentStartIndex = -1
-                // Don't advance - just reload icons, let playback continue normally from here
+                self.speechStartIndex = 0
+                self.spokenCharacterIndex = 0
+            } else if self.Index == self.adjustmentStartIndex {
+                print("   ✅ Slider stopped the verse, waiting to resume")
                 self.ReloadPlayerIcons()
                 return
             } else {
@@ -981,11 +1012,15 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
         
         if Playstatus == true {
-            let mutableAttributedString = NSMutableAttributedString(string: utterance.speechString)
+            self.spokenCharacterIndex = self.speechStartIndex + characterRange.location
+            let shown = self.speechStartIndex == 0 ? utterance.speechString : (self.Index >= 0 && self.Index < self.AudioBibleList.count ? String(format: "%@", self.AudioBibleList[self.Index]) : utterance.speechString)
+            let mutableAttributedString = NSMutableAttributedString(string: shown)
             let TextColor: [NSAttributedString.Key: Any] = [NSAttributedString.Key.foregroundColor: self.Themecolor!]
-            
-            mutableAttributedString.addAttribute(.backgroundColor, value: SpeechColor, range: characterRange)
-            mutableAttributedString.addAttributes(TextColor, range: characterRange)
+            let highlight = NSRange(location: self.speechStartIndex + characterRange.location, length: characterRange.length)
+            if highlight.location >= 0, highlight.location + highlight.length <= (shown as NSString).length {
+                mutableAttributedString.addAttribute(.backgroundColor, value: SpeechColor, range: highlight)
+                mutableAttributedString.addAttributes(TextColor, range: highlight)
+            }
             
             self.Verse.attributedText = mutableAttributedString
         } else {

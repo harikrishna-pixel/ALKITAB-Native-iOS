@@ -12,31 +12,40 @@ final class ChallengeCreateFlowViewController: UIViewController {
     var sessionConfig: ChallengeSessionConfig?
     var verseContext: ChallengeVerseContext?
 
+    private var flowHost: UIHostingController<AnyView>?
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
         navigationController?.setNavigationBarHidden(true, animated: false)
+        showGateOrFlow()
+    }
 
-        let root = ChallengeCreateFlowView(
-            showBackButton: !isEmbeddedTab,
-            sessionConfig: sessionConfig,
-            verseContext: verseContext,
-            onUnlock: { [weak self] done in
-                self?.presentUnlock(then: done)
-            },
-            onBack: { [weak self] in
-                if let nav = self?.navigationController, nav.viewControllers.count > 1 {
-                    nav.popViewController(animated: true)
-                } else {
-                    self?.dismiss(animated: true)
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+
+    private func showGateOrFlow() {
+        let root: AnyView
+        if ChallengeQuizAccess.allowsChallenges {
+            root = AnyView(makeCreateFlow())
+        } else {
+            root = AnyView(ChallengeQuizLoginGate(
+                onBack: { [weak self] in
+                    self?.leave()
+                },
+                onLoggedIn: { [weak self] in
+                    self?.showGateOrFlow()
                 }
-            },
-            onMyChallenges: { [weak self] in
-                self?.openMyChallenges()
-            }
-        )
-
+            ))
+        }
+        if let flowHost = flowHost {
+            flowHost.rootView = root
+            return
+        }
         let host = UIHostingController(rootView: root)
+        flowHost = host
         addChild(host)
         view.addSubview(host.view)
         host.view.translatesAutoresizingMaskIntoConstraints = false
@@ -49,12 +58,36 @@ final class ChallengeCreateFlowViewController: UIViewController {
         host.didMove(toParent: self)
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        navigationController?.setNavigationBarHidden(true, animated: animated)
+    private func makeCreateFlow() -> ChallengeCreateFlowView {
+        ChallengeCreateFlowView(
+            showBackButton: !isEmbeddedTab,
+            sessionConfig: sessionConfig,
+            verseContext: verseContext,
+            onUnlock: { [weak self] done in
+                self?.presentUnlock(then: done)
+            },
+            onBack: { [weak self] in
+                self?.leave()
+            },
+            onMyChallenges: { [weak self] in
+                self?.openMyChallenges()
+            }
+        )
+    }
+
+    private func leave() {
+        if let nav = navigationController, nav.viewControllers.count > 1 {
+            nav.popViewController(animated: true)
+        } else {
+            dismiss(animated: true)
+        }
     }
 
     private func presentUnlock(then done: @escaping () -> Void) {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            view.makeToast("No internet connection. Please check your connection and try again.")
+            return
+        }
         if #available(iOS 15.0, *) {
             var paywall = BibleSubscriptionView(isPresentedFromOnboarding: false)
             paywall.dismissHandler = { [weak self] in

@@ -135,8 +135,12 @@ class AudioPlayerService  {
             let newTime = playerCurrentTime + time
           
            let time2: CMTime = CMTimeMake(value: Int64(newTime * 1000 as Float64), timescale: 1000)
-           player!.seek(to: time2, toleranceBefore: CMTime.zero, toleranceAfter: CMTime.zero)
-           AudioPlayerService.sharedInstance.setupNowPlaying()
+           // Never land before the new time. An exact seek on these files falls back to the start.
+           player!.seek(to: time2, toleranceBefore: .zero, toleranceAfter: CMTime(seconds: 1, preferredTimescale: 1000)) { _ in
+               DispatchQueue.main.async {
+                   self.setupNowPlaying()
+               }
+           }
        }
         TimeRemainAndCurrentTime()
    }
@@ -149,8 +153,11 @@ class AudioPlayerService  {
                newTime = 0
            }
        let time2: CMTime = CMTimeMake(value: Int64(newTime * 1000 as Float64), timescale: 1000)
-       player!.seek(to: time2, toleranceBefore: CMTime.zero, toleranceAfter: CMTime.zero)
-       AudioPlayerService.sharedInstance.setupNowPlaying()
+       player!.seek(to: time2, toleranceBefore: .zero, toleranceAfter: CMTime(seconds: 1, preferredTimescale: 1000)) { _ in
+           DispatchQueue.main.async {
+               self.setupNowPlaying()
+           }
+       }
    }
     
     

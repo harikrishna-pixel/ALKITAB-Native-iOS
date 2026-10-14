@@ -8,6 +8,7 @@
 import UIKit
 import StoreKit
 import SwiftUI
+import Toast_Swift
 
 
 class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, ReaderSourceDelegate {
@@ -312,6 +313,10 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
     
     @objc func SummaryAction(sender: UIButton!) {
         UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "OfferClick")+1, forKey: "OfferClick")
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            (self.view.window ?? self.view).makeToast("No internet connection. Please check your connection and try again.")
+            return
+        }
         AIUsageLimiter.shared.requestAccess(.chapterSummary) { [weak self] in
             guard let self = self else { return }
             App_Protocol.delegateReader?.ChapterSummaryNib(
@@ -546,6 +551,12 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         
         App_Protocol.delegateReader?.ClosePlayerPopup()
+        
+        // Bottom bounce must not toggle the bars, or the footer buttons keep jumping.
+        let maxOffsetY = scrollView.contentSize.height - scrollView.bounds.height + scrollView.adjustedContentInset.bottom
+        if maxOffsetY > 0 && scrollView.contentOffset.y >= maxOffsetY - 1 {
+            return
+        }
         
         if lastContentOffset-10 > scrollView.contentOffset.y {
             if upDownStatus {

@@ -242,7 +242,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
               return UITableViewCell()
           }
           self.SettingsCell = cell
-          cell.Feedback?.text = "Challenge Attempts"
+          cell.Feedback?.text = "Quiz profile"
           cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
           if let arrow = cell.arrow2 {
               ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))

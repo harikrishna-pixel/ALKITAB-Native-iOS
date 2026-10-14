@@ -598,9 +598,12 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     // NEW FIXED CODE - Audio progress bar now works properly with real-time seeking
     // Enhanced to work on all devices including iPad and SE
     @objc func onSliderValChanged(slider: UISlider, event: UIEvent) {
+        // A time-label update also moves this slider. Only a finger on the slider may seek.
+        guard !ForwardSeekHold.isApplying else { return }
+        guard let touchEvent = event.allTouches?.first,
+              touchEvent.view == slider || touchEvent.view?.isDescendant(of: slider) == true else { return }
         // Handle touch events for better compatibility with iPad and SE devices
-        if let touchEvent = event.allTouches?.first {
-            switch touchEvent.phase {
+        switch touchEvent.phase {
             case .began:
                 isUserInteractingWithSlider = true
                 SwitchStatus = "Moving"
@@ -672,7 +675,6 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                 }
                 break
             }
-        }
     }
     
     

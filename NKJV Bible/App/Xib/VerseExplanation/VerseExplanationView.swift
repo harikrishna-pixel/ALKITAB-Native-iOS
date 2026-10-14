@@ -480,6 +480,10 @@ final class VerseExplanationView: UIView {
                 AIUsageLimiter.shared.commit(.explanation)
                 self.explanationText = text
                 self.showSuccess(text)
+            case .failure(.networkError):
+                let window = self.window
+                self.onDismiss?()
+                window?.makeToast("No internet connection. Please check your connection and try again.")
             case .failure(let error):
                 self.showError(error.localizedDescription)
             }
@@ -505,6 +509,10 @@ final class VerseExplanationView: UIView {
                 AIUsageLimiter.shared.commit(.chapterSummary)
                 self.explanationText = text
                 self.showSuccess(text)
+            case .failure(.networkError):
+                let window = self.window
+                self.onDismiss?()
+                window?.makeToast("No internet connection. Please check your connection and try again.")
             case .failure(let error):
                 self.showError(error.localizedDescription)
             }
