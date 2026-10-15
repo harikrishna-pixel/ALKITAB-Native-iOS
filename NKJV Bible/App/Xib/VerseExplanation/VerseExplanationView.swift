@@ -483,7 +483,8 @@ final class VerseExplanationView: UIView {
             case .failure(.networkError):
                 let window = self.window
                 self.onDismiss?()
-                window?.makeToast("No internet connection. Please check your connection and try again.")
+                let message = getConnection.shared.networkBlockMessage() ?? "No internet connection."
+                window?.makeToast(message, duration: 2.0, position: .top)
             case .failure(let error):
                 self.showError(error.localizedDescription)
             }
@@ -512,7 +513,8 @@ final class VerseExplanationView: UIView {
             case .failure(.networkError):
                 let window = self.window
                 self.onDismiss?()
-                window?.makeToast("No internet connection. Please check your connection and try again.")
+                let message = getConnection.shared.networkBlockMessage() ?? "No internet connection."
+                window?.makeToast(message, duration: 2.0, position: .top)
             case .failure(let error):
                 self.showError(error.localizedDescription)
             }

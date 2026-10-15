@@ -10,10 +10,13 @@ import Alamofire
 import AVFoundation
 import MediaPlayer
 
-/// Keeps a forward/back jump on screen until playback has actually reached it.
+/// After a drag, keep the released second on screen until playback is actually there.
 enum ForwardSeekHold {
     static var pinnedTime: Double?
-    static var pinUntil: Date?
+    /// Playhead time from before this seek.
+    static var originTime: Double?
+    /// True while the finger is on the bar. The timer must not pull it back.
+    static var isScrubbing = false
     /// True while code is moving the slider. That must not seek the audio.
     static var isApplying = false
 }
@@ -24,7 +27,8 @@ extension ReaderViewController: AVplayerProtocol {
     
     func ViewInit() {
         ForwardSeekHold.pinnedTime = nil
-        ForwardSeekHold.pinUntil = nil
+        ForwardSeekHold.originTime = nil
+        ForwardSeekHold.isScrubbing = false
         self.changeStatus()
         self.AVswitch.value = 0
         self.AVTimeRemain.text = "0:0"
@@ -66,7 +70,7 @@ extension ReaderViewController: AVplayerProtocol {
         }
         
         // Create timer - scheduledTimer automatically adds to current run loop
-        timer = Timer.scheduledTimer(timeInterval: 1.0,
+        timer = Timer.scheduledTimer(timeInterval: 0.5,
                                          target: self,
                                          selector: #selector(playerTime),
                                          userInfo: nil,
@@ -85,7 +89,8 @@ extension ReaderViewController: AVplayerProtocol {
         
         // NEW FIXED CODE - Just check if player is actually playing
         // Don't wait for playStatus flag as it might not be set immediately on first play
-        if AudioPlayerService.sharedInstance.player?.timeControlStatus == AVPlayer.TimeControlStatus.playing
+        if playStatus
+            || AudioPlayerService.sharedInstance.player?.timeControlStatus == AVPlayer.TimeControlStatus.playing
             || (AudioPlayerService.sharedInstance.player?.rate ?? 0) > 0 {
             self.PLayerInfo()
         }
@@ -118,26 +123,35 @@ extension ReaderViewController: AVplayerProtocol {
             AVPSlidervu.isHidden = false
         }
         
-        self.currentTime = Int(playerItem.currentTime().seconds) % 60
-        self.currentTimeacu = playerItem.currentTime().seconds
-        let minutes:Int = Int(playerItem.currentTime().seconds / 60) % 60
+        let playbackNow = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? playerItem.currentTime().seconds
+        self.currentTime = Int(playbackNow) % 60
+        self.currentTimeacu = playbackNow
+        let minutes:Int = Int(playbackNow / 60) % 60
         self.AVswitch.maximumValue = Float(playerItem.asset.duration.seconds)
         
         let Duration_in_Second = Int(playerItem.asset.duration.seconds) % 60
         let Duration_in_minute:Int = Int(playerItem.asset.duration.seconds / 60) % 60
 
-        // The old forward path called this right away and painted the pre-skip time, which sought the audio back.
+        // Finger down: leave the bar where the user is dragging it.
+        if AVswitch.isTracking {
+            self.AVTimeRemain.text = String(format: "%d:%02i", Duration_in_minute, Duration_in_Second)
+            return
+        }
+        ForwardSeekHold.isScrubbing = false
+
+        // Keep the released second while playback is still on the old spot.
+        // Once the audio is at that second, follow it so the indicator keeps moving.
         if let pinned = ForwardSeekHold.pinnedTime {
-            let now = playerItem.currentTime().seconds
-            let expired = (ForwardSeekHold.pinUntil ?? .distantPast) < Date()
-            if expired || (now.isFinite && now + 1.5 >= pinned) {
+            let origin = ForwardSeekHold.originTime
+            let nearOldSpot = origin != nil && playbackNow.isFinite && abs(playbackNow - origin!) < 1.5
+            let atRelease = playbackNow.isFinite && abs(playbackNow - pinned) <= 2.5
+            let movingFromRelease = playbackNow.isFinite && playbackNow + 0.2 >= pinned && !nearOldSpot
+            if atRelease || movingFromRelease {
                 ForwardSeekHold.pinnedTime = nil
-                ForwardSeekHold.pinUntil = nil
+                ForwardSeekHold.originTime = nil
             } else {
                 self.AVTimeRemain.text = String(format: "%d:%02i", Duration_in_minute, Duration_in_Second)
-                if abs(Double(AVswitch.value) - pinned) > 0.4 {
-                    showSeekPosition(pinned)
-                }
+                showSeekPosition(pinned)
                 return
             }
         }
@@ -153,7 +167,7 @@ extension ReaderViewController: AVplayerProtocol {
         // Format: minutes:seconds (e.g., 2:30)
         // While dragging / seeking the label already shows the target time — don't overwrite it.
         // Hold only while the finger is on the slider; a stale seek flag must not freeze the time.
-        let holdPosition = isUserInteractingWithSlider && AVswitch.isTracking
+        let holdPosition = AVswitch.isTracking
         if !holdPosition {
             self.AVstartTime.text = String(format: "%d:%02i",minutes,self.currentTime)
         }
@@ -338,47 +352,49 @@ extension ReaderViewController: AVplayerProtocol {
      
 
     @IBAction func AVForward(_ sender: Any) {
-        
-        let remain:Float = Float(self.AVTimeRemain.text!.replacingOccurrences(of: ":", with: "."))!
-        let startTime:Float = Float(self.AVstartTime.text!.replacingOccurrences(of: ":", with: "."))!
-            
-        if startTime+0.11 < remain {
-            let now = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? 0
-            AudioPlayerService.sharedInstance.seekForward(time: 10)
-            if now.isFinite {
-                ForwardSeekHold.pinnedTime = now + 10
-                ForwardSeekHold.pinUntil = Date().addingTimeInterval(2.5)
-                showSeekPosition(now + 10)
-            }
+        let now = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? 0
+        guard now.isFinite else { return }
+        let duration = AudioPlayerService.sharedInstance.player?.currentItem?.duration.seconds ?? 0
+        var target = now + 10
+        if duration.isFinite, duration > 0 {
+            target = min(target, max(0, duration - 0.05))
         }
-    }
-    
-    
-    
-    @IBAction func AVBackward(_ sender: Any) {
-        if AVswitch.value > 0.10 {
-            let now = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? 0
-            AudioPlayerService.sharedInstance.seekBackward(time: 10)
-            if now.isFinite {
-                ForwardSeekHold.pinnedTime = max(0, now - 10)
-                ForwardSeekHold.pinUntil = Date().addingTimeInterval(2.5)
-                showSeekPosition(max(0, now - 10))
-            }
-        }
+        guard target > now + 0.2 else { return }
+        seekAudio(to: target)
     }
 
-    /// Shows the target position immediately (also while paused) and blocks the 1s timer
-    /// from redrawing the old time until the player has actually reached it.
+    @IBAction func AVBackward(_ sender: Any) {
+        let now = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? 0
+        guard now.isFinite, now > 0.1 else { return }
+        seekAudio(to: max(0, now - 10))
+    }
+
+    /// Shows the chosen position at once, seeks the audio there, then matches the label to the playhead.
     func seekAudio(to seconds: Double) {
         guard seconds.isFinite, AudioPlayerService.sharedInstance.player != nil else { return }
+        let player = AudioPlayerService.sharedInstance.player
+        let wasPlaying = playStatus && ((player?.rate ?? 0) > 0)
+        let origin = player?.currentTime().seconds ?? 0
         isUserInteractingWithSlider = true
+        ForwardSeekHold.originTime = origin.isFinite ? origin : nil
+        ForwardSeekHold.pinnedTime = seconds
         showSeekPosition(seconds)
         AudioPlayerService.sharedInstance.seek(toSeconds: seconds) { [weak self] in
             guard let self = self else { return }
             self.isUserInteractingWithSlider = false
-            AudioPlayerService.sharedInstance.TimeRemainAndCurrentTime()
-            if let now = AudioPlayerService.sharedInstance.playerItem?.currentTime().seconds, now.isFinite {
-                self.showSeekPosition(now)
+            self.SwitchStatus = "Play"
+            let landed = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? seconds
+            let from = ForwardSeekHold.originTime
+            let nearOldSpot = from != nil && landed.isFinite && abs(landed - from!) < 1.5
+            if landed.isFinite, abs(landed - seconds) <= 2.5, !nearOldSpot {
+                ForwardSeekHold.pinnedTime = nil
+                ForwardSeekHold.originTime = nil
+                self.showSeekPosition(landed)
+            } else {
+                self.showSeekPosition(seconds)
+            }
+            if wasPlaying, (AudioPlayerService.sharedInstance.player?.rate ?? 0) == 0 {
+                AudioPlayerService.sharedInstance.player?.play()
             }
         }
     }

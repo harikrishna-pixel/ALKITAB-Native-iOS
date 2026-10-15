@@ -75,19 +75,21 @@ class AudioPlayerService  {
     
    // MARK: - init Player info
     
-    func setupNowPlaying() {
-        
+    private var seekGeneration = 0
+
+    func setupNowPlaying(elapsed: Double? = nil) {
+        guard let item = playerItem else { return }
+        let position = elapsed ?? item.currentTime().seconds
         var nowPlayingInfo = [String : Any]()
         nowPlayingInfo[MPMediaItemPropertyTitle] = Titel
         nowPlayingInfo[MPMediaItemPropertyArtist] = Name
-        
-        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = self.playerItem!.currentTime().seconds
-        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = self.playerItem!.asset.duration.seconds
-        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player?.rate
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = position.isFinite ? position : 0
+        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = item.asset.duration.seconds
+        let rate = player?.rate ?? 0
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = rate
 
-        // Set the metadata
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
-        MPNowPlayingInfoCenter.default().playbackState = .playing
+        MPNowPlayingInfoCenter.default().playbackState = rate > 0 ? .playing : .paused
     }
     
     
@@ -110,13 +112,11 @@ class AudioPlayerService  {
         commandCenter.nextTrackCommand.isEnabled = true
         commandCenter.nextTrackCommand.addTarget {event in
             self.seekForward(time: 10)
-            self.setupNowPlaying()
             return .success
         }
         commandCenter.previousTrackCommand.isEnabled = true
         commandCenter.previousTrackCommand.addTarget {event in
             self.seekBackward(time: 10)
-            self.setupNowPlaying()
             return .success
         }
     }
@@ -125,54 +125,49 @@ class AudioPlayerService  {
 // MARK: - Forward & Backword 10 seconds
     
     
-    func seekForward(time:Double) {
-       guard let duration  = player?.currentItem?.duration else {
-           return
-       }
-        if currentTime < remainingTime+0.05 {
-            
-            let playerCurrentTime = CMTimeGetSeconds(player!.currentTime())
-            let newTime = playerCurrentTime + time
-          
-           let time2: CMTime = CMTimeMake(value: Int64(newTime * 1000 as Float64), timescale: 1000)
-           // Never land before the new time. An exact seek on these files falls back to the start.
-           player!.seek(to: time2, toleranceBefore: .zero, toleranceAfter: CMTime(seconds: 1, preferredTimescale: 1000)) { _ in
-               DispatchQueue.main.async {
-                   self.setupNowPlaying()
-               }
-           }
-       }
-        TimeRemainAndCurrentTime()
-   }
-
-   func seekBackward(time:Double) {
-       let playerCurrentTime = CMTimeGetSeconds(player!.currentTime())
-           var newTime = playerCurrentTime - 10
-                
-           if newTime < 0 {
-               newTime = 0
-           }
-       let time2: CMTime = CMTimeMake(value: Int64(newTime * 1000 as Float64), timescale: 1000)
-       player!.seek(to: time2, toleranceBefore: .zero, toleranceAfter: CMTime(seconds: 1, preferredTimescale: 1000)) { _ in
-           DispatchQueue.main.async {
-               self.setupNowPlaying()
-           }
-       }
-   }
-    
-    
-    /// Exact seek to `seconds` (clamped to the track); completion runs on main once the player is there.
-    func seek(toSeconds seconds: Double, completion: @escaping () -> Void) {
+    func seekForward(time: Double) {
         guard let player = player else { return }
-        let duration = playerItem?.asset.duration.seconds ?? 0
-        var target = max(0, seconds)
-        if duration.isFinite, duration > 0 {
-            target = min(target, duration)
+        let now = CMTimeGetSeconds(player.currentTime())
+        guard now.isFinite else { return }
+        seek(toSeconds: now + time) {}
+    }
+
+    func seekBackward(time: Double) {
+        guard let player = player else { return }
+        let now = CMTimeGetSeconds(player.currentTime())
+        guard now.isFinite else { return }
+        seek(toSeconds: max(0, now - time)) {}
+    }
+
+    /// Seek to `seconds`. Completion runs on the main queue once this seek is the latest one.
+    func seek(toSeconds seconds: Double, completion: @escaping () -> Void) {
+        guard let player = player else {
+            DispatchQueue.main.async { completion() }
+            return
         }
-        let time = CMTime(seconds: target, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { _ in
+        let duration = player.currentItem?.duration.seconds ?? playerItem?.asset.duration.seconds ?? 0
+        var target = max(0, seconds)
+        if duration.isFinite, duration > 1 {
+            target = min(target, duration - 0.05)
+        }
+        seekGeneration += 1
+        let generation = seekGeneration
+        let wasPlaying = player.rate > 0
+        // A zero-tolerance seek on these files returns to the start. Use the normal seek,
+        // and publish the new time first so the old clock cannot pull playback backward.
+        player.pause()
+        setupNowPlaying(elapsed: target)
+        let time = CMTime(seconds: target, preferredTimescale: 600)
+        let slack = CMTime(seconds: 0.25, preferredTimescale: 600)
+        player.seek(to: time, toleranceBefore: slack, toleranceAfter: slack) { [weak self] _ in
             DispatchQueue.main.async {
-                self.setupNowPlaying()
+                guard let self = self, generation == self.seekGeneration else { return }
+                let landed = player.currentTime().seconds
+                let shown = (landed.isFinite && abs(landed - target) < 3) ? landed : target
+                if wasPlaying {
+                    player.play()
+                }
+                self.setupNowPlaying(elapsed: shown)
                 completion()
             }
         }

@@ -309,8 +309,12 @@ struct BibleSubscriptionView: View {
     
     // MARK: - Handle Purchase Action
     private func handlePurchaseAction() {
-        guard NetworkManager.sharedInstance.isConnectedToInternet(), !storeManager.isLoading else {
-            OnboardingAuthManager.topViewController()?.view.makeToast("No internet connection. Please check your connection and try again.")
+        if let message = getConnection.shared.networkBlockMessage() {
+            OnboardingAuthManager.topViewController()?.view.makeToast(message, duration: 2.0, position: .top)
+            return
+        }
+        guard !storeManager.isLoading else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("No internet connection. Please check your connection and try again.", duration: 2.0, position: .top)
             return
         }
         showLoader = true

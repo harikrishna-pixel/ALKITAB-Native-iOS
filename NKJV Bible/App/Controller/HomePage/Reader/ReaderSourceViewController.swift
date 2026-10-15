@@ -313,8 +313,8 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
     
     @objc func SummaryAction(sender: UIButton!) {
         UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "OfferClick")+1, forKey: "OfferClick")
-        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
-            (self.view.window ?? self.view).makeToast("No internet connection. Please check your connection and try again.")
+        if let message = getConnection.shared.networkBlockMessage() {
+            (self.view.window ?? self.view).makeToast(message, duration: 2.0, position: .top)
             return
         }
         AIUsageLimiter.shared.requestAccess(.chapterSummary) { [weak self] in

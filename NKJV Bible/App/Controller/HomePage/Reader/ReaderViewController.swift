@@ -598,83 +598,33 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     // NEW FIXED CODE - Audio progress bar now works properly with real-time seeking
     // Enhanced to work on all devices including iPad and SE
     @objc func onSliderValChanged(slider: UISlider, event: UIEvent) {
-        // A time-label update also moves this slider. Only a finger on the slider may seek.
+        // Moving the bar from code also sends this. Only a finger should seek.
         guard !ForwardSeekHold.isApplying else { return }
-        guard let touchEvent = event.allTouches?.first,
-              touchEvent.view == slider || touchEvent.view?.isDescendant(of: slider) == true else { return }
-        // Handle touch events for better compatibility with iPad and SE devices
-        switch touchEvent.phase {
-            case .began:
-                isUserInteractingWithSlider = true
-                SwitchStatus = "Moving"
-                break
-            case .moved:
-                isUserInteractingWithSlider = true
-                SwitchStatus = "Moving"
-                // Update time label immediately during drag to show real-time position
-                let seconds : Int64 = Int64(AVswitch.value)
-                let minutes:Int = Int(seconds / 60) % 60
-                let second:Int = Int(seconds) % 60
-                self.AVstartTime.text = String(format: "%d:%02i",minutes,second)
-                // Don't seek during move, only update the display
-                // Seeking will happen on .ended
-                break
-            case .ended, .cancelled:
-                // OLD BUGGY CODE - Was setting SwitchStatus only in completion handler
-                // This caused timer to not resume until seek completed
-                // let seconds : Int64 = Int64(AVswitch.value)
-                // let targetTime:CMTime = CMTimeMake(value: seconds, timescale: 1)
-                // AudioPlayerService.sharedInstance.player?.seek(to: targetTime) { [weak self] finished in
-                //     self.SwitchStatus = "Play"
-                // }
-                
-                // Keep the timer from redrawing the old position until the seek has landed.
-                isUserInteractingWithSlider = true
-                SwitchStatus = "Play"
-                
-                let targetSeconds = Double(AVswitch.value)
-                let targetTime = CMTime(seconds: targetSeconds, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-                self.showSeekPosition(targetSeconds)
-                
-                // Store play status before seeking
-                let wasPlaying = playStatus && (AudioPlayerService.sharedInstance.player?.timeControlStatus == .playing)
-                
-                // Seek to new position (exact, not the nearest keyframe)
-                AudioPlayerService.sharedInstance.player?.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
-                    guard let self = self else { return }
-                    DispatchQueue.main.async {
-                        self.isUserInteractingWithSlider = false
-                        let now = AudioPlayerService.sharedInstance.playerItem?.currentTime().seconds ?? targetSeconds
-                        self.showSeekPosition(now.isFinite ? now : targetSeconds)
-                        AudioPlayerService.sharedInstance.setupNowPlaying()
-                    }
-                    if finished {
-                        // If was playing, ensure it continues playing after seek
-                        if wasPlaying {
-                            DispatchQueue.main.async {
-                                if AudioPlayerService.sharedInstance.player?.timeControlStatus != .playing {
-                                    AudioPlayerService.sharedInstance.player?.play()
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                if Int(self.AVswitch.value) == Int(self.AVswitch.maximumValue) {
-                    timer?.invalidate()
-                    ViewInit()
-                }
-                break
-            default:
-                // For .valueChanged events without touch phase, still update time
-                if playStatus == true {
-                    let seconds : Int64 = Int64(AVswitch.value)
-                    let minutes:Int = Int(seconds / 60) % 60
-                    let second:Int = Int(seconds) % 60
-                    self.AVstartTime.text = String(format: "%d:%02i",minutes,second)
-                }
-                break
+        let touch = event.allTouches?.first
+        let phase = touch?.phase
+        let fingerIsDown = slider.isTracking || phase == .began || phase == .moved || phase == .ended || phase == .cancelled
+        guard fingerIsDown else { return }
+
+        let seconds = Double(slider.value)
+        let whole = Int(seconds)
+        self.AVstartTime.text = String(format: "%d:%02i", (whole / 60) % 60, whole % 60)
+
+        if phase == .ended || phase == .cancelled {
+            ForwardSeekHold.isScrubbing = false
+            SwitchStatus = "Play"
+            isUserInteractingWithSlider = false
+            if slider.maximumValue > 1, Int(slider.value) == Int(slider.maximumValue) {
+                timer?.invalidate()
+                ViewInit()
+                return
             }
+            seekAudio(to: seconds)
+            return
+        }
+
+        ForwardSeekHold.isScrubbing = true
+        isUserInteractingWithSlider = true
+        SwitchStatus = "Moving"
     }
     
     

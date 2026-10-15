@@ -9,12 +9,52 @@ import UIKit
 import SystemConfiguration
 import CoreTelephony
 import Foundation
+import Network
 
 
 
 class getConnection: NSObject {
     
      static let shared = getConnection()
+
+    private let pathMonitor = NWPathMonitor()
+    private let pathLock = NSLock()
+    private var didStartPathMonitor = false
+    private var lowDataMode = false
+
+    /// Offline, or 2G / Low Data Mode. Nil when the connection is fine to continue.
+    func networkBlockMessage() -> String? {
+        let type = getConnectionType()
+        if type == "NO INTERNET" || !NetworkManager.sharedInstance.isConnectedToInternet() {
+            return "No internet connection."
+        }
+        if type == "2G" || isLowDataMode() {
+            return "Check your internet connection."
+        }
+        return nil
+    }
+
+    private func isLowDataMode() -> Bool {
+        startPathMonitorIfNeeded()
+        pathLock.lock()
+        defer { pathLock.unlock() }
+        return lowDataMode
+    }
+
+    private func startPathMonitorIfNeeded() {
+        guard !didStartPathMonitor else { return }
+        didStartPathMonitor = true
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            guard let self = self else { return }
+            self.pathLock.lock()
+            self.lowDataMode = path.isConstrained
+            self.pathLock.unlock()
+        }
+        pathMonitor.start(queue: DispatchQueue.global(qos: .utility))
+        pathLock.lock()
+        lowDataMode = pathMonitor.currentPath.isConstrained
+        pathLock.unlock()
+    }
 
     func getConnectionType() -> String {
             guard let reachability = SCNetworkReachabilityCreateWithName(kCFAllocatorDefault, "www.google.com") else {

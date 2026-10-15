@@ -7,6 +7,7 @@
 
 import UIKit
 import SwiftUI
+import Toast_Swift
 
 class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, VersesMenuPopup {
 
@@ -571,6 +572,10 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
 
     @IBAction func GetExplanationAction(_ sender: Any) {
         UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "OfferClick")+1, forKey: "OfferClick")
+        if let message = getConnection.shared.networkBlockMessage() {
+            makeToast(message, duration: 2.0, position: .top)
+            return
+        }
         AIUsageLimiter.shared.requestAccess(.explanation) { [weak self] in
             guard let self = self else { return }
             App_Protocol.delegateReader?.ExplanationNib(

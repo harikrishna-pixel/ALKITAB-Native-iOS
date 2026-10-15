@@ -5,6 +5,7 @@
 
 import UIKit
 import SwiftUI
+import Toast_Swift
 
 final class ChallengeCreateFlowViewController: UIViewController {
 
@@ -84,8 +85,8 @@ final class ChallengeCreateFlowViewController: UIViewController {
     }
 
     private func presentUnlock(then done: @escaping () -> Void) {
-        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
-            view.makeToast("No internet connection. Please check your connection and try again.")
+        if let message = getConnection.shared.networkBlockMessage() {
+            view.makeToast(message, duration: 2.0, position: .top)
             return
         }
         if #available(iOS 15.0, *) {

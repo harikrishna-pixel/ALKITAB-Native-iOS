@@ -2,7 +2,7 @@
 //  AuthHubAPI.swift
 //  NKJV Bible
 //
-//  AuthHub form-urlencoded client (temp-token, register, login, forgot, profile).
+//  AuthHub form-urlencoded client (temp-token, register, login, forgot, profile, delete).
 //
 
 import Foundation
@@ -144,6 +144,35 @@ final class AuthHubAPI {
                     bearer: temp
                 ) { result in
                     completion(result.flatMap { Self.parseAuthPayload($0) })
+                }
+            }
+        }
+    }
+
+    /// Deletes the logged-in account. Bearer is the saved user token, not the temp token.
+    func deleteAccount(completion: @escaping (Result<Void, Error>) -> Void) {
+        guard AuthHubConfig.isConfigured else {
+            completion(.failure(AuthHubAPIError.notConfigured))
+            return
+        }
+        guard let token = AuthHubSession.authToken, !token.isEmpty,
+              let userId = AuthHubSession.userId, !userId.isEmpty else {
+            completion(.failure(AuthHubAPIError.server("Sign in again before deleting this account.")))
+            return
+        }
+        let body: [String: String] = [
+            "user_id": userId,
+            "app_id": AuthHubConfig.appID
+        ]
+        post(path: "api/delete-account", body: body, bearer: token) { result in
+            switch result {
+            case .failure(let error):
+                completion(.failure(error))
+            case .success(let json):
+                if Self.isSuccess(json) {
+                    completion(.success(()))
+                } else {
+                    completion(.failure(AuthHubAPIError.server(Self.message(from: json))))
                 }
             }
         }

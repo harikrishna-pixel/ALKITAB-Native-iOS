@@ -97,13 +97,30 @@ struct AuthHubProfileView: View {
             case .delete:
                 return Alert(
                     title: Text("Delete Account"),
-                    message: Text("This removes your profile from this device."),
+                    message: Text("This deletes your account. You will need to sign up again to use this email."),
                     primaryButton: .destructive(Text("Delete")) {
-                        OnboardingAuthManager.logOut()
-                        refreshFromSession()
+                        deleteAccount()
                     },
                     secondaryButton: .cancel()
                 )
+            case .deleteFailed(let message):
+                return Alert(
+                    title: Text("Couldn't delete account"),
+                    message: Text(message),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
+        }
+    }
+
+    private func deleteAccount() {
+        AuthHubAPI.shared.deleteAccount { result in
+            switch result {
+            case .success:
+                OnboardingAuthManager.logOut()
+                refreshFromSession()
+            case .failure(let error):
+                activeAlert = .deleteFailed(error.localizedDescription)
             }
         }
     }
@@ -262,11 +279,13 @@ struct AuthHubProfileView: View {
 private enum ProfileAlert: Identifiable {
     case logout
     case delete
+    case deleteFailed(String)
 
-    var id: Int {
+    var id: String {
         switch self {
-        case .logout: return 0
-        case .delete: return 1
+        case .logout: return "logout"
+        case .delete: return "delete"
+        case .deleteFailed(let message): return "deleteFailed-\(message)"
         }
     }
 }
