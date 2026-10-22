@@ -305,6 +305,7 @@ struct DailyVerseSnapshot {
 }
 
 struct ContinueReadingSnapshot {
+    let sectionTitle: String
     let title: String
     let snippet: String
     let buttonTitle: String
@@ -317,9 +318,10 @@ struct ContinueReadingSnapshot {
         let snippet = verses.first ?? ""
         let isFirst = (UserDefaults.standard.string(forKey: "AppOpenFirst") ?? "0") == "0"
         return ContinueReadingSnapshot(
+            sectionTitle: isFirst ? "START READING" : "CONTINUE READING",
             title: "\(book) \(max(chapter, 1)) • Verse 1",
             snippet: snippet,
-            buttonTitle: isFirst ? "Read" : "Continue"
+            buttonTitle: isFirst ? "Start" : "Continue"
         )
     }
 }

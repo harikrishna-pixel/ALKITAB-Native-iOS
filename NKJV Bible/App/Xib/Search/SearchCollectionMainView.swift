@@ -125,8 +125,10 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
         } else {
             if coreTitle == "Explanations" {
                 let parts = self.corevalueReverced[indexPath.row].components(separatedBy: ExplanationRecordDelimiter)
-                let explanation = parts.count > 2 ? parts[2] : ""
-                let verseText = explanationPreviewText(verse: parts.count > 3 ? parts[3] : "", explanation: explanation)
+                let storedVerse = parts.count > 3 ? parts[3] : ""
+                let storedExplanation = parts.count > 2 ? parts[2] : ""
+                let explanation = librarySummaryText(verse: storedVerse, explanation: storedExplanation)
+                let verseText = explanationPreviewText(verse: storedVerse, explanation: storedExplanation)
                 let fontName = UserDefaults.standard.string(forKey: "FontName")
                 let verseFont = UIFont(name: fontName ?? "", size: CGFloat(fontsize)) ?? UIFont.systemFont(ofSize: CGFloat(fontsize))
                 let bodyFont = verseFont
@@ -235,13 +237,15 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
                 let fontName = UserDefaults.standard.string(forKey: "FontName")
                 let verseFont = UIFont(name: fontName ?? "", size: CGFloat(fontsize)) ?? UIFont.systemFont(ofSize: CGFloat(fontsize))
                 let bodyFont = verseFont
+                let storedVerse = parts.count > 3 ? parts[3] : ""
+                let storedExplanation = parts.count > 2 ? parts[2] : ""
                 let reference = (parts.first ?? "").replacingOccurrences(of: "-", with: " ")
                 let isExpanded = (expandedExplanationIndex == indexPath.row)
 
                 cell.configure(
-                    verseText: explanationPreviewText(verse: parts.count > 3 ? parts[3] : "", explanation: parts.count > 2 ? parts[2] : ""),
+                    verseText: explanationPreviewText(verse: storedVerse, explanation: storedExplanation),
                     reference: reference,
-                    explanation: parts.count > 2 ? parts[2] : "",
+                    explanation: librarySummaryText(verse: storedVerse, explanation: storedExplanation),
                     themeColor: isNight ? .white : Themecolor,
                     isNight: isNight,
                     verseFont: verseFont,
@@ -410,10 +414,39 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
 }
 
 extension SearchCollectionMainView {
-    /// Saved chapter summaries store the whole numbered chapter as the "verse" — preview the summary instead.
+    /// Chapter summaries are saved with every numbered verse in one field. Library cards show the summary only.
+    func isNumberedChapterDump(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("1.") else { return false }
+        if trimmed.range(of: #"(?:\r\n|\n|\r)\s*2[\.\)]"#, options: .regularExpression) != nil { return true }
+        if trimmed.range(of: #"\s2[\.\)]\s"#, options: .regularExpression) != nil { return true }
+        return false
+    }
+
+    func librarySummaryText(verse: String, explanation: String) -> String {
+        let chapterInVerse = isNumberedChapterDump(verse)
+        let chapterInExplanation = isNumberedChapterDump(explanation)
+        if chapterInVerse && !chapterInExplanation { return explanation }
+        if chapterInExplanation && !chapterInVerse { return verse }
+        if chapterInVerse || chapterInExplanation {
+            let prose = proseWithoutNumberedVerses(explanation)
+            return prose.isEmpty ? explanation : prose
+        }
+        return explanation
+    }
+
+    func proseWithoutNumberedVerses(_ text: String) -> String {
+        let kept = text.components(separatedBy: .newlines).filter { line in
+            line.range(of: #"^\s*\d+[\.\)]\s+"#, options: .regularExpression) == nil
+        }
+        return kept.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     func explanationPreviewText(verse: String, explanation: String) -> String {
-        let isChapterSummary = verse.hasPrefix("1. ") && verse.contains("\n2. ")
-        return isChapterSummary ? explanation : verse
+        if isNumberedChapterDump(verse) || isNumberedChapterDump(explanation) {
+            return librarySummaryText(verse: verse, explanation: explanation)
+        }
+        return verse.isEmpty ? explanation : verse
     }
 }
 

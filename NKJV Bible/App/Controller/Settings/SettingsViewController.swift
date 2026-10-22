@@ -98,7 +98,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   }
   
   func numberOfSections(in tableView: UITableView) -> Int {
-          return 16
+          // Profile row hidden.
+          // return 16
+          return 15
   }
   
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -307,18 +309,19 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           cell.Help?.textColor = (Themecolor == BGNightMode ? .white:.black)
           return cell
 
-      case 15:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.Feedback?.text = "Profile"
-          cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
-          if let arrow = cell.arrow2 {
-              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
-          }
-          return cell
-                  
+      // case 15:
+      // Profile row hidden.
+      // case 15:
+      //     guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as? SettingsTableCell else {
+      //         return UITableViewCell()
+      //     }
+      //     self.SettingsCell = cell
+      //     cell.Feedback?.text = "Profile"
+      //     cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
+      //     if let arrow = cell.arrow2 {
+      //         ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
+      //     }
+      //     return cell
       default:
           break
       }
@@ -397,9 +400,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                      self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
                  }
 
-      case 15:
-          self.openProfile()
-          
+      // case 15:
+      // Profile row hidden.
+      // case 15:
+      //     self.openProfile()
       default:
         break
           
@@ -548,16 +552,17 @@ extension SettingsViewController {
         }
     }
 
-    @objc func openProfile() {
-        let root = AuthHubProfileView(onBack: { [weak self] in
-            self?.navigationController?.popViewController(animated: true)
-            self?.dismiss(animated: true, completion: nil)
-        })
-        let host = UIHostingController(rootView: root)
-        host.title = "Profile"
-        navigationController?.pushViewController(host, animated: true)
-    }
-
+    // @objc func openProfile() {
+    // Profile row hidden.
+    // @objc func openProfile() {
+    //     let root = AuthHubProfileView(onBack: { [weak self] in
+    //         self?.navigationController?.popViewController(animated: true)
+    //         self?.dismiss(animated: true, completion: nil)
+    //     })
+    //     let host = UIHostingController(rootView: root)
+    //     host.title = "Profile"
+    //     navigationController?.pushViewController(host, animated: true)
+    // }
     @objc func confirmLogOut() {
         let alert = UIAlertController(
             title: "Log Out",

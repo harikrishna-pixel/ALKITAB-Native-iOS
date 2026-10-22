@@ -67,6 +67,7 @@ class MyLibraryViewController: UIViewController, MyLibraryDelegate, UIGestureRec
     var CellTitle:String?
     var myView:UIView?
     var selectedItem:Int = 0
+    private let selectedTabKey = "MyLibrarySelectedTab"
     var Themecolor:UIColor?
     
     override func viewDidLoad() {
@@ -81,7 +82,10 @@ class MyLibraryViewController: UIViewController, MyLibraryDelegate, UIGestureRec
         self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
                 
-        self.CellTitle = "BookMark"
+        let savedTab = UserDefaults.standard.integer(forKey: selectedTabKey)
+        if savedTab >= 0 && savedTab < titles.count {
+            self.selectedItem = savedTab
+        }
         self.ReloadAllData()
         
         App_Protocol.delegateMyLibrary = self
@@ -114,6 +118,7 @@ class MyLibraryViewController: UIViewController, MyLibraryDelegate, UIGestureRec
                 }
             }
                 
+          UserDefaults.standard.set(self.selectedItem, forKey: selectedTabKey)
           self.ReloadAllData()
           self.TitleCollection.reloadData()
           let indexPath = IndexPath(row: self.selectedItem, section: 0)
@@ -271,6 +276,12 @@ class MyLibraryViewController: UIViewController, MyLibraryDelegate, UIGestureRec
     
     
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard TitleCollection.numberOfItems(inSection: 0) > selectedItem else { return }
+        TitleCollection.scrollToItem(at: IndexPath(row: selectedItem, section: 0), at: .centeredHorizontally, animated: false)
+    }
+
     @IBAction func Back(_ sender: Any) {
         navigationController?.popViewController(animated: true)
     }
@@ -378,6 +389,7 @@ extension MyLibraryViewController: UICollectionViewDelegate, UICollectionViewDat
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         self.selectedItem = indexPath.row
+        UserDefaults.standard.set(self.selectedItem, forKey: selectedTabKey)
         self.ReloadAllData()
         self.TitleCollection.reloadData()
         self.TitleCollection.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)

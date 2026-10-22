@@ -164,7 +164,9 @@ struct DailyJourneyHomeView: View {
                 Text(greetingTitle)
                     .font(.system(size: 26, weight: .bold))
                     .foregroundColor(.black)
-                Text("Ready for today's Scripture journey?")
+                Text(store.allStepsComplete
+                     ? "Today's Scripture journey is complete."
+                     : "Ready for today's Scripture journey?")
                     .font(.system(size: 14))
                     .foregroundColor(Color.black.opacity(0.5))
             }
@@ -490,7 +492,7 @@ struct DailyJourneyHomeView: View {
 
     private var continueReadingCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("CONTINUE READING")
+            Text(continueReading.sectionTitle)
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(Color.black.opacity(0.45))
 
