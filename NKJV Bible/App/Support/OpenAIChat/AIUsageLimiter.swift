@@ -24,7 +24,20 @@ enum AIUsageFeature: String {
         }
     }
 
-    var creditCost: Int { 20 }
+    var creditCost: Int {
+        switch self {
+        case .quiz: return 10
+        default: return 20
+        }
+    }
+
+    /// Quiz is free while testing. Set quiz to `true` to charge `creditCost` (10) per question again.
+    var chargesCredits: Bool {
+        switch self {
+        case .quiz: return false
+        default: return true
+        }
+    }
 
     var title: String {
         switch self {
@@ -64,11 +77,11 @@ final class AIUsageLimiter {
 
     /// Quiz types other than Fill in the Verse are locked once today's free quiz is used.
     var isQuizUnlocked: Bool {
-        hasUnlimitedPlan || freeUsesLeft(.quiz) > 0
+        !AIUsageFeature.quiz.chargesCredits || hasUnlimitedPlan || freeUsesLeft(.quiz) > 0
     }
 
     func isLocked(_ feature: AIUsageFeature) -> Bool {
-        !hasUnlimitedPlan && freeUsesLeft(feature) == 0
+        feature.chargesCredits && !hasUnlimitedPlan && freeUsesLeft(feature) == 0
     }
 
     private static let lockBadgeTag = 0x10C4
@@ -111,7 +124,7 @@ final class AIUsageLimiter {
     /// Calls `onGranted` when the user may proceed. Call `commit(_:)` after the result succeeds.
     /// `units` multiplies the credit cost (e.g. number of quiz questions).
     func requestAccess(_ feature: AIUsageFeature, units: Int = 1, from host: UIViewController? = nil, onGranted: @escaping () -> Void) {
-        if hasUnlimitedPlan {
+        if !feature.chargesCredits || hasUnlimitedPlan {
             pending[feature] = .unlimited
             onGranted()
             return

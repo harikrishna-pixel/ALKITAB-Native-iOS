@@ -50,6 +50,7 @@
 		01370BE92941E68F0042B718 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 01370BE82941E68F0042B718 /* Assets.xcassets */; };
 		01370BEC2941E68F0042B718 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 01370BEA2941E68F0042B718 /* LaunchScreen.storyboard */; };
 		0138FC4A295C59480098A99C /* Loader.gif in Resources */ = {isa = PBXBuildFile; fileRef = 0138FC49295C59480098A99C /* Loader.gif */; };
+		E7F1A0022F8B4C0100A1B001 /* streak_flame.gif in Resources */ = {isa = PBXBuildFile; fileRef = E7F1A0012F8B4C0100A1B001 /* streak_flame.gif */; };
 		0139432A2A2471D400DF2434 /* RateUsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 013943292A2471D400DF2434 /* RateUsViewController.swift */; };
 		0139432D2A24A40100DF2434 /* RateUsCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0139432C2A24A40100DF2434 /* RateUsCall.swift */; };
 		0139432F2A24BA8B00DF2434 /* SharedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0139432E2A24BA8B00DF2434 /* SharedViewController.swift */; };
@@ -658,16 +659,16 @@
 		C4E5F6072F47D40100000009 /* ChallengeVerseDeepPlayChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D40100000019 /* ChallengeVerseDeepPlayChrome.swift */; };
 		C4E5F6072F47D4010000000A /* ChallengeVerseDeepResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001A /* ChallengeVerseDeepResultView.swift */; };
 		C4E5F6072F47D4010000000B /* ChallengeVerseDeepTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001B /* ChallengeVerseDeepTheme.swift */; };
+		C4E5F6072F47D4010000000C /* ChallengeHubShareHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001C /* ChallengeHubShareHelper.swift */; };
+		C4E5F6072F47D4010000000D /* CreatorChallengeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */; };
+		C4E5F6072F47D4010000000E /* CreatorChallengeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */; };
+		C4E5F6072F47D4010000000F /* ChallengeAttemptsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001F /* ChallengeAttemptsViewController.swift */; };
 		C4E5F6082F48E10100000001 /* ChallengeCreatorProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6082F48E10100000011 /* ChallengeCreatorProfileView.swift */; };
 		C4E5F6082F48E10100000002 /* ChallengeCreatorShareViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6082F48E10100000012 /* ChallengeCreatorShareViews.swift */; };
 		C4E5F6082F48E10100000003 /* ChallengeCreatorListsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6082F48E10100000013 /* ChallengeCreatorListsView.swift */; };
 		C4E5F6082F48E10100000004 /* ChallengeCreatorMoreScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6082F48E10100000014 /* ChallengeCreatorMoreScreens.swift */; };
 		C4E5F6092F48E20100000005 /* ChallengeQuizAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6092F48E20100000015 /* ChallengeQuizAccess.swift */; };
 		C4E5F60A2F48E30100000006 /* ChallengeQuizProfilePhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F60A2F48E30100000016 /* ChallengeQuizProfilePhoto.swift */; };
-		C4E5F6072F47D4010000000C /* ChallengeHubShareHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001C /* ChallengeHubShareHelper.swift */; };
-		C4E5F6072F47D4010000000D /* CreatorChallengeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */; };
-		C4E5F6072F47D4010000000E /* CreatorChallengeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */; };
-		C4E5F6072F47D4010000000F /* ChallengeAttemptsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6072F47D4010000001F /* ChallengeAttemptsViewController.swift */; };
 		D42E2B172BF79432006D4D18 /* puzzal Notification in Resources */ = {isa = PBXBuildFile; fileRef = D42E2B162BF79432006D4D18 /* puzzal Notification */; };
 		D6E7F8092F49F60100000001 /* AIUsageLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */; };
 		E7F8091A2F4AF70100000001 /* LegacyPaidAppService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */; };
@@ -753,6 +754,7 @@
 		01370BEB2941E68F0042B718 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		01370BED2941E68F0042B718 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0138FC49295C59480098A99C /* Loader.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = Loader.gif; sourceTree = "<group>"; };
+		E7F1A0012F8B4C0100A1B001 /* streak_flame.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = streak_flame.gif; sourceTree = "<group>"; };
 		013943292A2471D400DF2434 /* RateUsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateUsViewController.swift; sourceTree = "<group>"; };
 		0139432C2A24A40100DF2434 /* RateUsCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateUsCall.swift; sourceTree = "<group>"; };
 		0139432E2A24BA8B00DF2434 /* SharedViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SharedViewController.swift; sourceTree = "<group>"; };
@@ -1363,16 +1365,16 @@
 		C4E5F6072F47D40100000019 /* ChallengeVerseDeepPlayChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseDeepPlayChrome.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D4010000001A /* ChallengeVerseDeepResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseDeepResultView.swift; sourceTree = "<group>"; };
 		C4E5F6072F47D4010000001B /* ChallengeVerseDeepTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVerseDeepTheme.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D4010000001C /* ChallengeHubShareHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubShareHelper.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorChallengeModels.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorChallengeService.swift; sourceTree = "<group>"; };
+		C4E5F6072F47D4010000001F /* ChallengeAttemptsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeAttemptsViewController.swift; sourceTree = "<group>"; };
 		C4E5F6082F48E10100000011 /* ChallengeCreatorProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreatorProfileView.swift; sourceTree = "<group>"; };
 		C4E5F6082F48E10100000012 /* ChallengeCreatorShareViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreatorShareViews.swift; sourceTree = "<group>"; };
 		C4E5F6082F48E10100000013 /* ChallengeCreatorListsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreatorListsView.swift; sourceTree = "<group>"; };
 		C4E5F6082F48E10100000014 /* ChallengeCreatorMoreScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreatorMoreScreens.swift; sourceTree = "<group>"; };
 		C4E5F6092F48E20100000015 /* ChallengeQuizAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeQuizAccess.swift; sourceTree = "<group>"; };
 		C4E5F60A2F48E30100000016 /* ChallengeQuizProfilePhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeQuizProfilePhoto.swift; sourceTree = "<group>"; };
-		C4E5F6072F47D4010000001C /* ChallengeHubShareHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubShareHelper.swift; sourceTree = "<group>"; };
-		C4E5F6072F47D4010000001D /* CreatorChallengeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorChallengeModels.swift; sourceTree = "<group>"; };
-		C4E5F6072F47D4010000001E /* CreatorChallengeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorChallengeService.swift; sourceTree = "<group>"; };
-		C4E5F6072F47D4010000001F /* ChallengeAttemptsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeAttemptsViewController.swift; sourceTree = "<group>"; };
 		D42E2B162BF79432006D4D18 /* puzzal Notification */ = {isa = PBXFileReference; lastKnownFileType = file; path = "puzzal Notification"; sourceTree = "<group>"; };
 		D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUsageLimiter.swift; sourceTree = "<group>"; };
 		E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyPaidAppService.swift; sourceTree = "<group>"; };
@@ -3206,6 +3208,7 @@
 				01A4738D2AB2D7A500902C05 /* card.png */,
 				01B54BFF296E86920017CD03 /* Ad loader.gif */,
 				0138FC49295C59480098A99C /* Loader.gif */,
+				E7F1A0012F8B4C0100A1B001 /* streak_flame.gif */,
 				016A07C7295C71DD00857DE4 /* popupArrow.png */,
 				017E93B2294AED5000DF9D8B /* Christ Image */,
 				0180DDD629499E5F00F0C508 /* Font */,
@@ -4074,6 +4077,7 @@
 				01AB752A299A1CDD0034B1A8 /* S6.jpg in Resources */,
 				0144EEE02A90CD530022EABF /* color-1.png in Resources */,
 				0138FC4A295C59480098A99C /* Loader.gif in Resources */,
+				E7F1A0022F8B4C0100A1B001 /* streak_flame.gif in Resources */,
 				017E93C8294AEE6500DF9D8B /* ChristImag4.jpg in Resources */,
 				0146551E2959B96D00691893 /* AudioPlayer.xib in Resources */,
 				0144EEE72A90CD530022EABF /* left.png in Resources */,
@@ -4795,7 +4799,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 57;
-				DEVELOPMENT_TEAM = 5MWZCJ2Q4K;
+				DEVELOPMENT_TEAM = RJB7JC328A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "NKJV Bible/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Alkitab Bible";
@@ -4839,7 +4843,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 57;
-				DEVELOPMENT_TEAM = 5MWZCJ2Q4K;
+				DEVELOPMENT_TEAM = RJB7JC328A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "NKJV Bible/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Alkitab Bible";

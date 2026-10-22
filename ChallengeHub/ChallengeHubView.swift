@@ -49,15 +49,6 @@ struct ChallengeHubView: View {
                         challengeRow(kind)
                     }
 
-                    Text("Premium challenges are unlimited with more variety and rewards.")
-                        .font(.system(size: 13))
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(Color.black.opacity(0.45))
-                        .padding(14)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.white)
-                        .cornerRadius(14)
-                        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 14)
@@ -79,16 +70,8 @@ struct ChallengeHubView: View {
                 kind: kind,
                 onCancel: { pendingKind = nil },
                 onStart: { config in
-                    guard kind.isPremium else {
-                        pendingStart = PendingChallengeStart(kind: kind, config: config)
-                        pendingKind = nil
-                        return
-                    }
-                    AIUsageLimiter.shared.requestAccess(.quiz, units: kind.questionCount(in: config)) {
-                        AIUsageLimiter.shared.commit(.quiz)
-                        pendingStart = PendingChallengeStart(kind: kind, config: config)
-                        pendingKind = nil
-                    }
+                    pendingStart = PendingChallengeStart(kind: kind, config: config)
+                    pendingKind = nil
                 }
             )
         }
@@ -120,22 +103,6 @@ struct ChallengeHubView: View {
 
                 Spacer()
 
-                // Premium label hidden for now.
-                // if kind.isPremium {
-                //     Text("Premium")
-                //         .font(.system(size: 12, weight: .semibold))
-                //         .foregroundColor(Color(hex: "C9A227"))
-                // } else
-                if !kind.isPremium {
-                    Text("Free")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(ChallengeQuizTheme.accent)
-                        .clipShape(Capsule())
-                }
-
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(Color.black.opacity(0.2))
@@ -150,14 +117,7 @@ struct ChallengeHubView: View {
 
     private func open(_ kind: ChallengeKind) {
         if let sessionConfig {
-            guard kind.isPremium else {
-                onOpenChallenge(kind, verse, sessionConfig)
-                return
-            }
-            AIUsageLimiter.shared.requestAccess(.quiz, units: kind.questionCount(in: sessionConfig)) {
-                AIUsageLimiter.shared.commit(.quiz)
-                onOpenChallenge(kind, verse, sessionConfig)
-            }
+            onOpenChallenge(kind, verse, sessionConfig)
             return
         }
         pendingKind = kind
@@ -221,16 +181,8 @@ struct ChallengeGameScreen: View {
                 current: activeKind,
                 sessionConfig: sessionConfig,
                 onSelect: { kind in
-                    guard kind.isPremium, kind != activeKind else {
-                        activeKind = kind
-                        showKindPicker = false
-                        return
-                    }
-                    AIUsageLimiter.shared.requestAccess(.quiz, units: kind.questionCount(in: sessionConfig)) {
-                        AIUsageLimiter.shared.commit(.quiz)
-                        activeKind = kind
-                        showKindPicker = false
-                    }
+                    activeKind = kind
+                    showKindPicker = false
                 },
                 onDismiss: { showKindPicker = false }
             )
@@ -281,26 +233,6 @@ struct ChallengeKindPickerSheet: View {
                                 }
 
                                 Spacer()
-
-                                // Premium label hidden for now.
-                                // if kind.isPremium {
-                                //     HStack(spacing: 4) {
-                                //         Image(systemName: AIUsageLimiter.shared.isQuizUnlocked ? "crown.fill" : "lock.fill")
-                                //             .font(.system(size: 11))
-                                //         Text("Premium")
-                                //             .font(.system(size: 12, weight: .semibold))
-                                //     }
-                                //     .foregroundColor(Color(hex: "C9A227"))
-                                // } else
-                                if !kind.isPremium {
-                                    Text("Free")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(ChallengeQuizTheme.accent)
-                                        .clipShape(Capsule())
-                                }
 
                                 if kind == current {
                                     Text("Current")
@@ -540,13 +472,7 @@ struct ChallengeStartSheet: View {
         }
     }
 
-    private var questionCostText: String? {
-        guard kind.isPremium, !AIUsageLimiter.shared.hasUnlimitedPlan else { return nil }
-        if AIUsageLimiter.shared.freeUsesLeft(.quiz) > 0 {
-            return "Uses today's free quiz"
-        }
-        return "\(AIUsageFeature.quiz.creditCost * questionCount) credits (\(AIUsageFeature.quiz.creditCost) per question)"
-    }
+    private var questionCostText: String? { nil }
 
     private func startTapped() {
         guard let difficulty, let chapter = Int(chapterName) else { return }

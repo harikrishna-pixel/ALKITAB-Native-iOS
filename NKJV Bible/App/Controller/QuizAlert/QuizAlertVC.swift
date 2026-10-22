@@ -34,8 +34,19 @@ class QuizAlertVC: UIViewController, QuizAlert {
         super.viewDidLoad()
 
         let buttonFont = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        ReadButton.setTitle("Next Chapter", for: .normal)
+        YesButton.setTitle("Yes, Go to Quiz", for: .normal)
         ReadButton.titleLabel?.font = buttonFont
         YesButton.titleLabel?.font = buttonFont
+        ReadButton.titleLabel?.adjustsFontSizeToFitWidth = true
+        YesButton.titleLabel?.adjustsFontSizeToFitWidth = true
+        ReadButton.titleLabel?.minimumScaleFactor = 0.8
+        YesButton.titleLabel?.minimumScaleFactor = 0.8
+        if let stack = ReadButton.superview as? UIStackView {
+            stack.distribution = .fillEqually
+            stack.spacing = 16
+            stack.constraints.first { $0.firstAttribute == .height }?.constant = 48
+        }
 
         App_Protocol.QuizAlertdelegate = self
 
@@ -97,9 +108,13 @@ class QuizAlertVC: UIViewController, QuizAlert {
             MARK_US_READ = false
         }
 
-        let vc = QuizOrChallengeChooserViewController()
-        vc.bookName = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
-        vc.chapter = UserDefaults.standard.string(forKey: "BookChapter") ?? "0"
+        let book = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
+        let chapterValue = UserDefaults.standard.string(forKey: "BookChapter")
+            ?? "\(UserDefaults.standard.integer(forKey: "BookChapter"))"
+        let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "SelectionViewController") as! SelectionViewController
+        vc.BookString = book
+        vc.ChapterString = chapterValue
+        vc.ChapterCount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: book)
         self.navigationController?.pushViewController(vc, animated: true)
     }
 

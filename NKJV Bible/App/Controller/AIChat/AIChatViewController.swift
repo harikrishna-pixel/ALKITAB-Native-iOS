@@ -7,6 +7,13 @@ import UIKit
 import Toast_Swift
 import IQKeyboardManager
 
+struct AIChatLaunchContext {
+    let isChapterSummary: Bool
+    let title: String
+    let verseText: String?
+    let sourceText: String
+}
+
 private struct AIChatMessage {
     enum Role {
         case user
@@ -41,6 +48,8 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     private var bannerHeightConstraint: NSLayoutConstraint?
     private var composerBottomConstraint: NSLayoutConstraint?
     private var inputHeightConstraint: NSLayoutConstraint?
+    private var suggestionTrailingConstraint: NSLayoutConstraint?
+    var launchContext: AIChatLaunchContext?
 
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         self.isNight = (UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor) == BGNightMode
@@ -257,7 +266,11 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             suggestionStack.leadingAnchor.constraint(equalTo: suggestionContainer.leadingAnchor, constant: 16),
             suggestionStack.trailingAnchor.constraint(lessThanOrEqualTo: suggestionContainer.trailingAnchor, constant: -16),
             suggestionStack.bottomAnchor.constraint(equalTo: suggestionContainer.bottomAnchor, constant: -8),
-
+            {
+                let constraint = suggestionStack.trailingAnchor.constraint(lessThanOrEqualTo: suggestionContainer.trailingAnchor, constant: -16)
+                suggestionTrailingConstraint = constraint
+                return constraint
+            }(),
             emptyStateView.topAnchor.constraint(equalTo: bannerView.bottomAnchor),
             emptyStateView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             emptyStateView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -266,7 +279,22 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
 
         refreshFollowUpSuggestions()
         view.bringSubviewToFront(suggestionContainer)
+        if launchContext != nil {
+            suggestionTrailingConstraint?.isActive = false
+            let filled = suggestionStack.trailingAnchor.constraint(equalTo: suggestionContainer.trailingAnchor, constant: -16)
+            filled.isActive = true
+            suggestionTrailingConstraint = filled
+            suggestionStack.alignment = .fill
+        }
+
+        refreshFollowUpSuggestions()
+        view.bringSubviewToFront(suggestionContainer)
         view.bringSubviewToFront(composerContainer)
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        installContextHeaderIfNeeded()
     }
 
     private func setupEmptyState() {
@@ -349,13 +377,282 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             chips = []
         }
 
+        let useContextRows = launchContext != nil && messages.isEmpty
         chips.forEach { title in
-            suggestionStack.addArrangedSubview(makeSuggestionChip(title: title))
+            if useContextRows {
+                suggestionStack.addArrangedSubview(makeContextSuggestionRow(title: title))
+            } else {
+                suggestionStack.addArrangedSubview(makeSuggestionChip(title: title))
+            }
         }
-        suggestionContainer.isHidden = chips.isEmpty
+    }
+
+    private var usesIndonesian: Bool {
+        let code = (UserDefaults.standard.string(forKey: "language_code") ?? language_code).lowercased()
+        let name = (UserDefaults.standard.string(forKey: "language_name") ?? language_name).lowercased()
+        if code.hasPrefix("id") || code == "in" || name.contains("indones") { return true }
+        return code.isEmpty && name.isEmpty
+    }
+
+    private func passageName(from title: String) -> String {
+        title.replacingOccurrences(of: " Summary", with: "")
+    }
+
+    private func contextPlaceholder() -> String {
+        guard let context = launchContext else { return "Ask about a verse..." }
+        if context.isChapterSummary {
+            return usesIndonesian ? "Ketik pertanyaan Anda..." : "Type your question..."
+        }
+        return usesIndonesian ? "Tanyakan tentang \(context.title)..." : "Ask about \(context.title)..."
+    }
+
+    private func contextSuggestions(for context: AIChatLaunchContext) -> [String] {
+        let name = passageName(from: context.title)
+        if usesIndonesian {
+            if context.isChapterSummary {
+                return [
+                    "Apa pesan utama dari \(name)?",
+                    "Apa yang terjadi dalam \(name)?",
+                    "Siapa yang berperan penting dalam \(name)?",
+                    "Apa makna bagian utama dalam \(name)?",
+                    "Bagaimana \(name) dapat diterapkan dalam kehidupan saya?"
+                ]
+            }
+            return [
+                "Apa arti \(context.title)?",
+                "Mengapa ayat ini penting?",
+                "Apa yang dimaksud dalam ayat ini?",
+                "Bagaimana ayat ini dapat diterapkan?",
+                "Apa yang dapat saya pelajari dari \(context.title)?"
+            ]
+        }
+        if context.isChapterSummary {
+            return [
+                "What is the main message of \(name)?",
+                "What happens in \(name)?",
+                "Who is important in \(name)?",
+                "What does the key part of \(name) mean?",
+                "How can \(name) apply to my life?"
+            ]
+        }
+        return [
+            "What does \(context.title) mean?",
+            "Why is this verse important?",
+            "What is this verse saying?",
+            "How can this verse be applied?",
+            "What can I learn from \(context.title)?"
+        ]
+    }
+
+    private func makeContextSuggestionRow(title: String) -> UIButton {
+        let row = UIButton(type: .system)
+        row.setTitle(title, for: .normal)
+        row.setImage(UIImage(systemName: "bubble.left"), for: .normal)
+        row.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .medium)
+        row.titleLabel?.numberOfLines = 2
+        row.titleLabel?.textAlignment = .left
+        row.contentHorizontalAlignment = .left
+        row.setTitleColor(isNight ? .white : themeColor, for: .normal)
+        row.tintColor = isNight ? .white : themeColor
+        row.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.08) : themeColor.withAlphaComponent(0.08)
+        row.layer.cornerRadius = 16
+        row.contentEdgeInsets = UIEdgeInsets(top: 14, left: 14, bottom: 14, right: 36)
+        row.titleEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: -10)
+        row.addTarget(self, action: #selector(suggestionTapped(_:)), for: .touchUpInside)
+
+        let chevron = UIImageView(image: UIImage(systemName: "chevron.right", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)))
+        chevron.translatesAutoresizingMaskIntoConstraints = false
+        chevron.tintColor = isNight ? UIColor.white.withAlphaComponent(0.7) : themeColor
+        chevron.isUserInteractionEnabled = false
+        row.addSubview(chevron)
+        NSLayoutConstraint.activate([
+            chevron.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -14),
+            chevron.centerYAnchor.constraint(equalTo: row.centerYAnchor)
+        ])
+        return row
+    }
+
+    private func installContextHeaderIfNeeded() {
+        guard let context = launchContext, tableView.tableHeaderView == nil, view.bounds.width > 0 else { return }
+        let header = makeContextHeader(context)
+        let width = view.bounds.width
+        let widthConstraint = header.widthAnchor.constraint(equalToConstant: width)
+        widthConstraint.isActive = true
+        let height = header.systemLayoutSizeFitting(
+            CGSize(width: width, height: 0),
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        ).height
+        widthConstraint.isActive = false
+        header.translatesAutoresizingMaskIntoConstraints = true
+        header.frame = CGRect(x: 0, y: 0, width: width, height: max(height, 1))
+        tableView.tableHeaderView = header
+    }
+
+    private func makeContextHeader(_ context: AIChatLaunchContext) -> UIView {
+        let header = UIView()
+        let card = UIView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        card.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.08) : .white
+        card.layer.cornerRadius = context.isChapterSummary ? 22 : 16
+        header.addSubview(card)
+
+        let iconHolder = UIView()
+        iconHolder.translatesAutoresizingMaskIntoConstraints = false
+        iconHolder.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.12) : themeColor.withAlphaComponent(0.12)
+        iconHolder.layer.cornerRadius = 16
+        card.addSubview(iconHolder)
+
+        let icon = UIImageView(image: UIImage(systemName: "book.fill"))
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.tintColor = isNight ? .white : themeColor
+        icon.contentMode = .scaleAspectFit
+        iconHolder.addSubview(icon)
+
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = context.title
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        titleLabel.textColor = isNight ? .white : themeColor
+        titleLabel.numberOfLines = 2
+        card.addSubview(titleLabel)
+
+        if context.isChapterSummary {
+            NSLayoutConstraint.activate([
+                card.topAnchor.constraint(equalTo: header.topAnchor, constant: 16),
+                card.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+                card.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -16),
+
+                iconHolder.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 10),
+                iconHolder.topAnchor.constraint(equalTo: card.topAnchor, constant: 8),
+                iconHolder.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -8),
+                iconHolder.widthAnchor.constraint(equalToConstant: 32),
+                iconHolder.heightAnchor.constraint(equalToConstant: 32),
+
+                icon.centerXAnchor.constraint(equalTo: iconHolder.centerXAnchor),
+                icon.centerYAnchor.constraint(equalTo: iconHolder.centerYAnchor),
+                icon.widthAnchor.constraint(equalToConstant: 16),
+                icon.heightAnchor.constraint(equalToConstant: 16),
+
+                titleLabel.leadingAnchor.constraint(equalTo: iconHolder.trailingAnchor, constant: 8),
+                titleLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+                titleLabel.centerYAnchor.constraint(equalTo: card.centerYAnchor)
+            ])
+
+            let avatar = UIView()
+            avatar.translatesAutoresizingMaskIntoConstraints = false
+            avatar.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.12) : themeColor.withAlphaComponent(0.12)
+            avatar.layer.cornerRadius = 16
+            header.addSubview(avatar)
+
+            let spark = UIImageView(image: UIImage(systemName: "sparkles"))
+            spark.translatesAutoresizingMaskIntoConstraints = false
+            spark.tintColor = isNight ? .white : themeColor
+            avatar.addSubview(spark)
+
+            let bubble = UIView()
+            bubble.translatesAutoresizingMaskIntoConstraints = false
+            bubble.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.1) : .white
+            bubble.layer.cornerRadius = 16
+            header.addSubview(bubble)
+
+            let greeting = UILabel()
+            greeting.translatesAutoresizingMaskIntoConstraints = false
+            let name = passageName(from: context.title)
+            greeting.text = usesIndonesian
+                ? "Saya siap membantu Anda memahami \(name).\nApa yang ingin Anda ketahui?"
+                : "I'm ready to help you understand \(name).\nWhat would you like to know?"
+            greeting.numberOfLines = 0
+            greeting.font = UIFont.systemFont(ofSize: 16)
+            greeting.textColor = isNight ? .white : .black
+            bubble.addSubview(greeting)
+
+            NSLayoutConstraint.activate([
+                avatar.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+                avatar.topAnchor.constraint(equalTo: card.bottomAnchor, constant: 16),
+                avatar.widthAnchor.constraint(equalToConstant: 32),
+                avatar.heightAnchor.constraint(equalToConstant: 32),
+
+                spark.centerXAnchor.constraint(equalTo: avatar.centerXAnchor),
+                spark.centerYAnchor.constraint(equalTo: avatar.centerYAnchor),
+                spark.widthAnchor.constraint(equalToConstant: 16),
+                spark.heightAnchor.constraint(equalToConstant: 16),
+
+                bubble.leadingAnchor.constraint(equalTo: avatar.trailingAnchor, constant: 8),
+                bubble.topAnchor.constraint(equalTo: avatar.topAnchor),
+                bubble.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -24),
+                bubble.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8),
+
+                greeting.topAnchor.constraint(equalTo: bubble.topAnchor, constant: 12),
+                greeting.leadingAnchor.constraint(equalTo: bubble.leadingAnchor, constant: 14),
+                greeting.trailingAnchor.constraint(equalTo: bubble.trailingAnchor, constant: -14),
+                greeting.bottomAnchor.constraint(equalTo: bubble.bottomAnchor, constant: -12)
+            ])
+        } else {
+            let subtitle = UILabel()
+            subtitle.translatesAutoresizingMaskIntoConstraints = false
+            subtitle.text = "Verse Explanation"
+            subtitle.font = UIFont.systemFont(ofSize: 13)
+            subtitle.textColor = isNight ? UIColor.white.withAlphaComponent(0.6) : UIColor.darkGray
+            card.addSubview(subtitle)
+
+            let quote = UILabel()
+            quote.translatesAutoresizingMaskIntoConstraints = false
+            quote.text = context.verseText
+            quote.numberOfLines = 0
+            quote.font = UIFont.systemFont(ofSize: 16)
+            quote.textColor = isNight ? UIColor.white.withAlphaComponent(0.92) : UIColor(red: 0.16, green: 0.2, blue: 0.32, alpha: 1)
+            card.addSubview(quote)
+
+            let bar = UIView()
+            bar.translatesAutoresizingMaskIntoConstraints = false
+            bar.backgroundColor = isNight ? .white : themeColor
+            bar.layer.cornerRadius = 2
+            card.addSubview(bar)
+
+            NSLayoutConstraint.activate([
+                card.topAnchor.constraint(equalTo: header.topAnchor, constant: 16),
+                card.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+                card.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
+                card.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8),
+
+                iconHolder.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
+                iconHolder.topAnchor.constraint(equalTo: card.topAnchor, constant: 14),
+                iconHolder.widthAnchor.constraint(equalToConstant: 32),
+                iconHolder.heightAnchor.constraint(equalToConstant: 32),
+
+                icon.centerXAnchor.constraint(equalTo: iconHolder.centerXAnchor),
+                icon.centerYAnchor.constraint(equalTo: iconHolder.centerYAnchor),
+                icon.widthAnchor.constraint(equalToConstant: 16),
+                icon.heightAnchor.constraint(equalToConstant: 16),
+
+                titleLabel.leadingAnchor.constraint(equalTo: iconHolder.trailingAnchor, constant: 10),
+                titleLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+                titleLabel.topAnchor.constraint(equalTo: iconHolder.topAnchor, constant: -2),
+
+                subtitle.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+                subtitle.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+                subtitle.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),
+
+                bar.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
+                bar.topAnchor.constraint(equalTo: subtitle.bottomAnchor, constant: 12),
+                bar.bottomAnchor.constraint(equalTo: quote.bottomAnchor),
+                bar.widthAnchor.constraint(equalToConstant: 4),
+
+                quote.leadingAnchor.constraint(equalTo: bar.trailingAnchor, constant: 12),
+                quote.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+                quote.topAnchor.constraint(equalTo: subtitle.bottomAnchor, constant: 12),
+                quote.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -14)
+            ])
+        }
+
+        return header
     }
 
     private func starterSuggestions() -> [String] {
+        if let context = launchContext {
+            return contextSuggestions(for: context)
+        }
         let pool = [
             "Explain John 3:16",
             "What is grace?",
@@ -557,6 +854,18 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
 
         let history = messages.dropLast()
         if !history.isEmpty {
+        if let context = launchContext {
+            let kind = context.isChapterSummary ? "chapter summary" : "verse explanation"
+            lines.append("The user opened chat from the \(kind) for \(context.title).")
+            if let verse = context.verseText, !verse.isEmpty {
+                lines.append("Verse text: \(verse)")
+            }
+            if !context.sourceText.isEmpty {
+                lines.append("Text already shown to the user:\n\(context.sourceText)")
+            }
+            lines.append("Stay on this passage. Answer in the same language as the user's question.")
+        }
+
             lines.append("Conversation so far:")
             for message in history.suffix(8) {
                 let speaker = message.role == .user ? "User" : "Assistant"

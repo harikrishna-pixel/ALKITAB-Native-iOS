@@ -9,29 +9,29 @@ import Photos
 
 /// Hosts the Daily Journey Home UI inside the existing Reader shell.
 final class DailyJourneyHomeViewController: UIViewController {
-
+    
     private var hostingController: UIHostingController<DailyJourneyHomeView>?
     /// First journey modal in the stack (dismiss this presenter’s presented VC to close the whole flow).
     private var journeyRoot: UIViewController?
     /// Topmost journey modal currently visible.
     private var journeyModalHost: UIViewController?
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(red: 0.97, green: 0.97, blue: 0.99, alpha: 1)
-
+        
         DispatchQueue.main.async {
             NotificationList_data.sharedInstance.UpdateDailyVerse()
         }
-
+        
         embedHome()
     }
-
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         DailyJourneyStore.shared.reload()
     }
-
+    
     private func embedHome() {
         let root = makeRootView()
         let host = UIHostingController(rootView: root)
@@ -48,7 +48,7 @@ final class DailyJourneyHomeViewController: UIViewController {
         ])
         host.didMove(toParent: self)
     }
-
+    
     private func makeRootView() -> DailyJourneyHomeView {
         DailyJourneyHomeView(
             store: .shared,
@@ -80,7 +80,7 @@ final class DailyJourneyHomeViewController: UIViewController {
             }
         )
     }
-
+    
     private func topModalPresenter() -> UIViewController {
         let root = sharePresenter()
         var top = root
@@ -89,7 +89,7 @@ final class DailyJourneyHomeViewController: UIViewController {
         }
         return top
     }
-
+    
     /// Stacks journey steps on top of each other so Home never appears between steps.
     /// Home is only revealed when `dismissJourneyModal` tears down the whole stack.
     private func presentJourneyModal(
@@ -98,10 +98,10 @@ final class DailyJourneyHomeViewController: UIViewController {
         completion: (() -> Void)? = nil
     ) {
         viewController.modalPresentationStyle = .fullScreen
-
+        
         let work = { [weak self] in
             guard let self = self else { return }
-
+            
             if let existingTop = self.journeyModalHost {
                 var presenter = existingTop
                 while let presented = presenter.presentedViewController {
@@ -111,20 +111,20 @@ final class DailyJourneyHomeViewController: UIViewController {
                 self.journeyModalHost = viewController
                 return
             }
-
+            
             let presenter = self.topModalPresenter()
             self.journeyRoot = viewController
             self.journeyModalHost = viewController
             presenter.present(viewController, animated: animated, completion: completion)
         }
-
+        
         if Thread.isMainThread {
             work()
         } else {
             DispatchQueue.main.async(execute: work)
         }
     }
-
+    
     private func presentFromOutsideNavigateframe(
         _ viewController: UIViewController,
         animated: Bool = true,
@@ -132,22 +132,22 @@ final class DailyJourneyHomeViewController: UIViewController {
     ) {
         presentJourneyModal(viewController, animated: animated, completion: completion)
     }
-
+    
     /// Dismisses the entire journey stack (Verse / Memory / Reflection / Streak) at once.
     private func dismissJourneyModal(completion: (() -> Void)? = nil) {
         let root = journeyRoot ?? journeyModalHost
         journeyRoot = nil
         journeyModalHost = nil
-
+        
         guard let root = root else {
             completion?()
             return
         }
-
+        
         let finish: () -> Void = {
             completion?()
         }
-
+        
         if let presenting = root.presentingViewController {
             presenting.dismiss(animated: true, completion: finish)
         } else if root.presentedViewController != nil || root.isBeingPresented == false {
@@ -156,7 +156,7 @@ final class DailyJourneyHomeViewController: UIViewController {
             finish()
         }
     }
-
+    
     private func presentVerseFullscreen(
         verse: DailyVerseSnapshot,
         onUpdated: @escaping (DailyVerseSnapshot) -> Void
@@ -167,7 +167,8 @@ final class DailyJourneyHomeViewController: UIViewController {
             self?.dismissJourneyModal()
         }
         vc.onShare = { [weak self, weak vc] in
-            self?.shareVerse(current, from: vc)
+            guard let vc = vc else { return }
+            self?.shareVerse(current, from: vc, cardImage: vc.makeShareImage())
         }
         vc.onSave = { [weak self, weak vc] in
             self?.bookmarkVerse(current, from: vc) { _ in }
@@ -193,10 +194,10 @@ final class DailyJourneyHomeViewController: UIViewController {
                 )
             }
         }
-
+        
         presentJourneyModal(vc)
     }
-
+    
     private func presentMemoryChallenge(verse: DailyVerseSnapshot, proceedToReflection: Bool) {
         let root = NavigationView {
             MemoryChallengeView(
@@ -210,15 +211,15 @@ final class DailyJourneyHomeViewController: UIViewController {
                 } : nil
             )
         }
-        .navigationViewStyle(StackNavigationViewStyle())
-
+            .navigationViewStyle(StackNavigationViewStyle())
+        
         let host = UIHostingController(rootView: root)
         presentJourneyModal(host)
     }
-
+    
     private func presentReflection(verse: DailyVerseSnapshot) {
         let shouldAutoShowStreak = !DailyJourneyStore.shared.allStepsComplete
-
+        
         let root = NavigationView {
             ReflectionView(
                 verse: verse,
@@ -232,24 +233,24 @@ final class DailyJourneyHomeViewController: UIViewController {
                 }
             )
         }
-        .navigationViewStyle(StackNavigationViewStyle())
-
+            .navigationViewStyle(StackNavigationViewStyle())
+        
         let host = UIHostingController(rootView: root)
         presentJourneyModal(host)
     }
-
+    
     private func presentStreakComplete() {
         let root = NavigationView {
             StreakCompleteView(store: .shared) { [weak self] in
                 self?.dismissJourneyModal()
             }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
-
+            .navigationViewStyle(StackNavigationViewStyle())
+        
         let host = UIHostingController(rootView: root)
         presentJourneyModal(host)
     }
-
+    
     private func continueReading() {
         let book = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
         let chapter = max(UserDefaults.standard.integer(forKey: "BookChapter"), 1)
@@ -260,7 +261,7 @@ final class DailyJourneyHomeViewController: UIViewController {
             App_Protocol.delegateReaderSource?.navigateToSelectedVerse()
         }
     }
-
+    
     private func openPrayerWall() {
         if NetworkManager.sharedInstance.isConnectedToInternet() {
             let vc = PrayerWallViewController()
@@ -276,19 +277,19 @@ final class DailyJourneyHomeViewController: UIViewController {
             presentingController().view.makeToast("No internet connection", duration: 2.0, position: .bottom)
         }
     }
-
+    
     // MARK: - Same share / save behavior as HomeController
-
-    private func shareVerse(_ verse: DailyVerseSnapshot, from presenterOverride: UIViewController? = nil) {
+    
+    private func shareVerse(_ verse: DailyVerseSnapshot, from presenterOverride: UIViewController? = nil, cardImage: UIImage? = nil) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-
-            let image = self.renderVerseCardImage(verse)
+            
+            let image = cardImage ?? self.renderVerseCardImage(verse)
             let safeName = self.safeFileName(from: verse.reference)
             let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("\(safeName).png")
             let pngData = image.pngData()
             try? pngData?.write(to: fileURL)
-
+            
             // Match HomeController.sharedImage
             let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "SharedViewController") as! SharedViewController
             vc.VerseImgData = pngData
@@ -298,12 +299,12 @@ final class DailyJourneyHomeViewController: UIViewController {
             vc.ShareVerseImageURL = [fileURL]
             vc.modalPresentationStyle = .overCurrentContext
             vc.modalTransitionStyle = .crossDissolve
-
+            
             if let presenterOverride = presenterOverride {
                 presenterOverride.present(vc, animated: true, completion: nil)
                 return
             }
-
+            
             // Present from this VC if possible (same as HomeController); otherwise climb to Reader / window.
             let presenter = self.sharePresenter()
             if presenter.presentedViewController != nil {
@@ -315,11 +316,11 @@ final class DailyJourneyHomeViewController: UIViewController {
             }
         }
     }
-
+    
     private func bookmarkVerse(_ verse: DailyVerseSnapshot, from presenterOverride: UIViewController? = nil, completion: @escaping (Bool) -> Void) {
         let image = renderVerseCardImage(verse)
         let presenter = presenterOverride ?? sharePresenter()
-
+        
         let handleStatus: (PHAuthorizationStatus) -> Void = { newStatus in
             DispatchQueue.main.async {
                 if newStatus == .authorized || newStatus == .limited {
@@ -332,14 +333,14 @@ final class DailyJourneyHomeViewController: UIViewController {
                 }
             }
         }
-
+        
         if #available(iOS 14, *) {
             PHPhotoLibrary.requestAuthorization(for: .addOnly, handler: handleStatus)
         } else {
             PHPhotoLibrary.requestAuthorization(handleStatus)
         }
     }
-
+    
     /// Prefer a full-screen host so share sheet is not clipped by Navigateframe masksToBounds.
     private func sharePresenter() -> UIViewController {
         var walker: UIViewController? = self
@@ -361,11 +362,11 @@ final class DailyJourneyHomeViewController: UIViewController {
         }
         return self
     }
-
+    
     private func presentingController() -> UIViewController {
         sharePresenter()
     }
-
+    
     private func safeFileName(from reference: String) -> String {
         let trimmed = reference.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleaned = trimmed
@@ -374,29 +375,29 @@ final class DailyJourneyHomeViewController: UIViewController {
             .replacingOccurrences(of: " ", with: "_")
         return cleaned.isEmpty ? "Todays_Verse" : cleaned
     }
-
+    
     private func renderVerseCardImage(_ verse: DailyVerseSnapshot) -> UIImage {
         // Match classic HomeController VerseImageVu: full wallpaper + dim overlay +
         // centered verse text (not bottom-pinned), so long verses still share cleanly.
         let side: CGFloat = 1080
         let container = UIView(frame: CGRect(x: 0, y: 0, width: side, height: side))
         container.backgroundColor = UIColor(red: 0.11, green: 0.18, blue: 0.42, alpha: 1)
-
+        
         let bgView = UIImageView(frame: container.bounds)
         bgView.contentMode = .scaleAspectFill
         bgView.clipsToBounds = true
         bgView.image = UIImage(named: verse.imageName) ?? UIImage(named: HomeVerseImage)
         container.addSubview(bgView)
-
+        
         let dimOverlay = UIView(frame: container.bounds)
         dimOverlay.backgroundColor = UIColor.black.withAlphaComponent(0.50)
         dimOverlay.isUserInteractionEnabled = false
         container.addSubview(dimOverlay)
-
+        
         let padding: CGFloat = 72
         let contentWidth = side - padding * 2
         let maxTextHeight = side * 0.55
-
+        
         let textLabel = UILabel()
         textLabel.text = verse.text
         textLabel.textColor = .white
@@ -407,7 +408,7 @@ final class DailyJourneyHomeViewController: UIViewController {
         textLabel.adjustsFontSizeToFitWidth = true
         textLabel.minimumScaleFactor = 0.45
         textLabel.allowsDefaultTighteningForTruncation = true
-
+        
         let refLabel = UILabel()
         refLabel.text = verse.reference
         refLabel.textColor = UIColor.white.withAlphaComponent(0.92)
@@ -417,18 +418,18 @@ final class DailyJourneyHomeViewController: UIViewController {
         refLabel.font = UIFont.systemFont(ofSize: 34, weight: .semibold)
         refLabel.adjustsFontSizeToFitWidth = true
         refLabel.minimumScaleFactor = 0.7
-
+        
         var textHeight = ceil(textLabel.sizeThatFits(CGSize(width: contentWidth, height: maxTextHeight)).height)
         textHeight = min(textHeight, maxTextHeight)
         let refHeight = ceil(refLabel.sizeThatFits(CGSize(width: contentWidth, height: 120)).height)
         let blockHeight = textHeight + 28 + refHeight
         let blockTop = (side - blockHeight) / 2
-
+        
         textLabel.frame = CGRect(x: padding, y: blockTop, width: contentWidth, height: textHeight)
         refLabel.frame = CGRect(x: padding, y: blockTop + textHeight + 28, width: contentWidth, height: refHeight)
         container.addSubview(textLabel)
         container.addSubview(refLabel)
-
+        
         container.setNeedsLayout()
         container.layoutIfNeeded()
         return container.asImage()

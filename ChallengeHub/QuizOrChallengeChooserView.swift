@@ -182,31 +182,19 @@ final class QuizOrChallengeChooserViewController: UIViewController {
         view.backgroundColor = .white
         navigationController?.setNavigationBarHidden(true, animated: false)
 
-        let displayChapter: String = {
-            if let value = Int(chapter) {
-                return value > 0 ? "\(value)" : "\(value + 1)"
-            }
-            return chapter.isEmpty ? "—" : chapter
-        }()
-
-        let root = QuizOrChallengeChooserView(
-            bookName: bookName.isEmpty ? (UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName) : bookName,
-            chapterLabel: displayChapter,
+        let root = ChallengeHubView(
+            showBackButton: true,
             onBack: { [weak self] in
                 self?.navigationController?.popViewController(animated: true)
             },
-            onBibleQuiz: { [weak self] in
+            onOpenPremiumPaywall: { [weak self] in
+                self?.openPaywall()
+            },
+            onOpenLegacyQuiz: { [weak self] in
                 self?.openSelection(destination: .bibleQuiz)
             },
-            onOpenChallenge: { [weak self] kind in
-                guard kind.isPremium else {
-                    self?.openSelection(destination: .challenge(kind))
-                    return
-                }
-                AIUsageLimiter.shared.requestAccess(.quiz, units: kind.questionCount(in: nil), from: self) {
-                    AIUsageLimiter.shared.commit(.quiz)
-                    self?.openSelection(destination: .challenge(kind))
-                }
+            onOpenChallenge: { [weak self] kind, verse, config in
+                self?.openChallenge(kind, verse: verse, config: config)
             }
         )
 
@@ -226,6 +214,26 @@ final class QuizOrChallengeChooserViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+
+    private func openChallenge(_ kind: ChallengeKind, verse: ChallengeVerseContext, config: ChallengeSessionConfig?) {
+        let root = ChallengeGameScreen(
+            kind: kind,
+            verse: verse,
+            sessionConfig: config,
+            onClose: { [weak self] in
+                self?.navigationController?.popViewController(animated: true)
+            },
+            onOpenLegacyQuiz: { [weak self] in
+                self?.openSelection(destination: .bibleQuiz)
+            },
+            onOpenPremiumPaywall: { [weak self] in
+                self?.openPaywall()
+            }
+        )
+        let host = ChallengePushedHostingController(rootView: root)
+        host.view.backgroundColor = .white
+        navigationController?.pushViewController(host, animated: true)
     }
 
     private func openSelection(destination: MarkAsReadQuizDestination) {

@@ -99,7 +99,7 @@ final class ChallengeHubViewController: UIViewController {
     }
 }
 
-private final class ChallengePushedHostingController<Content: View>: UIHostingController<Content> {
+final class ChallengePushedHostingController<Content: View>: UIHostingController<Content> {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)

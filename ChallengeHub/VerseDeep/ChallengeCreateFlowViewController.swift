@@ -28,19 +28,7 @@ final class ChallengeCreateFlowViewController: UIViewController {
     }
 
     private func showGateOrFlow() {
-        let root: AnyView
-        if ChallengeQuizAccess.allowsChallenges {
-            root = AnyView(makeCreateFlow())
-        } else {
-            root = AnyView(ChallengeQuizLoginGate(
-                onBack: { [weak self] in
-                    self?.leave()
-                },
-                onLoggedIn: { [weak self] in
-                    self?.showGateOrFlow()
-                }
-            ))
-        }
+        let root = AnyView(makeCreateFlow())
         if let flowHost = flowHost {
             flowHost.rootView = root
             return

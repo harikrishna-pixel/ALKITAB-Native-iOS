@@ -13,6 +13,8 @@ struct ReflectionView: View {
 
     @State private var selectedOption: Int?
     @State private var text: String = ""
+    /// Lifts the form with the keyboard instead of letting the layout snap.
+    @State private var keyboardLift: CGFloat = 0
     /// True when reflection was already completed before this visit (edit / review day).
     @State private var wasAlreadyCompleted = false
 
@@ -24,6 +26,7 @@ struct ReflectionView: View {
     ]
 
     var body: some View {
+        ScrollViewReader { proxy in
         VStack(spacing: 0) {
             progressBar
 
@@ -93,6 +96,7 @@ struct ReflectionView: View {
                             RoundedRectangle(cornerRadius: 14)
                                 .stroke(Color.black.opacity(0.08), lineWidth: 1)
                         )
+                        .id("reflectionNotes")
 
                         Text("\(min(text.count, 300))/300")
                             .font(.system(size: 12))
@@ -132,8 +136,20 @@ struct ReflectionView: View {
             .padding(.bottom, 24)
             .padding(.top, 8)
         }
+        .padding(.bottom, keyboardLift)
         .background(Color(hex: "F7F8FC").ignoresSafeArea())
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .navigationBarTitleDisplayMode(.inline)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
+            let lift = keyboardLift(from: notification)
+            let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double ?? 0.25
+            withAnimation(.easeOut(duration: duration)) {
+                keyboardLift = lift
+                if lift > 0 {
+                    proxy.scrollTo("reflectionNotes", anchor: .bottom)
+                }
+            }
+        }
         .onAppear {
             IQKeyboardManager.shared().isEnabled = false
             wasAlreadyCompleted = store.reflectionCompleted
@@ -144,6 +160,7 @@ struct ReflectionView: View {
             }
         }
         .onDisappear {
+            keyboardLift = 0
             IQKeyboardManager.shared().isEnabled = true
         }
         .onChange(of: text) { newValue in
@@ -151,6 +168,16 @@ struct ReflectionView: View {
                 text = String(newValue.prefix(300))
             }
         }
+        }
+    }
+
+    /// How far the form should rise so it meets the keyboard, without counting the home indicator twice.
+    private func keyboardLift(from notification: Notification) -> CGFloat {
+        guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return 0 }
+        let screenHeight = UIScreen.main.bounds.height
+        let overlap = max(0, screenHeight - frame.origin.y)
+        let homeInset = UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0
+        return max(0, overlap - homeInset)
     }
 
     private var progressBar: some View {

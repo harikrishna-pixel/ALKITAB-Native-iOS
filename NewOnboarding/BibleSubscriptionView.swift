@@ -129,6 +129,16 @@ struct BibleSubscriptionView: View {
                 .allowsHitTesting(false)
             
             GeometryReader { geo in
+                ZStack(alignment: .top) {
+                if !isSmallDevice {
+                    Image("paywall_bible_glow")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geo.size.width, height: geo.size.height + geo.safeAreaInsets.bottom)
+                        .clipped()
+                        .ignoresSafeArea(edges: .bottom)
+                        .allowsHitTesting(false)
+                }
                 ScrollView(showsIndicators: false) {
                     PaywallScrollStackView(
                         planSelection: planSelection,
@@ -152,6 +162,7 @@ struct BibleSubscriptionView: View {
                 }
                 .frame(width: geo.size.width, height: geo.size.height)
                 .ignoresSafeArea(edges: .top)
+                }
             }
             .ignoresSafeArea(edges: .top)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -730,7 +741,9 @@ private struct PaywallScrollStackView: View {
 
     private var trustRow: some View {
         HStack(spacing: 20) {
-            Label("Cancel anytime", systemImage: "checkmark.shield.fill")
+            if planSelection.plan != .lifetime {
+                Label("Cancel anytime", systemImage: "checkmark.shield.fill")
+            }
             Label("Secure payment", systemImage: "lock.fill")
         }
         .font(.system(size: isPad ? 13 : 12, weight: .medium))
@@ -837,9 +850,9 @@ private struct PaywallPlanAndCTASection: View {
 
     private var ctaTitle: String {
         switch planSelection.plan {
-        case .lifetime:
+        case .lifetime, .yearly:
             return "Continue"
-        case .monthly, .yearly:
+        case .monthly:
             return "Start 3-Day Free Trial"
         }
     }

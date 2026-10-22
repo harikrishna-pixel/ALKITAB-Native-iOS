@@ -12,38 +12,45 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
     @IBOutlet weak var MarkAsReadBtn:UIButton!
     @IBOutlet weak var SummaryButton:UIButton!
     private var isMarkedRead = false
+    private var lastSummarySize: CGSize = .zero
+    private var lastMarkSize: CGSize = .zero
     
 //    @IBOutlet weak var BibleAllOffice:UIButton!
     
     @IBOutlet weak var ADView: UIView!
 //    @IBOutlet weak var AdLabel: UILabel!
     
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        lastSummarySize = .zero
+        lastMarkSize = .zero
+    }
+
     override func awakeFromNib() {
         super.awakeFromNib()
-        self.contentView.translatesAutoresizingMaskIntoConstraints = false
-        // Initialization code
         self.setupSummaryButton()
         self.setupMarkAsReadButton()
     }
     
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
-        // Fixed footer size — avoid self-sizing height jump when Mark as Read / Get Summary appear.
-        layoutAttributes.frame.size = CGSize(width: ScreenWidth - 36, height: 88)
+        // Keep the size the list already used. Changing it animates Mark as Read and Get Summary.
         return layoutAttributes
     }
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        // Update corner radius when layout is complete (button height is 40, so radius is 20)
-        if let summaryButton = self.SummaryButton {
-            summaryButton.layer.cornerRadius = summaryButton.frame.height / 2
-            
-            // Apply solid background color (without animating layout changes)
-            UIView.performWithoutAnimation {
+        let summarySize = SummaryButton?.bounds.size ?? .zero
+        let markSize = MarkAsReadBtn?.bounds.size ?? .zero
+        guard summarySize != lastSummarySize || markSize != lastMarkSize else { return }
+        lastSummarySize = summarySize
+        lastMarkSize = markSize
+        UIView.performWithoutAnimation {
+            if let summaryButton = self.SummaryButton, summaryButton.bounds.height > 0 {
+                summaryButton.layer.cornerRadius = summaryButton.bounds.height / 2
                 self.applyGradientToSummaryButton()
             }
+            self.applyMarkAsReadAppearance()
         }
-        self.applyMarkAsReadAppearance()
     }
     
     func setupSummaryButton() {

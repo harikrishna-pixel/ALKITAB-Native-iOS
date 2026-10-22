@@ -58,8 +58,8 @@ struct Onboarding1: View {
 
                     VStack(spacing: 0) {
                         Text(OnboardingTheme.brandTitle)
-                            .font(.system(size: 11, weight: .bold))
-                            .tracking(4.2)
+                            .font(.system(size: isCompact ? 16 : 18, weight: .bold))
+                            .tracking(3.2)
                             .foregroundColor(Color.white.opacity(0.9))
 
                         OnboardingSerifTitle(

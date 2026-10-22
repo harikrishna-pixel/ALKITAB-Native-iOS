@@ -10,10 +10,56 @@ struct Onboarding4: View {
     @State private var navigateForward = false
     @State private var typedCount = 0
 
-    private static let contextText = "Paul wrote this from a prison cell. He isn't promising you can achieve anything you set your mind to — he's saying he has learned to be content with plenty and with almost nothing, because his strength never came from his circumstances."
-    private static let quoteText = "\"I have learned how to be content with whatever I have.\"\n— verse 11"
-    private static let todayText = "The promise isn't that hard things stop coming. It's that you are given what you need to meet them — one day at a time, from a source outside yourself."
-    private static let totalTypedLength = contextText.count + quoteText.count + todayText.count
+    private static var isIndonesian: Bool {
+        let code = UserDefaults.standard.string(forKey: "language_code") ?? FallbackAppConfigConstants.languageCode
+        return code.caseInsensitiveCompare("Indonesian") == .orderedSame
+    }
+
+    private static var contextTitle: String {
+        isIndonesian ? "Dalam konteks" : "In context"
+    }
+
+    private static var contextText: String {
+        isIndonesian
+            ? "Paulus menulis ini dari dalam penjara. Ia tidak menjanjikan bahwa kamu bisa meraih apa pun yang kamu inginkan — ia berkata bahwa ia telah belajar mencukupkan diri, baik dalam kelimpahan maupun dalam kekurangan, karena kekuatannya tidak pernah berasal dari keadaannya."
+            : "Paul wrote this from a prison cell. He isn't promising you can achieve anything you set your mind to — he's saying he has learned to be content with plenty and with almost nothing, because his strength never came from his circumstances."
+    }
+
+    private static var quoteText: String {
+        let label = isIndonesian ? "ayat 11" : "verse 11"
+        return "\"\(verseElevenQuote)\"\n— \(label)"
+    }
+
+    private static var todayTitle: String {
+        isIndonesian ? "Artinya bagi kita hari ini" : "What it means today"
+    }
+
+    private static var todayText: String {
+        isIndonesian
+            ? "Janji ini bukan berarti masa sulit tidak akan datang lagi. Artinya, kamu diberi apa yang kamu butuhkan untuk menghadapinya — hari demi hari, dari sumber di luar dirimu."
+            : "The promise isn't that hard things stop coming. It's that you are given what you need to meet them — one day at a time, from a source outside yourself."
+    }
+
+    private static var totalTypedLength: Int {
+        contextText.count + quoteText.count + todayText.count
+    }
+
+    /// Philippians 4:11 from the bundled Bible, so the quote matches the reading language.
+    private static var verseElevenQuote: String {
+        let fallback = isIndonesian
+            ? "Aku telah belajar mencukupkan diri dalam segala keadaan."
+            : "I have learned how to be content with whatever I have."
+        guard UserDefaults.standard.string(forKey: "SelectedLanguage") != nil else { return fallback }
+        let books = BibleContent.sharedInstance.BookToPosition()
+        let bookIndex = 49
+        guard bookIndex < books.count else { return fallback }
+        let bookName = books[bookIndex].components(separatedBy: "-")[0]
+        let verses = BibleContent.sharedInstance.AudioBibleList(selecterBookName: bookName, selectedId: 3)
+        let verseIndex = 10
+        guard verseIndex < verses.count else { return fallback }
+        let text = verses[verseIndex].trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? fallback : text
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -53,10 +99,6 @@ struct Onboarding4: View {
                                 reachBanner
                                     .padding(.horizontal, 26)
                                     .padding(.top, 13)
-
-                                lockCard
-                                    .padding(.horizontal, 26)
-                                    .padding(.top, 11)
                                     .padding(.bottom, 12)
                             }
 
@@ -190,7 +232,7 @@ struct Onboarding4: View {
 
             VStack(alignment: .leading, spacing: 15) {
                 sectionBlock(
-                    title: "In context",
+                    title: Self.contextTitle,
                     body: Self.contextText,
                     visible: typedPart(Self.contextText, offset: 0)
                 )
@@ -213,7 +255,7 @@ struct Onboarding4: View {
                     .cornerRadius(12)
 
                 sectionBlock(
-                    title: "What it means today",
+                    title: Self.todayTitle,
                     body: Self.todayText,
                     visible: typedPart(Self.todayText, offset: Self.contextText.count + Self.quoteText.count)
                 )
@@ -273,8 +315,8 @@ struct Onboarding4: View {
 
     private func startTyping() {
         guard typedCount == 0 else { return }
-        Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { timer in
-            typedCount = min(typedCount + 2, Self.totalTypedLength)
+        Timer.scheduledTimer(withTimeInterval: 0.012, repeats: true) { timer in
+            typedCount = min(typedCount + 12, Self.totalTypedLength)
             if typedCount >= Self.totalTypedLength {
                 timer.invalidate()
             }
@@ -310,36 +352,6 @@ struct Onboarding4: View {
         )
     }
 
-    private var lockCard: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Chapter at a Glance")
-                    .font(.system(size: 14.5, weight: .bold))
-                    .foregroundColor(OnboardingTheme.paperInk)
-                Text("The key points of any chapter, in seconds.")
-                    .font(.system(size: 12.5))
-                    .foregroundColor(OnboardingTheme.textSecondary)
-            }
-            Spacer()
-            Image(systemName: "lock.fill")
-                .font(.system(size: 14))
-                .foregroundColor(Color(hex: "93A3BC"))
-                .frame(width: 32, height: 32)
-                .background(
-                    RoundedRectangle(cornerRadius: 9)
-                        .fill(Color(hex: "EFF3F9"))
-                )
-        }
-        .padding(15)
-        .background(
-            RoundedRectangle(cornerRadius: 15)
-                .fill(Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 15)
-                        .stroke(OnboardingTheme.paperLine, lineWidth: 1)
-                )
-        )
-    }
 }
 
 #Preview {

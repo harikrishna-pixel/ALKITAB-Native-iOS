@@ -868,6 +868,17 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     
+    func closePlayerPopupWithoutAnimation() {
+        self.MenuImg.image = UIImage(named: "headphone")
+        ImageTint.sharedInstance.imageTintcolorMethod(img: self.MenuImg!, colorVu: UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor)
+        guard self.SpeakConstrain.constant != -40 || self.AudioConstrain.constant != -40 else { return }
+        UIView.performWithoutAnimation {
+            self.SpeakConstrain.constant = -40
+            self.AudioConstrain.constant = -40
+            self.view.layoutIfNeeded()
+        }
+    }
+
     func ClosePlayerPopup() {
         self.MenuImg.image = UIImage(named: "headphone")
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.MenuImg!, colorVu: UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor)
@@ -1132,20 +1143,14 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     }
     
     @IBAction func Quiz_Action(_ sender: Any) {
-        if self.SelectedTab != "4" {
-            self.playerONOFFCheck()
-            self.SelectedTab = "4"
-            ClosePlayerPopup()
-            self.SpeakVu.isHidden = true
-            self.AudioVu.isHidden = true
-            self.MenuVu.isHidden = true
-            self.Buttonfram()
-            self.selectBottomTabHighlight(.quiz)
-            self.Navigateframe.isHidden = false
-            let vc = ChallengeHubViewController()
-            vc.isEmbeddedTab = true
-            self.showEmbeddedTab(vc)
-        }
+        let book = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
+        let chapterValue = UserDefaults.standard.string(forKey: "BookChapter")
+            ?? "\(UserDefaults.standard.integer(forKey: "BookChapter"))"
+        let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "SelectionViewController") as! SelectionViewController
+        vc.BookString = book
+        vc.ChapterString = chapterValue
+        vc.ChapterCount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: book)
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc func PrayerWall_Action(_ sender: Any) {

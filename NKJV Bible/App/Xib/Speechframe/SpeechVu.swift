@@ -118,6 +118,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
      var spokenCharacterIndex: Int = 0
      var speechStartIndex: Int = 0
      var settingsResumeUtterance: AVSpeechUtterance?
+     var resumeHasStarted: Bool = false
     
      var StopStatus = false
     
@@ -914,25 +915,20 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
                 return
             }
         }
-        
-        // CRITICAL FIX: Handle slider adjustment - prevent ANY verse advancement
+        // Pitch/speed change stops the current utterance, then resumes the rest of the verse.
+        // The stop must not skip ahead. Once that resumed verse actually finishes, keep going.
         if isAdjustingSlider {
-            print("🚫 Speech finished during slider adjustment (current index: \(self.Index), adjustment started at: \(self.adjustmentStartIndex))")
-            
-            // Check if this is the replay finishing (index matches where adjustment started)
-            if utterance === self.settingsResumeUtterance {
-                print("   ✅ Resumed verse finished, continuing to the next verse")
+            if resumeHasStarted {
                 self.settingsResumeUtterance = nil
+                self.resumeHasStarted = false
                 self.isAdjustingSlider = false
                 self.adjustmentStartIndex = -1
                 self.speechStartIndex = 0
                 self.spokenCharacterIndex = 0
-            } else if self.Index == self.adjustmentStartIndex {
-                print("   ✅ Slider stopped the verse, waiting to resume")
+                self.continueAfterCurrentVerse()
                 self.ReloadPlayerIcons()
                 return
             } else {
-                print("   ⚠️ Index mismatch during adjustment - preventing any action")
                 self.ReloadPlayerIcons()
                 return
             }
@@ -982,8 +978,8 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
                     print("   🔁 Loop enabled, restarting chapter from beginning")
                     // NEW: Reset index to 0 and restart from first verse
                     self.Index = 0
-                    self.PlayOrder(TIntexIncrement: 1)  // Start from verse 1
-                } else {
+                    print("   ⏭ Chapter finished, continuing with the next chapter")
+                    self.playNextChapter()
                     print("   ⏹ Loop disabled, stopping playback")
                     self.StopSpeeking()
                 }
@@ -994,6 +990,61 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
         
         self.ReloadPlayerIcons()
     }
+    func continueAfterCurrentVerse() {
+        speechStartIndex = 0
+        spokenCharacterIndex = 0
+        guard Playstatus else {
+            StopSpeeking()
+            return
+        }
+        if Index < AudioBibleList.count - 1 {
+            Index = Index + 1
+            PlayOrder(TIntexIncrement: Index + 1)
+        } else if UserDefaults.standard.bool(forKey: "ShuffleVerse") {
+            Index = 0
+            PlayOrder(TIntexIncrement: 1)
+        } else {
+            playNextChapter()
+        }
+    }
+
+    func playNextChapter() {
+        let count = BookIndexCount ?? 0
+        if (BookIndex ?? 0) >= count {
+            makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .bottom)
+            StopSpeeking()
+            return
+        }
+
+        BookIndex = (BookIndex ?? 0) + 1
+        Index = 0
+        speechStartIndex = 0
+        spokenCharacterIndex = 0
+        isAdjustingSlider = false
+        adjustmentStartIndex = -1
+        settingsResumeUtterance = nil
+        resumeHasStarted = false
+        UserDefaults.standard.setValue(BookIndex!, forKey: "BookChapter")
+        NotificationCenter.default.post(name: Notification.Name("ReloadTable"), object: nil)
+
+        if Selectedlang == primaryLanguage {
+            AudioBibleList = BibleContent.sharedInstance.AudioBibleList(selecterBookName: BookName, selectedId: BookIndex! - 1)
+        } else {
+            let bookPosition = BibleContent.sharedInstance.BookToPosition(stringBook: BookName)
+            AudioBibleList = SecondLanguage.shared.AudioBibleList(selectedId: BookIndex! - 1, bookPosition: bookPosition)
+        }
+        App_Protocol.delegateReaderSource?.ReloadBibleData(ChapterNo: BookIndex!)
+
+        guard !AudioBibleList.isEmpty else {
+            StopSpeeking()
+            return
+        }
+        Playstatus = true
+        PlayPause(ImageName: "pausePlayer")
+        PlayOrder(TIntexIncrement: 1)
+        ReloadPlayerIcons()
+    }
+
     
     
     func PlayOrder(TIntexIncrement:Int) {
@@ -1010,6 +1061,9 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
     }
     
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
+            if isAdjustingSlider {
+                resumeHasStarted = true
+            }
         
         if Playstatus == true {
             self.spokenCharacterIndex = self.speechStartIndex + characterRange.location

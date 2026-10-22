@@ -223,7 +223,7 @@ final class VerseExplanationView: UIView {
         footerContainer.addSubview(footerDivider)
 
         let copyAction = makeActionButton(title: "Copy", imageName: "CopyNewImg", action: #selector(copyTapped))
-        let readAction = makeActionButton(title: "Read", imageName: "read", action: #selector(readTapped))
+        let readAction = makeActionButton(title: "Ask", imageName: "read", systemName: "bubble.left", action: #selector(askTapped))
         let shareAction = makeActionButton(title: "Share", imageName: "shareVerse", action: #selector(shareTapped))
         let saveAction = makeActionButton(title: "Save", imageName: "save", action: #selector(saveTapped))
         actionStack.addArrangedSubview(copyAction)
@@ -338,7 +338,7 @@ final class VerseExplanationView: UIView {
         }
     }
 
-    private func makeActionButton(title: String, imageName: String, action: Selector) -> UIView {
+    private func makeActionButton(title: String, imageName: String, systemName: String? = nil, action: Selector) -> UIView {
         let container = UIView()
         container.translatesAutoresizingMaskIntoConstraints = false
 
@@ -351,7 +351,9 @@ final class VerseExplanationView: UIView {
         iconHolder.clipsToBounds = true
         container.addSubview(iconHolder)
 
-        let imageView = UIImageView(image: UIImage(named: imageName))
+        let imageView = UIImageView(image: systemName.flatMap {
+            UIImage(systemName: $0, withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular))
+        } ?? UIImage(named: imageName))
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.contentMode = .scaleAspectFit
         iconHolder.addSubview(imageView)
@@ -616,11 +618,32 @@ final class VerseExplanationView: UIView {
             explanationText: explanationText,
             verse: verseText
         )
-        App_Protocol.delegateReader?.AlertFrame(
-            AlertNote: "Saved to My Library",
-            Vers: verseText,
-            Title: verseReference.replacingOccurrences(of: "-", with: " ")
+        makeToast("Saved Successfully", duration: 2.0, position: .center)
+    }
+
+    @objc private func askTapped() {
+        guard !explanationText.isEmpty else { return }
+        let isSummary = displayMode == .chapterSummary
+        let title = screenTitle ?? verseReference.replacingOccurrences(of: "-", with: " ")
+        let context = AIChatLaunchContext(
+            isChapterSummary: isSummary,
+            title: title,
+            verseText: isSummary ? nil : verseText,
+            sourceText: explanationText
         )
+        let host = App_Protocol.delegateReader as? UIViewController
+        closeTapped()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            let chat = AIChatViewController()
+            chat.launchContext = context
+            if let nav = host?.navigationController {
+                nav.pushViewController(chat, animated: true)
+            } else {
+                let nav = UINavigationController(rootViewController: chat)
+                nav.modalPresentationStyle = .fullScreen
+                host?.present(nav, animated: true)
+            }
+        }
     }
 
     @objc private func readTapped() {

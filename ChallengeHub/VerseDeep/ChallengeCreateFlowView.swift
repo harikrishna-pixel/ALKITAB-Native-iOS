@@ -37,6 +37,8 @@ struct ChallengeCreateFlowView: View {
     @State private var playID = UUID()
     @State private var verse: ChallengeVerseContext = ChallengeVerseContext.loadToday()
     @State private var activeConfig: ChallengeSessionConfig?
+    @State private var sharePayload: [ChallengeQuestionPayload] = []
+    @State private var showShareLogin = false
 
     var body: some View {
         Group {
@@ -89,8 +91,8 @@ struct ChallengeCreateFlowView: View {
                     title: shareSession.challengeTitle.isEmpty ? "\(verse.reference) Challenge" : shareSession.challengeTitle,
                     detail: "\(questionCount) Questions · \(selectedKind.title)",
                     onPlay: { step = .playing },
-                    onShare: { step = .invite },
-                    onInvite: { step = .invite },
+                    onShare: { openShare() },
+                    onInvite: { openShare() },
                     onMyChallenges: onMyChallenges,
                     onDone: onBack
                 )
@@ -116,7 +118,7 @@ struct ChallengeCreateFlowView: View {
                         shareSession: shareSession,
                         onDone: { step = .created },
                         onPlayAgain: { playID = UUID() },
-                        onShare: { step = .invite }
+                        onShare: { openShare() }
                     )
                     .id(playID)
                 }
@@ -143,6 +145,30 @@ struct ChallengeCreateFlowView: View {
         }
         .onAppear {
             reloadVerse()
+        }
+        .fullScreenCover(isPresented: $showShareLogin) {
+            ChallengeQuizLoginGate(
+                onBack: { showShareLogin = false },
+                onLoggedIn: { finishShareLogin() }
+            )
+        }
+    }
+
+    /// Share is the only step that needs an account.
+    private func openShare() {
+        if ChallengeQuizAccess.allowsChallenges {
+            step = .invite
+        } else {
+            showShareLogin = true
+        }
+    }
+
+    private func finishShareLogin() {
+        showShareLogin = false
+        shareSession.create(kind: selectedKind, verse: verse, questions: sharePayload) { _ in
+            DispatchQueue.main.async {
+                step = .invite
+            }
         }
     }
 
@@ -199,7 +225,15 @@ struct ChallengeCreateFlowView: View {
         if questions.isEmpty {
             questions = previewQuestions(from: payload)
         }
+        sharePayload = payload
         step = .generating
+        guard ChallengeQuizAccess.allowsChallenges else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                AIUsageLimiter.shared.commit(.quiz)
+                step = .preview
+            }
+            return
+        }
         shareSession.create(kind: selectedKind, verse: verse, questions: payload) { result in
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 AIUsageLimiter.shared.commit(.quiz)

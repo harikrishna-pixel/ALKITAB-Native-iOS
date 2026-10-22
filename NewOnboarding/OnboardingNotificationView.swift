@@ -48,19 +48,21 @@ struct OnboardingNotificationView: View {
                                 OnboardingToggleRow(
                                     title: "Journey reminder",
                                     detail: "8:00 PM · only if today isn't finished",
-                                    isOn: $journeyReminderOn
-                                )
-                                OnboardingToggleRow(
-                                    title: "Memory challenge",
-                                    detail: "Off by default",
-                                    isOn: $memoryChallengeOn
-                                )
-                                OnboardingToggleRow(
-                                    title: "Prayer Wall activity",
-                                    detail: "Off by default",
-                                    isOn: $prayerWallOn,
+                                    isOn: $journeyReminderOn,
                                     showDivider: false
                                 )
+                                // Memory challenge and Prayer Wall hidden on onboarding.
+                                // OnboardingToggleRow(
+                                //     title: "Memory challenge",
+                                //     detail: "Off by default",
+                                //     isOn: $memoryChallengeOn
+                                // )
+                                // OnboardingToggleRow(
+                                //     title: "Prayer Wall activity",
+                                //     detail: "Off by default",
+                                //     isOn: $prayerWallOn,
+                                //     showDivider: false
+                                // )
                             }
                             .padding(.horizontal, 26)
                             .padding(.top, 8)

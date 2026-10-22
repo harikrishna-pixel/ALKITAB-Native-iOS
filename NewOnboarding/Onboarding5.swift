@@ -61,8 +61,12 @@ struct Onboarding5: View {
                         }
                     }
 
-                    OnboardingPrimaryLink(title: "Build My Bible Habit", destination: OnboardingCreateAccountView())
-                        .padding(.horizontal, 26)
+                    // Login UI hidden. Onboarding goes straight to the paywall.
+                    // OnboardingPrimaryLink(title: "Build My Bible Habit", destination: OnboardingCreateAccountView())
+                    OnboardingPrimaryButton(title: "Build My Bible Habit") {
+                        UIKitNavigationHelper.navigateToIAPView()
+                    }
+                    .padding(.horizontal, 26)
 
                     OnboardingPageDots(current: 4, total: 5)
                         .padding(.top, 14)

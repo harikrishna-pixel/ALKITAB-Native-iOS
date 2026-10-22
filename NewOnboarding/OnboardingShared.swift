@@ -360,11 +360,8 @@ struct OnboardingTopBar: View {
     var onLight: Bool = false
 
     var body: some View {
-        HStack {
-            Spacer()
-            OnboardingSkipButton(onLight: onLight)
-        }
-        .frame(height: 30)
+        Color.clear
+            .frame(height: 0)
     }
 }
 

@@ -10,7 +10,6 @@ struct StreakCompleteView: View {
     var onDone: () -> Void
 
     @State private var showCalendar = false
-    @State private var flamePulse = false
 
     private var days: Int { max(store.streakCount, 1) }
     /// Fixed Sun → Sat week order (calendar date aligned).
@@ -22,25 +21,17 @@ struct StreakCompleteView: View {
                 VStack(spacing: 22) {
                     ZStack {
                         Circle()
-                            .fill(Color(hex: "FF9F0A").opacity(flamePulse ? 0.28 : 0.14))
-                            .frame(width: 84, height: 84)
-                            .scaleEffect(flamePulse ? 1.08 : 1.0)
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 34))
-                            .foregroundColor(Color(hex: "FF9F0A"))
-                            .scaleEffect(flamePulse ? 1.12 : 0.92)
-                            .opacity(flamePulse ? 1.0 : 0.85)
-                            .offset(y: flamePulse ? -2 : 2)
+                            .fill(Color(hex: "FF6A00").opacity(0.16))
+                            .overlay(
+                                Circle()
+                                    .stroke(Color(hex: "FF6A00").opacity(0.45), lineWidth: 1.5)
+                            )
+                        StreakFlameGif(animates: store.allStepsComplete)
+                            .frame(width: 32, height: 32)
                     }
+                    .frame(width: 84, height: 84)
+                    .clipShape(Circle())
                     .padding(.top, 28)
-                    .onAppear {
-                        withAnimation(
-                            Animation.easeInOut(duration: 0.85)
-                                .repeatForever(autoreverses: true)
-                        ) {
-                            flamePulse = true
-                        }
-                    }
 
                     Text("Keep Your Streak")
                         .font(.system(size: 26, weight: .bold))
@@ -181,5 +172,52 @@ struct StreakCompleteView: View {
     private func isCurrentWeekday(at displayIndex: Int) -> Bool {
         let todayIndex = Calendar.current.component(.weekday, from: Date()) - 1
         return displayIndex == todayIndex
+    }
+}
+
+/// Same NKJV streak flame. Still image until today's streak is complete, then it burns.
+private struct StreakFlameGif: UIViewRepresentable {
+    var animates: Bool
+
+    func makeUIView(context: Context) -> StreakFlameHost {
+        let view = StreakFlameHost()
+        view.setAnimating(animates)
+        return view
+    }
+
+    func updateUIView(_ uiView: StreakFlameHost, context: Context) {
+        uiView.setAnimating(animates)
+    }
+}
+
+private final class StreakFlameHost: UIView {
+    let imageView = UIImageView()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        clipsToBounds = true
+        backgroundColor = .clear
+        imageView.contentMode = .scaleAspectFit
+        imageView.clipsToBounds = true
+        imageView.backgroundColor = .clear
+        addSubview(imageView)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    private static let animatedFlame = UIImage.gifImageWithName("streak_flame")
+    private static let stillFlame = animatedFlame?.images?.first ?? animatedFlame
+
+    func setAnimating(_ animates: Bool) {
+        imageView.image = animates ? Self.animatedFlame : Self.stillFlame
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        imageView.frame = bounds
+    }
+
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: 32, height: 32)
     }
 }

@@ -550,11 +550,13 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
     
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         
-        App_Protocol.delegateReader?.ClosePlayerPopup()
+        if let reader = App_Protocol.delegateReader as? ReaderViewController {
+            reader.closePlayerPopupWithoutAnimation()
+        }
         
-        // Bottom bounce must not toggle the bars, or the footer buttons keep jumping.
+        // Near the chapter end, do not hide or show the bars. That resize moves Mark as Read and Get Summary.
         let maxOffsetY = scrollView.contentSize.height - scrollView.bounds.height + scrollView.adjustedContentInset.bottom
-        if maxOffsetY > 0 && scrollView.contentOffset.y >= maxOffsetY - 1 {
+        if maxOffsetY > 0 && scrollView.contentOffset.y >= maxOffsetY - 160 {
             return
         }
         

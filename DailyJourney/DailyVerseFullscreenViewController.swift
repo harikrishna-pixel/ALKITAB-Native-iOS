@@ -87,17 +87,15 @@ final class DailyVerseFullscreenViewController: UIViewController {
         saveButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
 
-        // Reference — top center, uppercase + underline (mockup)
+        // Reference sits with the verse, just above the text.
         referenceLabel.translatesAutoresizingMaskIntoConstraints = false
         referenceLabel.font = UIFont.systemFont(ofSize: 12, weight: .semibold)
         referenceLabel.textColor = .white
         referenceLabel.textAlignment = .center
         referenceLabel.numberOfLines = 2
-        view.addSubview(referenceLabel)
 
         referenceUnderline.translatesAutoresizingMaskIntoConstraints = false
         referenceUnderline.backgroundColor = UIColor.white.withAlphaComponent(0.85)
-        view.addSubview(referenceUnderline)
 
         // CTA — bottom primary button (mockup)
         ctaButton.translatesAutoresizingMaskIntoConstraints = false
@@ -137,7 +135,14 @@ final class DailyVerseFullscreenViewController: UIViewController {
         verseLabel.textAlignment = .center
         verseLabel.numberOfLines = 0
         verseLabel.lineBreakMode = .byWordWrapping
-        scrollView.addSubview(verseLabel)
+
+        let verseBlock = UIView()
+        verseBlock.translatesAutoresizingMaskIntoConstraints = false
+        verseBlock.backgroundColor = .clear
+        scrollView.addSubview(verseBlock)
+        verseBlock.addSubview(referenceLabel)
+        verseBlock.addSubview(referenceUnderline)
+        verseBlock.addSubview(verseLabel)
 
         NSLayoutConstraint.activate([
             backgroundImageView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -165,11 +170,10 @@ final class DailyVerseFullscreenViewController: UIViewController {
             shareButton.widthAnchor.constraint(equalToConstant: 40),
             shareButton.heightAnchor.constraint(equalToConstant: 40),
 
-            // Centered on screen; kept clear of the close / share buttons.
-            referenceLabel.centerYAnchor.constraint(equalTo: closeButton.centerYAnchor, constant: -4),
-            referenceLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            referenceLabel.leadingAnchor.constraint(greaterThanOrEqualTo: closeButton.trailingAnchor, constant: 12),
-            referenceLabel.trailingAnchor.constraint(lessThanOrEqualTo: shareButton.leadingAnchor, constant: -12),
+            referenceLabel.topAnchor.constraint(equalTo: verseBlock.topAnchor),
+            referenceLabel.centerXAnchor.constraint(equalTo: verseBlock.centerXAnchor),
+            referenceLabel.leadingAnchor.constraint(greaterThanOrEqualTo: verseBlock.leadingAnchor, constant: 28),
+            referenceLabel.trailingAnchor.constraint(lessThanOrEqualTo: verseBlock.trailingAnchor, constant: -28),
 
             referenceUnderline.topAnchor.constraint(equalTo: referenceLabel.bottomAnchor, constant: 6),
             referenceUnderline.centerXAnchor.constraint(equalTo: referenceLabel.centerXAnchor),
@@ -185,24 +189,28 @@ final class DailyVerseFullscreenViewController: UIViewController {
             ctaButton.bottomAnchor.constraint(equalTo: dotsStack.topAnchor, constant: -18),
             ctaButton.heightAnchor.constraint(equalToConstant: 54),
 
-            scrollView.topAnchor.constraint(equalTo: referenceUnderline.bottomAnchor, constant: 28),
+            scrollView.topAnchor.constraint(equalTo: closeButton.bottomAnchor, constant: 16),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: ctaButton.topAnchor, constant: -24),
 
-            // Vertically centered in the middle band; scrolls only when the verse is taller than it.
-            verseLabel.topAnchor.constraint(greaterThanOrEqualTo: scrollView.contentLayoutGuide.topAnchor, constant: 24),
-            verseLabel.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 28),
-            verseLabel.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -28),
-            verseLabel.bottomAnchor.constraint(lessThanOrEqualTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -24),
-            verseLabel.centerYAnchor.constraint(equalTo: scrollView.contentLayoutGuide.centerYAnchor),
-            verseLabel.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -56),
-            scrollView.contentLayoutGuide.heightAnchor.constraint(greaterThanOrEqualTo: scrollView.frameLayoutGuide.heightAnchor),
+            verseBlock.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            verseBlock.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            verseBlock.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+            verseBlock.topAnchor.constraint(greaterThanOrEqualTo: scrollView.contentLayoutGuide.topAnchor, constant: 8),
+            verseBlock.bottomAnchor.constraint(lessThanOrEqualTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -8),
             {
-                let fit = scrollView.contentLayoutGuide.heightAnchor.constraint(equalTo: verseLabel.heightAnchor, constant: 48)
-                fit.priority = .defaultLow
-                return fit
-            }()
+                let center = verseBlock.centerYAnchor.constraint(equalTo: scrollView.frameLayoutGuide.centerYAnchor)
+                center.priority = UILayoutPriority(750)
+                return center
+            }(),
+
+            verseLabel.topAnchor.constraint(equalTo: referenceUnderline.bottomAnchor, constant: 56),
+            verseLabel.leadingAnchor.constraint(equalTo: verseBlock.leadingAnchor, constant: 28),
+            verseLabel.trailingAnchor.constraint(equalTo: verseBlock.trailingAnchor, constant: -28),
+            verseLabel.bottomAnchor.constraint(equalTo: verseBlock.bottomAnchor),
+
+            scrollView.contentLayoutGuide.heightAnchor.constraint(greaterThanOrEqualTo: scrollView.frameLayoutGuide.heightAnchor)
         ])
     }
 
@@ -253,7 +261,7 @@ final class DailyVerseFullscreenViewController: UIViewController {
         let store = DailyJourneyStore.shared
         store.reload()
         if store.allStepsComplete {
-            ctaButton.setTitle("Today's Journey Complete", for: .normal)
+            ctaButton.setTitle("Today's Journey Completed", for: .normal)
             ctaButton.backgroundColor = UIColor(red: 0.11, green: 0.48, blue: 0.24, alpha: 1)
         } else if store.memoryCompleted {
             ctaButton.setTitle("Start Reflection", for: .normal)
@@ -295,11 +303,54 @@ final class DailyVerseFullscreenViewController: UIViewController {
         onContinue?()
     }
 
+    /// Full-screen verse card: wallpaper, reference, and verse. Buttons stay off the image.
+    func makeShareImage() -> UIImage {
+        let chrome = [closeButton, shareButton, saveButton, ctaButton, dotsStack]
+        chrome.forEach { $0.isHidden = true }
+        view.layoutIfNeeded()
+        let image = view.asImage().withAppNameWatermark()
+        chrome.forEach { $0.isHidden = false }
+        return image
+    }
+
     @objc private func shareTapped() {
         onShare?()
     }
 
     @objc private func saveTapped() {
         onSave?()
+    }
+}
+
+private extension UIImage {
+    /// App name along the bottom of the shared verse image only.
+    func withAppNameWatermark() -> UIImage {
+        let name = APPNAME_SPLASH.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return self }
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        return renderer.image { _ in
+            draw(in: CGRect(origin: .zero, size: size))
+
+            let font = UIFont.systemFont(ofSize: 17, weight: .semibold)
+            let shadow = NSShadow()
+            shadow.shadowColor = UIColor.black.withAlphaComponent(0.45)
+            shadow.shadowOffset = CGSize(width: 0, height: 1)
+            shadow.shadowBlurRadius = 3
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: UIColor.white.withAlphaComponent(0.9),
+                .shadow: shadow
+            ]
+            let text = name as NSString
+            let textSize = text.size(withAttributes: attributes)
+            let origin = CGPoint(
+                x: (size.width - textSize.width) / 2,
+                y: size.height - textSize.height - 36
+            )
+            text.draw(at: origin, withAttributes: attributes)
+        }
     }
 }

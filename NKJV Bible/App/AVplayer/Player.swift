@@ -187,7 +187,7 @@ extension ReaderViewController: AVplayerProtocol {
             ViewInit()
             if UserDefaults.standard.string(forKey: "Shuffle")  == "true" {
                 AVplayOn()
-            } else if UserDefaults.standard.bool(forKey: "Autoplay") {
+            } else {
                 self.AutoNext()
                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.5) {
                     if self.Pageindex != self.pagecount {
