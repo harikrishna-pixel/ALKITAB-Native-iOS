@@ -209,19 +209,19 @@ final class CreatePrayerViewController: UIViewController, UITextFieldDelegate, U
         let userName = (nameField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !title.isEmpty, title.count <= 120 else {
-            view.makeToast("Enter a title up to 120 characters.", duration: 2.0, position: .bottom)
+            view.makeToast("Enter a title up to 120 characters.", duration: 2.0, position: .top)
             return
         }
         guard !description.isEmpty, description.count <= 2000 else {
-            view.makeToast("Enter a description up to 2000 characters.", duration: 2.0, position: .bottom)
+            view.makeToast("Enter a description up to 2000 characters.", duration: 2.0, position: .top)
             return
         }
         guard !category.isEmpty, category.count <= 60 else {
-            view.makeToast("Choose a category.", duration: 2.0, position: .bottom)
+            view.makeToast("Choose a category.", duration: 2.0, position: .top)
             return
         }
         guard (1...366).contains(duration) else {
-            view.makeToast("Duration must be between 1 and 366 days.", duration: 2.0, position: .bottom)
+            view.makeToast("Duration must be between 1 and 366 days.", duration: 2.0, position: .top)
             return
         }
 
@@ -246,7 +246,7 @@ final class CreatePrayerViewController: UIViewController, UITextFieldDelegate, U
                     self.onPrayerCreated?()
                     self.navigationController?.popViewController(animated: true)
                 case .failure(let error):
-                    self.view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+                    self.view.makeToast(error.localizedDescription, duration: 2.5, position: .top)
                 }
             }
         }

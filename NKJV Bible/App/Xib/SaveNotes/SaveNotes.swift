@@ -88,7 +88,7 @@ class SaveNotes: UIView, UITextViewDelegate {
     @IBAction func Save(_ sender: Any) {
         
         if self.NoteTxtVu.text == "Enter Notes" || self.NoteTxtVu.text == "" {
-            self.makeToast("Enter notes to save", duration: 2.0, position: .bottom)
+            self.makeToast("Enter notes to save", duration: 2.0, position: .top)
         } else {
                     
             App_Protocol.DelegateVersesMenuPopup?.ChangeNote(Notetxt: self.NoteTxtVu.text ?? "", false)
@@ -101,7 +101,7 @@ class SaveNotes: UIView, UITextViewDelegate {
                 
                 // Toast on a live view before dismissing notes (avoids toast-after-remove crash/stack).
                 let message = isUpdate ? "Update notes successfully" : "Notes Saved Successfully"
-                UIApplication.shared.keyWindow?.rootViewController?.view.makeToast(message, duration: 2.0, position: .bottom)
+                UIApplication.shared.keyWindow?.rootViewController?.view.makeToast(message, duration: 2.0, position: .top)
                 
                 if self.isSlideCard {
                     App_Protocol.DelegateSlideCard?.CloseVc()
@@ -123,7 +123,7 @@ class SaveNotes: UIView, UITextViewDelegate {
         let bookVerse = Bookname.replacingOccurrences(of: " ", with: "-")
         self.NoteTxtVu.text = ""
         CoreDataModel.sharedInstance.coreDataInsertNote(CDBookSavedInfo, bookVerse: bookVerse, notes: self.NoteTxtVu.text, Verses: self.VerseStr)
-        self.makeToast("Deleted successfully", duration: 2.0, position: .bottom)
+        self.makeToast("Deleted successfully", duration: 2.0, position: .top)
         NotificationCenter.default.post(name: Notification.Name("Reloaddata"), object: nil)
     }
     

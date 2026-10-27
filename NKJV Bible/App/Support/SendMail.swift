@@ -26,7 +26,7 @@ class SendMail: NSObject, MFMailComposeViewControllerDelegate {
            composeVC.setMessageBody("", isHTML: false)
             presentViewcontroll.present(composeVC, animated: true, completion: nil)
         } else {
-            presentViewcontroll.view.makeToast(NSLocalizedString("Please Login your email id", comment: ""), duration: 1.0, position: .bottom)
+            presentViewcontroll.view.makeToast(NSLocalizedString("Please Login your email id", comment: ""), duration: 1.0, position: .top)
         }
     }
     
@@ -42,7 +42,7 @@ class SendMail: NSObject, MFMailComposeViewControllerDelegate {
             let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "FeedbackViewController") as! FeedbackViewController
             presentViewcontroll.navigationController?.pushViewController(vc, animated: true)
         } else {
-            presentViewcontroll.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            presentViewcontroll.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
      }
     

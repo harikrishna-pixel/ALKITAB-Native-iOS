@@ -100,6 +100,10 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     private var quizTabWidthConstraint: NSLayoutConstraint?
     private var moreTabWidthConstraint: NSLayoutConstraint?
     private var bottomTabHighlightsReady = false
+    /// Verse-area bottom while the audio player is closed. -72 clears the tab bar; 0 is used when that bar is hidden.
+    private var verseBottomWithoutPlayer: CGFloat = -72
+    private var readerHeaderSpacingWidth: CGFloat = -1
+    private var readerHeaderSpacingConstraints: [NSLayoutConstraint] = []
 
     private enum BottomTabHighlight {
         case home, read, library, prayer, quiz, more
@@ -332,7 +336,10 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             self.NightModeBtn.setImage(UIImage(named: "night-mode-off"), for: .normal)
         }
         
-        self.VeresViewBottom.constant = -72
+        if self.PLayerConstrain.constant <= -100 {
+            self.verseBottomWithoutPlayer = -72
+        }
+        self.VeresViewBottom.constant = self.verseContentBottom(resting: self.verseBottomWithoutPlayer)
         
         // IAP is now shown after onboarding, not here in Reader
         // Removed automatic IAP presentation code
@@ -357,6 +364,101 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                 self.view.addSubview(rateus)
             }
         }
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        balanceReaderHeaderIcons()
+    }
+
+    /// Places the reading header like the phone reference: book on the left, chapter near the center, search and night mode grouped on the right.
+    private func balanceReaderHeaderIcons() {
+        guard let header = NightModeBtn.superview, header.bounds.width > 1,
+              BookTxt.superview === header, ChapterTxt.superview === header else { return }
+        let width = header.bounds.width
+        guard abs(width - readerHeaderSpacingWidth) > 0.5 else { return }
+        guard let search = readerHeaderButton(action: "SearchNavigation:"),
+              let chapterButton = readerHeaderButton(action: "ChapterSelectionAction:"),
+              let bookButton = readerHeaderButton(action: "BookSelectionAction:"),
+              let bookChevron = readerChevron(after: BookTxt, in: header),
+              let chapterChevron = readerChevron(after: ChapterTxt, in: header) else { return }
+
+        NSLayoutConstraint.deactivate(readerHeaderSpacingConstraints)
+        header.removeConstraints(readerHeaderSpacingConstraints)
+        readerHeaderSpacingConstraints.removeAll()
+
+        releaseReaderHeaderX(of: AdInfo, in: header)
+        releaseReaderHeaderX(of: BookTxt, in: header)
+        releaseReaderHeaderX(of: bookButton, in: header)
+        releaseReaderHeaderX(of: ChapterTxt, in: header)
+        releaseReaderHeaderX(of: chapterButton, in: header)
+        releaseReaderHeaderX(of: search, in: header)
+        releaseReaderHeaderX(of: NightModeBtn, in: header)
+        releaseReaderHeaderWidth(of: bookButton)
+        releaseReaderHeaderWidth(of: chapterButton)
+
+        let scale = width / 393
+        let nightLeading = min(358 * scale, width - NightModeBtn.bounds.width - 12)
+        let searchLeading = min(322 * scale, nightLeading - 16 - search.bounds.width)
+        var pins = [
+            AdInfo.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 15 * scale),
+            BookTxt.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 60 * scale),
+            bookButton.leadingAnchor.constraint(equalTo: BookTxt.leadingAnchor, constant: -10 * scale),
+            bookButton.trailingAnchor.constraint(equalTo: bookChevron.trailingAnchor, constant: 8),
+            ChapterTxt.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 175 * scale),
+            chapterButton.leadingAnchor.constraint(equalTo: ChapterTxt.leadingAnchor, constant: -8),
+            chapterButton.trailingAnchor.constraint(equalTo: chapterChevron.trailingAnchor, constant: 8),
+            search.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: searchLeading),
+            NightModeBtn.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: nightLeading)
+        ]
+        if let removed = header.subviews.compactMap({ $0 as? UIButton }).first(where: {
+            $0.isHidden && $0 !== AdInfo && $0 !== search && $0 !== NightModeBtn && $0 !== bookButton && $0 !== chapterButton
+        }) {
+            releaseReaderHeaderX(of: removed, in: header)
+            pins.append(removed.centerXAnchor.constraint(equalTo: search.centerXAnchor))
+        }
+        NSLayoutConstraint.activate(pins)
+        readerHeaderSpacingConstraints = pins
+        readerHeaderSpacingWidth = width
+    }
+
+    private func readerHeaderButton(action: String) -> UIButton? {
+        guard let header = NightModeBtn.superview else { return nil }
+        return header.subviews.compactMap { $0 as? UIButton }.first {
+            $0.actions(forTarget: self, forControlEvent: .touchUpInside)?.contains(action) == true
+        }
+    }
+
+    private func readerChevron(after label: UILabel, in header: UIView) -> UIImageView? {
+        for constraint in header.constraints {
+            guard let image = constraint.firstItem as? UIImageView,
+                  constraint.firstAttribute == .leading,
+                  (constraint.secondItem as? UILabel) === label,
+                  constraint.secondAttribute == .trailing else { continue }
+            return image
+        }
+        return nil
+    }
+
+    private func releaseReaderHeaderX(of view: UIView, in header: UIView) {
+        let horizontal: Set<NSLayoutConstraint.Attribute> = [.leading, .trailing, .centerX]
+        let stale = header.constraints.filter { constraint in
+            let first = constraint.firstItem as? UIView
+            let second = constraint.secondItem as? UIView
+            guard first === view || second === view else { return false }
+            if let first = first, first !== view, second === view,
+               constraint.secondAttribute == .trailing, first is UIImageView {
+                return false
+            }
+            return horizontal.contains(constraint.firstAttribute) || horizontal.contains(constraint.secondAttribute)
+        }
+        NSLayoutConstraint.deactivate(stale)
+    }
+
+    private func releaseReaderHeaderWidth(of view: UIView) {
+        NSLayoutConstraint.deactivate(view.constraints.filter {
+            $0.firstAttribute == .width && $0.secondItem == nil
+        })
     }
     
     
@@ -600,16 +702,21 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     @objc func onSliderValChanged(slider: UISlider, event: UIEvent) {
         // Moving the bar from code also sends this. Only a finger should seek.
         guard !ForwardSeekHold.isApplying else { return }
-        let touch = event.allTouches?.first
-        let phase = touch?.phase
-        let fingerIsDown = slider.isTracking || phase == .began || phase == .moved || phase == .ended || phase == .cancelled
-        guard fingerIsDown else { return }
+        let phase = event.allTouches?.first?.phase
+        let fingerIsDown = slider.isTracking || phase == .began || phase == .moved
+        // Some devices never report .ended. A lifted finger is "was dragging, and is not tracking now".
+        let fingerLifted = phase == .ended || phase == .cancelled
+            || (ForwardSeekHold.isScrubbing && !slider.isTracking && !fingerIsDown)
+        guard fingerIsDown || fingerLifted else { return }
 
         let seconds = Double(slider.value)
+        guard seconds.isFinite else { return }
         let whole = Int(seconds)
         self.AVstartTime.text = String(format: "%d:%02i", (whole / 60) % 60, whole % 60)
+        self.currentTimeacu = seconds
+        self.currentTime = whole % 60
 
-        if phase == .ended || phase == .cancelled {
+        if fingerLifted {
             ForwardSeekHold.isScrubbing = false
             SwitchStatus = "Play"
             isUserInteractingWithSlider = false
@@ -740,7 +847,22 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         self.SpeechView!.BookName = TextInfo!.BookName
         self.SpeechView!.BookIndexCount = TextInfo!.pagecount
         self.SpeechView!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        if isIpad {
+            // The nib frames sit on an iPad screen. Lay the player out below the screen before it is shown.
+            self.SpeechView!.clipsToBounds = true
+            self.SpeechView!.isHidden = true
+            self.SpeechView!.SettingsVu.isHidden = true
+            self.SpeechView!.TableFrame.isHidden = true
+        }
         self.myView!.addSubview(self.SpeechView!)
+        if isIpad {
+            UIView.performWithoutAnimation {
+                self.SpeechView?.layoutIfNeeded()
+            }
+            self.SpeechView?.SettingsVu.isHidden = false
+            self.SpeechView?.TableFrame.isHidden = false
+            self.SpeechView?.isHidden = false
+        }
 //        self.PlayerButton.isEnabled = true
     }
     
@@ -776,7 +898,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             UserDefaults.standard.setValue(0, forKey: "OfferClick")
             self.OfferScreen.isHidden = true
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
@@ -804,8 +926,10 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         // Let the reader stay scrollable / tappable while the player is open.
         self.SwipeDisable.isUserInteractionEnabled = false
         if PLayerConstrain.constant == -200 {
+            self.verseBottomWithoutPlayer = self.VeresViewBottom.constant
             UIView.animate(withDuration: 0.4, animations: {
                 self.PLayerConstrain.constant = 10
+                self.VeresViewBottom.constant = self.verseContentBottom(resting: self.verseBottomWithoutPlayer)
                 self.SwipeDisable.isHidden = false
                 self.view.layoutIfNeeded()
             }, completion: { finished in
@@ -814,10 +938,19 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         } else {
             UIView.animate(withDuration: 0.4, animations: {
                 self.PLayerConstrain.constant = -200
+                self.VeresViewBottom.constant = self.verseBottomWithoutPlayer
                 self.SwipeDisable.isHidden = true
                 self.view.layoutIfNeeded()
             })
         }
+    }
+
+    /// Keeps the chapter above the audio player, with a gap, whenever that player is open.
+    private func verseContentBottom(resting: CGFloat) -> CGFloat {
+        guard PLayerConstrain.constant > -100 else { return resting }
+        let playerHeight = AVMainView.bounds.height > 1 ? AVMainView.bounds.height : 150
+        let clearance = playerHeight + 10 + 12
+        return min(resting, -clearance)
     }
     
     
@@ -924,7 +1057,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         } else if SPEECH_ENABLE == "1" && AUDIO_ENABLE == "1" {
             self.OpenClosePLayAnimation()
         } else if AUDIO_ENABLE == "" && SPEECH_ENABLE == "" {
-            self.view.makeToast("Please try after sometime", duration: 2.0, position: .center)
+            self.view.makeToast("Please try after sometime", duration: 2.0, position: .top)
         }
     }
     
@@ -960,8 +1093,13 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     }
     
     @IBAction func TextPlayer_Action(_ sender: Any) {
-        self.TextToSpeech()
-        self.OpenClosePLayAnimation()
+        if isIpad {
+            self.closePlayerPopupWithoutAnimation()
+            self.TextToSpeech()
+        } else {
+            self.TextToSpeech()
+            self.OpenClosePLayAnimation()
+        }
     }
     
     
@@ -984,6 +1122,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     @IBAction func BookSelectionAction(_ sender: Any) {
+        (App_Protocol.delegatePageController as? PageSwipeVc)?.holdChapterPageDuringPush()
         let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "BookListViewController") as! BookListViewController
         vc.ChapterNo = UserDefaults.standard.string(forKey: "BookChapter") ?? "0"
         self.navigationController?.pushViewController(vc, animated: true)
@@ -1015,7 +1154,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "FeedbackViewController") as! FeedbackViewController
             self.navigationController?.pushViewController(vc, animated: true)
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
@@ -1023,6 +1162,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     @IBAction func HomeAction(_ sender: Any) {
+        dismissMoreSheet()
         
         self.CallHomeView()
     }
@@ -1081,6 +1221,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     }
     
     @IBAction func DailyVereseAction(_ sender: Any) {
+        dismissMoreSheet()
         
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
             if Date().string(format: "dd-MM-yyyy") == UserDefaults.standard.string(forKey: "RateDate") ?? "" && !UserDefaults.standard.bool(forKey: "RateViewed") && self.SelectedTab == "1" {
@@ -1105,6 +1246,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     @IBAction func MylibraryAction(_ sender: Any) {
+        dismissMoreSheet()
         if self.SelectedTab != "2" {
             self.playerONOFFCheck()
             self.SelectedTab = "2"
@@ -1143,17 +1285,25 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     }
     
     @IBAction func Quiz_Action(_ sender: Any) {
-        let book = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
-        let chapterValue = UserDefaults.standard.string(forKey: "BookChapter")
-            ?? "\(UserDefaults.standard.integer(forKey: "BookChapter"))"
-        let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "SelectionViewController") as! SelectionViewController
-        vc.BookString = book
-        vc.ChapterString = chapterValue
-        vc.ChapterCount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: book)
-        navigationController?.pushViewController(vc, animated: true)
+        dismissMoreSheet()
+        if self.SelectedTab != "4" {
+            self.playerONOFFCheck()
+            self.SelectedTab = "4"
+            ClosePlayerPopup()
+            self.SpeakVu.isHidden = true
+            self.AudioVu.isHidden = true
+            self.MenuVu.isHidden = true
+            self.Buttonfram()
+            self.selectBottomTabHighlight(.quiz)
+            self.Navigateframe.isHidden = false
+            let vc = ChallengeHubViewController()
+            vc.isEmbeddedTab = true
+            self.showEmbeddedTab(vc)
+        }
     }
 
     @objc func PrayerWall_Action(_ sender: Any) {
+        dismissMoreSheet()
         if self.SelectedTab != "3" {
             self.playerONOFFCheck()
             self.SelectedTab = "3"
@@ -1169,7 +1319,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                 vc.isEmbeddedTab = true
                 self.showEmbeddedTab(vc)
             } else {
-                self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                self.view.makeToast("No internet connection", duration: 2.0, position: .top)
             }
         }
     }
@@ -1448,123 +1598,61 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         self.SelectedTab = "5"
         self.Buttonfram()
         self.selectBottomTabHighlight(.more)
-        
-        //        let alert = UIAlertController(title: "More", message: nil, preferredStyle: .actionSheet)
+        if view.viewWithTag(8822002) != nil {
+            dismissMoreSheet()
+            return
+        }
 
-                let alert: UIAlertController
-                
-                
-                if (UIDevice.current.userInterfaceIdiom == UIUserInterfaceIdiom.pad) {
-                    alert = UIAlertController(title: "More", message: nil , preferredStyle: .alert)
-                } else {
-                    alert = UIAlertController(title: "More", message: nil , preferredStyle: .actionSheet)
-                }
-                
-                alert.view.tintColor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
-                
-                self.showMoreMenuDimOverlay()
-                let dismissDim: () -> Void = { [weak self] in
-                    self?.hideMoreMenuDimOverlay()
-                }
-                
-                
-                    let area = UIAlertAction(title: "Recent Arrivals", style: .default, handler: { action in
-                        dismissDim()
-                        let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "BookAdListViewController") as! BookAdListViewController
-                            self.navigationController?.pushViewController(vc, animated: true)
-                    })
-                   
-                   let project = UIAlertAction(title: "More Apps", style: .default, handler: { action in
-                       dismissDim()
-                       if CoreDataModel.sharedInstance.GetAppImageSave(entity: CDMoreAppApi).count > 0 {
-                           let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "MoreAppsViewController") as! MoreAppsViewController
-                           self.navigationController?.pushViewController(vc, animated: true)
-                       } else {
-                           
-                           if NetworkManager.sharedInstance.isConnectedToInternet() {
-                                      if let url = URL(string: moreLink), UIApplication.shared.canOpenURL(url) {
-                                          UIApplication.shared.open(url, options: [:]) { success in
-                                              print(success ? "URL was opened successfully." : "Failed to open URL.")
-                                          }
-                                      } else {
-                                          self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
-                                      }
-                                      
-                                  } else {
-                                      self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
-                                  }
-                       }
-                    })
-                
-                
-                    let Setting = UIAlertAction(title: "Settings", style: .default, handler: { action in
-                        dismissDim()
-                        let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "SettingsViewController") as! SettingsViewController
-                        self.navigationController?.pushViewController(vc, animated: true)
-                    })
-                
-                
-                    if PaymentHistory.sharedInstance.paymentInfo() && book_ads_status > 0 && CoreDataModel.sharedInstance.GetMoreBookShare(entity: CDMoreBookApi).count > 0 {
-                        let image = UIImage(named: "New")
-                        let imageView = UIImageView()
-                        imageView.image = image
-                        imageView.frame =  CGRect(x: alert.view.frame.width-100, y: 65, width: 24, height: 24)
-                        alert.view.addSubview(imageView)
-                    
-                        let areaImage = UIImage(named: "BookIcon")
-                        area.setValue(areaImage?.imageWithSize(scaledToSize: CGSize(width: 32, height: 32)), forKey: "image")
-                        
-                        
-                        alert.addAction(area)
-                    }
-                
-                    let projectImage = UIImage(named: "More icon")
-                    project.setValue(projectImage?.imageWithSize(scaledToSize: CGSize(width: 32, height: 32)), forKey: "image")
-                    let SettingImage = UIImage(named: "Setting")
-                    Setting.setValue(SettingImage?.imageWithSize(scaledToSize: CGSize(width: 32, height: 32)), forKey: "image")
-                
-                   
-                   alert.addAction(project)
-                   alert.addAction(Setting)
-                
-                   alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in
-                       dismissDim()
-                   }))
-                   alert.popoverPresentationController?.sourceView = self.view
-                   self.present(alert, animated: true, completion: nil)
-                
-                
-            }
-    
-    private let moreMenuDimTag = 8822001
-    
-    private func showMoreMenuDimOverlay() {
-        hideMoreMenuDimOverlay()
-        let dim = UIView(frame: view.bounds)
-        dim.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        dim.backgroundColor = UIColor.black.withAlphaComponent(0.45)
-        dim.tag = moreMenuDimTag
-        dim.isUserInteractionEnabled = false
-        view.addSubview(dim)
+        let sheet = ReaderMoreSheet()
+        sheet.tag = 8822002
+        sheet.onProfile = { [weak self] in
+            self?.dismissMoreSheet()
+            self?.openMoreProfile()
+        }
+        sheet.onCompanion = { [weak self] in
+            self?.dismissMoreSheet()
+            self?.openMoreCompanion()
+        }
+        sheet.onSettings = { [weak self] in
+            self?.dismissMoreSheet()
+            self?.openMoreSettings()
+        }
+        sheet.show(in: view, above: TabVu)
     }
-    
-    private func hideMoreMenuDimOverlay() {
-        view.viewWithTag(moreMenuDimTag)?.removeFromSuperview()
+
+    private func dismissMoreSheet() {
+        (view.viewWithTag(8822002) as? ReaderMoreSheet)?.dismissSheet()
     }
-    
-    
+
+    private func openMoreProfile() {
+        let root = AuthHubProfileView(onBack: { [weak self] in
+            self?.navigationController?.popViewController(animated: true)
+        })
+        let host = UIHostingController(rootView: root)
+        host.title = "Profile"
+        navigationController?.pushViewController(host, animated: true)
+    }
+
+    private func openMoreCompanion() {
+        if NetworkManager.sharedInstance.isConnectedToInternet() {
+            let vc = AIChatViewController()
+            navigationController?.pushViewController(vc, animated: true)
+        } else {
+            view.makeToast("No internet connection", duration: 2.0, position: .top)
+        }
+    }
+
+    private func openMoreSettings() {
+        let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "SettingsViewController") as! SettingsViewController
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
+
     
     @IBAction func PaymentAction(_ sender: Any) {
         
         if CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI) != "" {
-                var date = CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI)
-
-                if date == "" {
-                    date = Date().string(format: "dd-MM-yyyy")
-                }
-                let showDate1 = GetReceptKey.shared.convertData(date: date)
-
-                if showDate1.isGreaterThan(Date()) {
+                if PaymentHistory.sharedInstance.hasActivePurchase() {
                     self.SubscriptionVucall()
                 } else {
                     // BUG FIX 3 (OFFLINE IAP NAVIGATION): OLD CODE - Used OR (||) allowing navigation with cached prices
@@ -1591,7 +1679,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                             self.navigationController?.pushViewController(vc, animated: true)
                         }
                     } else {
-                        self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                        self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                     }
                 }
             } else {
@@ -1617,7 +1705,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                         self.navigationController?.pushViewController(vc, animated: true)
                     }
                 } else {
-                    self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                    self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 }
             }
         
@@ -1936,7 +2024,9 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     func ConstrainChange(Top: CGFloat, bottom: CGFloat) {
         // No animation — Mark as Read / Get Summary must not slide or jump at chapter bottom.
-        let verseBottom = (Top < 0.0 ? 0.0 : -72.0)
+        let resting = (Top < 0.0 ? 0.0 : -72.0)
+        self.verseBottomWithoutPlayer = resting
+        let verseBottom = self.verseContentBottom(resting: resting)
         UIView.performWithoutAnimation {
             self.VeresViewBottom.constant = verseBottom
             self.topBannerConstant.constant = Top

@@ -199,7 +199,7 @@ class QuizWalletVC: UIViewController, UITableViewDelegate, UITableViewDataSource
             if NetworkManager.sharedInstance.isConnectedToInternet() {
                 SKStoreReviewController.requestReviewInCurrentScene()
                    } else {
-                       self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                       self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                    }
             
             break
@@ -343,11 +343,11 @@ extension QuizWalletVC {
               if iapProducts.count > 0 {
                     purchaseProduct(product: iapProducts[0])
               } else {
-                  self.view.makeToast("Invalied Product Id", duration: 2.0, position: .bottom)
+                  self.view.makeToast("Invalied Product Id", duration: 2.0, position: .top)
 //                  self.LoaderVu.isHidden = true
               }
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     

@@ -30,6 +30,8 @@ final class VerseExplanationView: UIView {
     private let dimButton = UIButton(type: .custom)
     private let cardView = UIView()
     private let grabHandle = UIView()
+    private let grabButton = UIButton(type: .custom)
+    private var isDismissingSheet = false
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
     private let verseContainer = UIView()
@@ -93,6 +95,12 @@ final class VerseExplanationView: UIView {
             : UIColor.black.withAlphaComponent(0.12)
         grabHandle.layer.cornerRadius = 2.5
         cardView.addSubview(grabHandle)
+
+        grabButton.translatesAutoresizingMaskIntoConstraints = false
+        grabButton.addTarget(self, action: #selector(grabHandleTapped), for: .touchUpInside)
+        let grabPan = UIPanGestureRecognizer(target: self, action: #selector(handleGrabPan(_:)))
+        grabButton.addGestureRecognizer(grabPan)
+        cardView.addSubview(grabButton)
 
         closeButton.translatesAutoresizingMaskIntoConstraints = false
         let closeConfig = UIImage.SymbolConfiguration(pointSize: 12, weight: .bold)
@@ -250,6 +258,11 @@ final class VerseExplanationView: UIView {
             grabHandle.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
             grabHandle.widthAnchor.constraint(equalToConstant: 40),
             grabHandle.heightAnchor.constraint(equalToConstant: 5),
+
+            grabButton.topAnchor.constraint(equalTo: cardView.topAnchor),
+            grabButton.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
+            grabButton.widthAnchor.constraint(equalToConstant: 88),
+            grabButton.heightAnchor.constraint(equalToConstant: 24),
 
             closeButton.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 14),
             closeButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
@@ -591,6 +604,43 @@ final class VerseExplanationView: UIView {
         }
     }
 
+    @objc private func grabHandleTapped() {
+        dismissSheetDownward()
+    }
+
+    @objc private func handleGrabPan(_ pan: UIPanGestureRecognizer) {
+        let translation = max(0, pan.translation(in: self).y)
+        switch pan.state {
+        case .changed:
+            cardBottomConstraint?.constant = translation
+            layoutIfNeeded()
+        case .ended, .cancelled:
+            let velocity = pan.velocity(in: self).y
+            if translation > 80 || velocity > 800 {
+                dismissSheetDownward()
+            } else {
+                cardBottomConstraint?.constant = 0
+                UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseOut) {
+                    self.layoutIfNeeded()
+                }
+            }
+        default:
+            break
+        }
+    }
+
+    private func dismissSheetDownward() {
+        guard !isDismissingSheet else { return }
+        isDismissingSheet = true
+        cardBottomConstraint?.constant = max(cardView.bounds.height, bounds.height)
+        UIView.animate(withDuration: 0.32, delay: 0, options: .curveEaseIn) {
+            self.backgroundColor = .clear
+            self.layoutIfNeeded()
+        } completion: { _ in
+            self.closeTapped()
+        }
+    }
+
     @objc private func closeTapped() {
         onDismiss?()
         removeFromSuperview()
@@ -603,11 +653,11 @@ final class VerseExplanationView: UIView {
             // verseText holds the whole chapter here — copy only the summary.
             let title = screenTitle ?? verseReference.replacingOccurrences(of: "-", with: " ")
             UIPasteboard.general.string = "\(title)\n\n\(explanationText)\n\n\(APP_LINK)"
-            makeToast("Copied successfully", duration: 2.0, position: .center)
+            makeToast("Copied successfully", duration: 2.0, position: .top)
             return
         }
         UIPasteboard.general.string = "\(explanationText)\n\n\(verseText)\n\n\(verseReference.replacingOccurrences(of: "-", with: " "))\n\n\(APP_LINK)"
-        makeToast("Copied successfully", duration: 2.0, position: .center)
+        makeToast("Copied successfully", duration: 2.0, position: .top)
     }
 
     @objc private func saveTapped() {
@@ -618,7 +668,7 @@ final class VerseExplanationView: UIView {
             explanationText: explanationText,
             verse: verseText
         )
-        makeToast("Saved Successfully", duration: 2.0, position: .center)
+        makeToast("Saved to My Library", duration: 2.0, position: .top)
     }
 
     @objc private func askTapped() {

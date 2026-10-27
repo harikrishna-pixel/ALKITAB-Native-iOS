@@ -75,7 +75,7 @@ class ScoreBoardVC: UIViewController {
         QuizClickSound.shared.CoinCollectSound()
         self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
         self.ClaimMoney.isEnabled = false
-        self.view.makeToast("Coins claimed successfully!", duration: 2.0, position: .bottom)
+        self.view.makeToast("Coins claimed successfully!", duration: 2.0, position: .top)
     }
     
     

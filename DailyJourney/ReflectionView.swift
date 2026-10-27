@@ -13,8 +13,9 @@ struct ReflectionView: View {
 
     @State private var selectedOption: Int?
     @State private var text: String = ""
-    /// Lifts the form with the keyboard instead of letting the layout snap.
-    @State private var keyboardLift: CGFloat = 0
+    /// True while the note field is being edited. The save and skip buttons stay hidden.
+    @State private var keyboardVisible = false
+    @State private var keyboardHeight: CGFloat = 0
     /// True when reflection was already completed before this visit (edit / review day).
     @State private var wasAlreadyCompleted = false
 
@@ -26,11 +27,11 @@ struct ReflectionView: View {
     ]
 
     var body: some View {
-        ScrollViewReader { proxy in
         VStack(spacing: 0) {
             progressBar
 
             ScrollView(showsIndicators: false) {
+                // Keyboard inset is handled below so this scroll view does not jump on its own.
                 VStack(alignment: .leading, spacing: 16) {
                     Text(wasAlreadyCompleted ? "Your Reflection" : "My Reflection")
                         .font(.system(size: 24, weight: .bold))
@@ -86,7 +87,7 @@ struct ReflectionView: View {
                                     .padding(.top, 12)
                                     .padding(.leading, 12)
                             }
-                            TextEditor(text: $text)
+                            StableReflectionEditor(text: $text)
                                 .frame(minHeight: 120)
                                 .padding(8)
                         }
@@ -96,8 +97,6 @@ struct ReflectionView: View {
                             RoundedRectangle(cornerRadius: 14)
                                 .stroke(Color.black.opacity(0.08), lineWidth: 1)
                         )
-                        .id("reflectionNotes")
-
                         Text("\(min(text.count, 300))/300")
                             .font(.system(size: 12))
                             .foregroundColor(Color.black.opacity(0.35))
@@ -111,7 +110,9 @@ struct ReflectionView: View {
                     }
                 }
                 .padding(20)
+                .padding(.bottom, keyboardHeight)
             }
+            .ignoresSafeArea(.keyboard, edges: .bottom)
 
             VStack(spacing: 10) {
                 Button(action: save) {
@@ -120,9 +121,11 @@ struct ReflectionView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
-                        .background(Color(hex: "1C46B2"))
+                        .background(canSaveReflection ? Color(hex: "1C46B2") : Color.gray.opacity(0.4))
                         .cornerRadius(27)
                 }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(!canSaveReflection)
 
                 if !wasAlreadyCompleted {
                     Button(action: skip) {
@@ -135,20 +138,22 @@ struct ReflectionView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 24)
             .padding(.top, 8)
+            .opacity(keyboardVisible ? 0 : 1)
+            .allowsHitTesting(!keyboardVisible)
+            .accessibilityHidden(keyboardVisible)
         }
-        .padding(.bottom, keyboardLift)
         .background(Color(hex: "F7F8FC").ignoresSafeArea())
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .navigationBarTitleDisplayMode(.inline)
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
-            let lift = keyboardLift(from: notification)
-            let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double ?? 0.25
-            withAnimation(.easeOut(duration: duration)) {
-                keyboardLift = lift
-                if lift > 0 {
-                    proxy.scrollTo("reflectionNotes", anchor: .bottom)
-                }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { note in
+            keyboardVisible = true
+            if let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                keyboardHeight = frame.height
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardVisible = false
+            keyboardHeight = 0
         }
         .onAppear {
             IQKeyboardManager.shared().isEnabled = false
@@ -160,7 +165,7 @@ struct ReflectionView: View {
             }
         }
         .onDisappear {
-            keyboardLift = 0
+            keyboardVisible = false
             IQKeyboardManager.shared().isEnabled = true
         }
         .onChange(of: text) { newValue in
@@ -168,16 +173,6 @@ struct ReflectionView: View {
                 text = String(newValue.prefix(300))
             }
         }
-        }
-    }
-
-    /// How far the form should rise so it meets the keyboard, without counting the home indicator twice.
-    private func keyboardLift(from notification: Notification) -> CGFloat {
-        guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return 0 }
-        let screenHeight = UIScreen.main.bounds.height
-        let overlap = max(0, screenHeight - frame.origin.y)
-        let homeInset = UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0
-        return max(0, overlap - homeInset)
     }
 
     private var progressBar: some View {
@@ -195,7 +190,14 @@ struct ReflectionView: View {
         .padding(.bottom, 4)
     }
 
+    private var canSaveReflection: Bool {
+        if wasAlreadyCompleted { return true }
+        let hasText = !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return hasText || selectedOption != nil
+    }
+
     private func save() {
+        guard canSaveReflection else { return }
         var combined = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if let selectedOption = selectedOption {
             let label = options[selectedOption].title
@@ -215,5 +217,237 @@ struct ReflectionView: View {
         store.markReflectionCompleted(text: store.reflectionText, optionIndex: selectedOption)
         store.markVerseCompleted()
         onDone()
+    }
+}
+
+/// Text box that does not scroll its parent when focused, so the Reflection screen does not jump.
+private struct StableReflectionEditor: UIViewRepresentable {
+    @Binding var text: String
+
+    func makeUIView(context: Context) -> UITextView {
+        let textView = ReflectionTextView()
+        textView.delegate = context.coordinator
+        textView.backgroundColor = .clear
+        textView.font = .systemFont(ofSize: 16)
+        textView.textColor = .black
+        textView.tintColor = UIColor(red: 0.11, green: 0.27, blue: 0.70, alpha: 1)
+        textView.isScrollEnabled = true
+        textView.alwaysBounceVertical = false
+        textView.clipsToBounds = true
+        textView.contentInset = .zero
+        textView.contentInsetAdjustmentBehavior = .never
+        textView.textContainerInset = UIEdgeInsets(top: 4, left: 0, bottom: 4, right: 0)
+        textView.text = text
+        textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return textView
+    }
+
+    func updateUIView(_ textView: UITextView, context: Context) {
+        textView.textColor = .black
+        textView.font = .systemFont(ofSize: 16)
+        if textView.text != text {
+            textView.text = text
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text)
+    }
+
+    final class Coordinator: NSObject, UITextViewDelegate {
+        var text: Binding<String>
+        init(text: Binding<String>) { self.text = text }
+
+        func textViewDidChange(_ textView: UITextView) {
+            text.wrappedValue = textView.text ?? ""
+        }
+    }
+}
+
+/// Keeps the typed note inside the box and shifts the page only enough to clear the keyboard.
+private final class ReflectionTextView: UITextView {
+    private var watchingKeyboard = false
+    private var offsetObservation: NSKeyValueObservation?
+    private var restingOffset: CGFloat = 0
+    private var hasRestingOffset = false
+    private var keyboardVisible = false
+    /// Highest the page may move while the keyboard is open.
+    private var maxContentOffsetY: CGFloat?
+    private var isClamping = false
+
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: UIView.noIntrinsicMetric, height: 120)
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil {
+            stopWatchingKeyboard()
+        } else {
+            startWatchingKeyboard()
+        }
+    }
+
+    deinit {
+        stopWatchingKeyboard()
+    }
+
+    override func becomeFirstResponder() -> Bool {
+        if !keyboardVisible {
+            rememberRestingOffset()
+        }
+        let accepted = super.becomeFirstResponder()
+        showTypedText()
+        return accepted
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if !keyboardVisible && !isFirstResponder {
+            rememberRestingOffset()
+        }
+        showTypedText()
+    }
+
+    override func scrollRectToVisible(_ rect: CGRect, animated: Bool) {
+        showTypedText()
+    }
+
+    private func showTypedText() {
+        guard bounds.height > 1 else { return }
+        textColor = .black
+        if contentInset != .zero {
+            contentInset = .zero
+        }
+        let maxY = max(0, contentSize.height - bounds.height)
+        let next = contentSize.height <= bounds.height + 1 ? 0 : min(max(0, contentOffset.y), maxY)
+        if abs(contentOffset.y - next) > 0.5 {
+            contentOffset.y = next
+        }
+    }
+
+    private func rememberRestingOffset() {
+        guard let scroll = enclosingScrollView() else { return }
+        restingOffset = scroll.contentOffset.y
+        hasRestingOffset = true
+    }
+
+    private func startWatchingKeyboard() {
+        guard !watchingKeyboard else { return }
+        watchingKeyboard = true
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillChange(_:)),
+            name: UIResponder.keyboardWillChangeFrameNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillChange(_:)),
+            name: UIResponder.keyboardWillShowNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
+        attachOffsetClamp()
+    }
+
+    private func attachOffsetClamp() {
+        guard offsetObservation == nil, let scroll = enclosingScrollView() else { return }
+        offsetObservation = scroll.observe(\.contentOffset, options: [.new]) { [weak self] scroll, _ in
+            guard let self = self, !self.isClamping, let maxY = self.maxContentOffsetY else { return }
+            if scroll.contentOffset.y > maxY + 1 {
+                self.isClamping = true
+                scroll.setContentOffset(CGPoint(x: 0, y: maxY), animated: false)
+                self.isClamping = false
+            }
+        }
+    }
+
+    private func stopWatchingKeyboard() {
+        guard watchingKeyboard else { return }
+        watchingKeyboard = false
+        NotificationCenter.default.removeObserver(self)
+        offsetObservation?.invalidate()
+        offsetObservation = nil
+        maxContentOffsetY = nil
+    }
+
+    @objc private func keyboardWillChange(_ note: Notification) {
+        guard isFirstResponder, let window = window else { return }
+        guard let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+        IQKeyboardManager.shared().isEnabled = false
+        keepHostInPlace()
+        attachOffsetClamp()
+        let keyboardTop = window.convert(frame, from: nil).minY
+        guard keyboardTop < window.bounds.height - 1 else { return }
+        keyboardVisible = true
+        // Do not lock the page here. The extra space under the note is added on the
+        // next layout, and an early lock kept the box under the keyboard.
+        maxContentOffsetY = nil
+        moveBoxAboveKeyboard(keyboardTop: keyboardTop)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.isFirstResponder, self.keyboardVisible else { return }
+            self.moveBoxAboveKeyboard(keyboardTop: keyboardTop)
+            self.keepHostInPlace()
+            self.showTypedText()
+        }
+    }
+
+    /// Scrolls only far enough for the note box to sit above the keyboard.
+    private func moveBoxAboveKeyboard(keyboardTop: CGFloat) {
+        guard let window = window, let scroll = enclosingScrollView() else { return }
+        if !hasRestingOffset {
+            restingOffset = scroll.contentOffset.y
+            hasRestingOffset = true
+        }
+        let base = restingOffset
+        let alreadyShifted = scroll.contentOffset.y - base
+        let fieldBottomAtRest = convert(bounds, to: window).maxY + alreadyShifted
+        let shift = max(0, fieldBottomAtRest - (keyboardTop - 16))
+        let maxOffset = max(0, scroll.contentSize.height - scroll.bounds.height + scroll.adjustedContentInset.bottom)
+        let target = min(maxOffset, base + shift)
+        if abs(scroll.contentOffset.y - target) > 1 {
+            isClamping = true
+            scroll.setContentOffset(CGPoint(x: scroll.contentOffset.x, y: target), animated: false)
+            isClamping = false
+        }
+        showTypedText()
+    }
+
+    private func keepHostInPlace() {
+        var responder: UIResponder? = self
+        while let current = responder {
+            if let controller = current as? UIViewController, controller.view.frame.origin.y < 0 {
+                controller.view.frame.origin.y = 0
+                return
+            }
+            responder = current.next
+        }
+    }
+
+    @objc private func keyboardWillHide() {
+        maxContentOffsetY = nil
+        if let scroll = enclosingScrollView() {
+            let base = hasRestingOffset ? restingOffset : 0
+            scroll.setContentOffset(CGPoint(x: 0, y: base), animated: false)
+        }
+        keyboardVisible = false
+        showTypedText()
+    }
+
+    private func enclosingScrollView() -> UIScrollView? {
+        var view = superview
+        while let current = view {
+            if let scroll = current as? UIScrollView, scroll !== self {
+                return scroll
+            }
+            view = current.superview
+        }
+        return nil
     }
 }

@@ -171,7 +171,7 @@ class ImageGalleryViewController: UIViewController, UICollectionViewDelegate, UI
                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+1) {
                     self.LoadImage()
                 }
-                self.view.makeToast("Image Removed from App Album", duration: 2.0, position: .bottom)
+                self.view.makeToast("Image Removed from App Album", duration: 2.0, position: .top)
             }))
 
         alert.popoverPresentationController?.sourceView = self.view

@@ -15,6 +15,8 @@ struct BibleSubscriptionView: View {
     @StateObject private var storeManager = StoreManager()
     @StateObject private var planSelection = PaywallPlanSelection()
     @State private var showLoader = false
+    @State private var isRestoring = false
+    @State private var isCheckingOwnedPlan = false
     @State private var shouldNavigateToReader = false
     @State private var showCloseButton = true
     @State private var showExitOffer = false
@@ -99,6 +101,19 @@ struct BibleSubscriptionView: View {
                 navigateToReaderViewController()
             }
         }
+        .onChange(of: storeManager.restoreEvent) { _ in
+            isRestoring = false
+            showLoader = false
+            PaywallProcessHUD.hide()
+            guard storeManager.restoreSucceeded else { return }
+            exitOfferTimerTask?.cancel()
+            exitOfferTimerTask = nil
+            showExitOffer = false
+            clearExitOfferData()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                closePaywallAfterRestore()
+            }
+        }
         .onChange(of: storeManager.showAlert) { showing in
             if showing {
                 showLoader = false
@@ -106,7 +121,8 @@ struct BibleSubscriptionView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
             // Apple purchase sheet is on screen — hide the paywall loader.
-            if showLoader {
+            // Restore keeps its loader until the receipt check finishes.
+            if showLoader && !isRestoring {
                 showLoader = false
             }
         }
@@ -119,6 +135,7 @@ struct BibleSubscriptionView: View {
         .onDisappear {
             exitOfferTimerTask?.cancel()
             exitOfferTimerTask = nil
+            PaywallProcessHUD.hide()
         }
     }
     
@@ -130,15 +147,6 @@ struct BibleSubscriptionView: View {
             
             GeometryReader { geo in
                 ZStack(alignment: .top) {
-                if !isSmallDevice {
-                    Image("paywall_bible_glow")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: geo.size.width, height: geo.size.height + geo.safeAreaInsets.bottom)
-                        .clipped()
-                        .ignoresSafeArea(edges: .bottom)
-                        .allowsHitTesting(false)
-                }
                 ScrollView(showsIndicators: false) {
                     PaywallScrollStackView(
                         planSelection: planSelection,
@@ -155,8 +163,7 @@ struct BibleSubscriptionView: View {
                         bottomInset: geo.safeAreaInsets.bottom,
                         onPurchase: { handlePurchaseAction() },
                         onRestore: {
-                            showLoader = true
-                            storeManager.restorePurchases()
+                            beginRestore()
                         }
                     )
                 }
@@ -262,21 +269,13 @@ struct BibleSubscriptionView: View {
             exitOfferTimerTask?.cancel()
             exitOfferTimerTask = nil
             showExitOffer = false
-            clearExitOfferData() // Clear exit offer data on successful purchase
-            
-            // On iPad, give more time for StoreKit purchase sheet to dismiss
-            // StoreKit purchase sheet is system-managed and needs time to dismiss
-            let isIPad = UIDevice.current.userInterfaceIdiom == .pad
-            let delay = isIPad ? 2.0 : 0.8
-            
+            clearExitOfferData()
+            showPurchaseToast()
+            PaywallProcessHUD.didClosePaywall = false
+            // iPad needs longer for the App Store sheet to leave before the paywall closes.
+            let delay: TimeInterval = UIDevice.current.userInterfaceIdiom == .pad ? 2.0 : 1.0
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                // Double-check that we're on main thread and dismiss any SwiftUI sheets first
-                DispatchQueue.main.async {
-                    // Additional small delay to ensure purchase sheet is fully dismissed
-                    DispatchQueue.main.asyncAfter(deadline: .now() + (isIPad ? 0.5 : 0.2)) {
-                        shouldNavigateToReader = true
-                    }
-                }
+                self.closePaywallAfterRestore()
             }
         }
         
@@ -285,11 +284,18 @@ struct BibleSubscriptionView: View {
         }
         
         storeManager.onRestoreSuccess = { [self] in
+            isRestoring = false
             showLoader = false
+            PaywallProcessHUD.hide()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                self.closePaywallAfterRestore()
+            }
         }
         
         storeManager.onRestoreFailed = { [self] in
+            isRestoring = false
             showLoader = false
+            PaywallProcessHUD.hide()
         }
     }
 
@@ -324,12 +330,60 @@ struct BibleSubscriptionView: View {
             OnboardingAuthManager.topViewController()?.view.makeToast(message, duration: 2.0, position: .top)
             return
         }
-        guard !storeManager.isLoading else {
-            OnboardingAuthManager.topViewController()?.view.makeToast("No internet connection. Please check your connection and try again.", duration: 2.0, position: .top)
+        if let owned = savedLastPlan() {
+            showOwnedPlanAfterLoading(owned: owned.kind, expiry: owned.expiry)
             return
         }
+        guard !storeManager.isLoading else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("Please wait.", duration: 2.0, position: .top)
+            return
+        }
+        guard !isCheckingOwnedPlan else { return }
+        isCheckingOwnedPlan = true
+        PaywallProcessHUD.show()
+        storeManager.lookupLastStorePlans { [self] plans, cancelled in
+            isCheckingOwnedPlan = false
+            PaywallProcessHUD.hide()
+            if cancelled {
+                return
+            }
+            if let found = lastStorePlan(from: plans) {
+                presentAlreadyOwnedPlan(
+                    owned: found.kind,
+                    expiry: found.kind == .lifetime ? nil : storePlanExpiry(kind: found.kind, purchasedAt: found.purchasedAt),
+                    trying: planSelection.plan
+                )
+                return
+            }
+            beginSelectedPurchase()
+        }
+    }
+
+    /// Loading stays up until the plan check finishes, then the already-purchased alert is shown.
+    private func showOwnedPlanAfterLoading(owned: PaywallOwnedKind, expiry: Date?) {
+        guard !isCheckingOwnedPlan else { return }
+        isCheckingOwnedPlan = true
+        PaywallProcessHUD.show()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            guard self.isCheckingOwnedPlan else { return }
+            self.isCheckingOwnedPlan = false
+            PaywallProcessHUD.hide()
+            self.presentAlreadyOwnedPlan(owned: owned, expiry: expiry, trying: self.planSelection.plan)
+        }
+    }
+
+    /// Restore runs only from the Restore button. The buy button never starts it.
+    private func beginRestore() {
+        isCheckingOwnedPlan = false
+        showLoader = false
+        isRestoring = true
+        PaywallProcessHUD.didClosePaywall = false
+        PaywallProcessHUD.show()
+        storeManager.restorePurchases()
+    }
+
+    private func beginSelectedPurchase() {
         showLoader = true
-        
         if planSelection.plan == .monthly {
             storeManager.purchaseProduct(with: SUBSCRIPTIONID_Six_month)
         } else if planSelection.plan == .yearly {
@@ -337,6 +391,185 @@ struct BibleSubscriptionView: View {
         } else if planSelection.plan == .lifetime {
             storeManager.purchaseProduct(with: SUBSCRIPTIONID_LifeTime)
         }
+    }
+
+    /// Last plan saved on this phone. Lifetime, 1 Year, then 1 Month.
+    private func savedLastPlan() -> (kind: PaywallOwnedKind, expiry: Date?)? {
+        let paymentId = UserDefaults.standard.string(forKey: "PaymentId") ?? ""
+        var kind = paywallKind(from: paymentId)
+        if kind == nil && UserDefaults.standard.bool(forKey: "HasLifetimePurchase") {
+            kind = .lifetime
+        }
+        let expiry = savedPlanExpiry()
+        if kind == nil && expiry != nil {
+            kind = .month
+        }
+        guard let kind = kind else { return nil }
+        return (kind, kind == .lifetime ? nil : expiry)
+    }
+
+    /// Newest App Store plan. A dated plan wins. Otherwise 1 Year, then 1 Month, then Lifetime.
+    private func lastStorePlan(from plans: [(id: String, purchasedAt: Date?)]) -> (kind: PaywallOwnedKind, purchasedAt: Date?)? {
+        var newestKind: PaywallOwnedKind?
+        var newestDate: Date?
+        var undated: [PaywallOwnedKind] = []
+        for plan in plans {
+            guard let kind = paywallKind(from: plan.id) else { continue }
+            if let date = plan.purchasedAt {
+                if newestDate == nil || date > newestDate! {
+                    newestDate = date
+                    newestKind = kind
+                }
+            } else {
+                undated.append(kind)
+            }
+        }
+        if let newestKind = newestKind {
+            return (newestKind, newestDate)
+        }
+        if undated.contains(.year) { return (.year, nil) }
+        if undated.contains(.month) { return (.month, nil) }
+        if undated.contains(.lifetime) { return (.lifetime, nil) }
+        return nil
+    }
+
+    private func storePlanExpiry(kind: PaywallOwnedKind, purchasedAt: Date?) -> Date? {
+        guard let purchasedAt = purchasedAt else { return nil }
+        let days: Int
+        switch kind {
+        case .year:
+            days = 365
+        case .month:
+            days = 30
+        case .lifetime:
+            return nil
+        }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar.date(byAdding: .day, value: days, to: purchasedAt)
+    }
+
+    private func savedPlanExpiry() -> Date? {
+        let stamp = UserDefaults.standard.double(forKey: "SubscriptionExpiryGMT")
+        if stamp > 0 {
+            return Date(timeIntervalSince1970: stamp)
+        }
+        let stored = CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI)
+        guard !stored.isEmpty else { return nil }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "dd-MM-yyyy"
+        return formatter.date(from: stored)
+    }
+
+    private func paywallKind(from productId: String) -> PaywallOwnedKind? {
+        let id = productId.lowercased()
+        guard !id.isEmpty else { return nil }
+        if id.contains("lifetime")
+            || productId == SUBSCRIPTIONID_LifeTime
+            || productId == SUBSCRIPTIONID_ExitOffer
+            || productId == FallbackIAPConstants.lifetimeProductID
+            || productId == FallbackIAPConstants.exitOfferProductID {
+            return .lifetime
+        }
+        if id.contains("oneyear") || id.contains("1year")
+            || productId == SUBSCRIPTIONID_OneYear
+            || productId == FallbackIAPConstants.oneYearProductID {
+            return .year
+        }
+        if id.contains("onemonth") || id.contains("sixmonth") || id.contains("month")
+            || productId == SUBSCRIPTIONID_Six_month
+            || productId == FallbackIAPConstants.oneMonthProductID {
+            return .month
+        }
+        return nil
+    }
+
+    private func presentAlreadyOwnedPlan(owned: PaywallOwnedKind, expiry: Date?, trying: SubscriptionPlan) {
+        let tryingLifetime = trying == .lifetime
+        let tryingYear = trying == .yearly
+        let ownedLifetime = owned == .lifetime
+        let lastPlanLabel = planName(owned)
+        let expired = expiry.map { $0.timeIntervalSinceNow < 0 } ?? false
+        let expiryLabel = expiry.map(paywallExpiryText)
+
+        let title = ownedLifetime
+            ? "You Already Own\nLifetime"
+            : "You Already Have\nan Active Plan"
+
+        let body: String
+        if ownedLifetime {
+            if tryingLifetime {
+                body = "You already have Lifetime access."
+            } else {
+                body = "You have Lifetime access. The \(tryingYear ? "1 Year" : "1 Month") plan will renew automatically \(tryingYear ? "each year" : "each month")."
+            }
+        } else if expired, let expiryLabel = expiryLabel {
+            body = "Your last plan was \(lastPlanLabel). It expired on \(expiryLabel). Purchasing another plan will create an additional charge."
+        } else if let expiryLabel = expiryLabel {
+            body = "Your last \(lastPlanLabel) plan is currently active until \(expiryLabel). Purchasing another plan will create an additional charge."
+        } else {
+            body = "Your last plan is \(lastPlanLabel). Purchasing another plan will create an additional charge."
+        }
+
+        var message = body
+        if !ownedLifetime, let expiryLabel = expiryLabel {
+            message += "\n\n" + (expired ? "Expired on \(expiryLabel)" : "Expires on \(expiryLabel)")
+        }
+
+        let hideAdd = !ownedLifetime || tryingLifetime
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Close", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Restore My Current Plan", style: .default) { [self] _ in
+            beginRestore()
+        })
+        if !hideAdd {
+            let addLabel = tryingYear ? "Add 1 Year Plan" : "Add 1 Month Plan"
+            alert.addAction(UIAlertAction(title: addLabel, style: .default) { [self] _ in
+                beginSelectedPurchase()
+            })
+        }
+        presentOwnedPlanAlert(alert, attempt: 0)
+    }
+
+    /// Shows the alert after loading. Waits until the App Store sheet has left the screen.
+    private func presentOwnedPlanAlert(_ alert: UIAlertController, attempt: Int) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            PaywallProcessHUD.hide()
+            let host = self.visiblePaywallController() ?? OnboardingAuthManager.topViewController()
+            guard let host = host else { return }
+            if host.presentedViewController != nil && attempt < 40 {
+                self.presentOwnedPlanAlert(alert, attempt: attempt + 1)
+                return
+            }
+            if host.presentedViewController == nil {
+                host.present(alert, animated: true)
+                return
+            }
+            OnboardingAuthManager.topViewController()?.present(alert, animated: true)
+        }
+    }
+
+    private func planName(_ kind: PaywallOwnedKind) -> String {
+        switch kind {
+        case .month:
+            return "1 Month"
+        case .year:
+            return "1 Year"
+        case .lifetime:
+            return "Lifetime"
+        }
+    }
+
+    private func paywallExpiryText(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "MMM d, yyyy"
+        return formatter.string(from: date)
     }
     
     // MARK: - Handle Close Action
@@ -429,6 +662,101 @@ struct BibleSubscriptionView: View {
         }
     }
 
+
+    private func showPurchaseToast() {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+        let window = OnboardingAuthManager.topViewController()?.view.window
+            ?? windows.first(where: { $0.isKeyWindow })
+            ?? windows.first
+        window?.makeToast("Purchased Successfully", duration: 2.0, position: .top)
+    }
+
+    /// Closes the paywall after a successful purchase or restore.
+    /// Onboarding opens Home. A paywall opened from Reading returns to that Reading screen.
+    private func closePaywallAfterRestore() {
+        guard !PaywallProcessHUD.didClosePaywall else { return }
+        PaywallProcessHUD.didClosePaywall = true
+        UserDefaults.standard.set(true, forKey: "PremiumPayViewed")
+        PaywallProcessHUD.hide()
+
+        let host = visiblePaywallController()
+        if isPresentedFromOnboarding {
+            OnboardingProgress.markCompleted()
+            let readerVC = kStoryboardMainIphone.instantiateViewController(withIdentifier: "ReaderViewController") as! ReaderViewController
+            let nav = host?.navigationController ?? keyNavigationController()
+            if let nav = nav {
+                nav.setViewControllers([readerVC], animated: true)
+                return
+            }
+            performNavigationToReaderWithHome()
+            return
+        }
+
+        if let host = host {
+            if let nav = host.navigationController, nav.viewControllers.count > 1 {
+                nav.popViewController(animated: true)
+                return
+            }
+            host.dismiss(animated: true, completion: nil)
+            return
+        }
+        dismissHandler?()
+    }
+
+    private func visiblePaywallController() -> UIViewController? {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+        for window in windows {
+            if let found = findPaywallController(window.rootViewController) {
+                return found
+            }
+        }
+        return nil
+    }
+
+    private func findPaywallController(_ vc: UIViewController?) -> UIViewController? {
+        guard let vc = vc else { return nil }
+        if String(describing: type(of: vc)).contains("BibleSubscription") {
+            return vc
+        }
+        if let presented = vc.presentedViewController, let found = findPaywallController(presented) {
+            return found
+        }
+        if let nav = vc as? UINavigationController {
+            for child in nav.viewControllers {
+                if let found = findPaywallController(child) {
+                    return found
+                }
+            }
+        }
+        if let tab = vc as? UITabBarController {
+            for child in tab.viewControllers ?? [] {
+                if let found = findPaywallController(child) {
+                    return found
+                }
+            }
+        }
+        for child in vc.children {
+            if let found = findPaywallController(child) {
+                return found
+            }
+        }
+        return nil
+    }
+
+    private func keyNavigationController() -> UINavigationController? {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+        let window = windows.first(where: { $0.isKeyWindow }) ?? windows.first
+        if let nav = window?.rootViewController as? UINavigationController {
+            return nav
+        }
+        return window?.rootViewController?.navigationController
+    }
 
     // MARK: - Navigate to ReaderViewController
     private func navigateToReaderViewController() {
@@ -662,7 +990,13 @@ private struct PaywallScrollStackView: View {
         .frame(maxWidth: isPad ? 720 : .infinity)
         .frame(maxWidth: .infinity, minHeight: geoSize.height, alignment: isPad ? .center : .top)
         .padding(.horizontal, isPad ? 48 : 0)
-        .background(glowBackground, alignment: .top)
+        .background {
+            ZStack(alignment: .top) {
+                Color(hex: "061228")
+                glowBackground
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 
     private var closeSpacer: some View {
@@ -1361,6 +1695,12 @@ enum SubscriptionPlan: Equatable {
     case lifetime
 }
 
+private enum PaywallOwnedKind {
+    case month
+    case year
+    case lifetime
+}
+
 
 // Add this at the top of your file, before BibleSubscriptionView
 struct ActivityIndicator: UIViewRepresentable {
@@ -1525,6 +1865,83 @@ struct TopRoundedShape: Shape {
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
         path.closeSubpath()
         return path
+    }
+}
+
+/// Full-screen restore loader on the paywall window. Works for iPhone and iPad.
+private enum PaywallProcessHUD {
+    private static weak var overlay: UIView?
+    static var didClosePaywall = false
+
+    static func show() {
+        let present = {
+            guard overlay == nil, let container = hostView() else { return }
+            let dim = UIView(frame: container.bounds)
+            dim.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            dim.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+            dim.layer.zPosition = CGFloat.greatestFiniteMagnitude
+
+            let spinner = UIActivityIndicatorView(style: .large)
+            spinner.color = .white
+            spinner.startAnimating()
+
+            let label = UILabel()
+            label.text = "Processing..."
+            label.textColor = .white
+            label.font = .systemFont(ofSize: 16, weight: .medium)
+
+            let stack = UIStackView(arrangedSubviews: [spinner, label])
+            stack.axis = .vertical
+            stack.alignment = .center
+            stack.spacing = 16
+            stack.translatesAutoresizingMaskIntoConstraints = false
+
+            let card = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
+            card.layer.cornerRadius = 16
+            card.clipsToBounds = true
+            card.translatesAutoresizingMaskIntoConstraints = false
+            card.contentView.addSubview(stack)
+            dim.addSubview(card)
+            container.addSubview(dim)
+            container.bringSubviewToFront(dim)
+            overlay = dim
+
+            NSLayoutConstraint.activate([
+                card.centerXAnchor.constraint(equalTo: dim.centerXAnchor),
+                card.centerYAnchor.constraint(equalTo: dim.centerYAnchor),
+                stack.topAnchor.constraint(equalTo: card.contentView.topAnchor, constant: 30),
+                stack.bottomAnchor.constraint(equalTo: card.contentView.bottomAnchor, constant: -30),
+                stack.leadingAnchor.constraint(equalTo: card.contentView.leadingAnchor, constant: 30),
+                stack.trailingAnchor.constraint(equalTo: card.contentView.trailingAnchor, constant: -30)
+            ])
+        }
+        if Thread.isMainThread {
+            present()
+        } else {
+            DispatchQueue.main.async(execute: present)
+        }
+    }
+
+    static func hide() {
+        let remove = {
+            overlay?.removeFromSuperview()
+            overlay = nil
+        }
+        if Thread.isMainThread {
+            remove()
+        } else {
+            DispatchQueue.main.async(execute: remove)
+        }
+    }
+
+    private static func hostView() -> UIView? {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+        if let paywallWindow = OnboardingAuthManager.topViewController()?.view.window {
+            return paywallWindow
+        }
+        return windows.first(where: { $0.isKeyWindow }) ?? windows.first
     }
 }
 

@@ -64,7 +64,7 @@ import Photos
             self.ConvertingVu.isHidden = true
             self.ImageVu.rotate(RotateMode: false)
             self.tick.isHidden = false
-            self.view.makeToast("Saved to Album", duration: 2.0, position: .center)
+            self.view.makeToast("Saved to Album", duration: 2.0, position: .top)
         }
         
         if PaymentHistory.sharedInstance.paymentInfo()  {
@@ -134,7 +134,7 @@ import Photos
         
         
    @IBAction func Save_Action(_ sender: Any) {
-       self.view.makeToast("Saved to Album", duration: 2.0, position: .center)
+       self.view.makeToast("Saved to Album", duration: 2.0, position: .top)
    }
         
    @IBAction func Home_Action(_ sender: Any) {
@@ -264,18 +264,18 @@ import Photos
                     self.documentController!.presentOpenInMenu(from: CGRect.zero, in: self.view, animated: true)
                   }
                   catch {
-                    self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .center)
+                    self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .top)
                   }
                 }
 
             } else {
-                self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .center)
+                self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .top)
             }
           } else {
-              self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .center)
+              self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .top)
           }
         } else {
-            self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .center)
+            self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .top)
         }
     }
     
@@ -297,7 +297,7 @@ import Photos
                 self.documentController?.presentOpenInMenu(from: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height), in: viewController!.view, animated: true)
 
             } else {
-                self.view.makeToast("Instagram app not installed in your mobile", duration: 4.0, position: .center)
+                self.view.makeToast("Instagram app not installed in your mobile", duration: 4.0, position: .top)
             }
         }
     }
@@ -315,7 +315,7 @@ import Photos
                if (showDialog.canShow) {
                    showDialog.show()
                } else {
-                   self.view.makeToast("It looks like you don't have the Facebook mobile app on your phone.", duration: 2.0, position:  .center)
+                   self.view.makeToast("It looks like you don't have the Facebook mobile app on your phone.", duration: 2.0, position: .top)
                }
         
 
@@ -327,11 +327,11 @@ import Photos
     }
 
     func sharer(_ sharer: FBSDKShareKit.Sharing, didFailWithError error: Error) {
-        self.view.makeToast("Facebook sharing has been  Canceled", duration: 2.0, position: .center)
+        self.view.makeToast("Facebook sharing has been  Canceled", duration: 2.0, position: .top)
     }
 
     func sharerDidCancel(_ sharer: FBSDKShareKit.Sharing) {
-        self.view.makeToast("Facebook sharing has been  Canceled", duration: 2.0, position: .center)
+        self.view.makeToast("Facebook sharing has been  Canceled", duration: 2.0, position: .top)
     }
     
 

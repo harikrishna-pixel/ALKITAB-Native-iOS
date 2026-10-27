@@ -29,8 +29,10 @@ class NotificationListVC: UIViewController, UITableViewDelegate, UITableViewData
 
         self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
-        
-        // Do any additional setup after loading the view.
+
+        OnboardingNotificationScheduler.enableAllSettingsTimesIfAuthorized {
+            self.SettingsTable.reloadData()
+        }
     }
     
     

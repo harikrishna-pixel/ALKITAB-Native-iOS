@@ -7,6 +7,7 @@
 
 import SwiftUI
 import IQKeyboardManager
+import Toast_Swift
 
 enum AuthHubEmailMode {
     case signUp
@@ -84,11 +85,6 @@ struct AuthHubEmailAuthView: View {
                             .padding(.horizontal, 26)
                         }
 
-                        if isBusy {
-                            SwiftUI.ProgressView()
-                                .padding(.top, 4)
-                        }
-
                         if let errorMessage = errorMessage, !errorMessage.isEmpty {
                             Text(errorMessage)
                                 .font(.system(size: 13))
@@ -106,13 +102,20 @@ struct AuthHubEmailAuthView: View {
                         }
 
                         Button(action: submit) {
-                            Text(mode == .signUp ? "Sign Up" : "Login")
-                                .font(.system(size: 16.5, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(OnboardingTheme.primaryBlue)
-                                .cornerRadius(15)
+                            ZStack {
+                                Text(mode == .signUp ? "Sign Up" : "Login")
+                                    .font(.system(size: 16.5, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .opacity(isBusy ? 0 : 1)
+                                if isBusy {
+                                    SwiftUI.ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(OnboardingTheme.primaryBlue)
+                            .cornerRadius(15)
                         }
                         .disabled(isBusy)
                         .padding(.horizontal, 26)
@@ -133,7 +136,7 @@ struct AuthHubEmailAuthView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white)
+        .background(Color.white.ignoresSafeArea())
         .onAppear {
             IQKeyboardManager.shared().isEnabled = false
         }
@@ -258,6 +261,9 @@ struct AuthHubEmailAuthView: View {
                     referralCount: user.referralCount,
                     walletBalance: user.walletBalance
                 )
+                if self.mode == .signUp {
+                    self.showAccountCreatedToast()
+                }
                 AuthHubAPI.shared.fetchProfile { profileResult in
                     DispatchQueue.main.async {
                         if case .success(let json) = profileResult {
@@ -272,6 +278,16 @@ struct AuthHubEmailAuthView: View {
                 }
             }
         }
+    }
+
+    private func showAccountCreatedToast() {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+        let window = OnboardingAuthManager.topViewController()?.view.window
+            ?? windows.first(where: { $0.isKeyWindow })
+            ?? windows.first
+        window?.makeToast("Account created successfully!", duration: 2.0, position: .top)
     }
 }
 

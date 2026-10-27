@@ -98,9 +98,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   }
   
   func numberOfSections(in tableView: UITableView) -> Int {
-          // Profile row hidden.
-          // return 16
-          return 15
+          return 16
   }
   
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -244,7 +242,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
               return UITableViewCell()
           }
           self.SettingsCell = cell
-          cell.Feedback?.text = "Quiz profile"
+          cell.Feedback?.text = "Challenge Profile"
           cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
           if let arrow = cell.arrow2 {
               ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
@@ -309,19 +307,17 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           cell.Help?.textColor = (Themecolor == BGNightMode ? .white:.black)
           return cell
 
-      // case 15:
-      // Profile row hidden.
-      // case 15:
-      //     guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as? SettingsTableCell else {
-      //         return UITableViewCell()
-      //     }
-      //     self.SettingsCell = cell
-      //     cell.Feedback?.text = "Profile"
-      //     cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
-      //     if let arrow = cell.arrow2 {
-      //         ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
-      //     }
-      //     return cell
+      case 15:
+          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as? SettingsTableCell else {
+              return UITableViewCell()
+          }
+          self.SettingsCell = cell
+          cell.Feedback?.text = "Profile"
+          cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
+          if let arrow = cell.arrow2 {
+              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
+          }
+          return cell
       default:
           break
       }
@@ -356,7 +352,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
               let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "FeedbackViewController") as! FeedbackViewController
               self.navigationController?.pushViewController(vc, animated: true)
           } else {
-              self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+              self.view.makeToast("No internet connection", duration: 2.0, position: .top)
           }
       case 11:
           self.AboutUsNavigate()
@@ -366,7 +362,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           if NetworkManager.sharedInstance.isConnectedToInternet() {
               SKStoreReviewController.requestReviewInCurrentScene()
                  } else {
-                     self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                     self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                  }
                     
       case 13:
@@ -380,11 +376,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                                  print(success ? "URL was opened successfully." : "Failed to open URL.")
                              }
                          } else {
-                             self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
+                             self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
                          }
                          
                      } else {
-                         self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                         self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                      }
               
           }
@@ -393,17 +389,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                      if let url = URL(string: FAQ) {
                          UIApplication.shared.open(url, options: [:], completionHandler: nil)
                      } else {
-                         self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
+                         self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
                      }
                      
                  } else {
-                     self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                     self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                  }
 
-      // case 15:
-      // Profile row hidden.
-      // case 15:
-      //     self.openProfile()
+      case 15:
+          self.openProfile()
       default:
         break
           
@@ -530,7 +524,7 @@ extension SettingsViewController {
             let vc = ChallengeAttemptsViewController()
             navigationController?.pushViewController(vc, animated: true)
         } else {
-            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
 
@@ -539,7 +533,7 @@ extension SettingsViewController {
             let vc = AIChatViewController()
             self.navigationController?.pushViewController(vc, animated: true)
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
 
@@ -548,21 +542,19 @@ extension SettingsViewController {
             let vc = OpenChatViewController()
             self.navigationController?.pushViewController(vc, animated: true)
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
 
-    // @objc func openProfile() {
-    // Profile row hidden.
-    // @objc func openProfile() {
-    //     let root = AuthHubProfileView(onBack: { [weak self] in
-    //         self?.navigationController?.popViewController(animated: true)
-    //         self?.dismiss(animated: true, completion: nil)
-    //     })
-    //     let host = UIHostingController(rootView: root)
-    //     host.title = "Profile"
-    //     navigationController?.pushViewController(host, animated: true)
-    // }
+    @objc func openProfile() {
+        let root = AuthHubProfileView(onBack: { [weak self] in
+            self?.navigationController?.popViewController(animated: true)
+            self?.dismiss(animated: true, completion: nil)
+        })
+        let host = UIHostingController(rootView: root)
+        host.title = "Profile"
+        navigationController?.pushViewController(host, animated: true)
+    }
     @objc func confirmLogOut() {
         let alert = UIAlertController(
             title: "Log Out",
@@ -573,7 +565,7 @@ extension SettingsViewController {
         alert.addAction(UIAlertAction(title: "Log Out", style: .destructive, handler: { [weak self] _ in
             OnboardingAuthManager.logOut()
             self?.SettingsTable.reloadData()
-            self?.view.makeToast("Logout successfully", duration: 2.0, position: .bottom)
+            self?.view.makeToast("Logout successfully", duration: 2.0, position: .top)
         }))
         present(alert, animated: true)
     }
@@ -583,7 +575,7 @@ extension SettingsViewController {
             let vc = PrayerWallViewController()
             self.navigationController?.pushViewController(vc, animated: true)
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     

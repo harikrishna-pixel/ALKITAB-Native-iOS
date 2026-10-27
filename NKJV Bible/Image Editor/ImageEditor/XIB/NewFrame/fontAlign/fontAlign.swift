@@ -103,7 +103,7 @@ class fontAlign: UIView {
             TextvaluePlus = TextvaluePlus+0.5
             ImageAppProtocol.ImageTxtEditDelegate?.textspace_Action(textGape: TextvaluePlus)
         } else {
-            self.makeToast("Reached End", duration: 1.5, position: .center)
+            self.makeToast("Reached End", duration: 1.5, position: .top)
         }
     }
 
@@ -112,7 +112,7 @@ class fontAlign: UIView {
             TextvaluePlus = TextvaluePlus-0.5
             ImageAppProtocol.ImageTxtEditDelegate?.textspace_Action(textGape: TextvaluePlus)
         } else {
-            self.makeToast("Reached End", duration: 1.5, position: .center)
+            self.makeToast("Reached End", duration: 1.5, position: .top)
         }
     }
 
@@ -124,7 +124,7 @@ class fontAlign: UIView {
             LettervaluePlus = LettervaluePlus+1.0
             ImageAppProtocol.ImageTxtEditDelegate?.FontSize_Action(FontSize: LettervaluePlus)
         } else {
-            self.makeToast("Reached End", duration: 1.5, position: .center)
+            self.makeToast("Reached End", duration: 1.5, position: .top)
         }
     }
 
@@ -133,7 +133,7 @@ class fontAlign: UIView {
             LettervaluePlus = LettervaluePlus-1.0
             ImageAppProtocol.ImageTxtEditDelegate?.FontSize_Action(FontSize: LettervaluePlus)
         } else {
-            self.makeToast("Reached End", duration: 1.5, position: .center)
+            self.makeToast("Reached End", duration: 1.5, position: .top)
         }
     }
 
@@ -144,7 +144,7 @@ class fontAlign: UIView {
             LinevaluePlus = LinevaluePlus+0.5
             ImageAppProtocol.ImageTxtEditDelegate?.linegape_Action(lineGape: LinevaluePlus)
         } else {
-            self.makeToast("Reached End", duration: 1.5, position: .center)
+            self.makeToast("Reached End", duration: 1.5, position: .top)
         }
     }
     
@@ -153,7 +153,7 @@ class fontAlign: UIView {
             LinevaluePlus = LinevaluePlus-0.5
             ImageAppProtocol.ImageTxtEditDelegate?.linegape_Action(lineGape: LinevaluePlus)
         } else {
-            self.makeToast("Reached End", duration: 1.5, position: .center)
+            self.makeToast("Reached End", duration: 1.5, position: .top)
         }
     }
     

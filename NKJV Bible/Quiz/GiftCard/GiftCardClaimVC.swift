@@ -37,6 +37,7 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
     
     @IBOutlet weak var CoinsTxt: UILabel!
     var AdEnable = false
+    private var scratchAdTimeout: DispatchWorkItem?
     
     var CoinCards:[Any] = [20,30,40,50,60,70,80,90]
     var coins:Int = 0
@@ -123,7 +124,7 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
         if CardType == "" {
             UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+coins, forKey: "WalletMoney")
             self.CardSaver(cardCoins: coins, cartType: "CoinCard")
-            self.view.makeToast("Coins claimed successfully!", duration: 2.0, position: .center)
+            self.view.makeToast("Coins claimed successfully!", duration: 2.0, position: .top)
             
         } else {
             self.CardSaver(cardCoins: 0, cartType: CardType)
@@ -169,17 +170,32 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
             self.ButtonLoader.isHidden = false
             AdmobManager.shared.IronSource_Reward_ShowAds(vw: self, RewardAd: "Scratch")
             self.ClimeButtonVu.isHidden = false
+            // Ads are off for testing, so the shared ad wait never starts. Keep that same wait, then stop the spinner.
+            if ADS_DISABLED_FOR_TESTING {
+                scheduleScratchAdTimeout()
+            }
             
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
     
     
+    private func scheduleScratchAdTimeout() {
+        scratchAdTimeout?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self, self.ButtonLoader.isHidden == false else { return }
+            self.ButtonLoader.isHidden = true
+            self.view.makeToast("Ad is not available", duration: 2.0, position: .top)
+        }
+        scratchAdTimeout = work
+        // Same wait the rewarded-ad loader uses before it gives up.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15, execute: work)
+    }
+
     func AdNotAvailable() {
-        
-//        self.view.makeToast("Ad not Available", duration: 2.0, position: .center)
+        scratchAdTimeout?.cancel()
         self.ButtonLoader.isHidden = true
         
 //        UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+self.coins, forKey: "WalletMoney")
@@ -195,7 +211,7 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
     
     
     func CollectCoin() {
-        
+        scratchAdTimeout?.cancel()
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
             UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+(self.coins*2), forKey: "WalletMoney")
             self.ButtonLoader.isHidden = true

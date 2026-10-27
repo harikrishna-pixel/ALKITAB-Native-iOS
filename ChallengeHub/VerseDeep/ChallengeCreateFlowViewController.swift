@@ -73,6 +73,10 @@ final class ChallengeCreateFlowViewController: UIViewController {
     }
 
     private func presentUnlock(then done: @escaping () -> Void) {
+        if ChallengeCreatorAccess.isUnlocked {
+            done()
+            return
+        }
         if let message = getConnection.shared.networkBlockMessage() {
             view.makeToast(message, duration: 2.0, position: .top)
             return
@@ -102,7 +106,7 @@ final class ChallengeCreateFlowViewController: UIViewController {
             navigationController?.setNavigationBarHidden(true, animated: false)
             navigationController?.pushViewController(host, animated: true)
         } else {
-            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
 }

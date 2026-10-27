@@ -10,6 +10,10 @@ import Alamofire
 import AVFoundation
 import MediaPlayer
 
+enum ChapterPlaybackContinue {
+    static var inProgress = false
+}
+
 /// After a drag, keep the released second on screen until playback is actually there.
 enum ForwardSeekHold {
     static var pinnedTime: Double?
@@ -61,6 +65,9 @@ extension ReaderViewController: AVplayerProtocol {
         // NEW FIXED CODE - Invalidate existing timer before creating new one
         timer?.invalidate()
         timer = nil
+        AudioPlayerService.sharedInstance.onPlaybackEnded = { [weak self] in
+            self?.finishChapterAndContinue()
+        }
         
         let LocalFile = DownloadedFile.shared.DownloadedArray()
         let file_name = UserDefaults.standard.string(forKey: "Bookurl")!
@@ -132,21 +139,25 @@ extension ReaderViewController: AVplayerProtocol {
         let Duration_in_Second = Int(playerItem.asset.duration.seconds) % 60
         let Duration_in_minute:Int = Int(playerItem.asset.duration.seconds / 60) % 60
 
-        // Finger down: leave the bar where the user is dragging it.
-        if AVswitch.isTracking {
+        // Finger down, or the lift was missed: keep the bar on the chosen second.
+        if AVswitch.isTracking || ForwardSeekHold.isScrubbing {
             self.AVTimeRemain.text = String(format: "%d:%02i", Duration_in_minute, Duration_in_Second)
+            if ForwardSeekHold.isScrubbing && !AVswitch.isTracking {
+                let seconds = Double(AVswitch.value)
+                ForwardSeekHold.isScrubbing = false
+                if AVswitch.maximumValue > 1, Int(AVswitch.value) == Int(AVswitch.maximumValue) {
+                    timer?.invalidate()
+                    ViewInit()
+                    return
+                }
+                seekAudio(to: seconds)
+            }
             return
         }
-        ForwardSeekHold.isScrubbing = false
 
-        // Keep the released second while playback is still on the old spot.
-        // Once the audio is at that second, follow it so the indicator keeps moving.
+        // Keep the chosen second on screen until the audio is actually there.
         if let pinned = ForwardSeekHold.pinnedTime {
-            let origin = ForwardSeekHold.originTime
-            let nearOldSpot = origin != nil && playbackNow.isFinite && abs(playbackNow - origin!) < 1.5
-            let atRelease = playbackNow.isFinite && abs(playbackNow - pinned) <= 2.5
-            let movingFromRelease = playbackNow.isFinite && playbackNow + 0.2 >= pinned && !nearOldSpot
-            if atRelease || movingFromRelease {
+            if playbackCaughtSeek(playbackNow: playbackNow, pinned: pinned, origin: ForwardSeekHold.originTime) {
                 ForwardSeekHold.pinnedTime = nil
                 ForwardSeekHold.originTime = nil
             } else {
@@ -180,21 +191,30 @@ extension ReaderViewController: AVplayerProtocol {
             ForwardSeekHold.isApplying = false
         }
         
-        let playedSeconds = playerItem.currentTime().seconds
+        let playedSeconds = playbackNow
         let trackSeconds = playerItem.asset.duration.seconds
-        if trackSeconds.isFinite, trackSeconds > 1, playedSeconds.isFinite, playedSeconds >= trackSeconds - 0.35 {
-            timer?.invalidate()
-            ViewInit()
-            if UserDefaults.standard.string(forKey: "Shuffle")  == "true" {
-                AVplayOn()
-            } else {
-                self.AutoNext()
-                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.5) {
-                    if self.Pageindex != self.pagecount {
-                        self.AVplayOn()
-                    }
-                }
-            }
+        let stoppedAtEnd = playStatus
+            && (AudioPlayerService.sharedInstance.player?.rate ?? 0) == 0
+            && AudioPlayerService.sharedInstance.player?.timeControlStatus != .waitingToPlayAtSpecifiedRate
+            && playedSeconds > 1
+            && trackSeconds.isFinite
+            && playedSeconds >= trackSeconds - 1.5
+            && !PlaybackAdHold.resumeChapter
+        if ForwardSeekHold.pinnedTime == nil, stoppedAtEnd {
+            finishChapterAndContinue()
+        }
+    }
+
+    /// Plays the next chapter after the reader reload. The reload stops audio, so playback starts after that.
+    func finishChapterAndContinue() {
+        guard !ChapterPlaybackContinue.inProgress else { return }
+        ChapterPlaybackContinue.inProgress = true
+        timer?.invalidate()
+        ViewInit()
+        if UserDefaults.standard.string(forKey: "Shuffle") == "true" {
+            AVplayOn()
+        } else {
+            AutoNext(resumePlayback: true)
         }
     }
     
@@ -218,10 +238,20 @@ extension ReaderViewController: AVplayerProtocol {
                     self.PlayPause(ImageName: "pausePlayer")
                     AVplayOn()
                 } else {
-                    self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                    self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 }
             } else {
-                AVpause()
+                let player = AudioPlayerService.sharedInstance.player
+                let actuallyPlaying = player?.timeControlStatus == .playing || (player?.rate ?? 0) > 0
+                if actuallyPlaying {
+                    AVpause()
+                } else {
+                    // The pause icon is showing, but the player stopped — usually after an ad.
+                    playStatus = true
+                    AudioPlayerService.sharedInstance.chapterWantsPlayback = true
+                    self.PlayPause(ImageName: "pausePlayer")
+                    PlaybackAdHold.continueChapter()
+                }
             }
     }
     
@@ -280,19 +310,20 @@ extension ReaderViewController: AVplayerProtocol {
     
 
     
-    func AutoNext() {
+    func AutoNext(resumePlayback: Bool = false) {
         if self.Pageindex >= 0 {
             self.NextView.zoomIn()
             // only advance if not at last chapter
             if self.Pageindex < self.pagecount {
                 self.nextPreviousconfig()
-                self.NextPageMove()
+                self.NextPageMove(resumePlayback: resumePlayback)
                 BookURL.sharedInstance.bookURL(BookNo: String(self.Pageindex))
                 self.changeStatus()
                 self.StopAv()
                 self.updateNavButtons()
             } else {
-                self.view.makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .bottom)
+                ChapterPlaybackContinue.inProgress = false
+                self.view.makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .top)
                 self.updateNavButtons()
             }
         }
@@ -300,7 +331,7 @@ extension ReaderViewController: AVplayerProtocol {
     
     
     
-    func NextPageMove() {
+    func NextPageMove(resumePlayback: Bool = false) {
         
         print("self.pagecount :",self.pagecount)
 
@@ -311,11 +342,15 @@ extension ReaderViewController: AVplayerProtocol {
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
                 App_Protocol.delegateReaderSource?.ReloadFont(ChapterNo:UserDefaults.standard.integer(forKey: "BookChapter"))
                 App_Protocol.delegateReader?.mainContainer()
+                if resumePlayback {
+                    self.AVplayOn()
+                }
             }
             self.AVTitleText.text = String(format: "\(UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName)-\(self.Pageindex)")
         } else {
+            ChapterPlaybackContinue.inProgress = false
             // at last chapter
-            self.view.makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .bottom)
+            self.view.makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .top)
         }
         self.updateNavButtons()
     }
@@ -352,9 +387,11 @@ extension ReaderViewController: AVplayerProtocol {
      
 
     @IBAction func AVForward(_ sender: Any) {
-        let now = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? 0
+        let now = audioPositionOnScreen()
         guard now.isFinite else { return }
-        let duration = AudioPlayerService.sharedInstance.player?.currentItem?.duration.seconds ?? 0
+        let duration = AudioPlayerService.sharedInstance.player?.currentItem?.duration.seconds
+            ?? AudioPlayerService.sharedInstance.playerItem?.asset.duration.seconds
+            ?? 0
         var target = now + 10
         if duration.isFinite, duration > 0 {
             target = min(target, max(0, duration - 0.05))
@@ -364,9 +401,33 @@ extension ReaderViewController: AVplayerProtocol {
     }
 
     @IBAction func AVBackward(_ sender: Any) {
-        let now = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? 0
+        let now = audioPositionOnScreen()
         guard now.isFinite, now > 0.1 else { return }
         seekAudio(to: max(0, now - 10))
+    }
+
+    /// The second shown on the bar. Repeated forward taps add to this, not to a playhead that has not moved yet.
+    func audioPositionOnScreen() -> Double {
+        if ForwardSeekHold.isScrubbing || AVswitch.isTracking {
+            let sliderTime = Double(AVswitch.value)
+            if sliderTime.isFinite { return sliderTime }
+        }
+        if let pinned = ForwardSeekHold.pinnedTime, pinned.isFinite {
+            return pinned
+        }
+        let now = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? Double(AVswitch.value)
+        return now.isFinite ? now : 0
+    }
+
+    func playbackCaughtSeek(playbackNow: Double, pinned: Double, origin: Double?) -> Bool {
+        guard playbackNow.isFinite else { return false }
+        // Still on the second from before this seek.
+        if let origin, abs(playbackNow - origin) < 0.75, abs(origin - pinned) > 0.75 {
+            return false
+        }
+        if abs(playbackNow - pinned) <= 2 { return true }
+        if let origin, abs(playbackNow - origin) < 1.5 { return false }
+        return playbackNow > pinned + 0.4
     }
 
     /// Shows the chosen position at once, seeks the audio there, then matches the label to the playhead.
@@ -384,9 +445,7 @@ extension ReaderViewController: AVplayerProtocol {
             self.isUserInteractingWithSlider = false
             self.SwitchStatus = "Play"
             let landed = AudioPlayerService.sharedInstance.player?.currentTime().seconds ?? seconds
-            let from = ForwardSeekHold.originTime
-            let nearOldSpot = from != nil && landed.isFinite && abs(landed - from!) < 1.5
-            if landed.isFinite, abs(landed - seconds) <= 2.5, !nearOldSpot {
+            if self.playbackCaughtSeek(playbackNow: landed, pinned: seconds, origin: ForwardSeekHold.originTime) {
                 ForwardSeekHold.pinnedTime = nil
                 ForwardSeekHold.originTime = nil
                 self.showSeekPosition(landed)
@@ -425,6 +484,7 @@ extension ReaderViewController: AVplayerProtocol {
         AVPSlidervu.isHidden = false
         ViewInit()
         playStatus = false
+        AudioPlayerService.sharedInstance.chapterWantsPlayback = false
         AudioPlayerService.sharedInstance.player?.seek(to: .zero)
         AudioPlayerService.sharedInstance.player?.pause()
     }
@@ -480,7 +540,7 @@ extension ReaderViewController: AVplayerProtocol {
                                            
                                            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+3.0) {
                                                if self.progressView.value <= 30 && self.progressView.value > 0 {
-                                                   self.view.makeToast("Poor Network Connection", duration: 2.0, position: .bottom)
+                                                   self.view.makeToast("Poor Network Connection", duration: 2.0, position: .top)
                                                    AF.cancelAllRequests()
                                                    self.playStatus = false
                                                    self.LoaderImg.isHidden = true
@@ -501,7 +561,7 @@ extension ReaderViewController: AVplayerProtocol {
                                                    self.DownloadesArray = self.DownloadesArray.filter { !DownloadedFile.shared.DownloadedArray().contains($0) }
                                                }
                                             if self.playStatus == true {
-                                                self.view.makeToast("\(self.Downloadfilename) Audio Downloaded", duration: 2.0, position: .bottom)
+                                                self.view.makeToast("\(self.Downloadfilename) Audio Downloaded", duration: 2.0, position: .top)
                                                 self.AVplayOn()
                                             } else {
                                                 
@@ -513,10 +573,10 @@ extension ReaderViewController: AVplayerProtocol {
                        }
                    }
               } else {
-                  self.view.makeToast("Downloading is in progress", duration: 2.0, position: .bottom)
+                  self.view.makeToast("Downloading is in progress", duration: 2.0, position: .top)
               }
          } else {
-          self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+          self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
@@ -557,7 +617,10 @@ extension ReaderViewController: AVplayerProtocol {
     
     // Play pause function
     @objc func AVplayOn() {
+        SpeechVu.active?.stopForChapterAudio()
+        ChapterPlaybackContinue.inProgress = false
         playStatus = true
+        AudioPlayerService.sharedInstance.chapterWantsPlayback = true
         if self.currentTimeacu <= 1 || AudioPlayerService.sharedInstance.player?.allowsExternalPlayback == false {
             self.PlayPause(ImageName: "pausePlayer")
             self.LocalOROnline()
@@ -567,7 +630,7 @@ extension ReaderViewController: AVplayerProtocol {
                  self.LoaderImg.isHidden = false
                 self.PlayPause(ImageName: "pausePlayer")
             } else {
-                self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                self.view.makeToast("No internet connection", duration: 2.0, position: .top)
             }
         }
         // OLD BUGGY CODE - Timer was called here, but LocalOROnline() also starts a timer
@@ -580,11 +643,24 @@ extension ReaderViewController: AVplayerProtocol {
         AVstartTimer()
     }
     
+    func pauseChapterForSpeech() {
+        let player = AudioPlayerService.sharedInstance.player
+        let playing = playStatus || player?.timeControlStatus == .playing || (player?.rate ?? 0) > 0
+        guard playing else { return }
+        playStatus = false
+        AudioPlayerService.sharedInstance.chapterWantsPlayback = false
+        player?.pause()
+        PlaybackAdHold.cancelResume()
+        PlayPause(ImageName: "Play")
+    }
+
     func AVpause() {
         if AudioPlayerService.sharedInstance.player?.timeControlStatus ==  AVPlayer.TimeControlStatus.playing {
             AudioPlayerService.sharedInstance.player!.pause()
             self.PlayPause(ImageName: "Play")
             playStatus = false
+            AudioPlayerService.sharedInstance.chapterWantsPlayback = false
+            PlaybackAdHold.cancelResume()
         }   
     }
     

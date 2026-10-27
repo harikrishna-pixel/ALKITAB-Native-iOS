@@ -50,7 +50,6 @@
 		01370BE92941E68F0042B718 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 01370BE82941E68F0042B718 /* Assets.xcassets */; };
 		01370BEC2941E68F0042B718 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 01370BEA2941E68F0042B718 /* LaunchScreen.storyboard */; };
 		0138FC4A295C59480098A99C /* Loader.gif in Resources */ = {isa = PBXBuildFile; fileRef = 0138FC49295C59480098A99C /* Loader.gif */; };
-		E7F1A0022F8B4C0100A1B001 /* streak_flame.gif in Resources */ = {isa = PBXBuildFile; fileRef = E7F1A0012F8B4C0100A1B001 /* streak_flame.gif */; };
 		0139432A2A2471D400DF2434 /* RateUsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 013943292A2471D400DF2434 /* RateUsViewController.swift */; };
 		0139432D2A24A40100DF2434 /* RateUsCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0139432C2A24A40100DF2434 /* RateUsCall.swift */; };
 		0139432F2A24BA8B00DF2434 /* SharedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0139432E2A24BA8B00DF2434 /* SharedViewController.swift */; };
@@ -613,6 +612,7 @@
 		A1B2C3D42F46A10100000026 /* OnboardingNotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000036 /* OnboardingNotificationScheduler.swift */; };
 		A1B2C3D42F46A10100000041 /* AuthHub.env in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000040 /* AuthHub.env */; };
 		A2G00A032F13E3240097A8E3 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = A2G00A022F13E3240097A8E3 /* GoogleSignIn */; };
+		A7E4C1B22F8D4A01B2000A02 /* ReaderMoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7E4C1B22F8D4A01B2000A01 /* ReaderMoreSheet.swift */; };
 		B18CE61E303DAE26001FA16C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */; };
 		B1A3D241304AC9B100FD5D0C /* 5.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D23B304AC9B100FD5D0C /* 5.png */; };
 		B1A3D242304AC9B100FD5D0C /* 2.png in Resources */ = {isa = PBXBuildFile; fileRef = B1A3D238304AC9B100FD5D0C /* 2.png */; };
@@ -671,6 +671,7 @@
 		C4E5F60A2F48E30100000006 /* ChallengeQuizProfilePhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F60A2F48E30100000016 /* ChallengeQuizProfilePhoto.swift */; };
 		D42E2B172BF79432006D4D18 /* puzzal Notification in Resources */ = {isa = PBXBuildFile; fileRef = D42E2B162BF79432006D4D18 /* puzzal Notification */; };
 		D6E7F8092F49F60100000001 /* AIUsageLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */; };
+		E7F1A0022F8B4C0100A1B001 /* streak_flame.gif in Resources */ = {isa = PBXBuildFile; fileRef = E7F1A0012F8B4C0100A1B001 /* streak_flame.gif */; };
 		E7F8091A2F4AF70100000001 /* LegacyPaidAppService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */; };
 /* End PBXBuildFile section */
 
@@ -754,7 +755,6 @@
 		01370BEB2941E68F0042B718 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		01370BED2941E68F0042B718 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0138FC49295C59480098A99C /* Loader.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = Loader.gif; sourceTree = "<group>"; };
-		E7F1A0012F8B4C0100A1B001 /* streak_flame.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = streak_flame.gif; sourceTree = "<group>"; };
 		013943292A2471D400DF2434 /* RateUsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateUsViewController.swift; sourceTree = "<group>"; };
 		0139432C2A24A40100DF2434 /* RateUsCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateUsCall.swift; sourceTree = "<group>"; };
 		0139432E2A24BA8B00DF2434 /* SharedViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SharedViewController.swift; sourceTree = "<group>"; };
@@ -1319,6 +1319,7 @@
 		A1B2C3D42F46A10100000035 /* AuthHubProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthHubProfileView.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000036 /* OnboardingNotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingNotificationScheduler.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000040 /* AuthHub.env */ = {isa = PBXFileReference; lastKnownFileType = text; path = AuthHub.env; sourceTree = "<group>"; };
+		A7E4C1B22F8D4A01B2000A01 /* ReaderMoreSheet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReaderMoreSheet.swift; sourceTree = "<group>"; };
 		B13B6D6A8DF1821F657CBFAA /* Pods-NKJV Bible.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NKJV Bible.debug.xcconfig"; path = "Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible.debug.xcconfig"; sourceTree = "<group>"; };
 		B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		B1A3D237304AC9B100FD5D0C /* 1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 1.png; sourceTree = "<group>"; };
@@ -1377,6 +1378,7 @@
 		C4E5F60A2F48E30100000016 /* ChallengeQuizProfilePhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeQuizProfilePhoto.swift; sourceTree = "<group>"; };
 		D42E2B162BF79432006D4D18 /* puzzal Notification */ = {isa = PBXFileReference; lastKnownFileType = file; path = "puzzal Notification"; sourceTree = "<group>"; };
 		D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUsageLimiter.swift; sourceTree = "<group>"; };
+		E7F1A0012F8B4C0100A1B001 /* streak_flame.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = streak_flame.gif; sourceTree = "<group>"; };
 		E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyPaidAppService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -2777,6 +2779,7 @@
 			children = (
 				01D52553295D8FBE00DAC5F8 /* Secondary */,
 				01CF2AC2298CE89E00EE8903 /* ReaderViewController.swift */,
+				A7E4C1B22F8D4A01B2000A01 /* ReaderMoreSheet.swift */,
 				018F8C182943147A005F9F30 /* ReaderSourceViewController.swift */,
 			);
 			path = Reader;
@@ -4395,6 +4398,7 @@
 				0107C9CC29D4582100181D59 /* SlideCardVC.swift in Sources */,
 				0186D52D295C172D00EEB4C7 /* iOSDevCenters+GIF.swift in Sources */,
 				01CF2AC3298CE89E00EE8903 /* ReaderViewController.swift in Sources */,
+				A7E4C1B22F8D4A01B2000A02 /* ReaderMoreSheet.swift in Sources */,
 				01F813CE2A73ACD700A271E6 /* WallpaperView.swift in Sources */,
 				014A0D172955BE3C008CC1AB /* SpeechPlayFunc.swift in Sources */,
 				017C39882A40401C004C64FA /* QuizClickSound.swift in Sources */,
@@ -4815,7 +4819,7 @@
 				INFOPLIST_KEY_UIRequiresFullScreen = NO;
 				INFOPLIST_KEY_UIStatusBarStyle = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -4859,7 +4863,7 @@
 				INFOPLIST_KEY_UIRequiresFullScreen = NO;
 				INFOPLIST_KEY_UIStatusBarStyle = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -144,6 +144,7 @@ struct ChallengeFillVerseBoard: View {
             ChallengeVerseFlowLayout(spacing: 5, lineSpacing: 8) {
                 wordViews
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: 36), spacing: 5, alignment: .leading)],
@@ -272,11 +273,38 @@ private struct ChallengeVerseFlowLayout: Layout {
     var lineSpacing: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
+        let maxWidth = finiteWidth(proposal.width)
+        return CGSize(width: maxWidth, height: laidOutHeight(maxWidth: maxWidth, subviews: subviews))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let maxWidth = bounds.width > 1 ? bounds.width : finiteWidth(proposal.width)
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > bounds.minX + maxWidth, x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + lineSpacing
+                rowHeight = 0
+            }
+            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            rowHeight = max(rowHeight, size.height)
+            x += size.width + spacing
+        }
+    }
+
+    private func finiteWidth(_ proposed: CGFloat?) -> CGFloat {
+        if let proposed, proposed.isFinite, proposed > 1 { return proposed }
+        return max(1, UIScreen.main.bounds.width - 64)
+    }
+
+    private func laidOutHeight(maxWidth: CGFloat, subviews: Subviews) -> CGFloat {
         var x: CGFloat = 0
         var y: CGFloat = 0
         var rowHeight: CGFloat = 0
-
         for subview in subviews {
             let size = subview.sizeThatFits(.unspecified)
             if x + size.width > maxWidth, x > 0 {
@@ -287,25 +315,7 @@ private struct ChallengeVerseFlowLayout: Layout {
             rowHeight = max(rowHeight, size.height)
             x += size.width + spacing
         }
-        return CGSize(width: maxWidth.isFinite ? maxWidth : x, height: y + rowHeight)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var rowHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x + size.width > bounds.maxX, x > bounds.minX {
-                x = bounds.minX
-                y += rowHeight + lineSpacing
-                rowHeight = 0
-            }
-            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            rowHeight = max(rowHeight, size.height)
-            x += size.width + spacing
-        }
+        return y + rowHeight
     }
 }
 
@@ -409,70 +419,67 @@ struct ChallengeOldStyleShell<Content: View>: View {
     private var accent: Color { ChallengeQuizTheme.accent }
 
     var body: some View {
-        // Pin to the offered size so tall content (e.g. Verse Match) cannot grow the
-        // stack into the status-bar safe area when feedback/toast updates.
+        // A fixed height stops the stack from laying out forever and freezing the quiz.
         GeometryReader { geo in
-            VStack(spacing: 0) {
-                headerBar
-                    .fixedSize(horizontal: false, vertical: true)
-                    .layoutPriority(2)
-
-                VStack(spacing: 6) {
-                    heartsRow
-                    questionProgress
-                }
-                .padding(.top, 10)
-                .padding(.horizontal, 20)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(spacing: 0) {
+            headerBar
                 .layoutPriority(2)
 
-                Group {
-                    if contentScrollDisabled {
-                        // Keep lifelines pinned; only the white card may clip when space is tight.
-                        VStack(spacing: 14) {
-                            content()
-                                .padding(16)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                                .background(Color.white)
-                                .cornerRadius(14)
-                                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
-                                .clipped()
+            VStack(spacing: 6) {
+                heartsRow
+                questionProgress
+            }
+            .padding(.top, 10)
+            .padding(.horizontal, 20)
+            .layoutPriority(2)
 
-                            lifelineRow
-                                .fixedSize(horizontal: false, vertical: true)
-                                .layoutPriority(2)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 6)
-                        .padding(.bottom, 8)
-                    } else {
-                        ScrollView(showsIndicators: false) {
-                            shellScrollBody
-                        }
+            Group {
+                if contentScrollDisabled {
+                    // Keep lifelines pinned; only the white card may clip when space is tight.
+                    VStack(spacing: 14) {
+                        content()
+                            .padding(16)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                            .background(Color.white)
+                            .cornerRadius(14)
+                            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
+                            .clipped()
+
+                        lifelineRow
+                            .layoutPriority(2)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 6)
+                    .padding(.bottom, 8)
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        shellScrollBody
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .layoutPriority(0)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .layoutPriority(0)
+            .clipped()
 
-                Button(action: onPrimary) {
-                    HStack(spacing: 8) {
-                        Text(primaryTitle)
-                            .font(.system(size: 17, weight: .semibold))
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(primaryEnabled ? accent : Color.gray.opacity(0.45))
-                    .cornerRadius(12)
+            Button(action: onPrimary) {
+                HStack(spacing: 8) {
+                    Text(primaryTitle)
+                        .font(.system(size: 17, weight: .semibold))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
                 }
-                .disabled(!primaryEnabled)
-                .padding(.horizontal, 16)
-                .padding(.top, 4)
-                .fixedSize(horizontal: false, vertical: true)
-                .layoutPriority(2)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(primaryEnabled ? accent : Color.gray.opacity(0.45))
+                .cornerRadius(12)
+            }
+            .disabled(!primaryEnabled)
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+            .layoutPriority(2)
 
+            if !caption.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text(caption)
                     .font(.system(size: 12))
                     .foregroundColor(Color.black.opacity(0.45))
@@ -480,12 +487,13 @@ struct ChallengeOldStyleShell<Content: View>: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
                     .padding(.bottom, 16)
-                    .fixedSize(horizontal: false, vertical: true)
                     .layoutPriority(2)
             }
-            // Small lift only — keep middle space for Verse Match cards.
-            .padding(.bottom, 8)
-            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+        }
+        // Small lift only — keep middle space for Verse Match cards.
+        .padding(.bottom, 8)
+        .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+        .clipped()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(hex: "F2F3F7").ignoresSafeArea())

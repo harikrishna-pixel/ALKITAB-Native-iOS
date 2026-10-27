@@ -89,7 +89,7 @@ class QuizAlertVC: UIViewController, QuizAlert {
         }
 
         if self.chapterNo + 1 > self.Ch_Count {
-            self.view.makeToast("You've completed this book!", duration: 2.0, position: .center)
+            self.view.makeToast("You've completed this book!", duration: 2.0, position: .top)
             self.navigationController?.popViewController(animated: true)
             return
         }
@@ -111,10 +111,9 @@ class QuizAlertVC: UIViewController, QuizAlert {
         let book = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
         let chapterValue = UserDefaults.standard.string(forKey: "BookChapter")
             ?? "\(UserDefaults.standard.integer(forKey: "BookChapter"))"
-        let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "SelectionViewController") as! SelectionViewController
-        vc.BookString = book
-        vc.ChapterString = chapterValue
-        vc.ChapterCount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: book)
+        let vc = QuizOrChallengeChooserViewController()
+        vc.bookName = book
+        vc.chapter = chapterValue
         self.navigationController?.pushViewController(vc, animated: true)
     }
 

@@ -255,7 +255,7 @@ class SelectionViewController: UIViewController, QuizSelect {
             self.ChapterListVu.isHidden = true
             self.BookCell?.removeFromSuperview()
             if self.BookTxt.text == "Book" {
-                self.view.makeToast("Please select Book first", duration: 2.0, position: .bottom)
+                self.view.makeToast("Please select Book first", duration: 2.0, position: .top)
             }
         } 
     }

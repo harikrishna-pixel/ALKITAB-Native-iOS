@@ -180,14 +180,15 @@ enum ChallengeGameFactory {
     }
 
     static func quickQuiz(from ctx: ChallengeVerseContext, config: ChallengeSessionConfig? = nil) -> [QuickQuizQuestion] {
+        var source = QuickQuizSource()
         if let config {
-            return chapterQuickQuiz(config: config, fallback: ctx)
+            return chapterQuickQuiz(config: config, fallback: ctx, source: &source)
         }
-        return shuffledQuickQuiz(singleVerseQuickQuiz(from: ctx))
+        return shuffledQuickQuiz(singleVerseQuickQuiz(from: ctx, source: &source))
     }
 
     /// Questions for one verse (used for both single-verse and chapter pools).
-    private static func singleVerseQuickQuiz(from ctx: ChallengeVerseContext) -> [QuickQuizQuestion] {
+    private static func singleVerseQuickQuiz(from ctx: ChallengeVerseContext, source: inout QuickQuizSource) -> [QuickQuizQuestion] {
         let book = ctx.reference.components(separatedBy: " ").first ?? ctx.reference
         let words = Array(ctx.significantWords.prefix(8))
         let keyWord = words.first ?? "faith"
@@ -205,7 +206,7 @@ enum ChallengeGameFactory {
                 prompt: "Which book does this verse come from?",
                 options: uniqueOptions(
                     correct: book.isEmpty ? "Bible" : book,
-                    pool: localizedBookNames(excluding: book) + [book]
+                    pool: source.bookNames(excluding: book) + [book]
                 ),
                 correctIndex: 0
             )
@@ -216,7 +217,7 @@ enum ChallengeGameFactory {
                 prompt: "What is this verse reference?",
                 options: uniqueOptions(
                     correct: ctx.reference,
-                    pool: localizedReferencePool(excluding: ctx.reference) + [ctx.reference]
+                    pool: source.referencePool(excluding: ctx.reference) + [ctx.reference]
                 ),
                 correctIndex: 0
             )
@@ -245,9 +246,9 @@ enum ChallengeGameFactory {
 
         let snippet = String(ctx.text.prefix(60))
         let wrongSnippets = [
-            localizedVerseSnippet(bookId: 1, chapter: 1, verse: 1),
-            localizedVerseSnippet(bookId: 19, chapter: 23, verse: 1),
-            localizedVerseSnippet(bookId: 43, chapter: 3, verse: 16)
+            source.verseSnippet(bookId: 1, chapter: 1, verse: 1),
+            source.verseSnippet(bookId: 19, chapter: 23, verse: 1),
+            source.verseSnippet(bookId: 43, chapter: 3, verse: 16)
         ].filter { !$0.isEmpty }
         questions.append(
             QuickQuizQuestion(
@@ -379,7 +380,7 @@ enum ChallengeGameFactory {
         return Array(picked.prefix(targetCount))
     }
 
-    private static func chapterQuickQuiz(config: ChallengeSessionConfig, fallback: ChallengeVerseContext) -> [QuickQuizQuestion] {
+    private static func chapterQuickQuiz(config: ChallengeSessionConfig, fallback: ChallengeVerseContext, source: inout QuickQuizSource) -> [QuickQuizQuestion] {
         let verses = config.chapterVerses()
         let pool = verses.isEmpty ? [fallback] : verses
         var questions: [QuickQuizQuestion] = []
@@ -394,7 +395,7 @@ enum ChallengeGameFactory {
 
         for ctx in pool.shuffled() {
             // Build from the chosen chapter verse — do not use the daily-verse-only path.
-            for question in shuffledQuickQuiz(singleVerseQuickQuiz(from: ctx)).shuffled() {
+            for question in shuffledQuickQuiz(singleVerseQuickQuiz(from: ctx, source: &source)).shuffled() {
                 if usedKeys.insert(key(question)).inserted {
                     questions.append(question)
                 } else {
@@ -483,49 +484,63 @@ enum ChallengeGameFactory {
         return String(t.prefix(67)) + "…"
     }
 
-    private static func localizedBookNames(excluding: String? = nil) -> [String] {
-        BibleContent.sharedInstance.BookToPosition()
-            .map { $0.components(separatedBy: "-")[0] }
-            .filter { name in
+    /// Book names and chapter text for one Quick Quiz build. The Bible file is read once per book list and once per chapter, not once per question.
+    private struct QuickQuizSource {
+        private var bookNames: [String]?
+        private var chapters: [String: [String]] = [:]
+
+        mutating func bookNames(excluding: String? = nil) -> [String] {
+            names().filter { name in
                 guard let excluding = excluding else { return true }
                 return name.caseInsensitiveCompare(excluding) != .orderedSame
             }
-    }
+        }
 
-    private static func localizedReference(bookId: Int, chapter: Int, verse: Int) -> String? {
-        let books = BibleContent.sharedInstance.BookToPosition()
-        let idx = bookId - 1
-        guard idx >= 0, idx < books.count else { return nil }
-        let name = books[idx].components(separatedBy: "-")[0]
-        return "\(name) \(chapter):\(verse)"
-    }
+        mutating func referencePool(excluding: String) -> [String] {
+            let samples: [(Int, Int, Int)] = [
+                (1, 1, 1),
+                (19, 23, 1),
+                (43, 3, 16),
+                (50, 4, 13),
+                (45, 8, 28)
+            ]
+            return samples.compactMap { reference(bookId: $0.0, chapter: $0.1, verse: $0.2) }
+                .filter { $0.caseInsensitiveCompare(excluding) != .orderedSame }
+        }
 
-    private static func localizedReferencePool(excluding: String) -> [String] {
-        let samples: [(Int, Int, Int)] = [
-            (1, 1, 1),
-            (19, 23, 1),
-            (43, 3, 16),
-            (50, 4, 13),
-            (45, 8, 28)
-        ]
-        return samples.compactMap { localizedReference(bookId: $0.0, chapter: $0.1, verse: $0.2) }
-            .filter { $0.caseInsensitiveCompare(excluding) != .orderedSame }
-    }
+        mutating func verseSnippet(bookId: Int, chapter: Int, verse: Int) -> String {
+            let books = names()
+            let idx = bookId - 1
+            guard idx >= 0, idx < books.count else { return "" }
+            let selectedId = max(0, chapter - 1)
+            let key = "\(books[idx].lowercased())|\(selectedId)"
+            if chapters[key] == nil {
+                chapters[key] = BibleContent.sharedInstance.AudioBibleList(
+                    selecterBookName: books[idx],
+                    selectedId: selectedId
+                )
+            }
+            let verses = chapters[key] ?? []
+            let vIdx = max(0, verse - 1)
+            guard vIdx < verses.count else { return "" }
+            let text = verses[vIdx].trimmingCharacters(in: .whitespacesAndNewlines)
+            if text.count <= 60 { return text }
+            return String(text.prefix(60)) + "…"
+        }
 
-    private static func localizedVerseSnippet(bookId: Int, chapter: Int, verse: Int) -> String {
-        let books = BibleContent.sharedInstance.BookToPosition()
-        let idx = bookId - 1
-        guard idx >= 0, idx < books.count else { return "" }
-        let name = books[idx].components(separatedBy: "-")[0]
-        let verses = BibleContent.sharedInstance.AudioBibleList(
-            selecterBookName: name,
-            selectedId: max(0, chapter - 1)
-        )
-        let vIdx = max(0, verse - 1)
-        guard vIdx < verses.count else { return "" }
-        let text = verses[vIdx].trimmingCharacters(in: .whitespacesAndNewlines)
-        if text.count <= 60 { return text }
-        return String(text.prefix(60)) + "…"
+        private mutating func names() -> [String] {
+            if let bookNames { return bookNames }
+            let loaded = BibleContent.sharedInstance.BookToPosition().map { $0.components(separatedBy: "-")[0] }
+            bookNames = loaded
+            return loaded
+        }
+
+        private mutating func reference(bookId: Int, chapter: Int, verse: Int) -> String? {
+            let books = names()
+            let idx = bookId - 1
+            guard idx >= 0, idx < books.count else { return nil }
+            return "\(books[idx]) \(chapter):\(verse)"
+        }
     }
 
     private static func uniqueOptions(correct: String, pool: [String]) -> [String] {

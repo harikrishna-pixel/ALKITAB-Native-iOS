@@ -232,7 +232,7 @@ func AlertVc() {
      
         alert.addAction(UIAlertAction(title: "Copy", style: .default, handler:{ (UIAlertAction)in
             UIPasteboard.general.string = (multilineCell?.verse.text)!
-            self.view.makeToast("Copied successfully", duration: 2.0, position: .bottom)
+            self.view.makeToast("Copied successfully", duration: 2.0, position: .top)
         }))
     
         alert.addAction(UIAlertAction(title: "Share as text", style: .default , handler:{ (UIAlertAction)in

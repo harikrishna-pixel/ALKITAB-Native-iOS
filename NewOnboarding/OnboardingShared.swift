@@ -499,7 +499,6 @@ struct OnboardingLede: View {
 struct OnboardingPhotocard: View {
     let verseText: String
     let reference: String
-    var tag: String = APPNAME
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -543,12 +542,6 @@ struct OnboardingPhotocard: View {
             .padding(.top, 30)
             .padding(.bottom, 44)
             .frame(maxWidth: .infinity)
-
-            Text(tag)
-                .font(.system(size: 11, weight: .semibold, design: .serif))
-                .foregroundColor(.white.opacity(0.9))
-                .padding(.trailing, 16)
-                .padding(.bottom, 13)
         }
         .frame(minHeight: 220)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))

@@ -6,6 +6,10 @@
 import UIKit
 import SwiftUI
 
+private func challengeScreenBackground() -> UIColor {
+    UIColor(red: 242.0 / 255.0, green: 243.0 / 255.0, blue: 247.0 / 255.0, alpha: 1)
+}
+
 final class ChallengeHubViewController: UIViewController {
 
     var isEmbeddedTab = false
@@ -28,8 +32,8 @@ final class ChallengeHubViewController: UIViewController {
             onOpenLegacyQuiz: { [weak self] in
                 self?.openLegacyQuiz()
             },
-            onOpenChallenge: { [weak self] kind, verse, config in
-                self?.openChallenge(kind, verse: verse, config: config)
+            onOpenChallenge: { [weak self] kind, verse, config, animated in
+                self?.openChallenge(kind, verse: verse, config: config, animated: animated)
             }
         )
 
@@ -51,7 +55,11 @@ final class ChallengeHubViewController: UIViewController {
         navigationController?.setNavigationBarHidden(true, animated: animated)
     }
 
-    private func openChallenge(_ kind: ChallengeKind, verse: ChallengeVerseContext, config: ChallengeSessionConfig?) {
+    private func openChallenge(_ kind: ChallengeKind, verse: ChallengeVerseContext, config: ChallengeSessionConfig?, animated: Bool) {
+        if kind == .fillVerse, let config {
+            openOldFillVerseQuiz(config, animated: animated)
+            return
+        }
         let root = ChallengeGameScreen(
             kind: kind,
             verse: verse,
@@ -69,8 +77,23 @@ final class ChallengeHubViewController: UIViewController {
             }
         )
         let host = ChallengePushedHostingController(rootView: root)
-        host.view.backgroundColor = .white
-        navigationController?.pushViewController(host, animated: true)
+        host.view.backgroundColor = challengeScreenBackground()
+        navigationController?.pushViewController(host, animated: animated)
+    }
+
+    private func openOldFillVerseQuiz(_ config: ChallengeSessionConfig, animated: Bool) {
+        let level = config.difficulty.title
+        UserDefaults.standard.setValue(level, forKey: "Qlevel")
+        UserDefaults.standard.setValue(config.bookName, forKey: "Qbook")
+        UserDefaults.standard.setValue(config.chapter, forKey: "Qchapter")
+        UserDefaults.standard.setValue(config.bookName, forKey: "LastSelectedBook")
+        UserDefaults.standard.setValue("\(config.chapter)", forKey: "LastSelectedChapter")
+
+        let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "QuizMainPageVC") as! QuizMainPageVC
+        vc.level = level
+        vc.BookName = config.bookName
+        vc.Chapter = config.chapter
+        navigationController?.pushViewController(vc, animated: animated)
     }
 
     private func openLegacyQuiz() {
@@ -94,14 +117,20 @@ final class ChallengeHubViewController: UIViewController {
                 navigationController?.pushViewController(vc, animated: true)
             }
         } else {
-            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
 }
 
 final class ChallengePushedHostingController<Content: View>: UIHostingController<Content> {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = challengeScreenBackground()
+        edgesForExtendedLayout = .all
+    }
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        navigationController?.setNavigationBarHidden(true, animated: animated)
+        navigationController?.setNavigationBarHidden(true, animated: false)
     }
 }

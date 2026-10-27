@@ -80,6 +80,10 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
     
     
     
+    private var coinPulseSynced = false
+    private var quizQuestionsReady = false
+    private var quizLoadingCover: UIView?
+
     var questionShow:String = ""
     var ResultCorrect:Int = 0
     var ResultWrong:Int = 0
@@ -131,6 +135,10 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        // Turn self-sizing off before the first layout. Leaving it on loops and freezes this screen.
+        if let flow = QuizAnswerCV.collectionViewLayout as? UICollectionViewFlowLayout {
+            flow.estimatedItemSize = .zero
+        }
         self.progresConstrain.constant = 1000
         QuizProtocol.QuizMaindelegate = self
         self.QuestionTxt.isEditable = false
@@ -140,8 +148,6 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
         
         // Apply the theme before the screen appears, so Play Again does not flash the default color.
         self.initQuiz()
-        
-        self.HintLbl.addInterlineSpacing(spacingValue: 1.5)
          
     }
     
@@ -224,10 +230,17 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
         self.Previousview.backgroundColor = Themecolor
         
         
-        var AudioBibleList = BibleContent.sharedInstance.AudioBibleList(selecterBookName: BookName , selectedId: Chapter-1)
-        
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.3) {
+        showQuizLoading()
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            var AudioBibleList = BibleContent.sharedInstance.AudioBibleList(selecterBookName: self.BookName , selectedId: self.Chapter-1)
+            self.view.layoutIfNeeded()
             AudioBibleList.shuffle()
+
+            // Same default the quiz start screen uses. Zero makes the progress math invalid and the screen locks.
+            if UserDefaults.standard.integer(forKey: "QuestionList") == 0 {
+                UserDefaults.standard.setValue(10, forKey: "QuestionList")
+            }
             
             let QuestionCount =  (UserDefaults.standard.integer(forKey: "QuestionList") <= AudioBibleList.count  ? UserDefaults.standard.integer(forKey: "QuestionList"):AudioBibleList.count)
             
@@ -250,9 +263,64 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
             self.ProgressInnerBar.backgroundColor = self.Themecolor
                     
             self.QuestionVu.ViewShadow(10, color: UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor)
-    
-            self.progresConstrain.constant = CGFloat(self.QuestionList.count-self.CurrentQuestion)*(self.ProgressBar.frame.width/CGFloat(self.QuestionList.count))
-            
+
+            if self.QuestionList.count > 0 {
+                self.progresConstrain.constant = CGFloat(self.QuestionList.count-self.CurrentQuestion)*(self.ProgressBar.frame.width/CGFloat(self.QuestionList.count))
+            }
+            self.quizQuestionsReady = true
+            self.presentLoadedQuizQuestion()
+        }
+    }
+
+    private func showQuizLoading() {
+        guard quizLoadingCover == nil else { return }
+        let cover = UIView()
+        cover.translatesAutoresizingMaskIntoConstraints = false
+        let screenColor = view.backgroundColor
+        cover.backgroundColor = (screenColor == nil || screenColor == .clear) ? .white : screenColor
+        let spinner = UIActivityIndicatorView(style: .large)
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        spinner.color = Themecolor
+        spinner.startAnimating()
+        cover.addSubview(spinner)
+        view.addSubview(cover)
+        NSLayoutConstraint.activate([
+            cover.topAnchor.constraint(equalTo: view.topAnchor),
+            cover.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            cover.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            cover.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            spinner.centerXAnchor.constraint(equalTo: cover.centerXAnchor),
+            spinner.centerYAnchor.constraint(equalTo: cover.centerYAnchor)
+        ])
+        quizLoadingCover = cover
+    }
+
+    private func hideQuizLoading() {
+        quizLoadingCover?.removeFromSuperview()
+        quizLoadingCover = nil
+    }
+
+    private func presentLoadedQuizQuestion() {
+        guard quizQuestionsReady else { return }
+        hideQuizLoading()
+        guard !QuestionList.isEmpty else { return }
+        self.refreshQuestion(Number: self.CurrentQuestion)
+        self.refreshAns()
+
+        let comparedValue = self.Answer.filter() { self.Blank.contains($0) }
+        if comparedValue.count >= 1 {
+            self.PoceedBtn.isHidden = false
+        } else {
+            self.PoceedBtn.isHidden = true
+        }
+
+        if UserDefaults.standard.bool(forKey: "TimerSwitch") {
+            self.Previousview.isHidden = true
+        }
+
+        if self.CurrentQuestion == 1 {
+            self.halfBlockVu.isHidden = true
+            self.LifeLine = 3
         }
     }
     
@@ -289,6 +357,31 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
     }
 
     
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        syncCoinBadges()
+    }
+
+    private func syncCoinBadges() {
+        guard let half = HalfLbl as? CoinLabel, let hint = HintLbl as? CoinLabel else { return }
+        pinCoinBadge(half)
+        pinCoinBadge(hint)
+        guard half.bounds.width > 1, hint.bounds.width > 1 else { return }
+        let startPulse = !coinPulseSynced
+        half.applySharedCoinStyle(startPulse: startPulse)
+        hint.applySharedCoinStyle(startPulse: startPulse)
+        coinPulseSynced = true
+    }
+
+    private func pinCoinBadge(_ label: CoinLabel) {
+        guard !label.constraints.contains(where: { $0.identifier == "quizCoinSide" }) else { return }
+        let width = label.widthAnchor.constraint(equalToConstant: 24)
+        let height = label.heightAnchor.constraint(equalToConstant: 24)
+        width.identifier = "quizCoinSide"
+        height.identifier = "quizCoinSide"
+        NSLayoutConstraint.activate([width, height])
+    }
+
     override func viewWillAppear(_ animated: Bool) {
         self.WalletMoney.text =  "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
     }
@@ -305,28 +398,7 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
             }
         }
         
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.5) {
-            self.refreshQuestion(Number:self.CurrentQuestion)
-            self.refreshAns()
-            
-            let comparedValue = self.Answer.filter () { self.Blank.contains($0) }
-            if comparedValue.count >= 1 {
-                self.PoceedBtn.isHidden = false
-            } else {
-                self.PoceedBtn.isHidden = true
-            }
-            
-            if UserDefaults.standard.bool(forKey: "TimerSwitch") {
-                DispatchQueue.main.async {
-                    self.Previousview.isHidden = true
-                }
-            }
-            
-            if self.CurrentQuestion == 1 {
-                self.halfBlockVu.isHidden = true
-                self.LifeLine = 3
-            }
-        }
+        presentLoadedQuizQuestion()
         
                 
         
@@ -359,7 +431,8 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
     
     func refreshAns() {
 //        self.TimerLbl.text = "01:00"
-        Answer = AnswerKeyWords[CurrentQuestion]!
+        guard let saved = AnswerKeyWords[CurrentQuestion] else { return }
+        Answer = saved
         
         for item in Answer {
             if let range = self.questionShow.range(of:" ________ ") {
@@ -376,8 +449,8 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
     
     
     func refreshQuestion(Number:Int) {
+        guard QuestionList.count > 0, QuestionList.indices.contains(Number - 1) else { return }
         self.progresConstrain.constant = CGFloat(self.QuestionList.count-CurrentQuestion)*(self.ProgressBar.frame.width/CGFloat(self.QuestionList.count))
-
         self.QuestionLbl.text = "Question \(Number)/\(self.QuestionList.count)"
         self.Blank.removeAll()
         
@@ -550,7 +623,7 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
          }
      }
      func CollectCoin() {
-         self.view.makeToast("Coins added to your wallet", duration: 2.0, position: .center)
+         self.view.makeToast("Coins added to your wallet", duration: 2.0, position: .top)
          
          UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+rewardCoins, forKey: "WalletMoney")
          self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
@@ -570,7 +643,7 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
 //            self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
             
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
         
        }
@@ -1010,9 +1083,12 @@ extension QuizMainPageVC: UICollectionViewDelegate, UICollectionViewDataSource, 
     
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: 200, height: 36)
+        guard Blank.indices.contains(indexPath.row) else { return CGSize(width: 200, height: 36) }
+        let text = Blank[indexPath.row] as NSString
+        let font = UIFont.systemFont(ofSize: 15, weight: .medium)
+        let textWidth = ceil(text.size(withAttributes: [.font: font]).width) + 40
+        return CGSize(width: min(max(textWidth, 72), 220), height: 36)
     }
-    
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         

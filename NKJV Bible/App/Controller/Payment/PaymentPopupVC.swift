@@ -173,7 +173,7 @@ extension PaymentPopupVC {
                   self.LoaderVu.isHidden = true
               }
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
@@ -187,7 +187,7 @@ extension PaymentPopupVC {
                   self.LoaderVu.isHidden = true
               }
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     

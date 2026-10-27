@@ -20,13 +20,6 @@ class SubscriptionPopup: UIView {
         
         self.SubscriptionVc.backgroundColor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
         
-        var enddate = CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI)
-        if enddate == "" {
-            enddate = Date().string(format: "dd-MM-yyyy")
-        }
-        
-        let showDate1 = GetReceptKey.shared.convertData(date: enddate)
-        let diff = showDate1.interval(ofComponent: .day, fromDate: Date())
         let newfont:UIFont = UIFont.systemFont(ofSize: 16, weight: UIFont.Weight.regular)
         
         
@@ -34,7 +27,8 @@ class SubscriptionPopup: UIView {
             if UserDefaults.standard.string(forKey: "PaymentId") ?? "" == SUBSCRIPTIONID_LifeTime {
                 self.SubscriptionText.text = "Lifetime subscription Successful!\n Have endless access forever!"
             } else {
-                self.SubscriptionText.attributedText = self.attributedText(withString: "\(diff+1) day(s) left for the renewal of the subscription. \n Your subscription expires on ", boldString: "\(diff+1) days", boldString2: enddate, font: newfont)
+                let info = PaymentHistory.sharedInstance.subscriptionDaysLeft()
+                self.SubscriptionText.attributedText = self.attributedText(withString: "\(info.days) day(s) left for the renewal of the subscription. \n Your subscription expires on ", boldString: "\(info.days) days", boldString2: info.expiryText, font: newfont)
             }
             self.SubscriptionText.isHidden = false
             self.Loader.isHidden = true

@@ -50,11 +50,22 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     var onRestoreSuccess: (() -> Void)?
     var onRestoreFailed: (() -> Void)?
     var onDismiss: (() -> Void)?
+    /// Increments when a restore attempt finishes so the paywall on screen can react.
+    @Published var restoreEvent = 0
+    @Published var restoreSucceeded = false
     
     private var purchaseTimeoutWorkItem: DispatchWorkItem?
     private var restoreTimeoutWorkItem: DispatchWorkItem?
     private var isProcessingTransaction = false
     private var hasRestoredTransactions = false
+    private var didFinishRestoreUI = false
+    /// True only after the user taps Restore. A buy must not run the restore path.
+    private var userRequestedRestore = false
+    /// Looks up the last App Store plan without saving it or closing the paywall.
+    private var planLookupActive = false
+    private var planLookupCancelled = false
+    private var lookedUpPlans: [(id: String, purchasedAt: Date?)] = []
+    private var planLookupCompletion: (([(id: String, purchasedAt: Date?)], Bool) -> Void)?
     
     private var iapProducts: [SKProduct] = []
     private var iapProducts1: [SKProduct] = []
@@ -499,8 +510,11 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         
         print("   ✅ Proceeding with purchase for product: \(selectedProduct.productIdentifier)")
         
-        // FIXED: Match UIKit - set PRODUCT_ID first
+        // A buy is not a restore. Ignore any old restored transactions already in the queue.
+        cancelPlanLookup()
+        userRequestedRestore = false
         PRODUCT_ID = identifier
+        productID = selectedProduct.productIdentifier
         
         isLoading = true
         let payment = SKPayment(product: selectedProduct)
@@ -511,9 +525,6 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         // FIXED: Match UIKit - add observer EVERY time before purchase
         SKPaymentQueue.default().add(self)
         SKPaymentQueue.default().add(payment)
-        
-        // FIXED: Match UIKit - set productID AFTER adding payment
-        productID = selectedProduct.productIdentifier
         
         print("   ✅ Payment added to queue successfully")
         
@@ -544,25 +555,92 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     }
     
     func restorePurchases() {
+        cancelPlanLookup()
+        userRequestedRestore = true
+        didFinishRestoreUI = false
         guard NetworkManager.sharedInstance.isConnectedToInternet() else {
-            showAlert(title: "No Internet", message: "Please check your internet connection and try again.")
+            finishRestore(success: false, message: "Please check your internet connection and try again.")
             return
         }
         
         hasRestoredTransactions = false
         isLoading = true
-        
-        if RestoreClass.shared.SourceVC != nil {
-            RestoreClass.shared.restoreData(NavigateStatus: false)
-        }
+        PaymentHistory.sharedInstance.fallbackProductId = ""
+        PaymentHistory.sharedInstance.fallbackTransactionId = ""
         
         // FIXED: Add observer before restore
         SKPaymentQueue.default().add(self)
         SKPaymentQueue.default().restoreCompletedTransactions()
         restoreLegacyPaidAppIfNeeded()
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
-            self.isLoading = false
+    }
+
+    /// Asks the App Store which plan was bought before. Does not save it and does not run Restore.
+    func lookupLastStorePlans(completion: @escaping ([(id: String, purchasedAt: Date?)], Bool) -> Void) {
+        cancelPlanLookup()
+        planLookupActive = true
+        planLookupCancelled = false
+        planLookupCompletion = completion
+        SKPaymentQueue.default().add(self)
+        SKPaymentQueue.default().restoreCompletedTransactions()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 45) { [weak self] in
+            self?.finishPlanLookup()
+        }
+    }
+
+    private func cancelPlanLookup() {
+        planLookupActive = false
+        planLookupCancelled = false
+        planLookupCompletion = nil
+        lookedUpPlans.removeAll()
+    }
+
+    private func noteLookedUpPlan(_ id: String, date: Date?) {
+        let write = {
+            guard self.planLookupActive, !id.isEmpty else { return }
+            if let date = date {
+                if let index = self.lookedUpPlans.firstIndex(where: { $0.id == id }) {
+                    if let old = self.lookedUpPlans[index].purchasedAt, old >= date { return }
+                    self.lookedUpPlans[index] = (id, date)
+                } else {
+                    self.lookedUpPlans.append((id, date))
+                }
+            } else if !self.lookedUpPlans.contains(where: { $0.id == id }) {
+                self.lookedUpPlans.append((id, nil))
+            }
+        }
+        if Thread.isMainThread {
+            write()
+        } else {
+            DispatchQueue.main.sync(execute: write)
+        }
+    }
+
+    private func finishPlanLookup() {
+        let finish = {
+            guard self.planLookupActive else { return }
+            self.planLookupActive = false
+            let plans = self.lookedUpPlans
+            let cancelled = self.planLookupCancelled
+            let completion = self.planLookupCompletion
+            self.planLookupCompletion = nil
+            self.lookedUpPlans.removeAll()
+            guard let completion = completion else { return }
+            if cancelled {
+                completion(plans, true)
+                return
+            }
+            PaymentHistory.sharedInstance.peekLatestReceiptPlan { productId, purchasedAt in
+                var merged = plans
+                if let productId = productId, !productId.isEmpty {
+                    merged.append((id: productId, purchasedAt: purchasedAt))
+                }
+                completion(merged, false)
+            }
+        }
+        if Thread.isMainThread {
+            finish()
+        } else {
+            DispatchQueue.main.async(execute: finish)
         }
     }
     
@@ -845,6 +923,11 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     }
     
     func request(_ request: SKRequest, didFailWithError error: Error) {
+        if let refresh = receiptRefreshRequest, request === refresh {
+            receiptRefreshRequest = nil
+            restoreFromAppleReceipt(allowRefresh: false)
+            return
+        }
         DispatchQueue.main.async {
             print("❌ [StoreManager] SKRequest failed with error: \(error.localizedDescription)")
             
@@ -886,11 +969,17 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         for transaction in transactions {
             switch transaction.transactionState {
             case .purchased:
+                let boughtId = transaction.payment.productIdentifier
+                let purchasedAt = transaction.transactionDate
                 // FIXED: Match UIKit - finish transaction first
                 SKPaymentQueue.default().finishTransaction(transaction)
+                if planLookupActive && !userRequestedRestore {
+                    noteLookedUpPlan(boughtId, date: purchasedAt)
+                    break
+                }
                 
-                // FIXED: Match UIKit - check productID == PRODUCT_ID
-                if productID == PRODUCT_ID {
+                // Only the product the user just chose. An old queued purchase must not restore the previous plan.
+                if !userRequestedRestore && !boughtId.isEmpty && boughtId == productID && productID == PRODUCT_ID {
                     // Store transaction details
                     self.transId = transaction.transactionIdentifier ?? ""
                     
@@ -900,7 +989,9 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
                     dateFormatter.locale = Locale.current
                     self.transDate = dateFormatter.string(from: transaction.transactionDate ?? Date())
                     
-                    // FIXED: Match UIKit - call SetPaymentDAte (which calls Getpayment)
+                    PaymentHistory.sharedInstance.fallbackProductId = productID
+                    PaymentHistory.sharedInstance.fallbackTransactionId = self.transId
+                    // Receipt expiry is saved in Getpayment. The fallback is used only if Apple sends no expiry.
                     self.SetPaymentDAte()
                     
                     // Set purchased flag
@@ -910,10 +1001,14 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
                     self.isLoading = false
                     
                     // Call RestoreClass
-                    RestoreClass.shared.paidResult(productID: productID, transId: self.transId)
+                    RestoreClass.shared.paidResult(productID: productID, transId: self.transId, showToast: false)
                 }
                 
             case .failed:
+                if planLookupActive && !userRequestedRestore {
+                    SKPaymentQueue.default().finishTransaction(transaction)
+                    break
+                }
                 SKPaymentQueue.default().finishTransaction(transaction)
                 isLoading = false
                 
@@ -928,9 +1023,15 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
                 }
                 
             case .restored:
+                let restoredId = transaction.payment.productIdentifier
+                let restoredAt = transaction.transactionDate
                 SKPaymentQueue.default().finishTransaction(transaction)
+                if planLookupActive && !userRequestedRestore {
+                    noteLookedUpPlan(restoredId, date: restoredAt)
+                    break
+                }
+                guard userRequestedRestore else { break }
                 hasRestoredTransactions = true
-                isLoading = false
                 
             case .deferred, .purchasing:
                 break
@@ -942,41 +1043,71 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     }
     
     func paymentQueueRestoreCompletedTransactionsFinished(_ queue: SKPaymentQueue) {
-        isLoading = false
-        
-        if !hasRestoredTransactions {
-            if LegacyPaidAppService.shared.isLegacyPaidAppUser { return }
-            DispatchQueue.main.async {
-                self.showRestoreToast("No active plan is found")
-                self.onRestoreFailed?()
-            }
+        if planLookupActive && !userRequestedRestore {
+            finishPlanLookup()
             return
         }
-        
-        PaymentHistory.sharedInstance.Getpayment(completion: {
+        guard userRequestedRestore else { return }
+        DispatchQueue.main.async {
+            self.restoreFromAppleReceipt(allowRefresh: true)
+        }
+    }
+
+    /// Reads the App Store receipt after reinstall. Refreshes it once if the saved plan is not active yet.
+    private func restoreFromAppleReceipt(allowRefresh: Bool) {
+        guard userRequestedRestore else { return }
+        PaymentHistory.sharedInstance.Getpayment {
             DispatchQueue.main.async {
-                let endDate = CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI)
-                var isActive = false
-                if !endDate.isEmpty {
-                    let showDate1 = GetReceptKey.shared.convertData(date: endDate)
-                    let isLifetime = (IS_SUBSCRIPTION_ENABLE == 1 && SUBSCRIPTIONID_LifeTime != "" &&
-                                      UserDefaults.standard.string(forKey: "PaymentId") ?? "" == SUBSCRIPTIONID_LifeTime)
-                    isActive = showDate1.isGreaterThan(Date()) || isLifetime
-                }
-                
-                if isActive {
+                if PaymentHistory.sharedInstance.hasActivePurchase() {
+                    let endDate = CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI)
                     App_Protocol.delegateReader?.paymentStatus()
                     App_Protocol.DelegateSlideCard?.paymentStatus()
                     ImageAppProtocol.ImageTxtEditDelegate?.CheckPay()
-                    self.showRestoreToast("Restored successfully! Valid till \(endDate)")
-                    self.onRestoreSuccess?()
-                    self.onPurchaseSuccess?()
+                    self.finishRestore(success: true, message: "Restored successfully! Valid till \(endDate)")
+                } else if allowRefresh {
+                    self.refreshReceiptForRestore()
+                } else if LegacyPaidAppService.shared.isLegacyPaidAppUser {
+                    self.finishRestore(success: true, message: "Original app purchase restored")
                 } else {
-                    self.showRestoreToast("No active plan is found")
-                    self.onRestoreFailed?()
+                    self.finishRestore(success: false, message: "No active plan is found")
                 }
             }
-        })
+        }
+    }
+
+    /// Hides the restore loader, shows one toast, then lets the paywall close only on success.
+    private func finishRestore(success: Bool, message: String?) {
+        DispatchQueue.main.async {
+            guard !self.didFinishRestoreUI else { return }
+            self.didFinishRestoreUI = true
+            self.userRequestedRestore = false
+            self.isLoading = false
+            self.restoreSucceeded = success
+            self.restoreEvent += 1
+            if let message = message, !message.isEmpty {
+                self.showRestoreToast(message)
+            }
+            if success {
+                self.onRestoreSuccess?()
+            } else {
+                self.onRestoreFailed?()
+            }
+        }
+    }
+
+    private var receiptRefreshRequest: SKReceiptRefreshRequest?
+
+    private func refreshReceiptForRestore() {
+        let request = SKReceiptRefreshRequest()
+        receiptRefreshRequest = request
+        request.delegate = self
+        request.start()
+    }
+
+    func requestDidFinish(_ request: SKRequest) {
+        guard let refresh = receiptRefreshRequest, request === refresh else { return }
+        receiptRefreshRequest = nil
+        restoreFromAppleReceipt(allowRefresh: false)
     }
     
     /// Re-checks the original paid-app download (AppTransaction) alongside the normal IAP restore.
@@ -989,23 +1120,25 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
                 App_Protocol.DelegateSlideCard?.paymentStatus()
                 ImageAppProtocol.ImageTxtEditDelegate?.CheckPay()
                 guard !self.hasRestoredTransactions else { return }
-                self.isLoading = false
-                self.showRestoreToast("Original app purchase restored")
-                self.onRestoreSuccess?()
+                self.finishRestore(success: true, message: "Original app purchase restored")
             }
         }
     }
 
     func paymentQueue(_ queue: SKPaymentQueue, restoreCompletedTransactionsFailedWithError error: Error) {
-        isLoading = false
-        RestoreClass.shared.restoreData(NavigateStatus: false)
-        
-        let nsError = error as NSError
-        if nsError.code != SKError.paymentCancelled.rawValue {
-            showAlert(title: "Restore Failed", message: error.localizedDescription)
+        if planLookupActive && !userRequestedRestore {
+            let nsError = error as NSError
+            planLookupCancelled = nsError.code == SKError.paymentCancelled.rawValue
+            finishPlanLookup()
+            return
         }
-        
-        onRestoreFailed?()
+        guard userRequestedRestore else { return }
+        let nsError = error as NSError
+        if nsError.code == SKError.paymentCancelled.rawValue {
+            finishRestore(success: false, message: nil)
+        } else {
+            finishRestore(success: false, message: error.localizedDescription)
+        }
     }
     
     // MARK: - SetPaymentDAte (Match UIKit)
@@ -1054,11 +1187,8 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     }
     
     private func showRestoreToast(_ message: String) {
-        let window = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-            .first { $0.isKeyWindow }
-        window?.rootViewController?.view.makeToast(message, duration: 2.0, position: .bottom)
+        let host = OnboardingAuthManager.topViewController()?.view
+        host?.makeToast(message, duration: 2.0, position: .top)
     }
     
     private func calculateOriginalPrice(price: String, discount: Float) -> String {

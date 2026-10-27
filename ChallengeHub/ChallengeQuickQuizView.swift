@@ -75,11 +75,21 @@ struct ChallengeQuickQuizView: View {
                     }
                 }
             } else {
-                Color(hex: "F2F3F7").ignoresSafeArea()
+                ZStack {
+                    Color(hex: "F2F3F7").ignoresSafeArea()
+                    SwiftUI.ProgressView()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .onAppear {
-            questions = ChallengeGameFactory.quickQuiz(from: verse, config: sessionConfig)
+            guard questions.isEmpty else { return }
+            let verse = verse
+            let sessionConfig = sessionConfig
+            DispatchQueue.main.async {
+                guard questions.isEmpty else { return }
+                questions = ChallengeGameFactory.quickQuiz(from: verse, config: sessionConfig)
+            }
         }
     }
 

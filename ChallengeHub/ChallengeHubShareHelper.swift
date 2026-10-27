@@ -9,6 +9,8 @@
 import Foundation
 import UIKit
 import Combine
+import MessageUI
+import Toast_Swift
 
 final class ChallengeShareSession: ObservableObject {
 
@@ -120,7 +122,7 @@ final class ChallengeShareSession: ObservableObject {
 
     private func toast(_ message: String) {
         DispatchQueue.main.async {
-            OnboardingAuthManager.topViewController()?.view.makeToast(message, duration: 2.0, position: .bottom)
+            OnboardingAuthManager.topViewController()?.view.makeToast(message, duration: 2.0, position: .top)
         }
     }
 }
@@ -249,5 +251,73 @@ enum ChallengeHubShareMapper {
             return optionIds[idx]
         }
         return "a"
+    }
+}
+
+/// Reports a challenge share only after the system says the message was sent.
+final class ChallengeShareFinish: NSObject, MFMessageComposeViewControllerDelegate, MFMailComposeViewControllerDelegate {
+    static let shared = ChallengeShareFinish()
+    private var onSent: (() -> Void)?
+
+    func presentMessages(body: String, onSent: @escaping () -> Void) {
+        guard let top = OnboardingAuthManager.topViewController() else { return }
+        guard MFMessageComposeViewController.canSendText() else {
+            openWithoutResult(urlString: "sms:&body=\(query(body))", from: top, failureToast: "Can't open Messages")
+            return
+        }
+        self.onSent = onSent
+        let controller = MFMessageComposeViewController()
+        controller.body = body
+        controller.messageComposeDelegate = self
+        top.present(controller, animated: true)
+    }
+
+    func presentMail(subject: String, body: String, onSent: @escaping () -> Void) {
+        guard let top = OnboardingAuthManager.topViewController() else { return }
+        guard MFMailComposeViewController.canSendMail() else {
+            let mail = "mailto:?subject=\(query(subject))&body=\(query(body))"
+            openWithoutResult(urlString: mail, from: top, failureToast: "Please log in to your email")
+            return
+        }
+        self.onSent = onSent
+        let compose = MFMailComposeViewController()
+        compose.mailComposeDelegate = self
+        compose.setSubject(subject)
+        compose.setMessageBody(body, isHTML: false)
+        top.present(compose, animated: true)
+    }
+
+    func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
+        finish(sent: result == .sent, controller: controller)
+    }
+
+    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
+        finish(sent: result == .sent, controller: controller)
+    }
+
+    private func finish(sent: Bool, controller: UIViewController) {
+        let callback = sent ? onSent : nil
+        onSent = nil
+        controller.dismiss(animated: true) {
+            callback?()
+        }
+    }
+
+    private func query(_ value: String) -> String {
+        value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+    }
+
+    /// Opens another app when no in-app composer is available. Opening is not a completed send.
+    private func openWithoutResult(urlString: String, from top: UIViewController, failureToast: String) {
+        guard let url = URL(string: urlString) else {
+            top.view.makeToast(failureToast, duration: 2.0, position: .top)
+            return
+        }
+        UIApplication.shared.open(url, options: [:]) { opened in
+            guard !opened else { return }
+            DispatchQueue.main.async {
+                top.view.makeToast(failureToast, duration: 2.0, position: .top)
+            }
+        }
     }
 }

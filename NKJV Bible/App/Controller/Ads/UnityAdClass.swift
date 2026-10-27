@@ -37,6 +37,7 @@ final class UnityAdClass: NSObject {
     }
 
     func initializeIfNeeded() {
+        if ADS_DISABLED_FOR_TESTING { return }
         guard UNITY_ENABLE, !UNITY_KEY.isEmpty else { return }
         guard !isInitialized else { return }
 
@@ -60,12 +61,14 @@ final class UnityAdClass: NSObject {
     }
 
     func loadInterstitial_UnityAds() {
+        if ADS_DISABLED_FOR_TESTING { return }
         guard UNITY_ENABLE else { return }
         LoadAdCatagory = "INTERSTITIAL"
         requestAd(kind: "INTERSTITIAL")
     }
 
     func loadRewarded_UnityAds(rewardContext: String, viewController: UIViewController) {
+        if ADS_DISABLED_FOR_TESTING { return }
         guard UNITY_ENABLE else {
             notifyNoAd()
             return
@@ -141,6 +144,7 @@ final class UnityAdClass: NSObject {
         let showConfig = UADSShowConfigurationBuilder()
             .with(viewController: presenter)
             .build()
+        PlaybackAdHold.pause()
         ad.show(showConfig, delegate: interstitialShowDelegate)
     }
 
@@ -152,6 +156,7 @@ final class UnityAdClass: NSObject {
         let showConfig = UADSShowConfigurationBuilder()
             .with(viewController: presenter)
             .build()
+        PlaybackAdHold.pause()
         ad.show(showConfig, delegate: rewardedShowDelegate)
     }
 
@@ -179,17 +184,21 @@ final class UnityAdClass: NSObject {
 private final class UnityInterstitialShowHandler: NSObject, UADSInterstitialShowDelegate {
     weak var owner: UnityAdClass?
 
-    func showDidStart(_ unityAd: UADSInterstitialAd) {}
+    func showDidStart(_ unityAd: UADSInterstitialAd) {
+        PlaybackAdHold.pause()
+    }
 
     func showDidClick(_ unityAd: UADSInterstitialAd) {}
 
     func showDidComplete(_ unityAd: UADSInterstitialAd, with finishState: UADSShowFinishState) {
         owner?.clearInterstitialAd()
+        PlaybackAdHold.resume()
     }
 
     func showDidFail(_ unityAd: UADSInterstitialAd, error: UnityAdsError) {
         print("Unity interstitial show failed: \(error.message)")
         owner?.clearInterstitialAd()
+        PlaybackAdHold.resume()
         owner?.notifyNoAd()
     }
 }
@@ -197,17 +206,21 @@ private final class UnityInterstitialShowHandler: NSObject, UADSInterstitialShow
 private final class UnityRewardedShowHandler: NSObject, UADSRewardedShowDelegate {
     weak var owner: UnityAdClass?
 
-    func showDidStart(_ unityAd: UADSRewardedAd) {}
+    func showDidStart(_ unityAd: UADSRewardedAd) {
+        PlaybackAdHold.pause()
+    }
 
     func showDidClick(_ unityAd: UADSRewardedAd) {}
 
     func showDidComplete(_ unityAd: UADSRewardedAd, with finishState: UADSShowFinishState) {
         owner?.clearRewardedAd()
+        PlaybackAdHold.resume()
     }
 
     func showDidFail(_ unityAd: UADSRewardedAd, error: UnityAdsError) {
         print("Unity rewarded show failed: \(error.message)")
         owner?.clearRewardedAd()
+        PlaybackAdHold.resume()
         owner?.notifyNoAd()
     }
 

@@ -89,8 +89,8 @@ class SaveImage: NSObject {
             DispatchQueue.main.async {
                 CustomPhotoAlbum.sharedInstance.saveImage(image: saveImage)
 //                Mainview.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .bottom)
-                (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Image saved successfully in Album!", duration: 2.0, position: .bottom)
-                Mainview.view.makeToast("Image saved successfully in Album!", duration: 2.0, position: .bottom)
+                (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Image saved successfully in Album!", duration: 2.0, position: .top)
+                Mainview.view.makeToast("Image saved successfully in Album!", duration: 2.0, position: .top)
 //                App_Protocol.delegateReader?.AlertFrame(AlertNote: "Image saved successfully in Album!",Vers:"",Title:"")
                 let onSaved = self.onNextSaveSuccess
                 self.onNextSaveSuccess = nil
@@ -99,7 +99,7 @@ class SaveImage: NSObject {
 
         } else {
             onNextSaveSuccess = nil
-            Mainview.view.makeToast("Save Image now", duration: 2.0, position: .bottom)
+            Mainview.view.makeToast("Save Image now", duration: 2.0, position: .top)
         }
     }
     

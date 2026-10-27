@@ -17,6 +17,7 @@ enum OnboardingNotificationScheduler {
         static let memory = "OnboardingNotif.memory"
         static let prayer = "OnboardingNotif.prayer"
         static let configured = "OnboardingNotif.configured"
+        static let settingsTimesApplied = "OnboardingNotif.settingsTimesApplied"
     }
 
     private enum RequestID {
@@ -45,34 +46,69 @@ enum OnboardingNotificationScheduler {
         defaults.set(memory, forKey: PrefKey.memory)
         defaults.set(prayer, forKey: PrefKey.prayer)
 
-        // Notifications allowed in onboarding → enable the Settings times too.
-        // Night (20:00) stays off while the Journey reminder is on, so 8 PM only fires when the streak is incomplete.
-        let notificationsOn = dailyVerse || journey || memory || prayer
-        let shift1 = dailyVerse
-        let shift2 = notificationsOn
-        let shift3 = notificationsOn && !journey
-        let shift4 = notificationsOn
-        defaults.set(notificationsOn ? "1" : "0", forKey: "NotifiStatue")
-        defaults.set(shift1, forKey: "Shift1ON")
-        defaults.set(shift2, forKey: "Shift2ON")
-        defaults.set(shift3, forKey: "Shift3ON")
-        defaults.set(shift4, forKey: "Shift4ON")
-        defaults.set("07:00", forKey: "Shift 1")
-        if defaults.string(forKey: "Shift 2") == nil { defaults.set("16:00", forKey: "Shift 2") }
-        if defaults.string(forKey: "Shift 3") == nil { defaults.set("20:00", forKey: "Shift 3") }
-        if defaults.string(forKey: "Shift 4") == nil { defaults.set("14:00", forKey: "Shift 4") }
-        defaults.set([shift1, shift2, shift3, shift4].filter { $0 }.count, forKey: "PerDay")
-
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
             DispatchQueue.main.async {
                 guard granted else {
                     completion?()
                     return
                 }
+                // Permission allowed in onboarding → every Settings time stays on.
+                enableAllSettingsTimes()
+                defaults.set("07:00", forKey: "Shift 1")
+                defaults.set(true, forKey: PrefKey.settingsTimesApplied)
                 UIApplication.shared.registerForRemoteNotifications()
                 if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
-                    // Schedules Shift 1 verse locals when enabled (also clears pending first).
+                    // Schedules each Settings time (also clears pending first).
                     // Journey / memory / prayer are attached at end of onLoadNotificationContent.
+                    appDelegate.onRegisterPushNotification()
+                }
+                completion?()
+            }
+        }
+    }
+
+    /// Morning, Evening, Night, and Quiz Time all on. Does not overwrite a time the user already set.
+    static func enableAllSettingsTimes() {
+        let defaults = UserDefaults.standard
+        defaults.set("1", forKey: "NotifiStatue")
+        defaults.set(true, forKey: "Shift1ON")
+        defaults.set(true, forKey: "Shift2ON")
+        defaults.set(true, forKey: "Shift3ON")
+        defaults.set(true, forKey: "Shift4ON")
+        defaults.set(4, forKey: "PerDay")
+        if defaults.string(forKey: "Shift 1") == nil { defaults.set("07:00", forKey: "Shift 1") }
+        if defaults.string(forKey: "Shift 2") == nil { defaults.set("16:00", forKey: "Shift 2") }
+        if defaults.string(forKey: "Shift 3") == nil { defaults.set("20:00", forKey: "Shift 3") }
+        if defaults.string(forKey: "Shift 4") == nil { defaults.set("14:00", forKey: "Shift 4") }
+    }
+
+    /// Onboarding already allowed notifications, but Settings was saved before every time was turned on.
+    static func enableAllSettingsTimesIfAuthorized(completion: (() -> Void)? = nil) {
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: PrefKey.configured) else {
+            completion?()
+            return
+        }
+        guard !defaults.bool(forKey: PrefKey.settingsTimesApplied) else {
+            completion?()
+            return
+        }
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let allowed: Bool
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                allowed = true
+            default:
+                allowed = false
+            }
+            DispatchQueue.main.async {
+                guard allowed else {
+                    completion?()
+                    return
+                }
+                enableAllSettingsTimes()
+                defaults.set(true, forKey: PrefKey.settingsTimesApplied)
+                if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
                     appDelegate.onRegisterPushNotification()
                 }
                 completion?()

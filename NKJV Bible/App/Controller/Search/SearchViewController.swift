@@ -278,9 +278,9 @@ func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
             
             // BUG FIX 7: NEW CODE - Check count and show appropriate message
             if self.arraySearchList.count == 0 {
-                self.view.makeToast("No results found", duration: 1.0, position: .bottom)
+                self.view.makeToast("No results found", duration: 1.0, position: .top)
             } else {
-                self.view.makeToast(NSLocalizedString("Results :\(self.arraySearchList.count)", comment: ""), duration: 1.0, position: .bottom)
+                self.view.makeToast(NSLocalizedString("Results :\(self.arraySearchList.count)", comment: ""), duration: 1.0, position: .top)
             }
         }
         self.SearchViewCreate()
@@ -479,7 +479,7 @@ extension  SearchViewController {
                     }
                 }
             } else if query.count > 0 {
-                self.view.makeToast("Incorrect word ", duration: 2.0, position: .bottom)
+                self.view.makeToast("Incorrect word ", duration: 2.0, position: .top)
                 self.CollecrtionNibinit()
             } else {
                 self.CollecrtionNibinit()

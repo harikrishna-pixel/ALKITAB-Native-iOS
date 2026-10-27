@@ -137,17 +137,17 @@ final class PrayerBlockedUsersViewController: UIViewController, UITableViewDataS
 
     private func performUnblock(_ id: String) {
         if !NetworkManager.sharedInstance.isConnectedToInternet() {
-            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            view.makeToast("No internet connection", duration: 2.0, position: .top)
             return
         }
         PrayerWallService.shared.unblockUser(blockedUserId: id) { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .success:
-                self.view.makeToast("User unblocked", duration: 2.0, position: .bottom)
+                self.view.makeToast("User unblocked", duration: 2.0, position: .top)
                 self.reload()
             case .failure(let error):
-                self.view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+                self.view.makeToast(error.localizedDescription, duration: 2.5, position: .top)
             }
         }
     }

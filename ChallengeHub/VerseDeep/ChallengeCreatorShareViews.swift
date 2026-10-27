@@ -236,36 +236,32 @@ struct ChallengeCreatorShareFlow: View {
         if let url = URL(string: "whatsapp://send?text=\(encoded)"),
            UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
-            onShared()
         } else {
-            OnboardingAuthManager.topViewController()?.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .bottom)
+            OnboardingAuthManager.topViewController()?.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .top)
         }
     }
 
     private func openMessages() {
-        let encoded = shareMessage.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        if let url = URL(string: "sms:&body=\(encoded)") {
-            UIApplication.shared.open(url)
-            onShared()
-        }
+        ChallengeShareFinish.shared.presentMessages(body: shareMessage, onSent: onShared)
     }
 
     private func openInstagram() {
         UIPasteboard.general.string = shareUrl
         if let url = URL(string: "instagram://app"), UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
-            onShared()
         } else {
-            OnboardingAuthManager.topViewController()?.view.makeToast("Link copied. Please install Instagram to share", duration: 2.0, position: .bottom)
+            OnboardingAuthManager.topViewController()?.view.makeToast("Link copied. Please install Instagram to share", duration: 2.0, position: .top)
         }
     }
 
     private func openMore() {
         guard let top = OnboardingAuthManager.topViewController() else { return }
         let vc = UIActivityViewController(activityItems: [shareMessage], applicationActivities: nil)
-        vc.completionWithItemsHandler = { _, completed, _, _ in
-            if completed { onShared() }
+        vc.completionWithItemsHandler = { activity, completed, _, _ in
+            if completed, activity != nil { onShared() }
         }
+        vc.popoverPresentationController?.sourceView = top.view
+        vc.popoverPresentationController?.sourceRect = CGRect(x: top.view.bounds.midX, y: top.view.bounds.maxY, width: 0, height: 0)
         top.present(vc, animated: true)
     }
 }

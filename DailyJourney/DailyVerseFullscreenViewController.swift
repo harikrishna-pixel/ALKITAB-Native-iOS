@@ -322,7 +322,7 @@ final class DailyVerseFullscreenViewController: UIViewController {
     }
 }
 
-private extension UIImage {
+extension UIImage {
     /// App name along the bottom of the shared verse image only.
     func withAppNameWatermark() -> UIImage {
         let name = APPNAME_SPLASH.trimmingCharacters(in: .whitespacesAndNewlines)

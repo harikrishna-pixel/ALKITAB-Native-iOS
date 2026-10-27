@@ -138,11 +138,11 @@ extension MoreAppsViewController: UICollectionViewDelegate, UICollectionViewData
                            print(success ? "URL was opened successfully." : "Failed to open URL.")
                        }
                    } else {
-                       self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
+                       self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
                    }
                    
                } else {
-                   self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                   self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                }
     }
     

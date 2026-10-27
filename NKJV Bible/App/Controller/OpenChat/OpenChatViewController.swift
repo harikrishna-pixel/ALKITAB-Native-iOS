@@ -318,7 +318,7 @@ final class OpenChatViewController: UIViewController, UITableViewDataSource, UIT
                 self.refreshModelButtonTitle()
             case .failure(let error):
                 self.modelButton.setTitle("Tap to retry loading models", for: .normal)
-                self.view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+                self.view.makeToast(error.localizedDescription, duration: 2.5, position: .top)
             }
         }
     }
@@ -436,12 +436,12 @@ final class OpenChatViewController: UIViewController, UITableViewDataSource, UIT
         guard !text.isEmpty, !isSending else { return }
 
         guard let modelId = selectedModelId, !modelId.isEmpty else {
-            view.makeToast("Select a model first", duration: 2.0, position: .bottom)
+            view.makeToast("Select a model first", duration: 2.0, position: .top)
             return
         }
 
         if !NetworkManager.sharedInstance.isConnectedToInternet() {
-            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            view.makeToast("No internet connection", duration: 2.0, position: .top)
             return
         }
 
@@ -467,7 +467,7 @@ final class OpenChatViewController: UIViewController, UITableViewDataSource, UIT
             case .success(let reply):
                 self.messages.append(OpenChatMessage(role: .assistant, text: reply))
             case .failure(let error):
-                self.view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+                self.view.makeToast(error.localizedDescription, duration: 2.5, position: .top)
             }
             self.tableView.reloadData()
             self.scrollToBottom(animated: true)
@@ -519,7 +519,7 @@ final class OpenChatViewController: UIViewController, UITableViewDataSource, UIT
         cell.onCopy = { [weak self] text in
             guard let self = self else { return }
             UIPasteboard.general.string = text
-            self.view.makeToast("Copied", duration: 1.5, position: .bottom)
+            self.view.makeToast("Copied", duration: 1.5, position: .top)
         }
         cell.onShare = { [weak self] text in
             guard let self = self else { return }

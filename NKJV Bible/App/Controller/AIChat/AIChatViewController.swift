@@ -42,6 +42,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     private let composerContainer = UIView()
     private let inputTextView = UITextView()
     private let placeholderLabel = UILabel()
+    private let freeCountLabel = UILabel()
     private let sendButton = UIButton(type: .custom)
     private let typingLabel = UILabel()
 
@@ -49,6 +50,9 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     private var composerBottomConstraint: NSLayoutConstraint?
     private var inputHeightConstraint: NSLayoutConstraint?
     private var suggestionTrailingConstraint: NSLayoutConstraint?
+    private var tableAboveSuggestionsConstraint: NSLayoutConstraint?
+    private var tableAboveComposerConstraint: NSLayoutConstraint?
+    private var verseSuggestionFooterWidth: CGFloat = 0
     var launchContext: AIChatLaunchContext?
 
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
@@ -90,7 +94,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         if suggestionStack.arrangedSubviews.isEmpty {
             refreshFollowUpSuggestions()
         }
-        emptyStateView.isHidden = !messages.isEmpty
+        emptyStateView.isHidden = !messages.isEmpty || launchContext != nil
         view.layoutIfNeeded()
     }
 
@@ -98,6 +102,18 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         let sendConfig = UIImage.SymbolConfiguration(pointSize: 36, weight: .semibold)
         let symbol = AIUsageLimiter.shared.isLocked(.aiChat) ? "lock.circle.fill" : "arrow.up.circle.fill"
         sendButton.setImage(UIImage(systemName: symbol, withConfiguration: sendConfig), for: .normal)
+        refreshFreeCount()
+    }
+
+    private func refreshFreeCount() {
+        let unlimited = AIUsageLimiter.shared.hasUnlimitedPlan
+        freeCountLabel.isHidden = unlimited
+        guard !unlimited else {
+            freeCountLabel.text = nil
+            return
+        }
+        let left = AIUsageLimiter.shared.freeUsesLeft(.aiChat)
+        freeCountLabel.text = left == 1 ? "1 free message left" : "\(left) free messages left"
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -182,6 +198,11 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         placeholderLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.45) : .gray
         inputTextView.addSubview(placeholderLabel)
 
+        freeCountLabel.translatesAutoresizingMaskIntoConstraints = false
+        freeCountLabel.font = UIFont.systemFont(ofSize: 12)
+        freeCountLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.55) : UIColor(white: 0.45, alpha: 1)
+        composerContainer.addSubview(freeCountLabel)
+
         sendButton.translatesAutoresizingMaskIntoConstraints = false
         let sendConfig = UIImage.SymbolConfiguration(pointSize: 36, weight: .semibold)
         sendButton.setImage(UIImage(systemName: "arrow.up.circle.fill", withConfiguration: sendConfig), for: .normal)
@@ -207,6 +228,11 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         bannerHeightConstraint = bannerView.heightAnchor.constraint(equalToConstant: bannerHeight)
         composerBottomConstraint = composerContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         inputHeightConstraint = inputTextView.heightAnchor.constraint(equalToConstant: 40)
+        let tableAboveSuggestions = tableView.bottomAnchor.constraint(equalTo: suggestionContainer.topAnchor)
+        tableAboveSuggestionsConstraint = tableAboveSuggestions
+        let tableAboveComposer = tableView.bottomAnchor.constraint(equalTo: composerContainer.topAnchor)
+        tableAboveComposer.isActive = false
+        tableAboveComposerConstraint = tableAboveComposer
 
         NSLayoutConstraint.activate([
             bannerView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -242,8 +268,12 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             inputTextView.topAnchor.constraint(equalTo: typingLabel.bottomAnchor, constant: 6),
             inputTextView.leadingAnchor.constraint(equalTo: composerContainer.leadingAnchor, constant: 16),
             inputTextView.trailingAnchor.constraint(equalTo: sendButton.leadingAnchor, constant: -8),
-            inputTextView.bottomAnchor.constraint(equalTo: composerContainer.safeAreaLayoutGuide.bottomAnchor, constant: -10),
             inputHeightConstraint!,
+
+            freeCountLabel.topAnchor.constraint(equalTo: inputTextView.bottomAnchor, constant: 4),
+            freeCountLabel.leadingAnchor.constraint(equalTo: inputTextView.leadingAnchor, constant: 16),
+            freeCountLabel.trailingAnchor.constraint(equalTo: inputTextView.trailingAnchor),
+            freeCountLabel.bottomAnchor.constraint(equalTo: composerContainer.safeAreaLayoutGuide.bottomAnchor, constant: -6),
 
             placeholderLabel.topAnchor.constraint(equalTo: inputTextView.topAnchor, constant: 10),
             placeholderLabel.leadingAnchor.constraint(equalTo: inputTextView.leadingAnchor, constant: 16),
@@ -256,7 +286,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             tableView.topAnchor.constraint(equalTo: bannerView.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: suggestionContainer.topAnchor),
+            tableAboveSuggestions,
 
             suggestionContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             suggestionContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -290,11 +320,13 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         refreshFollowUpSuggestions()
         view.bringSubviewToFront(suggestionContainer)
         view.bringSubviewToFront(composerContainer)
+        emptyStateView.isHidden = !messages.isEmpty || launchContext != nil
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         installContextHeaderIfNeeded()
+        installVerseSuggestionFooterIfNeeded()
     }
 
     private func setupEmptyState() {
@@ -354,17 +386,45 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         return button
     }
 
+    private var pinsVerseQuestionsUnderCard: Bool {
+        launchContext?.isChapterSummary == false && messages.isEmpty
+    }
+
     private func refreshFollowUpSuggestions() {
         // Keep suggestion height unchanged while waiting for a reply to avoid layout jump.
-        if isSending {
+        if isSending && !pinsVerseQuestionsUnderCard && tableView.tableFooterView == nil {
             suggestionStack.isUserInteractionEnabled = false
             return
         }
-        suggestionStack.isUserInteractionEnabled = true
+        suggestionStack.isUserInteractionEnabled = !isSending
 
-        suggestionStack.arrangedSubviews.forEach {
-            suggestionStack.removeArrangedSubview($0)
-            $0.removeFromSuperview()
+        if pinsVerseQuestionsUnderCard {
+            clearSuggestionStack()
+            suggestionContainer.isHidden = true
+            tableAboveSuggestionsConstraint?.isActive = false
+            tableAboveComposerConstraint?.isActive = true
+            view.setNeedsLayout()
+            return
+        }
+
+        if tableView.tableFooterView != nil {
+            tableView.tableFooterView = nil
+            verseSuggestionFooterWidth = 0
+        }
+        suggestionContainer.isHidden = false
+        tableAboveComposerConstraint?.isActive = false
+        tableAboveSuggestionsConstraint?.isActive = true
+
+        clearSuggestionStack()
+
+        if isSending {
+            if let context = launchContext, !context.isChapterSummary {
+                contextSuggestions(for: context).forEach {
+                    suggestionStack.addArrangedSubview(makeContextSuggestionRow(title: $0))
+                }
+            }
+            suggestionStack.isUserInteractionEnabled = false
+            return
         }
 
         let chips: [String]
@@ -385,6 +445,51 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
                 suggestionStack.addArrangedSubview(makeSuggestionChip(title: title))
             }
         }
+    }
+
+    private func clearSuggestionStack() {
+        suggestionStack.arrangedSubviews.forEach {
+            suggestionStack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+    }
+
+    private func installVerseSuggestionFooterIfNeeded() {
+        guard pinsVerseQuestionsUnderCard else { return }
+        let width = tableView.bounds.width
+        guard width > 0, let context = launchContext else { return }
+        if abs(verseSuggestionFooterWidth - width) < 1, tableView.tableFooterView != nil {
+            return
+        }
+
+        let footer = UIView()
+        footer.translatesAutoresizingMaskIntoConstraints = false
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 10
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        footer.addSubview(stack)
+        contextSuggestions(for: context).forEach {
+            stack.addArrangedSubview(makeContextSuggestionRow(title: $0))
+        }
+        let widthConstraint = footer.widthAnchor.constraint(equalToConstant: width)
+        NSLayoutConstraint.activate([
+            widthConstraint,
+            stack.topAnchor.constraint(equalTo: footer.topAnchor, constant: 4),
+            stack.leadingAnchor.constraint(equalTo: footer.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: footer.trailingAnchor, constant: -16),
+            stack.bottomAnchor.constraint(equalTo: footer.bottomAnchor, constant: -8)
+        ])
+        let height = footer.systemLayoutSizeFitting(
+            CGSize(width: width, height: 0),
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        ).height
+        widthConstraint.isActive = false
+        footer.translatesAutoresizingMaskIntoConstraints = true
+        footer.frame = CGRect(x: 0, y: 0, width: width, height: max(height, 1))
+        verseSuggestionFooterWidth = width
+        tableView.tableFooterView = footer
     }
 
     private var usesIndonesian: Bool {
@@ -614,7 +719,6 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
                 card.topAnchor.constraint(equalTo: header.topAnchor, constant: 16),
                 card.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
                 card.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
-                card.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8),
 
                 iconHolder.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
                 iconHolder.topAnchor.constraint(equalTo: card.topAnchor, constant: 14),
@@ -642,7 +746,9 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
                 quote.leadingAnchor.constraint(equalTo: bar.trailingAnchor, constant: 12),
                 quote.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
                 quote.topAnchor.constraint(equalTo: subtitle.bottomAnchor, constant: 12),
-                quote.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -14)
+                quote.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -14),
+
+                card.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8)
             ])
         }
 
@@ -924,7 +1030,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         cell.onCopy = { [weak self] text in
             guard let self = self else { return }
             UIPasteboard.general.string = text
-            self.view.makeToast("Copied", duration: 1.5, position: .bottom)
+            self.view.makeToast("Copied", duration: 1.5, position: .top)
         }
         cell.onShare = { [weak self] text in
             guard let self = self else { return }

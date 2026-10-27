@@ -258,10 +258,10 @@ extension NewPaymentViewController {
               } else {
                   self.Callapi(i:0)
                   self.LoaderVu.isHidden = true
-                  self.view.makeToast("Please wait for few secs..", duration: 2.0, position: .bottom)
+                  self.view.makeToast("Please wait for few secs..", duration: 2.0, position: .top)
                   DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.0) {
                       if enable {
-                          self.view.makeToast("Poor Network Connection", duration: 2.0, position: .bottom)
+                          self.view.makeToast("Poor Network Connection", duration: 2.0, position: .top)
                       } else {
                           self.sixmonth(true)
                       }
@@ -269,7 +269,7 @@ extension NewPaymentViewController {
                   }
               }
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
@@ -290,18 +290,18 @@ extension NewPaymentViewController {
               } else {
                   self.Callapi(i:0)
                   self.LoaderVu.isHidden = true
-                  self.view.makeToast("Please wait for few secs..", duration: 2.0, position: .bottom)
+                  self.view.makeToast("Please wait for few secs..", duration: 2.0, position: .top)
                   
                   DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.0) {
                       if enable {
-                          self.view.makeToast("Poor Network Connection", duration: 2.0, position: .bottom)
+                          self.view.makeToast("Poor Network Connection", duration: 2.0, position: .top)
                       } else {
                           self.OneYear(true)
                       }
                   }
               }
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
         
     }
@@ -323,18 +323,18 @@ extension NewPaymentViewController {
               } else {
                   self.Callapi(i:0)
                   self.LoaderVu.isHidden = true
-                  self.view.makeToast("Please wait for few secs..", duration: 2.0, position: .bottom)
+                  self.view.makeToast("Please wait for few secs..", duration: 2.0, position: .top)
                   
                   DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.0) {
                       if enable {
-                          self.view.makeToast("Poor Network Connection", duration: 2.0, position: .bottom)
+                          self.view.makeToast("Poor Network Connection", duration: 2.0, position: .top)
                       } else {
                           self.lifetimeCall(true)
                       }
                   }
               }
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
@@ -362,7 +362,7 @@ extension NewPaymentViewController {
             self.Loader(LoaderMsg: "Please wait...")
                 SKPaymentQueue.default().restoreCompletedTransactions()
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
         
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+10.0) {
@@ -379,11 +379,11 @@ extension NewPaymentViewController {
                     print(success ? "URL was opened successfully." : "Failed to open URL.")
                 }
             } else {
-                self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
+                self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
             }
             
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
         
     }
@@ -397,11 +397,11 @@ extension NewPaymentViewController {
                     print(success ? "URL was opened successfully." : "Failed to open URL.")
                 }
             } else {
-                self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
+                self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
             }
             
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     

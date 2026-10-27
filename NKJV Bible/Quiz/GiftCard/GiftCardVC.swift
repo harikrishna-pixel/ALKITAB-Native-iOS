@@ -192,7 +192,7 @@ extension GiftCardVC {
         if NetworkManager.sharedInstance.isConnectedToInternet() {
             self.CardViewAction(AdEnable: true)
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
             
     }

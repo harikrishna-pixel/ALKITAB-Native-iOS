@@ -36,6 +36,7 @@ class AdmobManager : NSObject {
 extension AdmobManager: LevelPlayInterstitialDelegate {
     
     func IronSource_Interstitial_AdLoad() {
+        if ADS_DISABLED_FOR_TESTING { return }
         IronSource.setLevelPlayInterstitialDelegate(self)
         IronSource.initWithAppKey(IRONSOURCE_KEY, delegate: self)
         IronSource.initWithAppKey(IRONSOURCE_KEY, adUnits:[IS_INTERSTITIAL])
@@ -46,10 +47,12 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
     
     
     func IronSource_Interstitial_ShowAds(vw : UIViewController, waitForLoadIfNeeded: Bool = false) {
+        if ADS_DISABLED_FOR_TESTING { return }
         vc = vw
         if IronSource.hasInterstitial() {
             pendingInterstitialShow = false
             DispatchQueue.main.async {
+                PlaybackAdHold.pause()
                 IronSource.showInterstitial(with: vw)
             }
         } else if waitForLoadIfNeeded {
@@ -67,6 +70,7 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
         guard pendingInterstitialShow, let host = vc, IronSource.hasInterstitial() else { return }
         pendingInterstitialShow = false
         DispatchQueue.main.async {
+            PlaybackAdHold.pause()
             IronSource.showInterstitial(with: host)
         }
     }
@@ -110,7 +114,7 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
     
     
     func didOpen(with adInfo: ISAdInfo!) {
-        print("Ad opened")
+        PlaybackAdHold.pause()
     }
     
     func didShow(with adInfo: ISAdInfo!) {
@@ -118,6 +122,7 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
     }
     
     func didFailToShowWithError(_ error: Error!, andAdInfo adInfo: ISAdInfo!) {
+        PlaybackAdHold.resume()
         pendingInterstitialShow = false
         showAdUnavailableToastIfNeeded()
         // Reload promptly so Verse Image 20/30… can show again.
@@ -160,7 +165,7 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
     }
     
     func didClose(with adInfo: ISAdInfo!) {
-        
+        PlaybackAdHold.resume()
         pendingInterstitialShow = false
         
         if Interstitial_ID == "OpenSplash" {
@@ -192,6 +197,7 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
      
     
     func IronSource_Reward_AdLoad() { 
+        if ADS_DISABLED_FOR_TESTING { return }
         IronSource.setLevelPlayRewardedVideoDelegate(self)
         IronSource.initWithAppKey(IRONSOURCE_KEY, delegate: self)
         IronSource.initWithAppKey(IRONSOURCE_KEY, adUnits:[IS_REWARDED_VIDEO])
@@ -252,12 +258,14 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
     
 
     func IronSource_Reward_ShowAds(vw : UIViewController, RewardAd:String) {
+        if ADS_DISABLED_FOR_TESTING { return }
         self.RewardAd = RewardAd
         vc = vw
         // Ready → show now. Not ready → keep intent, load, poll until ready or timeout.
         if IronSource.hasRewardedVideo() {
             clearPendingRewardedShow()
             DispatchQueue.main.async {
+                PlaybackAdHold.pause()
                 IronSource.showRewardedVideo(with: vw)
             }
         } else {
@@ -274,6 +282,7 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
         guard IronSource.hasRewardedVideo() else { return }
         clearPendingRewardedShow()
         DispatchQueue.main.async {
+            PlaybackAdHold.pause()
             IronSource.showRewardedVideo(with: host)
         }
     }

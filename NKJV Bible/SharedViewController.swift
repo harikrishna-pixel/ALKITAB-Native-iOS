@@ -117,7 +117,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
                     }
                     UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "RateUSoneTime")+1, forKey: "RateUSoneTime")
                 } else {
-                    self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                    self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 }
                 break
             case 1:
@@ -129,7 +129,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
                     }
                     UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "RateUSoneTime")+1, forKey: "RateUSoneTime")
                 } else {
-                    self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                    self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 }
                 
                 break
@@ -143,7 +143,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
                 if NetworkManager.sharedInstance.isConnectedToInternet() {
                     self.sendEmailToUsers()
                 } else {
-                    self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                    self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 }
                 UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "RateUSoneTime")+1, forKey: "RateUSoneTime")
                 break
@@ -192,7 +192,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
            
             self.present(composeVC, animated: true, completion: nil)
         } else {
-            self.view.makeToast(NSLocalizedString("Please Login your email id", comment: ""), duration: 1.0, position: .bottom)
+            self.view.makeToast(NSLocalizedString("Please Login your email id", comment: ""), duration: 1.0, position: .top)
         }
     }
     
@@ -205,33 +205,35 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
     
     // MARK:- Share Text in Whats app
     
-    func WhatsappShare() {        
-        
-        let urlWhats = "whatsapp://send?text=\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(outboundLink())"
-          if let urlString = urlWhats.addingPercentEncoding(withAllowedCharacters: NSCharacterSet.urlQueryAllowed) {
-              if let whatsappURL = NSURL(string: urlString) {
-                  if UIApplication.shared.canOpenURL(whatsappURL as URL) {
-                      if #available(iOS 10.0, *) {
-                          UIApplication.shared.open(whatsappURL as URL, options: [:], completionHandler: { success in
-                              if !success {
-                                  DispatchQueue.main.async {
-                                      self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .bottom)
-                                  }
-                              }
-                          })
-                      } else {
-                          UIApplication.shared.openURL(whatsappURL as URL)
-                      }
-                  } else {
-                    self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .bottom)
-                  }
-              } else {
-                  self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .bottom)
-              }
-          } else {
-              self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .bottom)
-          }
-      }
+    func WhatsappShare() {
+        let message = "\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(outboundLink())"
+        guard let schemeURL = URL(string: "whatsapp://send"),
+              UIApplication.shared.canOpenURL(schemeURL) else {
+            self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .top)
+            return
+        }
+
+        // Encode the message only. Encoding the whole link left "&" in the text,
+        // which cut the explanation off before WhatsApp received it.
+        var allowed = CharacterSet.urlQueryAllowed
+        allowed.remove(charactersIn: "&+?#=")
+        let encoded = message.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+        let urlString = "whatsapp://send?text=\(encoded)"
+
+        // A long explanation makes this link too big. WhatsApp then opens with an empty message.
+        // The existing share sheet passes the full text into WhatsApp.
+        if urlString.utf8.count <= 1800, let whatsappURL = URL(string: urlString) {
+            UIApplication.shared.open(whatsappURL, options: [:], completionHandler: { success in
+                if !success {
+                    DispatchQueue.main.async {
+                        self.shared()
+                    }
+                }
+            })
+            return
+        }
+        self.shared()
+    }
     
     
     
@@ -261,18 +263,18 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
                     self.interaction!.presentOpenInMenu(from: CGRect.zero, in: self.view, animated: true)
                   }
                   catch {
-                    self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .bottom)
+                    self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .top)
                   }
 //                }
 
             } else {
-                self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .bottom)
+                self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .top)
             }
           } else {
-              self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .bottom)
+              self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .top)
           }
         } else {
-            self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .bottom)
+            self.view.makeToast("Please install WhatsApp to share", duration: 2.0, position: .top)
         }
     }
     
@@ -289,7 +291,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
                controller.messageComposeDelegate = self
                self.present(controller, animated: true, completion: nil)
            } else {
-              self.view.makeToast("Can't Open contacts", duration: 1.0, position: .bottom)
+              self.view.makeToast("Can't Open contacts", duration: 1.0, position: .top)
            }
        }
     
@@ -304,7 +306,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
     // MARK:- Copy Text
     func CopyAction() {
         UIPasteboard.general.string = "\(VerseStr!)\n\n\(Bookname!)\n\nRead more at: \(outboundLink())"
-        self.view.makeToast("Copied successfully", duration: 2.0, position: .bottom)
+        self.view.makeToast("Copied successfully", duration: 2.0, position: .top)
         
     }
     
@@ -327,7 +329,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
             if UIApplication.shared.canOpenURL(fbURL) {
                 shareTxt.show()
             } else {
-                self.view.makeToast("Install facebook app to share", duration: 2.0, position: .bottom)
+                self.view.makeToast("Install facebook app to share", duration: 2.0, position: .top)
             }
         }
         
@@ -345,7 +347,7 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
                if (showDialog.canShow) {
                    showDialog.show()
                } else {
-                   self.view.makeToast("It looks like you don't have the Facebook mobile app on your phone.", duration: 2.0, position: .bottom)
+                   self.view.makeToast("It looks like you don't have the Facebook mobile app on your phone.", duration: 2.0, position: .top)
                }
     }
     
@@ -355,11 +357,11 @@ class SharedViewController: UIViewController, MFMailComposeViewControllerDelegat
     }
 
     func sharer(_ sharer: FBSDKShareKit.Sharing, didFailWithError error: Error) {
-        self.view.makeToast("Facebook sharing has been  Canceled", duration: 2.0, position: .bottom)
+        self.view.makeToast("Facebook sharing has been  Canceled", duration: 2.0, position: .top)
     }
 
     func sharerDidCancel(_ sharer: FBSDKShareKit.Sharing) {
-        self.view.makeToast("Facebook sharing has been  Canceled", duration: 2.0, position: .bottom)
+        self.view.makeToast("Facebook sharing has been  Canceled", duration: 2.0, position: .top)
     }
     
      

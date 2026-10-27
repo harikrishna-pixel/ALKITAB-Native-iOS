@@ -11,12 +11,11 @@ struct ChallengeHubView: View {
     var onBack: () -> Void
     var onOpenPremiumPaywall: () -> Void
     var onOpenLegacyQuiz: () -> Void
-    var onOpenChallenge: (ChallengeKind, ChallengeVerseContext, ChallengeSessionConfig?) -> Void
+    var onOpenChallenge: (ChallengeKind, ChallengeVerseContext, ChallengeSessionConfig?, Bool) -> Void
 
     @State private var verse = ChallengeVerseContext.loadToday()
     @State private var walletTick = 0
     @State private var pendingKind: ChallengeKind?
-    @State private var pendingStart: PendingChallengeStart?
 
     init(
         showBackButton: Bool = true,
@@ -24,7 +23,7 @@ struct ChallengeHubView: View {
         onBack: @escaping () -> Void,
         onOpenPremiumPaywall: @escaping () -> Void,
         onOpenLegacyQuiz: @escaping () -> Void,
-        onOpenChallenge: @escaping (ChallengeKind, ChallengeVerseContext, ChallengeSessionConfig?) -> Void
+        onOpenChallenge: @escaping (ChallengeKind, ChallengeVerseContext, ChallengeSessionConfig?, Bool) -> Void
     ) {
         self.showBackButton = showBackButton
         self.sessionConfig = sessionConfig
@@ -60,18 +59,17 @@ struct ChallengeHubView: View {
             reloadVerse()
             walletTick += 1
         }
-        .sheet(item: $pendingKind, onDismiss: {
-            // Push only after the sheet has fully closed — pushing during dismissal flickers.
-            guard let start = pendingStart else { return }
-            pendingStart = nil
-            onOpenChallenge(start.kind, start.config.primaryVerse(), start.config)
-        }) { kind in
+        .sheet(item: $pendingKind) { kind in
             ChallengeStartSheet(
                 kind: kind,
                 onCancel: { pendingKind = nil },
                 onStart: { config in
-                    pendingStart = PendingChallengeStart(kind: kind, config: config)
-                    pendingKind = nil
+                    beginChallenge(kind, config: config, animated: false)
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        pendingKind = nil
+                    }
                 }
             )
         }
@@ -117,10 +115,25 @@ struct ChallengeHubView: View {
 
     private func open(_ kind: ChallengeKind) {
         if let sessionConfig {
-            onOpenChallenge(kind, verse, sessionConfig)
+            beginChallenge(kind, config: sessionConfig, animated: true)
             return
         }
         pendingKind = kind
+    }
+
+    /// Fill the Verse is free. Other quiz types spend 10 credits per question after today's free quiz.
+    private func beginChallenge(_ kind: ChallengeKind, config: ChallengeSessionConfig, animated: Bool) {
+        let begin = {
+            self.onOpenChallenge(kind, self.verse, config, animated)
+        }
+        guard kind.isPremium else {
+            begin()
+            return
+        }
+        AIUsageLimiter.shared.requestAccess(.quiz, units: kind.questionCount(in: config)) {
+            AIUsageLimiter.shared.commit(.quiz)
+            begin()
+        }
     }
 
 
@@ -142,6 +155,8 @@ struct ChallengeGameScreen: View {
 
     @State private var activeKind: ChallengeKind
     @State private var showKindPicker = false
+    @State private var playVerse: ChallengeVerseContext?
+    @State private var didPrepareVerse = false
 
     init(
         kind: ChallengeKind,
@@ -160,21 +175,24 @@ struct ChallengeGameScreen: View {
     }
 
     var body: some View {
-        Group {
-            switch activeKind {
-            case .quickQuiz:
-                ChallengeQuickQuizView(verse: verse, sessionConfig: sessionConfig, onClose: onClose, onOpenLegacyQuiz: onOpenLegacyQuiz)
-            case .fillVerse:
-                ChallengeFillVerseView(verse: verse, sessionConfig: sessionConfig, onClose: onClose)
-            case .verseMatch:
-                ChallengeVerseMatchView(verse: verse, sessionConfig: sessionConfig, onClose: onClose)
-            case .trueFalse:
-                ChallengeTrueFalseView(verse: verse, sessionConfig: sessionConfig, onClose: onClose)
-            case .wordSearch:
-                ChallengeWordSearchView(verse: verse, sessionConfig: sessionConfig, onClose: onClose)
+        ZStack {
+            if let playVerse {
+                gameBody(verse: playVerse)
+                    .id(activeKind)
+            } else {
+                Color(hex: "F2F3F7").ignoresSafeArea()
+                SwiftUI.ProgressView()
             }
         }
-        .id(activeKind)
+        .onAppear {
+            guard !didPrepareVerse else { return }
+            didPrepareVerse = true
+            let config = sessionConfig
+            let fallback = verse
+            DispatchQueue.main.async {
+                playVerse = config?.primaryVerse() ?? fallback
+            }
+        }
         .environment(\.challengeSwitchAction, { showKindPicker = true })
         .sheet(isPresented: $showKindPicker) {
             ChallengeKindPickerSheet(
@@ -188,6 +206,22 @@ struct ChallengeGameScreen: View {
             )
         }
         .navigationBarHidden(true)
+    }
+
+    @ViewBuilder
+    private func gameBody(verse: ChallengeVerseContext) -> some View {
+        switch activeKind {
+        case .quickQuiz:
+            ChallengeQuickQuizView(verse: verse, sessionConfig: sessionConfig, onClose: onClose, onOpenLegacyQuiz: onOpenLegacyQuiz)
+        case .fillVerse:
+            ChallengeFillVerseView(verse: verse, sessionConfig: sessionConfig, onClose: onClose)
+        case .verseMatch:
+            ChallengeVerseMatchView(verse: verse, sessionConfig: sessionConfig, onClose: onClose)
+        case .trueFalse:
+            ChallengeTrueFalseView(verse: verse, sessionConfig: sessionConfig, onClose: onClose)
+        case .wordSearch:
+            ChallengeWordSearchView(verse: verse, sessionConfig: sessionConfig, onClose: onClose)
+        }
     }
 }
 
@@ -286,7 +320,7 @@ struct ChallengeStartSheet: View {
     @State private var difficulty: ChallengeDifficulty?
     @State private var showBookPicker = false
     @State private var showChapterPicker = false
-    @State private var questionCount: Int = 5
+    @State private var questionCount: Int?
 
     private let themeColor = Color(UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor)
 
@@ -313,7 +347,7 @@ struct ChallengeStartSheet: View {
     }
 
     private var canStart: Bool {
-        difficulty != nil && chapterName != "Chapter" && Int(chapterName) != nil
+        difficulty != nil && questionCount != nil && chapterName != "Chapter" && Int(chapterName) != nil
     }
 
     var body: some View {
@@ -472,20 +506,23 @@ struct ChallengeStartSheet: View {
         }
     }
 
-    private var questionCostText: String? { nil }
+    private var questionCostText: String? {
+        guard let questionCount else { return nil }
+        guard kind.isPremium, !AIUsageLimiter.shared.hasUnlimitedPlan else { return nil }
+        if AIUsageLimiter.shared.freeUsesLeft(.quiz) > 0 {
+            return "Uses today's free quiz"
+        }
+        let cost = AIUsageFeature.quiz.creditCost
+        return "\(cost * questionCount) credits (\(cost) per question)"
+    }
 
     private func startTapped() {
-        guard let difficulty, let chapter = Int(chapterName) else { return }
+        guard let difficulty, let questionCount, let chapter = Int(chapterName) else { return }
         let config = ChallengeSessionConfig
             .markAsRead(book: bookName, chapter: chapter, difficulty: difficulty)
             .withQuestionCount(questionCount)
         onStart(config)
     }
-}
-
-struct PendingChallengeStart {
-    let kind: ChallengeKind
-    let config: ChallengeSessionConfig
 }
 
 extension ChallengeKind {
@@ -504,8 +541,8 @@ extension ChallengeKind {
         }
     }
 
-    /// Question counts offered on the Start Challenge screen (Verse Match is capped at 5 pairs).
+    /// Question counts offered on the Start Challenge screen.
     var questionCountOptions: [Int] {
-        self == .verseMatch ? [1, 3, 5] : [1, 3, 5, 10]
+        [5, 10, 15]
     }
 }

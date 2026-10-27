@@ -9,6 +9,101 @@ import UIKit
 import AVFoundation
 import MediaPlayer
 
+/// Pauses chapter audio and speech while an ad is on screen, then continues from the same position.
+enum PlaybackAdHold {
+    static var resumeChapter = false
+    private static var heldSeconds: Double?
+    private static var resumeToken = 0
+    private static var watchingInterruptions = false
+
+    static func pause() {
+        watchInterruptions()
+        let service = AudioPlayerService.sharedInstance
+        let playing = service.chapterWantsPlayback || (service.player?.rate ?? 0) > 0
+        if playing {
+            if let seconds = service.player?.currentTime().seconds, seconds.isFinite, seconds > 0.5 {
+                heldSeconds = seconds
+            }
+            service.player?.pause()
+            resumeChapter = true
+        }
+        SpeechVu.active?.pauseForAd()
+    }
+
+    static func resume() {
+        if resumeChapter {
+            continueChapter()
+        }
+        SpeechVu.active?.resumeAfterAd()
+    }
+
+    /// Starts chapter audio again from the held position. Used after an ad, and when the pause button is tapped while playback is already stuck.
+    static func continueChapter() {
+        let service = AudioPlayerService.sharedInstance
+        guard service.chapterWantsPlayback, let player = service.player else { return }
+        resumeToken += 1
+        let token = resumeToken
+        service.setupAudioSession()
+        player.play()
+        let seconds = heldSeconds ?? player.currentTime().seconds
+        let now = player.currentTime().seconds
+        if seconds.isFinite, seconds > 1, (!now.isFinite || abs(now - seconds) > 1.5) {
+            service.seek(toSeconds: seconds) {
+                guard token == resumeToken, service.chapterWantsPlayback else { return }
+                service.setupAudioSession()
+                service.player?.play()
+            }
+        }
+        retryIfStillStopped(token: token, attempt: 0)
+    }
+
+    static func cancelResume() {
+        resumeChapter = false
+        resumeToken += 1
+        heldSeconds = nil
+    }
+
+    private static func retryIfStillStopped(token: Int, attempt: Int) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            guard token == resumeToken else { return }
+            let service = AudioPlayerService.sharedInstance
+            guard service.chapterWantsPlayback, let player = service.player else {
+                resumeChapter = false
+                return
+            }
+            let playing = player.rate > 0 || player.timeControlStatus == .playing
+            if playing {
+                resumeChapter = false
+                return
+            }
+            guard attempt < 4 else { return }
+            if player.timeControlStatus != .waitingToPlayAtSpecifiedRate {
+                service.setupAudioSession()
+                player.play()
+            }
+            retryIfStillStopped(token: token, attempt: attempt + 1)
+        }
+    }
+
+    private static func watchInterruptions() {
+        guard !watchingInterruptions else { return }
+        watchingInterruptions = true
+        NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: .main
+        ) { note in
+            guard let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+                  let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
+            if type == .began {
+                pause()
+            } else if type == .ended {
+                resume()
+            }
+        }
+    }
+}
+
 class AudioPlayerService  {
     
     static let sharedInstance = AudioPlayerService()
@@ -22,6 +117,11 @@ class AudioPlayerService  {
     var Titel:String = ""
     var currentTime:Float = 0.0
     var remainingTime:Float = 0.0
+    /// Called on the main queue when the current chapter audio reaches the end.
+    var onPlaybackEnded: (() -> Void)?
+    /// True while the user expects this chapter to keep playing. An ad pause does not clear it.
+    var chapterWantsPlayback = false
+    private var playbackEndObserver: NSObjectProtocol?
     
     
     func RunPlayer() {
@@ -39,6 +139,7 @@ class AudioPlayerService  {
                             do{
                                 self.Urlstring = String(format: "%@", url as NSURL)
                                 self.playerItem = AVPlayerItem(url: url as URL)
+                                self.observePlaybackEnd(of: self.playerItem)
                                 player = AVPlayer(playerItem: self.playerItem)
                                 
                                 let playerLayer = AVPlayerLayer(player: player)
@@ -55,7 +156,8 @@ class AudioPlayerService  {
     }
     
      
-    func playAudios() {  
+    func playAudios() {
+        SpeechVu.active?.stopForChapterAudio()
         player!.play()
         setupNowPlaying()
         setupRemoteCommandCenter()
@@ -76,6 +178,22 @@ class AudioPlayerService  {
    // MARK: - init Player info
     
     private var seekGeneration = 0
+
+    private func observePlaybackEnd(of item: AVPlayerItem?) {
+        if let playbackEndObserver {
+            NotificationCenter.default.removeObserver(playbackEndObserver)
+            self.playbackEndObserver = nil
+        }
+        guard let item else { return }
+        playbackEndObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: item,
+            queue: .main
+        ) { [weak self] note in
+            guard let self = self, note.object as? AVPlayerItem === self.playerItem else { return }
+            self.onPlaybackEnded?()
+        }
+    }
 
     func setupNowPlaying(elapsed: Double? = nil) {
         guard let item = playerItem else { return }
@@ -152,21 +270,19 @@ class AudioPlayerService  {
         }
         seekGeneration += 1
         let generation = seekGeneration
-        let wasPlaying = player.rate > 0
-        // A zero-tolerance seek on these files returns to the start. Use the normal seek,
-        // and publish the new time first so the old clock cannot pull playback backward.
-        player.pause()
+        let wasPlaying = player.rate > 0 || player.timeControlStatus == .playing
+        // Pausing first, or seeking with a tight tolerance, sends these chapter files back to the start.
+        player.currentItem?.cancelPendingSeeks()
         setupNowPlaying(elapsed: target)
         let time = CMTime(seconds: target, preferredTimescale: 600)
-        let slack = CMTime(seconds: 0.25, preferredTimescale: 600)
-        player.seek(to: time, toleranceBefore: slack, toleranceAfter: slack) { [weak self] _ in
+        player.seek(to: time, toleranceBefore: .positiveInfinity, toleranceAfter: .positiveInfinity) { [weak self] finished in
             DispatchQueue.main.async {
                 guard let self = self, generation == self.seekGeneration else { return }
-                let landed = player.currentTime().seconds
-                let shown = (landed.isFinite && abs(landed - target) < 3) ? landed : target
                 if wasPlaying {
                     player.play()
                 }
+                let landed = player.currentTime().seconds
+                let shown = (finished && landed.isFinite && abs(landed - target) < 8) ? landed : target
                 self.setupNowPlaying(elapsed: shown)
                 completion()
             }

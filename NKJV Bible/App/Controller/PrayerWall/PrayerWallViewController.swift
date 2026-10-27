@@ -187,7 +187,7 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
         PrayerWallLoginGate.requireLogin(from: self) { [weak self] in
             guard let self = self else { return }
             if !NetworkManager.sharedInstance.isConnectedToInternet() {
-                self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 return
             }
             let vc = CreatePrayerViewController()
@@ -205,7 +205,7 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
     private func loadPrayers(showLoader: Bool) {
         if !NetworkManager.sharedInstance.isConnectedToInternet() {
             refreshControl.endRefreshing()
-            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            view.makeToast("No internet connection", duration: 2.0, position: .top)
             return
         }
         if showLoader {
@@ -228,7 +228,7 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
                 self.tableView.reloadData()
                 self.loadCounts(for: self.prayers)
             case .failure(let error):
-                self.view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+                self.view.makeToast(error.localizedDescription, duration: 2.5, position: .top)
             }
         }
     }

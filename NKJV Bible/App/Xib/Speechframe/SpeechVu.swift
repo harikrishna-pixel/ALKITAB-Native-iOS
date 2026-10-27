@@ -12,6 +12,7 @@ import MediaPlayer
 
 
 class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynthesizerDelegate, SpeechAction {
+    static weak var active: SpeechVu?
     
     @IBOutlet weak var MainView: UIView!
     @IBOutlet weak var VerseTitle: UILabel!
@@ -114,6 +115,8 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
      var ChangeLanguage:Bool = false
      var ChangeVoice:Bool = false
      var isAdjustingSlider: Bool = false // NEW: Prevent verse advance during slider adjustment
+     var isStartingNextChapter = false
+     private var pausedForAd = false
      var adjustmentStartIndex: Int = -1 // NEW: Track which verse index was playing when adjustment started
      var spokenCharacterIndex: Int = 0
      var speechStartIndex: Int = 0
@@ -132,6 +135,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
      var Themecolor:UIColor?
     
     override func draw(_ rect: CGRect) {
+        SpeechVu.active = self
         
         if pageOn {
             self.DottedLines.addDashedBorderView()
@@ -367,7 +371,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
         UserDefaults.standard.setValue(self.langID[sekectedAudio!], forKey: "langID")
         self.LoadSettings()
         self.LangaugaTable.reloadData()
-        self.makeToast("Reset successful", duration: 2.0, position: .bottom)
+        self.makeToast("Reset successful", duration: 2.0, position: .top)
     }
     
     
@@ -394,7 +398,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
         
         if self.BookIndex! < 0 {
             self.BookIndex = 0
-            self.makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .bottom)
+            self.makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .top)
         }
         UserDefaults.standard.setValue(self.BookIndex!, forKey: "BookChapter")
         NotificationCenter.default.post(name: Notification.Name("ReloadTable"), object: nil)
@@ -426,7 +430,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
         if self.BookIndex! > BookIndexCount! {
             // Already at last chapter – show toast and clamp
             self.BookIndex = self.BookIndexCount!-1
-            self.makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .bottom)
+            self.makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .top)
         } else {
             UserDefaults.standard.setValue(self.BookIndex!, forKey: "BookChapter")
             self.BookIndexNo(BookIndexNum: self.BookIndex!)
@@ -461,10 +465,51 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
     }
     
     
+    func pauseForAd() {
+        let speech = synth.synth
+        guard Playstatus, speech.isSpeaking || speech.isPaused else { return }
+        if pausedForAd { return }
+        pausedForAd = true
+        if speech.isSpeaking {
+            speech.pauseSpeaking(at: .immediate)
+        }
+    }
+
+    func resumeAfterAd() {
+        guard pausedForAd else { return }
+        guard Playstatus else {
+            pausedForAd = false
+            return
+        }
+        AudioPlayerService.sharedInstance.setupAudioSession()
+        if synth.synth.isPaused {
+            synth.synth.continueSpeaking()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self, self.pausedForAd else { return }
+            self.pausedForAd = false
+            guard self.Playstatus, self.synth.synth.isPaused else { return }
+            AudioPlayerService.sharedInstance.setupAudioSession()
+            self.synth.synth.continueSpeaking()
+        }
+    }
+
+    /// Stops speech so chapter audio can play alone. A late finish event must not start the next verse.
+    func stopForChapterAudio() {
+        let speech = synth.synth
+        guard Playstatus || speech.isSpeaking || speech.isPaused else { return }
+        Playstatus = false
+        pausedForAd = false
+        synth.myUtterance = nil
+        speech.stopSpeaking(at: .immediate)
+        PlayPause(ImageName: "Play")
+    }
+
     func playAction() {
         
         self.TSPlayview.zoomIn()
         if Playstatus == false {
+            (App_Protocol.delegateReader as? ReaderViewController)?.pauseChapterForSpeech()
             PlayerCommandClear()
             SpeechPlayFunc.Shared.playAudios()
             self.Playstatus = true
@@ -539,6 +584,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
     func StopSpeeking() {
         self.PlayerCommandClear()
         self.Index = 0
+        self.Playstatus = false
         synth.synth.stopSpeaking(at: .immediate)
         let SpeechText = String(format: "%@",AudioBibleList[self.Index])
         self.Verse.text = SpeechText
@@ -720,7 +766,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
         } else {
             // Voice not available - show error
             print("❌ [SpeechVu] Selected voice is not available on this device: \(selectedVoiceID)")
-            self.makeToast("This voice is not available on your device", duration: 2.0, position: .bottom)
+            self.makeToast("This voice is not available on your device", duration: 2.0, position: .top)
         }
     }
     
@@ -896,6 +942,8 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
     
     
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        if isStartingNextChapter || pausedForAd { return }
+        if let current = synth.myUtterance, utterance !== current { return }
         
         // VOICE CHANGE FIX: Handle voice change - prevent ANY verse advancement
         if isChangingVoice {
@@ -973,15 +1021,14 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
                 // if UserDefaults.standard.bool(forKey: "ShuffleVerse") && self.SettingConsstrain.constant == 80 {
                 // Problem: Repeat only worked when settings menu was at position 80, not always
                 
-                // BUG FIX 4 & LOOP FIX: Check if repeat/loop is enabled
-                if UserDefaults.standard.bool(forKey: "ShuffleVerse") {
-                    print("   🔁 Loop enabled, restarting chapter from beginning")
-                    // NEW: Reset index to 0 and restart from first verse
-                    self.Index = 0
-                    print("   ⏭ Chapter finished, continuing with the next chapter")
-                    self.playNextChapter()
-                    print("   ⏹ Loop disabled, stopping playback")
-                    self.StopSpeeking()
+                // Repeat restarts this chapter. Otherwise keep playing the next chapter.
+                if Playstatus {
+                    if UserDefaults.standard.bool(forKey: "ShuffleVerse") {
+                        self.Index = 0
+                        self.PlayOrder(TIntexIncrement: 1)
+                    } else {
+                        self.playNextChapter()
+                    }
                 }
             }
         } else {
@@ -1011,11 +1058,12 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
     func playNextChapter() {
         let count = BookIndexCount ?? 0
         if (BookIndex ?? 0) >= count {
-            makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .bottom)
+            makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .top)
             StopSpeeking()
             return
         }
 
+        isStartingNextChapter = true
         BookIndex = (BookIndex ?? 0) + 1
         Index = 0
         speechStartIndex = 0
@@ -1036,12 +1084,14 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
         App_Protocol.delegateReaderSource?.ReloadBibleData(ChapterNo: BookIndex!)
 
         guard !AudioBibleList.isEmpty else {
+            isStartingNextChapter = false
             StopSpeeking()
             return
         }
         Playstatus = true
         PlayPause(ImageName: "pausePlayer")
         PlayOrder(TIntexIncrement: 1)
+        isStartingNextChapter = false
         ReloadPlayerIcons()
     }
 

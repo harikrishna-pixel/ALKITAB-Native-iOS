@@ -276,7 +276,7 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
         PrayerWallLoginGate.requireLogin(from: self) { [weak self] in
             guard let self = self else { return }
             if !NetworkManager.sharedInstance.isConnectedToInternet() {
-                self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 return
             }
 
@@ -302,7 +302,7 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
             updateLikeButton()
             onUpdated?()
         case .failure(let error):
-            view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+            view.makeToast(error.localizedDescription, duration: 2.5, position: .top)
         }
     }
 
@@ -310,18 +310,18 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
         PrayerWallLoginGate.requireLogin(from: self) { [weak self] in
             guard let self = self else { return }
             if !NetworkManager.sharedInstance.isConnectedToInternet() {
-                self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 return
             }
             guard !self.isBlocking else { return }
 
             let targetId = self.prayer.blockTargetId
             guard !targetId.isEmpty else {
-                self.view.makeToast("Unable to block this prayer.", duration: 2.0, position: .bottom)
+                self.view.makeToast("Unable to block this prayer.", duration: 2.0, position: .top)
                 return
             }
             if let me = PrayerWallService.shared.currentBlockerUserId(), me == targetId {
-                self.view.makeToast("You can't block your own prayer.", duration: 2.0, position: .bottom)
+                self.view.makeToast("You can't block your own prayer.", duration: 2.0, position: .top)
                 return
             }
 
@@ -364,20 +364,20 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
         switch result {
         case .success:
             updateBlockButton()
-            view.makeToast(blocked ? "User blocked" : "User unblocked", duration: 2.0, position: .bottom)
+            view.makeToast(blocked ? "User blocked" : "User unblocked", duration: 2.0, position: .top)
             onUpdated?()
             if blocked {
                 navigationController?.popViewController(animated: true)
             }
         case .failure(let error):
-            view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+            view.makeToast(error.localizedDescription, duration: 2.5, position: .top)
         }
     }
 
     @objc private func sendCommentTapped() {
         let text = (commentField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, text.count <= 1000 else {
-            view.makeToast("Enter a comment up to 1000 characters.", duration: 2.0, position: .bottom)
+            view.makeToast("Enter a comment up to 1000 characters.", duration: 2.0, position: .top)
             return
         }
         guard !isSubmittingComment else { return }
@@ -385,7 +385,7 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
         PrayerWallLoginGate.requireLogin(from: self) { [weak self] in
             guard let self = self else { return }
             if !NetworkManager.sharedInstance.isConnectedToInternet() {
-                self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 return
             }
 
@@ -404,7 +404,7 @@ final class PrayerDetailViewController: UIViewController, UITableViewDataSource,
                     self.updateTableHeight()
                     self.onUpdated?()
                 case .failure(let error):
-                    self.view.makeToast(error.localizedDescription, duration: 2.5, position: .bottom)
+                    self.view.makeToast(error.localizedDescription, duration: 2.5, position: .top)
                 }
             }
         }

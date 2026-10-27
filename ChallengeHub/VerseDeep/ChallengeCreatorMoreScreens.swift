@@ -16,8 +16,7 @@ struct ChallengeQuizPreviewView: View {
     var onSave: () -> Void
 
     @State private var index = 0
-    @State private var isEditing = false
-    @State private var draftText = ""
+    @State private var selectedOffset: Int? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -38,58 +37,40 @@ struct ChallengeQuizPreviewView: View {
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(ChallengeVerseDeepTheme.muted)
 
-                        if isEditing {
-                            TextField("Question", text: $draftText)
-                                .font(.system(size: 18, weight: .bold))
-                                .padding(12)
-                                .background(Color(hex: "F4F6FA"))
-                                .cornerRadius(12)
-                        } else {
-                            Text(questions[safeIndex].prompt)
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
-                        }
+                        Text(questions[safeIndex].prompt)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
                         ForEach(Array(questions[safeIndex].options.enumerated()), id: \.offset) { offset, option in
-                            let letter = ["A", "B", "C", "D", "E", "F"][min(offset, 5)]
-                            let correct = offset == questions[safeIndex].correctIndex
-                            HStack(spacing: 10) {
-                                Text(letter)
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(correct ? Color(hex: "1B7A3D") : ChallengeVerseDeepTheme.blueDeep)
-                                    .frame(width: 24)
-                                Text(option)
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
-                                Spacer()
-                                if correct {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(Color(hex: "34C759"))
-                                }
-                            }
-                            .padding(12)
-                            .background(correct ? Color(hex: "E8F8EE") : Color.white)
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(correct ? Color(hex: "34C759") : Color.black.opacity(0.08), lineWidth: 1)
-                            )
+                            previewOption(option, offset: offset, correctIndex: questions[safeIndex].correctIndex)
                         }
                     }
                     .padding(20)
                 }
 
                 HStack(spacing: 12) {
-                    Button(action: { index = max(0, safeIndex - 1); isEditing = false }) {
-                        Text("Previous")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(ChallengeVerseDeepTheme.blue)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 46)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(ChallengeVerseDeepTheme.blue, lineWidth: 1))
+                    if safeIndex > 0 {
+                        Button(action: { index = max(0, safeIndex - 1); selectedOffset = nil }) {
+                            Text("Previous")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(ChallengeVerseDeepTheme.blue)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 46)
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(ChallengeVerseDeepTheme.blue, lineWidth: 1))
+                        }
                     }
-                    Button(action: { index = min(questions.count - 1, safeIndex + 1); isEditing = false }) {
-                        Text("Next")
+                    Button(action: {
+                        if safeIndex >= questions.count - 1 {
+                            onSave()
+                        } else {
+                            index = min(questions.count - 1, safeIndex + 1)
+                            selectedOffset = nil
+                        }
+                    }) {
+                        Text(safeIndex >= questions.count - 1 ? "Save Quiz" : "Next")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -101,10 +82,6 @@ struct ChallengeQuizPreviewView: View {
                 .padding(.horizontal, 20)
 
                 HStack(spacing: 16) {
-                    Button(action: toggleEdit) {
-                        Label("Edit Question", systemImage: "pencil")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
                     Button(action: onRegenerate) {
                         Label("Regenerate", systemImage: "arrow.clockwise")
                             .font(.system(size: 14, weight: .semibold))
@@ -112,40 +89,50 @@ struct ChallengeQuizPreviewView: View {
                 }
                 .foregroundColor(ChallengeVerseDeepTheme.blue)
                 .padding(.top, 12)
-
-                Button(action: onSave) {
-                    Text("Save Quiz")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(ChallengeVerseDeepTheme.blue)
-                        .cornerRadius(14)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
                 .padding(.bottom, 16)
             }
         }
         .background(Color(hex: "F7F8FC").ignoresSafeArea())
     }
 
-    private func toggleEdit() {
-        let safeIndex = min(index, max(questions.count - 1, 0))
-        guard questions.indices.contains(safeIndex) else { return }
-        if isEditing {
-            let current = questions[safeIndex]
-            questions[safeIndex] = ChallengeVerseDeepPlayQuestion(
-                id: current.id,
-                prompt: draftText,
-                options: current.options,
-                correctIndex: current.correctIndex
+    private func previewOption(_ option: String, offset: Int, correctIndex: Int) -> some View {
+        let letter = ["A", "B", "C", "D", "E", "F"][min(offset, 5)]
+        let revealed = selectedOffset != nil
+        let correct = revealed && offset == correctIndex
+        let wrong = revealed && selectedOffset == offset && offset != correctIndex
+        return Button(action: {
+            guard selectedOffset == nil else { return }
+            selectedOffset = offset
+        }) {
+            HStack(spacing: 10) {
+                Text(letter)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(correct ? Color(hex: "1B7A3D") : ChallengeVerseDeepTheme.blueDeep)
+                    .frame(width: 24)
+                Text(option)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(ChallengeVerseDeepTheme.blueDeep)
+                Spacer()
+                if correct {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(Color(hex: "34C759"))
+                } else if wrong {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(Color(hex: "D70015"))
+                }
+            }
+            .padding(12)
+            .background(correct ? Color(hex: "E8F8EE") : (wrong ? Color(hex: "FDECEC") : Color.white))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(
+                        correct ? Color(hex: "34C759") : (wrong ? Color(hex: "D70015") : Color.black.opacity(0.08)),
+                        lineWidth: 1
+                    )
             )
-            isEditing = false
-        } else {
-            draftText = questions[safeIndex].prompt
-            isEditing = true
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

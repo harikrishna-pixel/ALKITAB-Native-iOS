@@ -476,7 +476,7 @@ class SlideCardView: UIView, UICollectionViewDelegate, UICollectionViewDataSourc
         let copyverse = "\(self.VerseArray[self.SelectedPath])\n\n       \(BookName)-\(ChaterNumber):\(self.SelectedPath+1) \n\n \(APP_LINK)"
         
         UIPasteboard.general.string = copyverse
-        self.makeToast("Copied successfully", duration: 2.0, position: .bottom)
+        self.makeToast("Copied successfully", duration: 2.0, position: .top)
          
     }
     

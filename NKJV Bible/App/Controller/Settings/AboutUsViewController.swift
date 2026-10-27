@@ -38,7 +38,13 @@ class AboutUsViewController: UIViewController, Setting {
         
         self.FeedBack.AbotyUsBorderVu()
         self.Share_The_App.AbotyUsBorderVu()
-        self.Rate_The_App.AbotyUsBorderVu()
+        self.Rate_The_App.isHidden = true
+        for constraint in self.Rate_The_App.constraints where constraint.firstAttribute == .height && constraint.secondItem == nil {
+            constraint.constant = 0
+        }
+        if let gap = self.Rate_The_App.superview?.constraints.first(where: { ($0.firstItem as? UIView) === self.Rate_The_App && $0.firstAttribute == .top }) {
+            gap.constant = 0
+        }
         
 //
         // Do any additional setup after loading the view.

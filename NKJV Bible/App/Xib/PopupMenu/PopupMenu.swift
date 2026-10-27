@@ -175,7 +175,7 @@ class PopupMenu: UIView {
     
     
     @IBAction func copYText(_ sender: Any) {
-        self.makeToast("Copied successfully", duration: 2.0, position: .center)
+        self.makeToast("Copied successfully", duration: 2.0, position: .top)
         if TagSelection == "Explanations" {
             UIPasteboard.general.string = "\(explanationStoredText)\n\n\(self.Popupframetext.text!)\n\n\(self.PopupframeBook.text!)\n\n\(APP_LINK)"
         } else {
@@ -203,28 +203,28 @@ class PopupMenu: UIView {
         case "BookMark":
 
             CoreDataModel.sharedInstance.coreDataDeleteBookMark(CDBookSavedInfo, bookVerse: self.PopupframeBook.text!, Bookmark: "")
-            (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Bookmark removed", duration: 2.0, position: .center)
+            (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Bookmark removed", duration: 2.0, position: .top)
 
         case "Highlites":
             
             CoreDataModel.sharedInstance.coreDataDeleteColor(CDBookSavedInfo, bookVerse: self.PopupframeBook.text!, color: "#000000")
-            (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Highlites removed", duration: 2.0, position: .center)
+            (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Highlites removed", duration: 2.0, position: .top)
             
         case "Underline":
             CoreDataModel.sharedInstance.coreDataDeleteUnderline(CDBookSavedInfo, bookVerse: self.PopupframeBook.text!)
-            (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Underline removed", duration: 2.0, position: .center)
+            (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Underline removed", duration: 2.0, position: .top)
             
 
         case "Notes":
             CoreDataModel.sharedInstance.coreDataDeleteNote(CDBookSavedInfo, bookVerse:self.PopupframeBook.text!, notes: "")
-            (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Notes removed", duration: 2.0, position: .center)
+            (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Notes removed", duration: 2.0, position: .top)
 
         case "Explanations":
             let parts = getString.components(separatedBy: ExplanationRecordDelimiter)
             let bookVerse = parts.first ?? ""
             let bibleVersion = parts.count > 1 ? parts[1] : APPNAME
             CoreDataModel.sharedInstance.deleteVerseExplanation(bookVerse: bookVerse, bibleVersion: bibleVersion)
-            (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Explanation removed", duration: 2.0, position: .center)
+            (UIApplication.shared.keyWindow?.rootViewController)!.view.makeToast("Explanation removed", duration: 2.0, position: .top)
 
         default: break
 

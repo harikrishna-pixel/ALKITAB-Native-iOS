@@ -317,10 +317,10 @@ extension SubscrbViewController {
               } else {
                   self.checkNetworkStatus()
                   self.LoaderVu.isHidden = true
-                  self.view.makeToast("Please wait for few secs..", duration: 2.0, position: .bottom)
+                  self.view.makeToast("Please wait for few secs..", duration: 2.0, position: .top)
                   DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.0) {
                       if enable {
-                          self.view.makeToast("Poor Network Connection", duration: 2.0, position: .bottom)
+                          self.view.makeToast("Poor Network Connection", duration: 2.0, position: .top)
                           
                       } else {
                           self.sixmonth(true)
@@ -328,7 +328,7 @@ extension SubscrbViewController {
                   }
               }
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
@@ -349,18 +349,18 @@ extension SubscrbViewController {
               } else {
                   self.checkNetworkStatus()
                   self.LoaderVu.isHidden = true
-                  self.view.makeToast("Please wait for few secs..", duration: 2.0, position: .bottom)
+                  self.view.makeToast("Please wait for few secs..", duration: 2.0, position: .top)
                   
                   DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.0) {
                       if enable {
-                          self.view.makeToast("Poor Network Connection", duration: 2.0, position: .bottom)
+                          self.view.makeToast("Poor Network Connection", duration: 2.0, position: .top)
                       } else {
                           self.OneYear(true)
                       }
                   }
               }
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
         
     }
@@ -382,18 +382,18 @@ extension SubscrbViewController {
               } else {
                   self.checkNetworkStatus()
                   self.LoaderVu.isHidden = true
-                  self.view.makeToast("Please wait for few secs..", duration: 2.0, position: .bottom)
+                  self.view.makeToast("Please wait for few secs..", duration: 2.0, position: .top)
                   
                   DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.0) {
                       if enable {
-                          self.view.makeToast("Poor Network Connection", duration: 2.0, position: .bottom)
+                          self.view.makeToast("Poor Network Connection", duration: 2.0, position: .top)
                       } else {
                           self.lifetimeCall(true)
                       }
                   }
               }
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
@@ -406,13 +406,13 @@ extension SubscrbViewController {
 //            AdmobManager.shared.IronSource_Reward_ShowAds(vw: (UIApplication.shared.keyWindow?.rootViewController)!, RewardAd: "WatchAd")
             AdmobManager.shared.IronSource_Reward_ShowAds(vw: (UIApplication.shared.keyWindow?.rootViewController)!, RewardAd: "WatchAd")
             } else {
-                self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                self.view.makeToast("No internet connection", duration: 2.0, position: .top)
             }
     }
     
     
     func NoAdClosed() {
-        self.view.makeToast("Ad not Available", duration: 2.0, position: .bottom)
+        self.view.makeToast("Ad not Available", duration: 2.0, position: .top)
         App_Protocol.delegateReader?.paymentStatus()
         App_Protocol.DelegateSlideCard?.paymentStatus()
     }
@@ -463,11 +463,11 @@ extension SubscrbViewController {
                            print(success ? "URL was opened successfully." : "Failed to open URL.")
                        }
                    } else {
-                       self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
+                       self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
                    }
                    
                } else {
-                   self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                   self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                }
         
     }
@@ -480,11 +480,11 @@ extension SubscrbViewController {
                            print(success ? "URL was opened successfully." : "Failed to open URL.")
                        }
                    } else {
-                       self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
+                       self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
                    }
                    
                } else {
-                   self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                   self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                }
     }
     
@@ -499,7 +499,7 @@ extension SubscrbViewController {
                 SKPaymentQueue.default().add(self)
                 SKPaymentQueue.default().restoreCompletedTransactions()
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     

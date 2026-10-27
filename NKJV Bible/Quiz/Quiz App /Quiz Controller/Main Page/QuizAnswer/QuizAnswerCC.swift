@@ -11,4 +11,9 @@ class QuizAnswerCC: UICollectionViewCell {
     
     @IBOutlet weak var AnswerVu: UIView!
     @IBOutlet weak var AnswerLbl: UILabel!
+
+    // Self-sizing remeasures this cell forever and freezes the Bible Quiz.
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        return layoutAttributes
+    }
 }

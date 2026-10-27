@@ -8,12 +8,13 @@ import SwiftUI
 struct ChallengeQuestionCountView: View {
     let kind: ChallengeKind
     let verseReference: String
-    @Binding var selectedCount: Int
+    @Binding var selectedCount: Int?
     var onBack: () -> Void
-    var onGenerate: () -> Void
+    var onGenerate: (Int, ChallengeDifficulty) -> Void
 
-    @State private var difficulty: ChallengeDifficulty = .easy
-    private let counts = [1, 3, 5, 10]
+    @State private var difficulty: ChallengeDifficulty?
+    private let counts = [5, 10, 15]
+    private var canGenerate: Bool { selectedCount != nil && difficulty != nil }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -113,16 +114,21 @@ struct ChallengeQuestionCountView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 14)
 
-                    Text("Up to \(selectedCount) quality question\(selectedCount == 1 ? "" : "s") can be created from this verse.")
-                        .font(.system(size: 14))
-                        .foregroundColor(ChallengeVerseDeepTheme.muted)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                        .padding(.top, 16)
+                    if let selectedCount {
+                        Text("Up to \(selectedCount) quality question\(selectedCount == 1 ? "" : "s") can be created from this verse.")
+                            .font(.system(size: 14))
+                            .foregroundColor(ChallengeVerseDeepTheme.muted)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                            .padding(.top, 16)
+                    }
                 }
             }
 
-            Button(action: onGenerate) {
+            Button(action: {
+                guard let selectedCount, let difficulty else { return }
+                onGenerate(selectedCount, difficulty)
+            }) {
                 HStack(spacing: 8) {
                     Image(systemName: "sparkles")
                     Text("Generate Questions")
@@ -131,9 +137,11 @@ struct ChallengeQuestionCountView: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 54)
-                .background(ChallengeVerseDeepTheme.blue)
+                .background(canGenerate ? ChallengeVerseDeepTheme.blue : Color.gray.opacity(0.4))
                 .cornerRadius(14)
             }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(!canGenerate)
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
         }

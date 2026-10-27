@@ -71,7 +71,7 @@ class ImagePreviewVc: UIViewController {
             case .authorized:
                   self.ConvertIntoImage()
 //                self.AdVu()
-                self.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .bottom)
+                self.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .top)
                                 
                 let imageRectsize = AVMakeRect(aspectRatio: self.saveImage!.size, insideRect: UIScreen.main.bounds)
                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2) {
@@ -109,10 +109,10 @@ class ImagePreviewVc: UIViewController {
             DispatchQueue.main.async {
                 self.saveImage = self.MainVu.asImage()
                 CustomPhotoAlbum.sharedInstance.saveImage(image: self.saveImage!)
-                self.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .bottom)
+                self.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .top)
             }
         } else {
-            self.view.makeToast("Save Image now", duration: 2.0, position: .bottom)
+            self.view.makeToast("Save Image now", duration: 2.0, position: .top)
         }
     }
     

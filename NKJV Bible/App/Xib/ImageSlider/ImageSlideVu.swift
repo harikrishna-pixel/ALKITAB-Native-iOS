@@ -131,7 +131,7 @@ class ImageSlideVu: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UICo
             CustomPhotoAlbum.sharedInstance.fetchCustomAlbumPhotos()
             
             self.ImageSliderCollectionView.reloadData()
-            self.makeToast(NSLocalizedString("Image Removed from App Album", comment: ""), duration: 2.0, position: .bottom)
+            self.makeToast(NSLocalizedString("Image Removed from App Album", comment: ""), duration: 2.0, position: .top)
             self.DeleteIndicator.isHidden = true
             self.DeleteView.isHidden = false
             self.DeleteIndicator.stopAnimating()

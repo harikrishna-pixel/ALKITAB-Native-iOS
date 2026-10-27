@@ -12,7 +12,7 @@ struct OnboardingCreateAccountView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                OnboardingTheme.paper.ignoresSafeArea()
+                Color.white.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     Picker("", selection: $mode) {
@@ -35,11 +35,12 @@ struct OnboardingCreateAccountView: View {
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(.top, 8)
-                    .padding(.bottom, max(geometry.safeAreaInsets.bottom, 8))
+                    .background(Color.white)
                 }
                 .ignoresSafeArea(.keyboard, edges: .bottom)
             }
         }
+        .background(Color.white.ignoresSafeArea())
         .navigationBarHidden(true)
         .onAppear {
             IQKeyboardManager.shared().isEnabled = false

@@ -7,7 +7,11 @@ import SwiftUI
 
 struct ChallengeGeneratingView: View {
     let verseReference: String
-    @State private var progress: CGFloat = 0.2
+    let runID: Int
+    let isWorkDone: Bool
+    var onFinished: (Int) -> Void
+    @State private var progress: CGFloat = 0.08
+    @State private var didFinish = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -54,6 +58,7 @@ struct ChallengeGeneratingView: View {
                     Capsule()
                         .fill(ChallengeVerseDeepTheme.blue)
                         .frame(width: max(12, geo.size.width * progress))
+                        .animation(.easeOut(duration: 0.35), value: progress)
                 }
             }
             .frame(height: 8)
@@ -75,9 +80,25 @@ struct ChallengeGeneratingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.white.ignoresSafeArea())
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
-                progress = 0.82
+            if isWorkDone {
+                completeLoading()
+            } else {
+                progress = 0.88
             }
+        }
+        .onChange(of: isWorkDone) { done in
+            guard done else { return }
+            completeLoading()
+        }
+    }
+
+    private func completeLoading() {
+        guard !didFinish else { return }
+        didFinish = true
+        progress = 1
+        let id = runID
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            onFinished(id)
         }
     }
 }

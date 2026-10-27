@@ -50,7 +50,7 @@ struct ChallengeWordSearchView: View {
                     lives: lives,
                     questionNumber: words.isEmpty ? 1 : min(found.count + (found.count == words.count ? 0 : 1), words.count),
                     questionTotal: max(words.count, 1),
-                    caption: "Solve the word puzzle.",
+                    caption: "",
                     primaryTitle: found.count == words.count && !words.isEmpty ? "Done" : "Check Answer",
                     primaryEnabled: lives > 0 || (found.count == words.count && !words.isEmpty),
                     onPrimary: {

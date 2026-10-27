@@ -193,8 +193,8 @@ final class QuizOrChallengeChooserViewController: UIViewController {
             onOpenLegacyQuiz: { [weak self] in
                 self?.openSelection(destination: .bibleQuiz)
             },
-            onOpenChallenge: { [weak self] kind, verse, config in
-                self?.openChallenge(kind, verse: verse, config: config)
+            onOpenChallenge: { [weak self] kind, verse, config, animated in
+                self?.openChallenge(kind, verse: verse, config: config, animated: animated)
             }
         )
 
@@ -216,7 +216,11 @@ final class QuizOrChallengeChooserViewController: UIViewController {
         navigationController?.setNavigationBarHidden(true, animated: animated)
     }
 
-    private func openChallenge(_ kind: ChallengeKind, verse: ChallengeVerseContext, config: ChallengeSessionConfig?) {
+    private func openChallenge(_ kind: ChallengeKind, verse: ChallengeVerseContext, config: ChallengeSessionConfig?, animated: Bool) {
+        if kind == .fillVerse, let config {
+            openOldFillVerseQuiz(config, animated: animated)
+            return
+        }
         let root = ChallengeGameScreen(
             kind: kind,
             verse: verse,
@@ -233,7 +237,22 @@ final class QuizOrChallengeChooserViewController: UIViewController {
         )
         let host = ChallengePushedHostingController(rootView: root)
         host.view.backgroundColor = .white
-        navigationController?.pushViewController(host, animated: true)
+        navigationController?.pushViewController(host, animated: animated)
+    }
+
+    private func openOldFillVerseQuiz(_ config: ChallengeSessionConfig, animated: Bool) {
+        let level = config.difficulty.title
+        UserDefaults.standard.setValue(level, forKey: "Qlevel")
+        UserDefaults.standard.setValue(config.bookName, forKey: "Qbook")
+        UserDefaults.standard.setValue(config.chapter, forKey: "Qchapter")
+        UserDefaults.standard.setValue(config.bookName, forKey: "LastSelectedBook")
+        UserDefaults.standard.setValue("\(config.chapter)", forKey: "LastSelectedChapter")
+
+        let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "QuizMainPageVC") as! QuizMainPageVC
+        vc.level = level
+        vc.BookName = config.bookName
+        vc.Chapter = config.chapter
+        navigationController?.pushViewController(vc, animated: animated)
     }
 
     private func openSelection(destination: MarkAsReadQuizDestination) {
@@ -268,7 +287,7 @@ final class QuizOrChallengeChooserViewController: UIViewController {
                 navigationController?.pushViewController(vc, animated: true)
             }
         } else {
-            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
 }

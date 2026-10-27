@@ -215,7 +215,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
         if NetworkManager.sharedInstance.isConnectedToInternet() {
             AdmobManager.shared.IronSource_Reward_ShowAds(vw: (UIApplication.shared.keyWindow?.rootViewController)!, RewardAd: "FreeCoins")
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
@@ -241,7 +241,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
         self.LoaderVu.isHidden = true
         UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+rewardCoins, forKey: "WalletMoney")
         self.WalletLbl.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
-        self.view.makeToast("Reward added to your wallet", duration: 2.0, position: .center)
+        self.view.makeToast("Reward added to your wallet", duration: 2.0, position: .top)
     }
     
 
@@ -254,7 +254,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
             let date = Date().addingTimeInterval(15 * 60)
             UserDefaults.standard.setValue(date.string(format: "MM/dd/yy HH:mm:ss"), forKey: "FreeAds")
             UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+freeCoins, forKey: "WalletMoney")
-            self.view.makeToast("Coins claimed successfully!", duration: 2.0, position: .center)
+            self.view.makeToast("Coins claimed successfully!", duration: 2.0, position: .top)
             
         } else {
             var adtime = UserDefaults.standard.string(forKey: "FreeAds")!
@@ -266,7 +266,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
                 UserDefaults.standard.setValue(date.string(format: "MM/dd/yy HH:mm:ss"), forKey: "FreeAds")
                 
                 UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+freeCoins, forKey: "WalletMoney")
-                self.view.makeToast("Coins claimed successfully!", duration: 2.0, position: .center)
+                self.view.makeToast("Coins claimed successfully!", duration: 2.0, position: .top)
             } else {
                 self.ClimeAlert.isHidden = false
                 print("FreeAds :",UserDefaults.standard.string(forKey: "FreeAds")!)
@@ -335,7 +335,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
                   purchaseProduct(product: iapProducts[sender.tag][0])
               }
         } else {
-                self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
 
     }
@@ -381,11 +381,11 @@ extension WalletViewController {
 
     private func openWalletLink(_ link: String) {
         guard NetworkManager.sharedInstance.isConnectedToInternet() else {
-            view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            view.makeToast("No internet connection", duration: 2.0, position: .top)
             return
         }
         guard let url = URL(string: link) else {
-            view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .bottom)
+            view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
             return
         }
         UIApplication.shared.open(url, options: [:], completionHandler: nil)
@@ -576,7 +576,7 @@ extension WalletViewController {
                 SKPaymentQueue.default().add(self)
                 SKPaymentQueue.default().restoreCompletedTransactions()
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     

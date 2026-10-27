@@ -93,7 +93,7 @@ class ImageSlider: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UICol
             CustomPhotoAlbum.sharedInstance.fetchCustomAlbumPhotos()
             self.ImageSliderCollectionView.reloadData()
         }
-        self.makeToast(NSLocalizedString("Image Removed from App Album", comment: ""), duration: 2.0, position: .bottom)
+        self.makeToast(NSLocalizedString("Image Removed from App Album", comment: ""), duration: 2.0, position: .top)
         NotificationCenter.default.post(name: Notification.Name("ReloadImageCell"), object: nil)
         
     }

@@ -31,13 +31,8 @@ enum AIUsageFeature: String {
         }
     }
 
-    /// Quiz is free while testing. Set quiz to `true` to charge `creditCost` (10) per question again.
-    var chargesCredits: Bool {
-        switch self {
-        case .quiz: return false
-        default: return true
-        }
-    }
+    /// Fill the Verse stays free. Other quiz types charge `creditCost` (10) per question after today's free quiz.
+    var chargesCredits: Bool { true }
 
     var title: String {
         switch self {
@@ -202,7 +197,7 @@ final class AIUsageLimiter {
         DispatchQueue.main.async {
             guard let top = OnboardingAuthManager.topViewController() else { return }
             guard NetworkManager.sharedInstance.isConnectedToInternet() else {
-                top.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                top.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 return
             }
             if #available(iOS 15.0, *) {

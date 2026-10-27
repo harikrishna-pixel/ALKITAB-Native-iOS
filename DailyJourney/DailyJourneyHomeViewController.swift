@@ -274,7 +274,7 @@ final class DailyJourneyHomeViewController: UIViewController {
                 presenter.present(vc, animated: true)
             }
         } else {
-            presentingController().view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            presentingController().view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
@@ -284,7 +284,7 @@ final class DailyJourneyHomeViewController: UIViewController {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            let image = cardImage ?? self.renderVerseCardImage(verse)
+            let image = cardImage ?? self.renderVerseCardImage(verse).withAppNameWatermark()
             let safeName = self.safeFileName(from: verse.reference)
             let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("\(safeName).png")
             let pngData = image.pngData()
@@ -325,7 +325,7 @@ final class DailyJourneyHomeViewController: UIViewController {
             DispatchQueue.main.async {
                 if newStatus == .authorized || newStatus == .limited {
                     CustomPhotoAlbum.sharedInstance.saveImage(image: image)
-                    presenter.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .center)
+                    presenter.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .top)
                     completion(true)
                 } else {
                     SettingAlert.GallaryPermission(SorceVc: presenter)

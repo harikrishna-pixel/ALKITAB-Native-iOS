@@ -390,14 +390,14 @@ struct ChallengeCreatorQuizDetailView: View {
     private func openLink() {
         guard let raw = quiz.shareUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
               let url = URL(string: raw), !raw.isEmpty else {
-            OnboardingAuthManager.topViewController()?.view.makeToast("No share link yet", duration: 1.5, position: .bottom)
+            OnboardingAuthManager.topViewController()?.view.makeToast("No share link yet", duration: 1.5, position: .top)
             return
         }
         UIApplication.shared.open(url)
     }
 
     private func editingNote() {
-        OnboardingAuthManager.topViewController()?.view.makeToast("Edit questions from the preview while you are creating the quiz.", duration: 2.0, position: .bottom)
+        OnboardingAuthManager.topViewController()?.view.makeToast("Edit questions from the preview while you are creating the quiz.", duration: 2.0, position: .top)
     }
 
     private func statTile(value: String, label: String) -> some View {

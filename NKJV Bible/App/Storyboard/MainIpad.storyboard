@@ -604,7 +604,7 @@
                                             <action selector="SearchNavigation:" destination="b0C-Xj-7QT" eventType="touchUpInside" id="XoZ-mJ-yr0"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="OeK-HK-bLx">
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="OeK-HK-bLx">
                                         <rect key="frame" x="917" y="61" width="20" height="20"/>
                                         <constraints>
                                             <constraint firstAttribute="width" constant="20" id="fEu-vg-VKe"/>

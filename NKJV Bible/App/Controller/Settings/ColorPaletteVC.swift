@@ -75,6 +75,7 @@ class ColorPaletteVC: UIViewController, UICollectionViewDelegate, UICollectionVi
         }  else {
             self.ColorPaletteCC!.SelectedColorImage.isHidden = true
         }
+        self.ColorPaletteCC!.showDefaultBadge(indexPath.row == 0, checkmarkSelected: self.ColorPaletteCC!.SelectedColorImage.isHidden == false)
         
       return self.ColorPaletteCC!
      }

@@ -19,9 +19,11 @@ struct ChallengeCreatedSuccessView: View {
             HStack {
                 Spacer()
                 Button(action: { (onDone ?? onMyChallenges)() }) {
-                    Text("Done")
+                    Image(systemName: "xmark")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(ChallengeVerseDeepTheme.blue)
+                        .frame(width: 36, height: 36)
+                        .accessibilityLabel("Close")
                 }
             }
             .padding(.horizontal, 20)

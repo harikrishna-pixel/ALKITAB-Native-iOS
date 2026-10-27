@@ -8,7 +8,8 @@ import SwiftUI
 struct Onboarding4: View {
     @State private var explainRevealed = false
     @State private var navigateForward = false
-    @State private var typedCount = 0
+    /// Verse text loaded once when Explain is tapped, so typing does not re-read the Bible.
+    @State private var revealedVerse = ""
 
     private static var isIndonesian: Bool {
         let code = UserDefaults.standard.string(forKey: "language_code") ?? FallbackAppConfigConstants.languageCode
@@ -25,9 +26,14 @@ struct Onboarding4: View {
             : "Paul wrote this from a prison cell. He isn't promising you can achieve anything you set your mind to — he's saying he has learned to be content with plenty and with almost nothing, because his strength never came from his circumstances."
     }
 
-    private static var quoteText: String {
+    private static func quoteLine(_ verse: String) -> String {
         let label = isIndonesian ? "ayat 11" : "verse 11"
-        return "\"\(verseElevenQuote)\"\n— \(label)"
+        let text = verse.isEmpty
+            ? (isIndonesian
+                ? "Aku telah belajar mencukupkan diri dalam segala keadaan."
+                : "I have learned how to be content with whatever I have.")
+            : verse
+        return "\"\(text)\"\n— \(label)"
     }
 
     private static var todayTitle: String {
@@ -38,10 +44,6 @@ struct Onboarding4: View {
         isIndonesian
             ? "Janji ini bukan berarti masa sulit tidak akan datang lagi. Artinya, kamu diberi apa yang kamu butuhkan untuk menghadapinya — hari demi hari, dari sumber di luar dirimu."
             : "The promise isn't that hard things stop coming. It's that you are given what you need to meet them — one day at a time, from a source outside yourself."
-    }
-
-    private static var totalTypedLength: Int {
-        contextText.count + quoteText.count + todayText.count
     }
 
     /// Philippians 4:11 from the bundled Bible, so the quote matches the reading language.
@@ -138,17 +140,10 @@ struct Onboarding4: View {
 
     private var verseChip: some View {
         VStack(alignment: .leading, spacing: 9) {
-            HStack {
-                Text(OnboardingBibleVerse.reference.uppercased())
-                    .font(.system(size: 10.5, weight: .heavy))
-                    .tracking(1.3)
-                    .foregroundColor(OnboardingTheme.primaryBlue)
-                Spacer()
-                Text(APPNAME)
-                    .font(.system(size: 10.5, weight: .heavy))
-                    .tracking(0.6)
-                    .foregroundColor(Color(hex: "93A3BC"))
-            }
+            Text(OnboardingBibleVerse.reference.uppercased())
+                .font(.system(size: 10.5, weight: .heavy))
+                .tracking(1.3)
+                .foregroundColor(OnboardingTheme.primaryBlue)
             Text("\"\(OnboardingBibleVerse.text)\"")
                 .font(.system(size: 17, weight: .regular, design: .serif))
                 .foregroundColor(Color(hex: "22334F"))
@@ -175,8 +170,10 @@ struct Onboarding4: View {
 
     private var explainButton: some View {
         Button(action: {
+            if revealedVerse.isEmpty {
+                revealedVerse = Self.verseElevenQuote
+            }
             explainRevealed = true
-            startTyping()
         }) {
             HStack(spacing: 9) {
                 Text("✦")
@@ -208,17 +205,6 @@ struct Onboarding4: View {
                     .font(.system(size: 15, weight: .heavy))
                     .foregroundColor(OnboardingTheme.paperInk)
                 Spacer()
-                Text("AI")
-                    .font(.system(size: 9.5, weight: .black))
-                    .tracking(1)
-                    .foregroundColor(OnboardingTheme.primaryBlue)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(Color(hex: "E8EFFD"))
-                            .overlay(Capsule().stroke(Color(hex: "C9DCFB"), lineWidth: 1))
-                    )
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 15)
@@ -230,50 +216,14 @@ struct Onboarding4: View {
                 alignment: .bottom
             )
 
-            VStack(alignment: .leading, spacing: 15) {
-                sectionBlock(
-                    title: Self.contextTitle,
-                    body: Self.contextText,
-                    visible: typedPart(Self.contextText, offset: 0)
-                )
-
-                typedText(Self.quoteText, visible: typedPart(Self.quoteText, offset: Self.contextText.count), italic: true)
-                    .font(.system(size: 15.5, weight: .regular, design: .serif))
-                    .foregroundColor(Color(hex: "6B4B10"))
-                    .padding(13)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 0)
-                            .fill(Color(hex: "FFFAF0"))
-                    )
-                    .overlay(
-                        Rectangle()
-                            .fill(OnboardingTheme.gold)
-                            .frame(width: 3),
-                        alignment: .leading
-                    )
-                    .cornerRadius(12)
-
-                sectionBlock(
-                    title: Self.todayTitle,
-                    body: Self.todayText,
-                    visible: typedPart(Self.todayText, offset: Self.contextText.count + Self.quoteText.count)
-                )
-            }
+            OnboardingExplainTyping(
+                contextTitle: Self.contextTitle,
+                contextText: Self.contextText,
+                quoteText: Self.quoteLine(revealedVerse),
+                todayTitle: Self.todayTitle,
+                todayText: Self.todayText
+            )
             .padding(17)
-
-            Text("Always in the language you read in")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: "7F90AC"))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 11)
-                .overlay(
-                    Rectangle()
-                        .fill(Color(hex: "EDF2F8"))
-                        .frame(height: 1),
-                    alignment: .top
-                )
         }
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 18))
@@ -282,45 +232,6 @@ struct Onboarding4: View {
                 .stroke(OnboardingTheme.paperLine, lineWidth: 1)
         )
         .shadow(color: Color(hex: "142848").opacity(0.07), radius: 12, x: 0, y: 8)
-    }
-
-    private func sectionBlock(title: String, body: String, visible: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title.uppercased())
-                .font(.system(size: 10, weight: .black))
-                .tracking(1.4)
-                .foregroundColor(Color(hex: "93A3BC"))
-            typedText(body, visible: visible)
-                .font(.system(size: 14.5))
-                .foregroundColor(Color(hex: "31435F"))
-                .lineSpacing(5)
-        }
-    }
-
-    // MARK: Typing effect
-
-    /// Full text reserves the final size (hidden) so the card does not grow while typing.
-    private func typedText(_ full: String, visible: String, italic: Bool = false) -> some View {
-        ZStack(alignment: .topLeading) {
-            (italic ? Text(full).italic() : Text(full)).hidden()
-            italic ? Text(visible).italic() : Text(visible)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func typedPart(_ text: String, offset: Int) -> String {
-        let count = min(max(typedCount - offset, 0), text.count)
-        return String(text.prefix(count))
-    }
-
-    private func startTyping() {
-        guard typedCount == 0 else { return }
-        Timer.scheduledTimer(withTimeInterval: 0.012, repeats: true) { timer in
-            typedCount = min(typedCount + 12, Self.totalTypedLength)
-            if typedCount >= Self.totalTypedLength {
-                timer.invalidate()
-            }
-        }
     }
 
     private var reachBanner: some View {
@@ -352,6 +263,106 @@ struct Onboarding4: View {
         )
     }
 
+}
+
+/// Same type-on explanation as before. Updates stay in this view so the rest of the screen does not redraw.
+private struct OnboardingExplainTyping: View {
+    let contextTitle: String
+    let contextText: String
+    let quoteText: String
+    let todayTitle: String
+    let todayText: String
+
+    @State private var typedCount = 0
+    @State private var clock = Clock()
+
+    private var total: Int {
+        contextText.count + quoteText.count + todayText.count
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            sectionBlock(title: contextTitle, body: contextText, offset: 0)
+
+            typedText(quoteText, visible: typedPart(quoteText, offset: contextText.count), italic: true)
+                .font(.system(size: 15.5, weight: .regular, design: .serif))
+                .foregroundColor(Color(hex: "6B4B10"))
+                .padding(13)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 0)
+                        .fill(Color(hex: "FFFAF0"))
+                )
+                .overlay(
+                    Rectangle()
+                        .fill(OnboardingTheme.gold)
+                        .frame(width: 3),
+                    alignment: .leading
+                )
+                .cornerRadius(12)
+
+            sectionBlock(
+                title: todayTitle,
+                body: todayText,
+                offset: contextText.count + quoteText.count
+            )
+        }
+        .transaction { transaction in
+            transaction.animation = nil
+            transaction.disablesAnimations = true
+        }
+        .onAppear(perform: startTyping)
+    }
+
+    private func sectionBlock(title: String, body: String, offset: Int) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .black))
+                .tracking(1.4)
+                .foregroundColor(Color(hex: "93A3BC"))
+            typedText(body, visible: typedPart(body, offset: offset))
+                .font(.system(size: 14.5))
+                .foregroundColor(Color(hex: "31435F"))
+                .lineSpacing(5)
+        }
+    }
+
+    /// Full text reserves the final size (hidden) so the card does not grow while typing.
+    private func typedText(_ full: String, visible: String, italic: Bool = false) -> some View {
+        ZStack(alignment: .topLeading) {
+            (italic ? Text(full).italic() : Text(full)).hidden()
+            italic ? Text(visible).italic() : Text(visible)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func typedPart(_ text: String, offset: Int) -> String {
+        let count = min(max(typedCount - offset, 0), text.count)
+        return String(text.prefix(count))
+    }
+
+    private func startTyping() {
+        guard !clock.started else { return }
+        clock.started = true
+        let timer = Timer(timeInterval: 0.02, repeats: true) { timer in
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                typedCount = min(typedCount + 2, total)
+            }
+            if typedCount >= total {
+                timer.invalidate()
+                clock.timer = nil
+            }
+        }
+        clock.timer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    private final class Clock {
+        var timer: Timer?
+        var started = false
+    }
 }
 
 #Preview {

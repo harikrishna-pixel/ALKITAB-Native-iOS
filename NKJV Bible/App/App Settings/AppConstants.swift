@@ -63,6 +63,8 @@ var SPEECH_ENABLE = "1"   // TEXT TO SPEECH ENABLE
 
 
 var ADS_TYPE = 1
+// Testing switch. true hides every ad. false shows ads.
+var ADS_DISABLED_FOR_TESTING = false
 var IS_SUBSCRIPTION_ENABLE = 1
 var MARK_US_READ = true
 

@@ -78,8 +78,21 @@ struct ChallengeSessionConfig {
             quickQuizCount: n,
             fillQuestionCount: n,
             trueFalseCount: n,
-            verseMatchCount: min(n, 5),
+            verseMatchCount: n,
             wordSearchCount: n
+        )
+    }
+
+    func withDifficulty(_ level: ChallengeDifficulty) -> ChallengeSessionConfig {
+        ChallengeSessionConfig(
+            bookName: bookName,
+            chapter: chapter,
+            difficulty: level,
+            quickQuizCount: quickQuizCount,
+            fillQuestionCount: fillQuestionCount,
+            trueFalseCount: trueFalseCount,
+            verseMatchCount: verseMatchCount,
+            wordSearchCount: wordSearchCount
         )
     }
 

@@ -478,7 +478,7 @@
                                             <action selector="SearchNavigation:" destination="BYZ-38-t0r" eventType="touchUpInside" id="bUw-KM-3eJ"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Bhb-lA-Iq9">
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Bhb-lA-Iq9">
                                         <rect key="frame" x="286" y="61" width="20" height="20"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="20" id="9ah-gf-fWJ"/>

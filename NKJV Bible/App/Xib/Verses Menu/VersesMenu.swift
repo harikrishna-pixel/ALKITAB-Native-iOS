@@ -83,6 +83,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     var BookmarkStatus:String = ""
     var ColorCode:String = ""
     var SelectedColorCode:String = ""
+    private var didMarkAppliedHighlight = false
     var UnderlineStatus:String = ""
     
     
@@ -106,12 +107,13 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         if let getExplanationButton {
             MainView.bringSubviewToFront(getExplanationButton)
         }
+        markAppliedHighlightIfNeeded()
     }
     
     override func draw(_ rect: CGRect) {
         self.Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
         
-        SelectedColorCode = ColorCode
+        markAppliedHighlightIfNeeded()
         App_Protocol.DelegateVersesMenuPopup = self
         
         
@@ -180,12 +182,12 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         self.UnderlineTxt.textColor = self.Themecolor!
         self.ImageTxt.textColor = self.Themecolor!
         self.ExplainTxt.textColor = self.Themecolor!
-        // Match Copy / Reset / Share: one line, same font size, no shrinking.
-        self.ExplainTxt.text = "Challenge"
-        self.ExplainTxt.numberOfLines = 1
-        self.ExplainTxt.adjustsFontSizeToFitWidth = false
-        self.ExplainTxt.font = self.CopyTxt.font
-        self.ExplainTxt.lineBreakMode = .byTruncatingTail
+        // Challenge option commented out.
+        // self.ExplainTxt.text = "Challenge"
+        // self.ExplainTxt.numberOfLines = 1
+        // self.ExplainTxt.adjustsFontSizeToFitWidth = false
+        // self.ExplainTxt.font = self.CopyTxt.font
+        // self.ExplainTxt.lineBreakMode = .byTruncatingTail
     }
 
     private func setupGetExplanationButton() {
@@ -238,14 +240,60 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         Copy.superview?.superview as? UIStackView
     }
 
-    /// Bottom row: Copy / Reset / Share / Create Challenge, same width as the top row.
+    /// Quiz lightbulb with the white glass replaced by the theme color so it shows on the white menu.
+    private func challengeMenuIcon() -> UIImage? {
+        guard let source = UIImage(named: "Quiz"), let cgImage = source.cgImage else { return nil }
+        let width = cgImage.width
+        let height = cgImage.height
+        let bytesPerRow = width * 4
+        var pixels = [UInt8](repeating: 0, count: height * bytesPerRow)
+        guard let context = CGContext(
+            data: &pixels,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return source.withRenderingMode(.alwaysOriginal) }
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        let theme = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        if !theme.getRed(&red, green: &green, blue: &blue, alpha: &alpha) {
+            red = 0.11
+            green = 0.27
+            blue = 0.70
+        }
+        let tr = UInt8(max(0, min(1, red)) * 255)
+        let tg = UInt8(max(0, min(1, green)) * 255)
+        let tb = UInt8(max(0, min(1, blue)) * 255)
+        for index in stride(from: 0, to: pixels.count, by: 4) {
+            let r = pixels[index]
+            let g = pixels[index + 1]
+            let b = pixels[index + 2]
+            let a = pixels[index + 3]
+            if a > 20, r > 210, g > 210, b > 210 {
+                pixels[index] = tr
+                pixels[index + 1] = tg
+                pixels[index + 2] = tb
+                pixels[index + 3] = 255
+            }
+        }
+        guard let painted = context.makeImage() else { return source.withRenderingMode(.alwaysOriginal) }
+        return UIImage(cgImage: painted, scale: source.scale, orientation: source.imageOrientation).withRenderingMode(.alwaysOriginal)
+    }
+
+    /// Bottom row: Copy / Reset / Share. Challenge is commented out.
     private func showCreateChallengeAndAlignBottomRow() {
-        ExplainView.isHidden = false
-        ExplainTxt.isHidden = false
-        ExplainTxt.text = "Challenge"
-        let symbol = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular)
-        ExplainImg.image = UIImage(systemName: "plus.circle.fill", withConfiguration: symbol)
-        ExplainImg.tintColor = Themecolor ?? PrimaryColor
+        ExplainView.isHidden = true
+        ExplainTxt.isHidden = true
+        ExplainImg.isHidden = true
+        // ExplainView.isHidden = false
+        // ExplainTxt.isHidden = false
+        // ExplainImg.isHidden = false
+        // ExplainTxt.text = "Challenge"
+        // ExplainImg.image = challengeMenuIcon()
 
         guard let topStack = topActionStackView(),
               let bottomStack = bottomActionStackView() else { return }
@@ -337,7 +385,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         self.NoteImg.image = Notetxt.isEmpty ? UIImage(named: "UNotes"):UIImage(named: "FNotes")
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.NoteImg, colorVu: Notetxt.isEmpty ? UIColor.gray : theme)
         
-        UIApplication.shared.keyWindow?.rootViewController?.view.makeToast("Notes \(Status ? "Deleted":"Saved") Successfully!", duration: 2.0, position: .center)
+        UIApplication.shared.keyWindow?.rootViewController?.view.makeToast("Notes \(Status ? "Deleted":"Saved") Successfully!", duration: 2.0, position: .top)
         
     }
     
@@ -358,11 +406,12 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         
             let cell = self.ColorCC.dequeueReusableCell(withReuseIdentifier: "ColorCell", for: indexPath) as! ColorCell
             
+            let applied = isAppliedHighlight(HighlightColors[indexPath.row])
             cell.ColorView.backgroundColor = hexColorConvert.shared.hexStringToUIColor(hex: HighlightColors[indexPath.row])
             cell.layer.cornerRadius = 4
         
-            cell.Tick.isHidden = (self.SelectedColor == indexPath.row ? false : true)
-            cell.Tick.isHidden = (self.SelectedColorCode == "#\(HighlightColors[indexPath.row])" ? false:true )
+            cell.Tick.isHidden = !applied
+            cell.bringSubviewToFront(cell.Tick)
         
         
         cell.TicKiconwidth.constant = isIpad ? 22:14
@@ -370,6 +419,23 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         
         
             return cell
+    }
+
+    /// The color row is built before draw() used to copy the saved color, so the check never appeared.
+    private func markAppliedHighlightIfNeeded() {
+        guard !didMarkAppliedHighlight, window != nil else { return }
+        didMarkAppliedHighlight = true
+        SelectedColorCode = ColorCode
+        ColorCC.reloadData()
+    }
+
+    private func isAppliedHighlight(_ hex: String) -> Bool {
+        let applied = SelectedColorCode
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "#", with: "")
+            .lowercased()
+        guard !applied.isEmpty, applied != "000000" else { return false }
+        return applied == hex.lowercased()
     }
     
     
@@ -383,14 +449,14 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
 //        } else {
             self.SelectedColor = indexPath.row
             
-            if self.SelectedColorCode == "#\(HighlightColors[indexPath.row])" {
+            if self.isAppliedHighlight(HighlightColors[indexPath.row]) {
                 self.SelectedColorCode = ""
                 self.SelectedColor = -1
                 CoreDataModel.sharedInstance.coreDataInsert(CDBookSavedInfo, bookVerse:"\(BookName)-\(Pageindex-1):\(VersePosition)" , color: "#000000", Verses: self.BookVerse![VersePosition-1])
                 // BUG FIX 2: OLD CODE - No toast message was shown when highlight was removed (caused confusion)
                 // (No toast message here before)
                 // BUG FIX 2: NEW CODE - Added toast message to confirm highlight removal
-                UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Highlight Removed Successfully!!", duration: 2.0, position: .center)
+                UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Highlight Removed Successfully!!", duration: 2.0, position: .top)
             } else {
                 self.SelectedColorCode = "#\(HighlightColors[indexPath.row])"
                 
@@ -398,7 +464,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
                 // BUG FIX 2: OLD CODE - No toast message was shown when highlight was saved (caused confusion)
                 // (No toast message here before)
                 // BUG FIX 2: NEW CODE - Added toast message to confirm highlight save
-                UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Highlight Saved Successfully!!", duration: 2.0, position: .center)
+                UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Highlight Saved Successfully!!", duration: 2.0, position: .top)
             }
             
 //        }
@@ -443,7 +509,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
             
             
             
-            UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Bookmark Removed Successfully!!", duration: 2.0, position: .center)
+            UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Bookmark Removed Successfully!!", duration: 2.0, position: .top)
             
             
 //            App_Protocol.delegateReader?.AlertFrame(AlertNote: "Bookmark Removed Successfully!!",Vers:self.BookVerse![VersePosition-1],Title:"\(BookName)-\(Pageindex-1):\(VersePosition)")
@@ -458,7 +524,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
             CoreDataModel.sharedInstance.coreDataInsertBookmarked(CDBookSavedInfo, bookVerse:"\(BookName)-\(Pageindex-1):\(VersePosition)" , Bookmark: "bookMarked", Verses: self.BookVerse![VersePosition-1])
 
             
-            UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Bookmark saved Successfully!!", duration: 2.0, position: .center)
+            UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Bookmark saved Successfully!!", duration: 2.0, position: .top)
             
 //            App_Protocol.delegateReader?.AlertFrame(AlertNote: "Bookmark saved Successfully!!",Vers:self.BookVerse![VersePosition-1],Title:"\(BookName)-\(Pageindex-1):\(VersePosition)")
 
@@ -477,7 +543,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         
         CoreDataModel.sharedInstance.coreDataInsertUnderLine(CDBookSavedInfo, bookVerse: "\(BookName)-\(Pageindex-1):\(VersePosition)", Bookmark: "", Verses: self.BookVerse![VersePosition-1], Underlinestatus: (UnderlineStatus == "true" ? false:true))
                 
-        UIApplication.shared.keyWindow?.rootViewController!.view.makeToast(UnderlineStatus == "true" ?  "Underline Removed Successfully!!" : "Verse Underlined Successfully!!", duration: 2.0, position: .center)
+        UIApplication.shared.keyWindow?.rootViewController!.view.makeToast(UnderlineStatus == "true" ?  "Underline Removed Successfully!!" : "Verse Underlined Successfully!!", duration: 2.0, position: .top)
         
 //        App_Protocol.delegateReader?.AlertFrame(AlertNote: UnderlineStatus == "true" ?  "Underline Removed Successfully!!" : "Verse Underlined Successfully!!" , Vers:self.BookVerse![VersePosition-1],Title:"\(BookName)-\(Pageindex-1):\(VersePosition)")
         
@@ -501,7 +567,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         
         UIPasteboard.general.string = "\(self.BookVerse![VersePosition-1]) \n\n      \(BookName)-\(Pageindex-1):\(VersePosition) \n\n \(APP_LINK)"
 
-        UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Copied Successfully!!", duration: 2.0, position: .center)
+        UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Copied Successfully!!", duration: 2.0, position: .top)
         
 //        App_Protocol.delegateReader?.AlertFrame(AlertNote: "Copied Successfully!!",Vers:self.BookVerse![VersePosition-1],Title:"\(BookName)-\(Pageindex-1):\(VersePosition)")
     }
@@ -514,7 +580,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         
 //        App_Protocol.delegateReader?.AlertFrame(AlertNote: "Verse Reset Successfully!!",Vers:self.BookVerse![VersePosition-1],Title:"\(BookName)-\(Pageindex-1):\(VersePosition)")
         
-        UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Verse Reset Successfully!!", duration: 2.0, position: .center)
+        UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Verse Reset Successfully!!", duration: 2.0, position: .top)
         
         
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
@@ -545,7 +611,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     }
     
     @IBAction func ExplainAction(_ sender: Any) {
-        openCreateChallenge()
+        // openCreateChallenge()
     }
 
     private func openCreateChallenge() {

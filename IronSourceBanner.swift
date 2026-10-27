@@ -32,6 +32,7 @@ class IronSourceBanner: NSObject, ISInitializationDelegate, LevelPlayBannerDeleg
     
     
     func  IronSource_Banner_AdLoad(bannerWidth:Int,bannerHeight:Int) {
+        if ADS_DISABLED_FOR_TESTING { return }
         IronSource.setLevelPlayBannerDelegate(self)
         self.bannerWidth = bannerWidth
         self.bannerHeight = bannerHeight

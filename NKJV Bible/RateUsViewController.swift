@@ -84,7 +84,7 @@ class RateUsViewController: UIViewController {
                     App_Protocol.SettingDelegate?.CallRate(Rate: "Feedback")
                     self.dismiss(animated: true, completion: nil)
                 } else {
-                    self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                    self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 }
             } else {
                 // NEW FIX: Rate Us also requires internet check
@@ -92,7 +92,7 @@ class RateUsViewController: UIViewController {
                     App_Protocol.SettingDelegate?.CallRate(Rate: (self.RateBtn.titleLabel?.text)!)
                     self.dismiss(animated: true, completion: nil)
                 } else {
-                    self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                    self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 }
             }
         }

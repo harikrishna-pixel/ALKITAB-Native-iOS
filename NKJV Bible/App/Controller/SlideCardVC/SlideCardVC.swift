@@ -435,12 +435,12 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
            
         if self.BooKMarkImg.image == UIImage(named: "SlideTickBookmark") {
                CoreDataModel.sharedInstance.coreDataInsertBookmarked(CDBookSavedInfo, bookVerse:B_Title , Bookmark: "", Verses: self.VerseArray[self.SelectedPath])
-               self.view.makeToast("Bookmark removed.", duration: 2.0, position: .bottom)
+               self.view.makeToast("Bookmark removed.", duration: 2.0, position: .top)
                
            }
         else {
                CoreDataModel.sharedInstance.coreDataInsertBookmarked(CDBookSavedInfo, bookVerse:B_Title , Bookmark: "bookMarked", Verses: self.VerseArray[self.SelectedPath])
-               self.view.makeToast("Bookmarked successfully", duration: 2.0, position: .bottom)
+               self.view.makeToast("Bookmarked successfully", duration: 2.0, position: .top)
                RateUsCall.shared.ClickCount()
            }
            
@@ -475,7 +475,7 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
 
     
     func NotesSavedStatus(Status: Bool) {
-        self.view.makeToast("Notes \(Status ? "Deleted":"Saved") Successfully!", duration: 2.0, position: .bottom)
+        self.view.makeToast("Notes \(Status ? "Deleted":"Saved") Successfully!", duration: 2.0, position: .top)
     }
     
     
@@ -497,7 +497,7 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
         CoreDataModel.sharedInstance.coreDataRemoveAllData(CDBookSavedInfo, bookVerse: "\(BookName)-\(ChaterNumber):\(self.SelectedPath+1)")
 //        App_Protocol.delegateReaderSource?.ReloadBibleData(ChapterNo:UserDefaults.standard.integer(forKey: "BookChapter"))
     
-        self.view.makeToast("Reset Successfully", duration: 2.0, position: .bottom)
+        self.view.makeToast("Reset Successfully", duration: 2.0, position: .top)
         
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.4) {
             self.reloadCoreCollectionData(Index: self.SelectedPath)
@@ -542,14 +542,7 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
     
     @IBAction func PaymentAction(_ sender: Any) {
         if CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI) != "" {
-                var date = CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI)
-
-                if date == "" {
-                    date = Date().string(format: "dd-MM-yyyy")
-                }
-                let showDate1 = GetReceptKey.shared.convertData(date: date)
-
-                if showDate1.isGreaterThan(Date()) {
+                if PaymentHistory.sharedInstance.hasActivePurchase() {
                     self.SubscriptionVucall()
                 } else {
                     // BUG FIX 3 (OFFLINE IAP NAVIGATION): OLD CODE - Used OR (||) allowing navigation with cached prices
@@ -578,7 +571,7 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
                             self.present(vc, animated: true, completion: nil)
                         }
                     } else {
-                        self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                        self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                     }
                 }
             } else {
@@ -607,7 +600,7 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
                         self.present(vc, animated: true, completion: nil)
                     }
                 } else {
-                    self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+                    self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                 }
             }
         
@@ -732,7 +725,7 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
            let copyverse = "\(self.VerseArray[self.SelectedPath])\n\n       \(BookName)-\(ChaterNumber):\(self.SelectedPath+1)  \n\n \(APP_LINK)"
            
            UIPasteboard.general.string = copyverse
-            self.view.makeToast("Copied successfully", duration: 2.0, position: .bottom)
+            self.view.makeToast("Copied successfully", duration: 2.0, position: .top)
             
        }
        

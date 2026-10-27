@@ -265,7 +265,7 @@ class HomeController: UIViewController, UICollectionViewDelegate, UICollectionVi
         if NetworkManager.sharedInstance.isConnectedToInternet() {
             self.shared(Link: APP_LINK)
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .center)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
         
     }
@@ -331,7 +331,7 @@ class HomeController: UIViewController, UICollectionViewDelegate, UICollectionVi
                 if (newStatus == PHAuthorizationStatus.authorized) {
                     DispatchQueue.main.async {
                         CustomPhotoAlbum.sharedInstance.saveImage(image: self.VerseImageVu.asImage())
-                        self.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .center)
+                        self.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .top)
                     }
                 }
 
@@ -361,7 +361,7 @@ class HomeController: UIViewController, UICollectionViewDelegate, UICollectionVi
     
     @IBAction func Copy_Action(_ sender: Any) {
              UIPasteboard.general.string = "\(Verertxt.text!) \n\n      \(Booktxt.text!) \n\n \(APP_LINK)"
-        self.view.makeToast("Copied successfully", duration: 2.0, position: .center)
+        self.view.makeToast("Copied successfully", duration: 2.0, position: .top)
        }
      
     

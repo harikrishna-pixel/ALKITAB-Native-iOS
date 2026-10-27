@@ -61,7 +61,9 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
     var status: PHAuthorizationStatus?
     
     let Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
-    private let pageControl = UIPageControl()
+    private let tapHintLabel = UILabel()
+    private var tapHintReady = false
+    private var tapHintPage: Int?
     
     
     override func draw(_ rect: CGRect) {
@@ -113,13 +115,11 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
 //            BookArrayTitle =  String(format: "%@ %@ %@", BookArray[0],BookArray[1],BookArray[2])
 //        }
         
-        setupPageControl()
-        
         DispatchQueue.main.async {
             self.WallPaperCollection.isPagingEnabled = false
             self.WallPaperCollection.scrollToItem(at: indexPath, at: UICollectionView.ScrollPosition.centeredHorizontally, animated: false)
             self.WallPaperCollection.isPagingEnabled = true
-            self.updatePageControl()
+            self.updateTapHint()
           }
         
         
@@ -224,7 +224,11 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
             self.WallPaperCollection.isPagingEnabled = true
                         
             self.WallpaperCell = self.WallPaperCollection.cellForItem(at: indexPath as IndexPath)  as? WallpaperCollectionViewCell
+            let tapHint = self.WallpaperCell?.TabTxt
+            let tapHintWasHidden = tapHint?.isHidden ?? true
+            tapHint?.isHidden = true
             self.saveImage = self.WallpaperCell!.Walpaperframe.asImage()
+            tapHint?.isHidden = tapHintWasHidden
             
             let url = URL(fileURLWithPath: NSTemporaryDirectory())
             let fileURL = url.appendingPathComponent("\((self.WallpaperCell?.Booktext.text)! as String).png")
@@ -246,8 +250,11 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
         
 //        App_Protocol.delegateReader?.SliderCardPreview(Verese:(self.WallpaperCell?.Versetext.text)! , Book: (self.WallpaperCell?.Booktext.text)!)
         
-                
+        let tapHint = self.WallpaperCell?.TabTxt
+        let tapHintWasHidden = tapHint?.isHidden ?? true
+        tapHint?.isHidden = true
         let saveImage = self.WallpaperCell!.Walpaperframe.asImage()
+        tapHint?.isHidden = tapHintWasHidden
         // First Save this app session only → interstitial, shown after the "saved" toast (never over the permission alert).
         NKJV_Bible.SaveImage.sharedInstance.onNextSaveSuccess = {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
@@ -300,11 +307,11 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
             if status == PHAuthorizationStatus.authorized {
                 CustomPhotoAlbum.sharedInstance.saveImage(image: self.saveImage!)
                 DispatchQueue.main.async {
-                    self.makeToast("Image Saved Successfully!", duration: 2.0, position: .bottom)
+                    self.makeToast("Image Saved Successfully!", duration: 2.0, position: .top)
                 }
             } else {
                 DispatchQueue.main.async {
-                    self.makeToast("Save Image now", duration: 2.0, position: .bottom)
+                    self.makeToast("Save Image now", duration: 2.0, position: .top)
                 }
             }
         }
@@ -318,7 +325,7 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
            if let error = error {
                print("ERROR: \(error)")
            } else {
-             self.makeToast("Image Saved Successfully!", duration: 2.0, position: .bottom)
+             self.makeToast("Image Saved Successfully!", duration: 2.0, position: .top)
            }
        }
         
@@ -387,7 +394,8 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
             }
                         
             self.WallpaperCell!.Wallpaper.image = UIImage(named: "S\(BGImage[indexPath.row]).jpg")
-            self.WallpaperCell!.BibleName.text = APPNAME_SPLASH
+            self.WallpaperCell!.applyVerseWatermarkName()
+            self.WallpaperCell!.TabTxt.isHidden = true
 
             
 //            self.WallpaperCell!.Booktext.font = UIFont(name: UserDefaults.standard.string(forKey: "FontName")!, size: 15)
@@ -440,9 +448,55 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
         scrollView.setContentOffset(CGPoint(x: CGFloat(newTargetOffset), y: 0), animated: true)
                   
         self.SelectedPath = Int((newTargetOffset / pageWidth)+0.01)
-        self.updatePageControl()
+        self.updateTapHint()
        }
     
+    private func updateTapHint() {
+        if !tapHintReady {
+            tapHintReady = true
+            tapHintLabel.translatesAutoresizingMaskIntoConstraints = false
+            tapHintLabel.text = "Tap on image"
+            tapHintLabel.font = UIFont.systemFont(ofSize: 15, weight: .medium)
+            tapHintLabel.textColor = UIColor(white: 0.45, alpha: 1)
+            tapHintLabel.textAlignment = .center
+            tapHintLabel.isUserInteractionEnabled = false
+            tapHintLabel.isHidden = true
+            addSubview(tapHintLabel)
+            NSLayoutConstraint.activate([
+                tapHintLabel.centerXAnchor.constraint(equalTo: WallPaperCollection.centerXAnchor),
+                tapHintLabel.bottomAnchor.constraint(equalTo: WallPaperCollection.topAnchor, constant: -6)
+            ])
+        }
+        if tapHintPage == nil {
+            tapHintPage = SelectedPath
+        }
+        let show = SelectedPath == tapHintPage
+        let wasHidden = tapHintLabel.isHidden
+        tapHintLabel.isHidden = !show
+        if show {
+            bringSubviewToFront(tapHintLabel)
+        }
+        if show && wasHidden {
+            blinkTapHint()
+        }
+    }
+
+    private func blinkTapHint() {
+        tapHintLabel.layer.removeAllAnimations()
+        guard !tapHintLabel.isHidden else { return }
+        tapHintLabel.alpha = 1
+        UIView.animate(withDuration: 0.7, delay: 0, options: [.curveEaseInOut, .allowUserInteraction]) {
+            self.tapHintLabel.alpha = 0.15
+        } completion: { _ in
+            guard !self.tapHintLabel.isHidden else { return }
+            UIView.animate(withDuration: 0.7, delay: 0, options: [.curveEaseInOut, .allowUserInteraction]) {
+                self.tapHintLabel.alpha = 1
+            } completion: { _ in
+                self.blinkTapHint()
+            }
+        }
+    }
+
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         commitWallpaperPageChangeIfNeeded()
     }
@@ -465,7 +519,7 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
     private func commitWallpaperPageChangeIfNeeded() {
         guard let page = centeredWallpaperPage() else { return }
         SelectedPath = page
-        updatePageControl()
+        updateTapHint()
         
         if lastWallpaperAdCountedPath == nil {
             lastWallpaperAdCountedPath = page
@@ -477,33 +531,6 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
     }
     
     
-    private func setupPageControl() {
-        guard pageControl.superview == nil else {
-            updatePageControl()
-            return
-        }
-        
-        pageControl.translatesAutoresizingMaskIntoConstraints = false
-        pageControl.hidesForSinglePage = false
-        pageControl.isUserInteractionEnabled = false
-        pageControl.currentPageIndicatorTintColor = Themecolor
-        pageControl.pageIndicatorTintColor = UIColor.lightGray.withAlphaComponent(0.55)
-        MainCollectionView.addSubview(pageControl)
-        
-        NSLayoutConstraint.activate([
-            pageControl.centerXAnchor.constraint(equalTo: MainCollectionView.centerXAnchor),
-            pageControl.bottomAnchor.constraint(equalTo: WallPaperCollection.bottomAnchor, constant: -4),
-            pageControl.heightAnchor.constraint(equalToConstant: 20)
-        ])
-        updatePageControl()
-    }
-    
-    private func updatePageControl() {
-        let count = max(VerseArray.count, 1)
-        pageControl.numberOfPages = count
-        pageControl.currentPage = min(max(SelectedPath, 0), count - 1)
-        pageControl.isHidden = count <= 1
-    }
     
 
 

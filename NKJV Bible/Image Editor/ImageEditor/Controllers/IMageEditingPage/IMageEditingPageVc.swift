@@ -184,7 +184,7 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
             self.AdloadView.isHidden = false
             AdmobManager.shared.IronSource_Reward_ShowAds(vw: (UIApplication.shared.keyWindow?.rootViewController)!, RewardAd: "ImageWatermark")
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
@@ -209,7 +209,7 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
                 self.present(vc, animated: true, completion: nil)
             }
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .bottom)
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
     }
     
@@ -569,7 +569,7 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
                     self.WatermarkClose.isHidden = false
                     
                     CustomPhotoAlbum.sharedInstance.saveImage(image: self.makeImageFrom(self.Mainview))
-                    self.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .center)
+                    self.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .top)
                 }
             case .denied:
                     SettingAlert.GallaryPermission(SorceVc: self)

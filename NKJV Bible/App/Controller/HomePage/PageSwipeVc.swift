@@ -24,6 +24,26 @@ class PageSwipeVc: UIPageViewController, UIPageViewControllerDataSource, UIPageV
         
         self.tabDisable()
     }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        guard let reader = App_Protocol.delegateReader as? UIViewController,
+              let nav = reader.navigationController,
+              nav.transitionCoordinator != nil,
+              nav.topViewController !== reader else { return }
+        holdChapterPageDuringPush()
+    }
+
+    /// Stops the chapter pager from sliding while Book Selection is opening.
+    func holdChapterPageDuringPush() {
+        for case let scrollView as UIScrollView in view.subviews {
+            guard scrollView.contentSize.width > scrollView.bounds.width + 1 else { continue }
+            let restingX = scrollView.bounds.width
+            guard abs(scrollView.contentOffset.x - restingX) > 0.5 else { continue }
+            scrollView.layer.removeAllAnimations()
+            scrollView.setContentOffset(CGPoint(x: restingX, y: 0), animated: false)
+        }
+    }
     
     func tabDisable() {
         for recognizer in self.gestureRecognizers {

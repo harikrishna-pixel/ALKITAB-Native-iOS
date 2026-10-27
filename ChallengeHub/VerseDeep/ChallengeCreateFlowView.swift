@@ -8,6 +8,25 @@
 import SwiftUI
 import UIKit
 
+/// True when this phone already has a paid plan, so Create Challenge must not show the paywall.
+enum ChallengeCreatorAccess {
+    static var isUnlocked: Bool {
+        if PaymentHistory.sharedInstance.hasActivePurchase() { return true }
+        if LegacyPaidAppService.shared.isLegacyPaidAppUser { return true }
+        let paymentId = UserDefaults.standard.string(forKey: "PaymentId") ?? ""
+        let lower = paymentId.lowercased()
+        guard !lower.isEmpty else { return false }
+        if lower.contains("lifetime") { return true }
+        let ids = [
+            SUBSCRIPTIONID_LifeTime,
+            SUBSCRIPTIONID_ExitOffer,
+            FallbackIAPConstants.lifetimeProductID,
+            FallbackIAPConstants.exitOfferProductID
+        ]
+        return ids.contains { !$0.isEmpty && $0.caseInsensitiveCompare(paymentId) == .orderedSame }
+    }
+}
+
 private enum ChallengeCreateStep: Equatable {
     case paywall
     case pickType
@@ -30,22 +49,25 @@ struct ChallengeCreateFlowView: View {
     var onMyChallenges: () -> Void
 
     @StateObject private var shareSession = ChallengeShareSession()
-    @State private var step: ChallengeCreateStep = .paywall
+    @State private var step: ChallengeCreateStep = ChallengeCreateFlowView.openingStep
     @State private var selectedKind: ChallengeKind = .fillVerse
-    @State private var questionCount: Int = 3
+    @State private var questionCount: Int?
+    @State private var selectedDifficulty: ChallengeDifficulty?
     @State private var questions: [ChallengeVerseDeepPlayQuestion] = []
     @State private var playID = UUID()
     @State private var verse: ChallengeVerseContext = ChallengeVerseContext.loadToday()
     @State private var activeConfig: ChallengeSessionConfig?
     @State private var sharePayload: [ChallengeQuestionPayload] = []
     @State private var showShareLogin = false
+    @State private var generateToken = 0
+    @State private var generateWorkDone = false
 
     var body: some View {
         Group {
             switch step {
             case .paywall:
                 ChallengeCreatorPaywallView(
-                    onClose: onBack,
+                    onClose: { step = .pickType },
                     onNotNow: { step = .pickType },
                     onUnlock: {
                         onUnlock { step = .pickType }
@@ -57,6 +79,8 @@ struct ChallengeCreateFlowView: View {
                     onBack: showBackButton ? onBack : nil,
                     onSelect: { kind in
                         selectedKind = kind
+                        questionCount = nil
+                        selectedDifficulty = nil
                         step = .pickCount
                     }
                 )
@@ -66,30 +90,44 @@ struct ChallengeCreateFlowView: View {
                     verseReference: verse.reference,
                     selectedCount: $questionCount,
                     onBack: { step = .pickType },
-                    onGenerate: {
+                    onGenerate: { count, difficulty in
+                        questionCount = count
+                        selectedDifficulty = difficulty
                         guard selectedKind.isPremium else {
-                            startGenerate()
+                            startGenerate(count: count, difficulty: difficulty)
                             return
                         }
-                        AIUsageLimiter.shared.requestAccess(.quiz, units: questionCount) {
-                            startGenerate()
+                        AIUsageLimiter.shared.requestAccess(.quiz, units: count) {
+                            startGenerate(count: count, difficulty: difficulty)
                         }
                     }
                 )
             case .generating:
-                ChallengeGeneratingView(verseReference: verse.reference)
+                ChallengeGeneratingView(
+                    verseReference: verse.reference,
+                    runID: generateToken,
+                    isWorkDone: generateWorkDone,
+                    onFinished: { id in
+                        guard id == generateToken else { return }
+                        AIUsageLimiter.shared.commit(.quiz)
+                        step = .preview
+                    }
+                )
             case .preview:
                 ChallengeQuizPreviewView(
                     verseReference: verse.reference,
                     questions: $questions,
                     onBack: { step = .pickCount },
-                    onRegenerate: { startGenerate() },
+                    onRegenerate: {
+                        guard let questionCount, let selectedDifficulty else { return }
+                        startGenerate(count: questionCount, difficulty: selectedDifficulty)
+                    },
                     onSave: { step = .created }
                 )
             case .created:
                 ChallengeCreatedSuccessView(
                     title: shareSession.challengeTitle.isEmpty ? "\(verse.reference) Challenge" : shareSession.challengeTitle,
-                    detail: "\(questionCount) Questions · \(selectedKind.title)",
+                    detail: "\(questionCount ?? 0) Questions · \(selectedKind.title)",
                     onPlay: { step = .playing },
                     onShare: { openShare() },
                     onInvite: { openShare() },
@@ -126,7 +164,7 @@ struct ChallengeCreateFlowView: View {
                 ChallengeCreatorShareFlow(
                     shareUrl: shareSession.shareUrl ?? "",
                     challengeTitle: shareSession.challengeTitle.isEmpty ? "\(verse.reference) Challenge" : shareSession.challengeTitle,
-                    questionCount: questionCount,
+                    questionCount: questionCount ?? 0,
                     kindTitle: selectedKind.title,
                     onBack: { step = .created },
                     onShared: { step = .shared },
@@ -145,6 +183,9 @@ struct ChallengeCreateFlowView: View {
         }
         .onAppear {
             reloadVerse()
+            if ChallengeCreatorAccess.isUnlocked, step == .paywall {
+                step = .pickType
+            }
         }
         .fullScreenCover(isPresented: $showShareLogin) {
             ChallengeQuizLoginGate(
@@ -152,6 +193,11 @@ struct ChallengeCreateFlowView: View {
                 onLoggedIn: { finishShareLogin() }
             )
         }
+    }
+
+    /// Paid users go straight to the challenge type picker.
+    private static var openingStep: ChallengeCreateStep {
+        ChallengeCreatorAccess.isUnlocked ? .pickType : .paywall
     }
 
     /// Share is the only step that needs an account.
@@ -185,10 +231,10 @@ struct ChallengeCreateFlowView: View {
         }
     }
 
-    private func startGenerate() {
+    private func startGenerate(count: Int, difficulty: ChallengeDifficulty) {
         let config: ChallengeSessionConfig
         if let base = sessionConfig {
-            config = base.withQuestionCount(questionCount)
+            config = base.withQuestionCount(count).withDifficulty(difficulty)
         } else {
             let parts = verse.reference.split(separator: " ")
             let book = parts.dropLast().joined(separator: " ").isEmpty
@@ -200,10 +246,19 @@ struct ChallengeCreateFlowView: View {
             config = ChallengeSessionConfig.verseDeep(
                 book: book.isEmpty ? "Genesis" : book,
                 chapter: chapterNum,
-                questionCount: questionCount
-            )
+                questionCount: count
+            ).withDifficulty(difficulty)
         }
         activeConfig = config
+        generateToken += 1
+        generateWorkDone = false
+        step = .generating
+        DispatchQueue.main.async {
+            self.finishGenerateWork(config: config)
+        }
+    }
+
+    private func finishGenerateWork(config: ChallengeSessionConfig) {
         let payload: [ChallengeQuestionPayload]
         if selectedKind == .verseMatch {
             let pairs = ChallengeGameFactory.matchPairs(from: verse, config: config)
@@ -226,29 +281,21 @@ struct ChallengeCreateFlowView: View {
             questions = previewQuestions(from: payload)
         }
         sharePayload = payload
-        step = .generating
         guard ChallengeQuizAccess.allowsChallenges else {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                AIUsageLimiter.shared.commit(.quiz)
-                step = .preview
-            }
+            generateWorkDone = true
             return
         }
         shareSession.create(kind: selectedKind, verse: verse, questions: payload) { result in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                AIUsageLimiter.shared.commit(.quiz)
-                switch result {
-                case .success:
-                    step = .preview
-                case .failure(let error):
+            DispatchQueue.main.async {
+                if case .failure(let error) = result {
                     // Still allow local play even if API fails
                     OnboardingAuthManager.topViewController()?.view.makeToast(
                         error.localizedDescription,
                         duration: 2.0,
-                        position: .bottom
+                        position: .top
                     )
-                    step = .preview
                 }
+                self.generateWorkDone = true
             }
         }
     }

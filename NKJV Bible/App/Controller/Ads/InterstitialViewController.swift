@@ -91,6 +91,7 @@ extension  InterstitialViewController: ISInitializationDelegate  {
     //////////////////////////////////////////////////////////////////////////////////////////   Iron Source  Interstitial Ads   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
     func IronSource_Interstitial_AdLoad() {
+        if ADS_DISABLED_FOR_TESTING { return }
         IronSource.setLevelPlayInterstitialDelegate(self)
         IronSource.initWithAppKey(IRONSOURCE_KEY, delegate: self)
         IronSource.initWithAppKey(IRONSOURCE_KEY, adUnits:[IS_INTERSTITIAL])
@@ -102,8 +103,13 @@ extension  InterstitialViewController: ISInitializationDelegate  {
     
     
     func IronSource_Interstitial_ShowAds() {
+        if ADS_DISABLED_FOR_TESTING {
+            CloseVc()
+            return
+        }
         if IronSource.hasInterstitial() {
             DispatchQueue.main.async {
+                PlaybackAdHold.pause()
                 IronSource.showInterstitial(with: self)
             }
         } else {
@@ -120,6 +126,7 @@ extension  InterstitialViewController: ISInitializationDelegate  {
     
     
     func IronSource_Reward_AdLoad() {
+        if ADS_DISABLED_FOR_TESTING { return }
         
         IronSource.setLevelPlayRewardedVideoDelegate(self)
         IronSource.initWithAppKey(IRONSOURCE_KEY, delegate: self)
@@ -132,8 +139,13 @@ extension  InterstitialViewController: ISInitializationDelegate  {
     
     
     func IronSource_Reward_ShowAds() {
+        if ADS_DISABLED_FOR_TESTING {
+            CloseVc()
+            return
+        }
         if IronSource.hasInterstitial() {
             DispatchQueue.main.async {
+                PlaybackAdHold.pause()
                 IronSource.showRewardedVideo(with: self)
             }
         } else {
@@ -161,7 +173,7 @@ extension InterstitialViewController  {
     }
     
     func didOpen(with adInfo: ISAdInfo!) {
-        print("did Open")
+        PlaybackAdHold.pause()
     }
     
     func didShow(with adInfo: ISAdInfo!) {
@@ -169,7 +181,7 @@ extension InterstitialViewController  {
     }
     
     func didFailToShowWithError(_ error: Error!, andAdInfo adInfo: ISAdInfo!) {
-        print("did Fail To Show With Error")
+        PlaybackAdHold.resume()
         self.CloseVc()
     }
     
@@ -178,7 +190,7 @@ extension InterstitialViewController  {
     }
     
     func didClose(with adInfo: ISAdInfo!) {
-        print("did Close")
+        PlaybackAdHold.resume()
         self.CloseVc()
     }
     
@@ -193,14 +205,15 @@ extension InterstitialViewController  {
  
     
     func rewardedVideoDidFailToShowWithError(_ error: Error!) {
-        
+        PlaybackAdHold.resume()
     }
     
     func rewardedVideoDidOpen() {
-        
+        PlaybackAdHold.pause()
     }
     
     func rewardedVideoDidClose() {
+        PlaybackAdHold.resume()
         self.CloseVc()
     }
     
