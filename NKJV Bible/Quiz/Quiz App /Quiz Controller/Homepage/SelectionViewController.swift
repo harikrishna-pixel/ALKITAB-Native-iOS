@@ -357,12 +357,8 @@ class SelectionViewController: UIViewController, QuizSelect {
                 self?.navigationController?.popToQuizHubIfPresent(fallback: SelectionViewController.self)
             },
             onOpenLegacyQuiz: { [weak self] in
-                guard let self = self else { return }
-                let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "QuizMainPageVC") as! QuizMainPageVC
-                vc.level = level
-                vc.BookName = book
-                vc.Chapter = chapter
-                self.navigationController?.pushViewController(vc, animated: true)
+                // Old quiz commented out.
+                _ = self
             }
         )
         let host = SelectionChallengeHostingController(rootView: root)

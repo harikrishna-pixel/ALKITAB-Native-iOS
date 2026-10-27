@@ -464,7 +464,8 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     func NavigateToQuiz() {
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.0) {
-            let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "SelectionViewController") as! SelectionViewController
+            // Old quiz commented out. Notifications open the new quiz.
+            let vc = ChallengeHubViewController()
             self.navigationController?.pushViewController(vc, animated: true)
         }
     }
@@ -1296,8 +1297,13 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             self.Buttonfram()
             self.selectBottomTabHighlight(.quiz)
             self.Navigateframe.isHidden = false
-            let vc = ChallengeHubViewController()
-            vc.isEmbeddedTab = true
+            let book = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
+            let chapter = UserDefaults.standard.string(forKey: "BookChapter")
+                ?? "\(max(UserDefaults.standard.integer(forKey: "BookChapter"), 1))"
+            let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "SelectionViewController") as! SelectionViewController
+            vc.BookString = book
+            vc.ChapterString = chapter
+            vc.ChapterCount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: book)
             self.showEmbeddedTab(vc)
         }
     }
@@ -1326,7 +1332,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
 
     private func clearNavigateframeTabChildren() {
         for child in children {
-            if child is DailyJourneyHomeViewController || child is HomeController || child is MyLibraryViewController || child is PrayerWallViewController || child is ChallengeHubViewController {
+            if child is DailyJourneyHomeViewController || child is HomeController || child is MyLibraryViewController || child is PrayerWallViewController || child is ChallengeHubViewController || child is SelectionViewController {
                 child.willMove(toParent: nil)
                 child.view.removeFromSuperview()
                 child.removeFromParent()

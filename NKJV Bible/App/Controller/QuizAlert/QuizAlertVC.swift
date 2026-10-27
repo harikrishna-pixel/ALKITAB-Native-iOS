@@ -110,10 +110,11 @@ class QuizAlertVC: UIViewController, QuizAlert {
 
         let book = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
         let chapterValue = UserDefaults.standard.string(forKey: "BookChapter")
-            ?? "\(UserDefaults.standard.integer(forKey: "BookChapter"))"
-        let vc = QuizOrChallengeChooserViewController()
-        vc.bookName = book
-        vc.chapter = chapterValue
+            ?? "\(max(UserDefaults.standard.integer(forKey: "BookChapter"), 1))"
+        let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "SelectionViewController") as! SelectionViewController
+        vc.BookString = book
+        vc.ChapterString = chapterValue
+        vc.ChapterCount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: book)
         self.navigationController?.pushViewController(vc, animated: true)
     }
 

@@ -62,7 +62,7 @@ final class ReaderMoreSheet: UIView {
         let tabFrame = tab.convert(tab.bounds, to: self)
         dimView.frame = CGRect(x: 0, y: 0, width: bounds.width, height: max(0, tabFrame.minY))
         let width = bounds.width
-        let height: CGFloat = 315
+        let height: CGFloat = 235
         sheetView.bounds.size = CGSize(width: width, height: height)
         sheetView.center = CGPoint(x: width / 2, y: tabFrame.minY - height / 2)
         sheetView.layoutIfNeeded()
@@ -99,7 +99,8 @@ final class ReaderMoreSheet: UIView {
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.axis = .vertical
         stack.spacing = 12
-        stack.addArrangedSubview(makeRow(title: "Profile", symbol: "person.fill", accent: accent, night: night, action: #selector(profileTapped)))
+        // Profile commented out.
+        // stack.addArrangedSubview(makeRow(title: "Profile", symbol: "person.fill", accent: accent, night: night, action: #selector(profileTapped)))
         stack.addArrangedSubview(makeRow(title: "Bible Companion", symbol: "bubble.left.and.bubble.right.fill", accent: accent, night: night, action: #selector(companionTapped)))
         stack.addArrangedSubview(makeRow(title: "Settings", symbol: "gearshape.fill", accent: accent, night: night, action: #selector(settingsTapped)))
 

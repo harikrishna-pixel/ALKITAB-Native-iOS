@@ -91,7 +91,8 @@ struct QuizOrChallengeChooserView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
 
-                    ForEach(ChallengeKind.allCases) { kind in
+                    // Only Fill the Verse. Other quizzes commented out.
+                    ForEach(ChallengeKind.allCases.filter { $0 == .fillVerse }) { kind in
                         choiceCard(
                             title: kind.title,
                             subtitle: kind.subtitle,
@@ -217,6 +218,7 @@ final class QuizOrChallengeChooserViewController: UIViewController {
     }
 
     private func openChallenge(_ kind: ChallengeKind, verse: ChallengeVerseContext, config: ChallengeSessionConfig?, animated: Bool) {
+        // Fill the Verse uses the old quiz for Mark as Read.
         if kind == .fillVerse, let config {
             openOldFillVerseQuiz(config, animated: animated)
             return

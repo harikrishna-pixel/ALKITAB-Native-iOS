@@ -149,30 +149,32 @@ struct AuthHubProfileView: View {
                 .foregroundColor(OnboardingTheme.textSecondary)
                 .multilineTextAlignment(.center)
 
-            Button(action: {
-                authRequest = AuthHubProfileAuthRequest(mode: .login)
-            }) {
-                Text("Login")
-                    .font(.system(size: 16.5, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(OnboardingTheme.primaryBlue)
-                    .cornerRadius(15)
-            }
-            .padding(.top, 8)
+            // Login commented out.
+            // Button(action: {
+            //     authRequest = AuthHubProfileAuthRequest(mode: .login)
+            // }) {
+            //     Text("Login")
+            //         .font(.system(size: 16.5, weight: .bold))
+            //         .foregroundColor(.white)
+            //         .frame(maxWidth: .infinity)
+            //         .padding(.vertical, 16)
+            //         .background(OnboardingTheme.primaryBlue)
+            //         .cornerRadius(15)
+            // }
+            // .padding(.top, 8)
 
-            Button(action: {
-                authRequest = AuthHubProfileAuthRequest(mode: .signUp)
-            }) {
-                Text("Sign Up")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(OnboardingTheme.primaryBlue)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color(hex: "F5F6FA"))
-                    .cornerRadius(15)
-            }
+            // Sign Up commented out.
+            // Button(action: {
+            //     authRequest = AuthHubProfileAuthRequest(mode: .signUp)
+            // }) {
+            //     Text("Sign Up")
+            //         .font(.system(size: 15, weight: .semibold))
+            //         .foregroundColor(OnboardingTheme.primaryBlue)
+            //         .frame(maxWidth: .infinity)
+            //         .padding(.vertical, 14)
+            //         .background(Color(hex: "F5F6FA"))
+            //         .cornerRadius(15)
+            // }
         }
     }
 
@@ -312,19 +314,22 @@ private struct AuthHubProfileAuthSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $mode) {
-                Text("Login").tag(AuthHubEmailMode.login)
-                Text("Sign Up").tag(AuthHubEmailMode.signUp)
+                // Login commented out.
+                // Text("Login").tag(AuthHubEmailMode.login)
+                // Sign Up commented out.
+                // Text("Sign Up").tag(AuthHubEmailMode.signUp)
             }
             .pickerStyle(SegmentedPickerStyle())
             .padding(.horizontal, 24)
             .padding(.top, 16)
 
-            AuthHubEmailAuthView(
-                mode: mode,
-                onAuthSuccess: onSuccess,
-                onCancel: onCancel
-            )
-            .id(mode)
+            // Sign Up commented out.
+            // AuthHubEmailAuthView(
+            //     mode: mode,
+            //     onAuthSuccess: onSuccess,
+            //     onCancel: onCancel
+            // )
+            // .id(mode)
         }
         .background(Color.white.ignoresSafeArea())
     }

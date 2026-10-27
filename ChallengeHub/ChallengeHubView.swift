@@ -44,9 +44,13 @@ struct ChallengeHubView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
-                    ForEach(ChallengeKind.allCases) { kind in
+                    // Only Fill the Verse. Other quizzes commented out.
+                    ForEach(ChallengeKind.allCases.filter { $0 == .fillVerse }) { kind in
                         challengeRow(kind)
                     }
+                    // ForEach(ChallengeKind.allCases) { kind in
+                    //     challengeRow(kind)
+                    // }
 
                 }
                 .padding(.horizontal, 16)
@@ -245,7 +249,8 @@ struct ChallengeKindPickerSheet: View {
                         .padding(.horizontal, 8)
                         .padding(.top, 4)
 
-                    ForEach(ChallengeKind.allCases) { kind in
+                    // Only Fill the Verse. Other quizzes commented out.
+                    ForEach(ChallengeKind.allCases.filter { $0 == .fillVerse }) { kind in
                         Button(action: { onSelect(kind) }) {
                             HStack(spacing: 14) {
                                 ZStack {

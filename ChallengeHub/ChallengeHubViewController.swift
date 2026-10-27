@@ -56,6 +56,7 @@ final class ChallengeHubViewController: UIViewController {
     }
 
     private func openChallenge(_ kind: ChallengeKind, verse: ChallengeVerseContext, config: ChallengeSessionConfig?, animated: Bool) {
+        // Fill the Verse uses the old quiz for the bottom quiz.
         if kind == .fillVerse, let config {
             openOldFillVerseQuiz(config, animated: animated)
             return

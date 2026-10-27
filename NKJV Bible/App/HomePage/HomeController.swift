@@ -232,29 +232,19 @@ class HomeController: UIViewController, UICollectionViewDelegate, UICollectionVi
     
     
     @IBAction func PlayQuiz(_ sender: Any) {
-        
+        let book = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
+        let chapter = max(UserDefaults.standard.integer(forKey: "BookChapter"), 1)
         UserDefaults.standard.setValue("Medium", forKey: "Qlevel")
-        UserDefaults.standard.setValue(UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName, forKey: "Qbook")
-        UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "BookChapter"), forKey: "Qchapter")
-        
-        
-        DispatchQueue.main.async {
-            
-            UserDefaults.standard.setValue(UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName, forKey: "LastSelectedBook")
-            UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "BookChapter"), forKey: "LastSelectedChapter")
-            
-            
-            let vc1 = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "SelectionViewController") as! SelectionViewController
-            self.navigationController?.pushViewController(vc1, animated: true)
-            
-            
-            let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "QuizMainPageVC") as! QuizMainPageVC
-               vc.level = "Medium"
-               vc.BookName = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
-               vc.Chapter = UserDefaults.standard.integer(forKey: "BookChapter")
-            self.navigationController?.pushViewController(vc, animated: true)
-            
-        }
+        UserDefaults.standard.setValue(book, forKey: "Qbook")
+        UserDefaults.standard.setValue(chapter, forKey: "Qchapter")
+        UserDefaults.standard.setValue(book, forKey: "LastSelectedBook")
+        UserDefaults.standard.setValue(chapter, forKey: "LastSelectedChapter")
+
+        // Old quiz commented out. Home Play Quiz opens the new quiz.
+        let config = ChallengeSessionConfig.markAsRead(book: book, chapter: chapter, difficulty: .medium)
+        let vc = ChallengeHubViewController()
+        vc.sessionConfig = config
+        self.navigationController?.pushViewController(vc, animated: true)
     }
     
     

@@ -61,7 +61,11 @@ struct Onboarding5: View {
                         }
                     }
 
-                    OnboardingPrimaryLink(title: "Build My Bible Habit", destination: OnboardingCreateAccountView())
+                    // Sign Up commented out.
+                    // OnboardingPrimaryLink(title: "Build My Bible Habit", destination: OnboardingCreateAccountView())
+                    OnboardingPrimaryButton(title: "Build My Bible Habit") {
+                        UIKitNavigationHelper.navigateToIAPView()
+                    }
                     .padding(.horizontal, 26)
 
                     OnboardingPageDots(current: 4, total: 5)

@@ -289,6 +289,8 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         ExplainView.isHidden = true
         ExplainTxt.isHidden = true
         ExplainImg.isHidden = true
+        // Hide the whole column so Copy, Reset, and Share share the row evenly.
+        ExplainView.superview?.isHidden = true
         // ExplainView.isHidden = false
         // ExplainTxt.isHidden = false
         // ExplainImg.isHidden = false

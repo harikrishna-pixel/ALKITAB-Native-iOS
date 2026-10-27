@@ -109,9 +109,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 return 0
             }
         } else if section == 15 {
-            return 1
+            // Login / Profile commented out.
+            return 0
         } else if section == 8 {
-            return 1
+            // Challenge Profile commented out.
+            return 0
         } else if section == 7 {
             return 1
         } else {
@@ -345,8 +347,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           App_Protocol.delegateReader?.hideBottomMenu(Status: true)
       case 7:
           self.openAIChat()
-      case 8:
-          self.openChallengeAttempts()
+      // Challenge Profile commented out.
+      // case 8:
+      //     self.openChallengeAttempts()
       case 10:
           if NetworkManager.sharedInstance.isConnectedToInternet() {
               let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "FeedbackViewController") as! FeedbackViewController
@@ -396,8 +399,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                      self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                  }
 
-      case 15:
-          self.openProfile()
+      // Login / Profile commented out.
+      // case 15:
+      //     self.openProfile()
       default:
         break
           

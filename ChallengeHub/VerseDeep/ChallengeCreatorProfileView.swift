@@ -270,28 +270,30 @@ struct ChallengeCreatorProfileView: View {
                         .padding(.horizontal, 20)
                     } else {
                         VStack(spacing: 12) {
-                            Button(action: { authRequest = ChallengeQuizAuthRequest(mode: .login) }) {
-                                Text("Login")
-                                    .font(.system(size: 17, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                                    .background(ChallengeVerseDeepTheme.blue)
-                                    .cornerRadius(14)
-                            }
-                            Button(action: { authRequest = ChallengeQuizAuthRequest(mode: .signUp) }) {
-                                Text("Sign Up")
-                                    .font(.system(size: 17, weight: .bold))
-                                    .foregroundColor(ChallengeVerseDeepTheme.blue)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                                    .background(Color.white)
-                                    .cornerRadius(14)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .stroke(ChallengeVerseDeepTheme.blue, lineWidth: 1.5)
-                                    )
-                            }
+                            // Login commented out.
+                            // Button(action: { authRequest = ChallengeQuizAuthRequest(mode: .login) }) {
+                            //     Text("Login")
+                            //         .font(.system(size: 17, weight: .bold))
+                            //         .foregroundColor(.white)
+                            //         .frame(maxWidth: .infinity)
+                            //         .padding(.vertical, 16)
+                            //         .background(ChallengeVerseDeepTheme.blue)
+                            //         .cornerRadius(14)
+                            // }
+                            // Sign Up commented out.
+                            // Button(action: { authRequest = ChallengeQuizAuthRequest(mode: .signUp) }) {
+                            //     Text("Sign Up")
+                            //         .font(.system(size: 17, weight: .bold))
+                            //         .foregroundColor(ChallengeVerseDeepTheme.blue)
+                            //         .frame(maxWidth: .infinity)
+                            //         .padding(.vertical, 16)
+                            //         .background(Color.white)
+                            //         .cornerRadius(14)
+                            //         .overlay(
+                            //             RoundedRectangle(cornerRadius: 14)
+                            //                 .stroke(ChallengeVerseDeepTheme.blue, lineWidth: 1.5)
+                            //         )
+                            // }
                         }
                         .padding(.horizontal, 20)
                     }
