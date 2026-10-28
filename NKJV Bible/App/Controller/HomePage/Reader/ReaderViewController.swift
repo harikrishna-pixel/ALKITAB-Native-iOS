@@ -371,7 +371,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         balanceReaderHeaderIcons()
     }
 
-    /// Places the reading header like the phone reference: book on the left, chapter near the center, search and night mode grouped on the right.
+    /// Places the reading header on one line: book, then chapter beside it, search and night mode on the right.
     private func balanceReaderHeaderIcons() {
         guard let header = NightModeBtn.superview, header.bounds.width > 1,
               BookTxt.superview === header, ChapterTxt.superview === header else { return }
@@ -394,28 +394,49 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         releaseReaderHeaderX(of: chapterButton, in: header)
         releaseReaderHeaderX(of: search, in: header)
         releaseReaderHeaderX(of: NightModeBtn, in: header)
+        releaseReaderHeaderWidth(of: BookTxt)
         releaseReaderHeaderWidth(of: bookButton)
         releaseReaderHeaderWidth(of: chapterButton)
+        releaseReaderHeaderY(of: AdInfo, in: header)
+        releaseReaderHeaderY(of: bookChevron, in: header)
+        releaseReaderHeaderY(of: ChapterTxt, in: header)
+        releaseReaderHeaderY(of: chapterChevron, in: header)
+        releaseReaderHeaderY(of: search, in: header)
+        releaseReaderHeaderY(of: NightModeBtn, in: header)
+
+        BookTxt.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        BookTxt.setContentHuggingPriority(.required, for: .horizontal)
+        ChapterTxt.setContentHuggingPriority(.required, for: .horizontal)
 
         let scale = width / 393
-        let nightLeading = min(358 * scale, width - NightModeBtn.bounds.width - 12)
-        let searchLeading = min(322 * scale, nightLeading - 16 - search.bounds.width)
+        let nightLeading = min(356 * scale, width - NightModeBtn.bounds.width - 16)
+        let searchLeading = min(291 * scale, nightLeading - 36 - search.bounds.width)
+        let bookMax = max(72 * scale, searchLeading - (60 * scale) - (138 * scale))
         var pins = [
             AdInfo.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 15 * scale),
+            AdInfo.centerYAnchor.constraint(equalTo: BookTxt.centerYAnchor),
             BookTxt.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 60 * scale),
-            bookButton.leadingAnchor.constraint(equalTo: BookTxt.leadingAnchor, constant: -10 * scale),
+            BookTxt.widthAnchor.constraint(lessThanOrEqualToConstant: bookMax),
+            bookChevron.centerYAnchor.constraint(equalTo: BookTxt.centerYAnchor),
+            bookButton.leadingAnchor.constraint(equalTo: BookTxt.leadingAnchor, constant: -8),
             bookButton.trailingAnchor.constraint(equalTo: bookChevron.trailingAnchor, constant: 8),
-            ChapterTxt.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 175 * scale),
+            ChapterTxt.leadingAnchor.constraint(equalTo: bookChevron.trailingAnchor, constant: 28 * scale),
+            ChapterTxt.centerYAnchor.constraint(equalTo: BookTxt.centerYAnchor),
+            chapterChevron.centerYAnchor.constraint(equalTo: BookTxt.centerYAnchor),
             chapterButton.leadingAnchor.constraint(equalTo: ChapterTxt.leadingAnchor, constant: -8),
             chapterButton.trailingAnchor.constraint(equalTo: chapterChevron.trailingAnchor, constant: 8),
             search.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: searchLeading),
-            NightModeBtn.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: nightLeading)
+            search.centerYAnchor.constraint(equalTo: BookTxt.centerYAnchor),
+            NightModeBtn.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: nightLeading),
+            NightModeBtn.centerYAnchor.constraint(equalTo: BookTxt.centerYAnchor)
         ]
         if let removed = header.subviews.compactMap({ $0 as? UIButton }).first(where: {
             $0.isHidden && $0 !== AdInfo && $0 !== search && $0 !== NightModeBtn && $0 !== bookButton && $0 !== chapterButton
         }) {
             releaseReaderHeaderX(of: removed, in: header)
+            releaseReaderHeaderY(of: removed, in: header)
             pins.append(removed.centerXAnchor.constraint(equalTo: search.centerXAnchor))
+            pins.append(removed.centerYAnchor.constraint(equalTo: BookTxt.centerYAnchor))
         }
         NSLayoutConstraint.activate(pins)
         readerHeaderSpacingConstraints = pins
@@ -451,6 +472,17 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                 return false
             }
             return horizontal.contains(constraint.firstAttribute) || horizontal.contains(constraint.secondAttribute)
+        }
+        NSLayoutConstraint.deactivate(stale)
+    }
+
+    private func releaseReaderHeaderY(of view: UIView, in header: UIView) {
+        let vertical: Set<NSLayoutConstraint.Attribute> = [.top, .bottom, .centerY]
+        let stale = header.constraints.filter { constraint in
+            let first = constraint.firstItem as? UIView
+            let second = constraint.secondItem as? UIView
+            guard first === view || second === view else { return false }
+            return vertical.contains(constraint.firstAttribute) || vertical.contains(constraint.secondAttribute)
         }
         NSLayoutConstraint.deactivate(stale)
     }
@@ -1619,6 +1651,10 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             self?.dismissMoreSheet()
             self?.openMoreCompanion()
         }
+        sheet.onRecentArrivals = { [weak self] in
+            self?.dismissMoreSheet()
+            self?.openMoreRecentArrivals()
+        }
         sheet.onSettings = { [weak self] in
             self?.dismissMoreSheet()
             self?.openMoreSettings()
@@ -1646,6 +1682,11 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         } else {
             view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
+    }
+
+    private func openMoreRecentArrivals() {
+        let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "BookAdListViewController") as! BookAdListViewController
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     private func openMoreSettings() {
@@ -1808,6 +1849,15 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
 
     func ChapterSummaryNib(BookName: String, Pageindex: Int, BookVerse: Array<String>) {
         self.CloseMenu()
+        // The header is often slid off-screen at the chapter end. Put the theme color back before the sheet, with no animation, so the top does not flash white.
+        let theme = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
+        self.Themecolor = theme
+        UIView.performWithoutAnimation {
+            self.topBannerConstant.constant = 0
+            self.BannerVu.backgroundColor = (theme == BGNightMode ? DarkModeColor : theme)
+            self.view.layoutIfNeeded()
+        }
+
         self.myView = UIView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height))
         self.view.addSubview(self.myView!)
 
@@ -1823,13 +1873,6 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             self?.CloseView()
         }
         self.myView!.addSubview(explanationView)
-
-        // Keep chapter 1 focused behind the summary sheet.
-        let readReference = "\(BookName) \(Pageindex):1"
-        UserDefaults.standard.set(readReference, forKey: "readdata")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            App_Protocol.delegateReaderSource?.navigateToSelectedVerse()
-        }
     }
 
     func ShowSavedExplanation(dataString: String) {

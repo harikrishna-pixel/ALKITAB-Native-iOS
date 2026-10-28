@@ -9,6 +9,9 @@ import IQKeyboardManager
 struct ReflectionView: View {
     let verse: DailyVerseSnapshot
     @ObservedObject var store: DailyJourneyStore
+    var isLockedReview: Bool = false
+    var lockedText: String = ""
+    var lockedOption: Int? = nil
     var onDone: () -> Void
 
     @State private var selectedOption: Int?
@@ -33,7 +36,7 @@ struct ReflectionView: View {
             ScrollView(showsIndicators: false) {
                 // Keyboard inset is handled below so this scroll view does not jump on its own.
                 VStack(alignment: .leading, spacing: 16) {
-                    Text(wasAlreadyCompleted ? "Your Reflection" : "My Reflection")
+                    Text(isLockedReview || wasAlreadyCompleted ? "Your Reflection" : "My Reflection")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.black)
 
@@ -41,9 +44,11 @@ struct ReflectionView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(Color(hex: "1C46B2"))
 
-                    Text(wasAlreadyCompleted
-                          ? "You can still add or change your reflection today."
-                          : "What spoke to you? What will you take from today's verse?")
+                    Text(isLockedReview
+                          ? "Completed for this day."
+                          : (wasAlreadyCompleted
+                             ? "You can still add or change your reflection today."
+                             : "What spoke to you? What will you take from today's verse?"))
                         .font(.system(size: 15))
                         .foregroundColor(Color.black.opacity(0.55))
 
@@ -72,24 +77,33 @@ struct ReflectionView: View {
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .disabled(isLockedReview)
                         }
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(wasAlreadyCompleted ? "Your thoughts" : "Write your thoughts...")
+                        Text(isLockedReview || wasAlreadyCompleted ? "Your thoughts" : "Write your thoughts...")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(Color.black.opacity(0.45))
 
                         ZStack(alignment: .topLeading) {
-                            if text.isEmpty {
-                                Text("A short note to yourself...")
-                                    .foregroundColor(Color.black.opacity(0.3))
-                                    .padding(.top, 12)
-                                    .padding(.leading, 12)
+                            if isLockedReview {
+                                Text(text.isEmpty ? "No note saved." : text)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(text.isEmpty ? Color.black.opacity(0.35) : .black)
+                                    .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+                                    .padding(12)
+                            } else {
+                                if text.isEmpty {
+                                    Text("A short note to yourself...")
+                                        .foregroundColor(Color.black.opacity(0.3))
+                                        .padding(.top, 12)
+                                        .padding(.leading, 12)
+                                }
+                                StableReflectionEditor(text: $text)
+                                    .frame(minHeight: 120)
+                                    .padding(8)
                             }
-                            StableReflectionEditor(text: $text)
-                                .frame(minHeight: 120)
-                                .padding(8)
                         }
                         .background(Color.white)
                         .cornerRadius(14)
@@ -97,13 +111,15 @@ struct ReflectionView: View {
                             RoundedRectangle(cornerRadius: 14)
                                 .stroke(Color.black.opacity(0.08), lineWidth: 1)
                         )
-                        Text("\(min(text.count, 300))/300")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color.black.opacity(0.35))
-                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        if !isLockedReview {
+                            Text("\(min(text.count, 300))/300")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color.black.opacity(0.35))
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
                     }
 
-                    if wasAlreadyCompleted {
+                    if wasAlreadyCompleted && !isLockedReview {
                         Text("Completed for today")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(Color(hex: "1B7A3D"))
@@ -116,24 +132,16 @@ struct ReflectionView: View {
 
             VStack(spacing: 10) {
                 Button(action: save) {
-                    Text(wasAlreadyCompleted ? "Done" : "Save Reflection")
+                    Text(reflectionButtonTitle)
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
-                        .background(canSaveReflection ? Color(hex: "1C46B2") : Color.gray.opacity(0.4))
+                        .background(canSaveReflection ? reflectionButtonColor : Color.gray.opacity(0.4))
                         .cornerRadius(27)
                 }
                 .buttonStyle(PlainButtonStyle())
                 .disabled(!canSaveReflection)
-
-                if !wasAlreadyCompleted {
-                    Button(action: skip) {
-                        Text("Skip for Today")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(Color(hex: "1C46B2"))
-                    }
-                }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 24)
@@ -157,6 +165,15 @@ struct ReflectionView: View {
         }
         .onAppear {
             IQKeyboardManager.shared().isEnabled = false
+            if isLockedReview {
+                wasAlreadyCompleted = true
+                text = String(lockedText.prefix(300))
+                selectedOption = lockedOption
+                if selectedOption == nil {
+                    selectedOption = options.firstIndex(where: { lockedText.contains($0.title) })
+                }
+                return
+            }
             wasAlreadyCompleted = store.reflectionCompleted
             text = String(store.reflectionText.prefix(300))
             selectedOption = store.reflectionOptionIndex
@@ -190,13 +207,27 @@ struct ReflectionView: View {
         .padding(.bottom, 4)
     }
 
+    private var reflectionButtonTitle: String {
+        if isLockedReview { return "Done" }
+        if wasAlreadyCompleted { return "Today's Journey Completed" }
+        return "Save Reflection"
+    }
+
+    private var reflectionButtonColor: Color {
+        wasAlreadyCompleted && !isLockedReview ? Color(hex: "1C7A3D") : Color(hex: "1C46B2")
+    }
+
     private var canSaveReflection: Bool {
-        if wasAlreadyCompleted { return true }
+        if isLockedReview || wasAlreadyCompleted { return true }
         let hasText = !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return hasText || selectedOption != nil
     }
 
     private func save() {
+        if isLockedReview {
+            onDone()
+            return
+        }
         guard canSaveReflection else { return }
         var combined = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if let selectedOption = selectedOption {
@@ -209,12 +240,6 @@ struct ReflectionView: View {
         }
         // Re-saving after completion only updates content; streak reward is already guarded for today.
         store.markReflectionCompleted(text: combined, optionIndex: selectedOption)
-        store.markVerseCompleted()
-        onDone()
-    }
-
-    private func skip() {
-        store.markReflectionCompleted(text: store.reflectionText, optionIndex: selectedOption)
         store.markVerseCompleted()
         onDone()
     }

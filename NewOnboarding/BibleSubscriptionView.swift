@@ -141,7 +141,7 @@ struct BibleSubscriptionView: View {
     
     private var paywallRoot: some View {
         ZStack {
-            Color(hex: "061228").ignoresSafeArea()
+            Color(hex: "021B40").ignoresSafeArea()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .allowsHitTesting(false)
             
@@ -162,6 +162,7 @@ struct BibleSubscriptionView: View {
                         geoSize: geo.size,
                         bottomInset: geo.safeAreaInsets.bottom,
                         onPurchase: { handlePurchaseAction() },
+                        onContinueFree: { handleCloseAction() },
                         onRestore: {
                             beginRestore()
                         }
@@ -241,12 +242,8 @@ struct BibleSubscriptionView: View {
     }
     
     private var yearlyPerMonthLine: String {
-        let p = storeManager.price2.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag2") ?? "") : storeManager.price2
-        let stripped = p.strippedtext.replacingOccurrences(of: ",", with: "")
-        guard let value = Double(stripped), value > 0 else { return "" }
-        let monthly = value / 12.0
-        let symbol = p.cleanPrice().prefix { !$0.isNumber && $0 != "." && $0 != "," }
-        return String(format: "%@%.2f / month", String(symbol), monthly)
+        // Do not show yearly price / 12. That extra figure was the wrong price on iPad.
+        return ""
     }
     
     private var yearlySaveLine: String {
@@ -971,6 +968,7 @@ private struct PaywallScrollStackView: View {
     let geoSize: CGSize
     let bottomInset: CGFloat
     let onPurchase: () -> Void
+    let onContinueFree: () -> Void
     let onRestore: () -> Void
 
     var body: some View {
@@ -985,6 +983,7 @@ private struct PaywallScrollStackView: View {
             if isPad { Spacer(minLength: 16) }
             trustRow
             legalRow
+            continueFreeButton
             if isPad { Spacer(minLength: 8) }
         }
         .frame(maxWidth: isPad ? 720 : .infinity)
@@ -992,7 +991,7 @@ private struct PaywallScrollStackView: View {
         .padding(.horizontal, isPad ? 48 : 0)
         .background {
             ZStack(alignment: .top) {
-                Color(hex: "061228")
+                Color(hex: "021B40")
                 glowBackground
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1035,9 +1034,9 @@ private struct PaywallScrollStackView: View {
     @ViewBuilder
     private var featureSpacing: some View {
         if isPad {
-            Spacer(minLength: 20)
+            Spacer(minLength: 12)
         } else {
-            Color.clear.frame(height: isSmallDevice ? 72 : 88)
+            Color.clear.frame(height: isSmallDevice ? 28 : 36)
         }
     }
 
@@ -1073,6 +1072,26 @@ private struct PaywallScrollStackView: View {
         )
     }
 
+    private var footerBottomPadding: CGFloat {
+        let windowInset = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first(where: { $0.isKeyWindow })?
+            .safeAreaInsets.bottom ?? 0
+        return max(bottomInset, windowInset, 20) + 8
+    }
+
+    private var continueFreeButton: some View {
+        Button(action: onContinueFree) {
+            Text("Continue with Free version")
+                .font(.system(size: isPad ? 15 : 14, weight: .semibold))
+                .foregroundColor(.white.opacity(0.92))
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(.top, 6)
+        .padding(.bottom, footerBottomPadding)
+    }
+
     private var trustRow: some View {
         HStack(spacing: 20) {
             if planSelection.plan != .lifetime {
@@ -1103,7 +1122,7 @@ private struct PaywallScrollStackView: View {
         .font(.system(size: isPad ? 13 : 12, weight: .medium))
         .foregroundColor(Color.white.opacity(0.7))
         .padding(.horizontal, 16)
-        .padding(.bottom, isPad ? max(bottomInset, 16) + 8 : 24)
+        .padding(.bottom, 8)
     }
 
     private var glowBackground: some View {

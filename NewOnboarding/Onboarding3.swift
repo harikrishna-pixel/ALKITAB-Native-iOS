@@ -149,13 +149,6 @@ struct Onboarding3: View {
                                 .padding(.top, 10)
                             }
 
-                            if allFilled && isAnswerCorrect {
-                                challengeTypesPreview
-                                    .padding(.horizontal, 26)
-                                    .padding(.top, 20)
-                                    .transition(.opacity)
-                            }
-
                             Spacer(minLength: 20)
                         }
                     }
@@ -229,61 +222,6 @@ struct Onboarding3: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
                         .stroke(OnboardingTheme.paperLine, lineWidth: 1)
-                )
-        )
-    }
-
-    private var challengeTypesPreview: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text("MORE WAYS TO REMEMBER")
-                .font(.system(size: 11, weight: .heavy))
-                .tracking(1.3)
-                .foregroundColor(Color(hex: "7488A6"))
-
-            HStack(spacing: 6) {
-                ForEach(ChallengeKind.allCases) { kind in
-                    challengeTypeThumb(kind: kind)
-                }
-            }
-        }
-    }
-
-    private func onboardingChallengeLabel(for kind: ChallengeKind) -> String {
-        switch kind {
-        case .quickQuiz: return "Quick\nQuiz"
-        case .fillVerse: return "Fill the\nVerse"
-        case .verseMatch: return "Verse\nMatch"
-        case .trueFalse: return "True /\nFalse"
-        case .wordSearch: return "Word\nSearch"
-        }
-    }
-
-    private func challengeTypeThumb(kind: ChallengeKind) -> some View {
-        let isFree = !kind.isPremium
-        return VStack(spacing: 6) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 7)
-                    .fill(Color(hex: kind.iconBgHex))
-                    .frame(height: 34)
-                Image(systemName: kind.icon)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(hex: kind.iconTintHex))
-            }
-            Text(onboardingChallengeLabel(for: kind))
-                .font(.system(size: 9, weight: .bold))
-                .foregroundColor(isFree ? Color(hex: "1F4C9E") : Color(hex: "5A6D8C"))
-                .multilineTextAlignment(.center)
-                .lineSpacing(1)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 7)
-        .padding(.horizontal, 4)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isFree ? Color(hex: "F4F9FF") : Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(isFree ? Color(hex: "B9D4F5") : OnboardingTheme.paperLine, lineWidth: 1)
                 )
         )
     }

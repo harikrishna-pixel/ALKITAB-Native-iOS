@@ -61,8 +61,7 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
     var status: PHAuthorizationStatus?
     
     let Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
-    private let tapHintLabel = UILabel()
-    private var tapHintReady = false
+    /// Verse page that was open when the image sheet appeared. The tap hint stays on that page only.
     private var tapHintPage: Int?
     
     
@@ -105,6 +104,9 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
          
         self.SelectedPath = Int(BookArray[BookArray.count-1])!-1
         self.lastWallpaperAdCountedPath = self.SelectedPath
+        if self.tapHintPage == nil {
+            self.tapHintPage = self.SelectedPath
+        }
         
         
         var indexPath = IndexPath(row: Int(BookArray[BookArray.count-1])!-1, section: 0)
@@ -395,7 +397,7 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
                         
             self.WallpaperCell!.Wallpaper.image = UIImage(named: "S\(BGImage[indexPath.row]).jpg")
             self.WallpaperCell!.applyVerseWatermarkName()
-            self.WallpaperCell!.TabTxt.isHidden = true
+            self.WallpaperCell!.showTapHint(indexPath.row == self.tapHintPage)
 
             
 //            self.WallpaperCell!.Booktext.font = UIFont(name: UserDefaults.standard.string(forKey: "FontName")!, size: 15)
@@ -452,48 +454,13 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
        }
     
     private func updateTapHint() {
-        if !tapHintReady {
-            tapHintReady = true
-            tapHintLabel.translatesAutoresizingMaskIntoConstraints = false
-            tapHintLabel.text = "Tap on image"
-            tapHintLabel.font = UIFont.systemFont(ofSize: 15, weight: .medium)
-            tapHintLabel.textColor = UIColor(white: 0.45, alpha: 1)
-            tapHintLabel.textAlignment = .center
-            tapHintLabel.isUserInteractionEnabled = false
-            tapHintLabel.isHidden = true
-            addSubview(tapHintLabel)
-            NSLayoutConstraint.activate([
-                tapHintLabel.centerXAnchor.constraint(equalTo: WallPaperCollection.centerXAnchor),
-                tapHintLabel.bottomAnchor.constraint(equalTo: WallPaperCollection.topAnchor, constant: -6)
-            ])
-        }
         if tapHintPage == nil {
             tapHintPage = SelectedPath
         }
-        let show = SelectedPath == tapHintPage
-        let wasHidden = tapHintLabel.isHidden
-        tapHintLabel.isHidden = !show
-        if show {
-            bringSubviewToFront(tapHintLabel)
-        }
-        if show && wasHidden {
-            blinkTapHint()
-        }
-    }
-
-    private func blinkTapHint() {
-        tapHintLabel.layer.removeAllAnimations()
-        guard !tapHintLabel.isHidden else { return }
-        tapHintLabel.alpha = 1
-        UIView.animate(withDuration: 0.7, delay: 0, options: [.curveEaseInOut, .allowUserInteraction]) {
-            self.tapHintLabel.alpha = 0.15
-        } completion: { _ in
-            guard !self.tapHintLabel.isHidden else { return }
-            UIView.animate(withDuration: 0.7, delay: 0, options: [.curveEaseInOut, .allowUserInteraction]) {
-                self.tapHintLabel.alpha = 1
-            } completion: { _ in
-                self.blinkTapHint()
-            }
+        for cell in WallPaperCollection.visibleCells {
+            guard let wallpaper = cell as? WallpaperCollectionViewCell,
+                  let row = WallPaperCollection.indexPath(for: wallpaper)?.row else { continue }
+            wallpaper.showTapHint(row == tapHintPage)
         }
     }
 

@@ -32,8 +32,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
       self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
       BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
       
-      self.SettingsTable.backgroundColor = (Themecolor == BGNightMode ? BGNightMode:.white)
-      self.view.backgroundColor = (Themecolor == BGNightMode ? BGNightMode:.white)
+      let page = Themecolor == BGNightMode ? BGNightMode : UIColor(red: 0.95, green: 0.96, blue: 0.98, alpha: 1)
+      self.SettingsTable.backgroundColor = page
+      self.view.backgroundColor = page
+      self.SettingsTable.separatorStyle = .none
+      self.SettingsTable.rowHeight = 56
+      self.SettingsTable.estimatedRowHeight = 56
+      self.SettingsTable.contentInset = UIEdgeInsets(top: 8, left: 0, bottom: 24, right: 0)
       
   }
   
@@ -89,322 +94,178 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   // MARK:- Tableview Delegate
   
   func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-      
-        if indexPath.section == 1 || indexPath.section == 3 || indexPath.section == 6 || indexPath.section == 9 {
-            return 38
-        } else {
-            return 44
-        }
+        return 56
+  }
+
+  func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 36
+  }
+
+  func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
+        return 8
+  }
+
+  func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
+        let footer = UIView()
+        footer.backgroundColor = .clear
+        return footer
+  }
+
+  func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let titles = ["NOTIFICATION", "FONT & THEME", "FEATURES", "ABOUT & SUPPORT"]
+        let header = UIView()
+        header.backgroundColor = .clear
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = titles[section]
+        label.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+        label.textColor = UIColor(white: 0.55, alpha: 1)
+        header.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 20),
+            label.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -6)
+        ])
+        return header
   }
   
   func numberOfSections(in tableView: UITableView) -> Int {
-          return 16
+          return 4
   }
   
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if section == 0 {
-            if PaymentHistory.sharedInstance.paymentInfo() && book_ads_status > 0 && CoreDataModel.sharedInstance.GetMoreBookShare(entity: CDMoreBookApi).count > 0 {
-                return 1
-            } else {
-                return 0
-            }
-        } else if section == 15 {
-            // Login / Profile commented out.
-            return 0
-        } else if section == 8 {
-            // Challenge Profile commented out.
-            return 0
-        } else if section == 7 {
-            return 1
-        } else {
-            return 1
+        switch section {
+        case 0: return 1
+        case 1: return 2
+        case 2: return 1
+        case 3: return 6
+        default: return 0
         }
-        
     }
 
-  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
-    {
-      switch (indexPath.section) {
-                
-      
-      case 0:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "Recent Arrivals") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.Notifications?.textColor = (Themecolor == BGNightMode ? .white:.black)
-//          self.SettingsCell!.selectionStyle = UITableViewCell.SelectionStyle.none
-          return cell
-      case 1:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "empty") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.selectionStyle = UITableViewCell.SelectionStyle.none
-          cell.Notification?.textColor = (Themecolor == BGNightMode ? .black:SettingTitleColor)
-          cell.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
-          return cell
-          
-      case 2:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "time") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          let dateStr = UserDefaults.standard.string(forKey: "NotifiTime") ?? "08:00"
-          cell.NotificationTime?.textColor = (Themecolor == BGNightMode ? .white:.black)
-          
-          
-//          if is24Hour() {
-//
-//              dateFormatter.dateFormat = "HH:mm"
-//
-//              if dateStr.count == 5 {
-//                  self.SettingsCell!.NotifiTime.text = dateStr
-//              } else {
-//                  self.SettingsCell!.NotifiTime.text = dateTimeChangeFormat(str: dateStr, inDateFormat:  "hh:mm a", outDateFormat: "HH:mm")
-//              }
-//          } else {
-//              dateFormatter.dateFormat = "hh:mm a"
-//              if dateStr.count == 5 {
-//                  self.SettingsCell!.NotifiTime.text = dateTimeChangeFormat(str: dateStr, inDateFormat:  "HH:mm", outDateFormat: "hh:mm a")
-//              } else {
-//                  self.SettingsCell!.NotifiTime.text = dateStr
-//              }
-//          }
-          
-//          self.SettingsCell!.NotifiTime.textColor = (Themecolor == BGNightMode ? .white:.gray)
-          
-          return cell
-          
-      case 3:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "empty3") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.selectionStyle = UITableViewCell.SelectionStyle.none
-          cell.FontTheme?.textColor = (Themecolor == BGNightMode ? .black:SettingTitleColor)
-          cell.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
-          return cell
-          
-      case 4:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "Font") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-            cell.FontStyle?.text = UserDefaults.standard.string(forKey: "FontName") ?? "Euphemia UCAS"
-          
-          cell.FontType?.textColor = (Themecolor == BGNightMode ? .white:.black)
-          
-          cell.FontStyle?.textColor = (Themecolor == BGNightMode ? .white:.gray)
-          if let arrow = cell.arrow1 {
-              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
-          }
-                
-          return cell
-          
-      case 5:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "Theme") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          
-          cell.themeColor?.ThemeColor()
+    private func cardEdge(for indexPath: IndexPath, in tableView: UITableView) -> SettingsTableCell.CardEdge {
+        let count = tableView.numberOfRows(inSection: indexPath.section)
+        if count == 1 { return .single }
+        if indexPath.row == 0 { return .top }
+        if indexPath.row == count - 1 { return .bottom }
+        return .middle
+    }
+
+    private func styleRowTitle(_ label: UILabel?) {
+        label?.font = UIFont.systemFont(ofSize: 16, weight: .regular)
+        label?.textColor = (Themecolor == BGNightMode ? .white : .black)
+    }
+
+  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+      let night = Themecolor == BGNightMode
+      let cell: SettingsTableCell
+      switch (indexPath.section, indexPath.row) {
+      case (0, 0):
+          cell = tableView.dequeueReusableCell(withIdentifier: "time", for: indexPath) as! SettingsTableCell
+          cell.NotificationTime?.text = "Notification Mode"
+          styleRowTitle(cell.NotificationTime)
+      case (1, 0):
+          cell = tableView.dequeueReusableCell(withIdentifier: "Font", for: indexPath) as! SettingsTableCell
+          cell.FontStyle?.text = UserDefaults.standard.string(forKey: "FontName") ?? "Euphemia UCAS"
+          cell.FontStyle?.textColor = night ? .white : UIColor(white: 0.55, alpha: 1)
+          styleRowTitle(cell.FontType)
+      case (1, 1):
+          cell = tableView.dequeueReusableCell(withIdentifier: "Theme", for: indexPath) as! SettingsTableCell
+          cell.themeColor?.layer.cornerRadius = 6
+          cell.themeColor?.layer.borderWidth = 0
+          cell.themeColor?.clipsToBounds = true
           cell.themeColor?.backgroundColor = Themecolor
-          
-          cell.Theme?.textColor = (Themecolor == BGNightMode ? .white:.black)
-          
-          return cell
-          
-      case 6:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "empty1") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.selectionStyle = UITableViewCell.SelectionStyle.none
-          cell.AboutApp?.text = "FEATURES"
-          cell.AboutApp?.textColor = (Themecolor == BGNightMode ? .black:SettingTitleColor)
-          cell.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
-          return cell
-          
-      case 7:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.Feedback?.text = "AI Chat"
-          cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
-          if let arrow = cell.arrow2 {
-              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
-          }
-          
-          return cell
-
-      case 8:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.Feedback?.text = "Challenge Profile"
-          cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
-          if let arrow = cell.arrow2 {
-              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
-          }
-          return cell
-      
-      case 9:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "empty2") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.selectionStyle = UITableViewCell.SelectionStyle.none
-          cell.Support?.text = "ABOUT & SUPPORT"
-          cell.Support?.textColor = (Themecolor == BGNightMode ? .black:SettingTitleColor)
-          cell.backgroundColor =  (Themecolor == BGNightMode ? SettingTitleBG:.white)
-          return cell
-
-      case 10:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
+          styleRowTitle(cell.Theme)
+      case (2, 0):
+          cell = tableView.dequeueReusableCell(withIdentifier: "FeedBack", for: indexPath) as! SettingsTableCell
+          cell.Feedback?.text = "Bible Companion"
+          styleRowTitle(cell.Feedback)
+      case (3, 0):
+          cell = tableView.dequeueReusableCell(withIdentifier: "Recent Arrivals", for: indexPath) as! SettingsTableCell
+          cell.Notifications?.text = "Explore Bible Books"
+          cell.Notifications?.font = UIFont.systemFont(ofSize: 16, weight: .regular)
+          styleRowTitle(cell.Notifications)
+      case (3, 1):
+          cell = tableView.dequeueReusableCell(withIdentifier: "FeedBack", for: indexPath) as! SettingsTableCell
           cell.Feedback?.text = "Feedback"
-          cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
-          if let arrow = cell.arrow2 {
-              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
-          }
-          return cell
-              
-      case 11:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "About") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.AboutUs?.textColor = (Themecolor == BGNightMode ? .white:.black)
-          if let arrow = cell.arrow3 {
-              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
-          }
-          return cell
-          
-      case 12:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "Rateus") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.RateUs?.textColor = (Themecolor == BGNightMode ? .white:.black)
-          return cell
-          
-      case 13:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "moreApp") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.MoreApp?.textColor = (Themecolor == BGNightMode ? .white:.black)
-          return cell
-      
-      case 14:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "Help") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.Help?.textColor = (Themecolor == BGNightMode ? .white:.black)
-          return cell
-
-      case 15:
-          guard let cell = self.SettingsTable.dequeueReusableCell(withIdentifier: "FeedBack") as? SettingsTableCell else {
-              return UITableViewCell()
-          }
-          self.SettingsCell = cell
-          cell.Feedback?.text = "Profile"
-          cell.Feedback?.textColor = (Themecolor == BGNightMode ? .white:.black)
-          if let arrow = cell.arrow2 {
-              ImageTint.sharedInstance.imageTintcolorMethod(img: arrow, colorVu: (Themecolor == BGNightMode ? .white:.gray))
-          }
-          return cell
+          styleRowTitle(cell.Feedback)
+      case (3, 2):
+          cell = tableView.dequeueReusableCell(withIdentifier: "About", for: indexPath) as! SettingsTableCell
+          styleRowTitle(cell.AboutUs)
+      case (3, 3):
+          cell = tableView.dequeueReusableCell(withIdentifier: "Rateus", for: indexPath) as! SettingsTableCell
+          cell.RateUs?.text = "Rate Us"
+          styleRowTitle(cell.RateUs)
+      case (3, 4):
+          cell = tableView.dequeueReusableCell(withIdentifier: "moreApp", for: indexPath) as! SettingsTableCell
+          styleRowTitle(cell.MoreApp)
+      case (3, 5):
+          cell = tableView.dequeueReusableCell(withIdentifier: "Help", for: indexPath) as! SettingsTableCell
+          styleRowTitle(cell.Help)
       default:
-          break
+          return UITableViewCell()
       }
-
-      return UITableViewCell()
+      cell.applyCard(edge: cardEdge(for: indexPath, in: tableView), night: night)
+      return cell
     }
   
   
     
   func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
       self.SettingsTable.deselectRow(at: indexPath, animated: true)
-      
-      
-      switch (indexPath.section) {
-      case 0:
-          self.BookCatagory()
-      case 2:
-//        self.openTimePicker()
+      switch (indexPath.section, indexPath.row) {
+      case (0, 0):
           self.NotificationListVC()
-      case 4:
+      case (1, 0):
           self.FontListNavigation()
-            App_Protocol.delegateReader?.hideBottomMenu(Status: true)
-      case 5:
+          App_Protocol.delegateReader?.hideBottomMenu(Status: true)
+      case (1, 1):
           self.CokirPicker()
           App_Protocol.delegateReader?.hideBottomMenu(Status: true)
-      case 7:
+      case (2, 0):
           self.openAIChat()
-      // Challenge Profile commented out.
-      // case 8:
-      //     self.openChallengeAttempts()
-      case 10:
+      case (3, 0):
+          self.BookCatagory()
+      case (3, 1):
           if NetworkManager.sharedInstance.isConnectedToInternet() {
               let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "FeedbackViewController") as! FeedbackViewController
               self.navigationController?.pushViewController(vc, animated: true)
           } else {
               self.view.makeToast("No internet connection", duration: 2.0, position: .top)
           }
-      case 11:
+      case (3, 2):
           self.AboutUsNavigate()
           App_Protocol.delegateReader?.hideBottomMenu(Status: true)
-      case 12:
-
+      case (3, 3):
           if NetworkManager.sharedInstance.isConnectedToInternet() {
               SKStoreReviewController.requestReviewInCurrentScene()
-                 } else {
-                     self.view.makeToast("No internet connection", duration: 2.0, position: .top)
-                 }
-                    
-      case 13:
+          } else {
+              self.view.makeToast("No internet connection", duration: 2.0, position: .top)
+          }
+      case (3, 4):
           if CoreDataModel.sharedInstance.GetAppImageSave(entity: CDMoreAppApi).count > 0 {
               let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "MoreAppsViewController") as! MoreAppsViewController
               self.navigationController?.pushViewController(vc, animated: true)
+          } else if NetworkManager.sharedInstance.isConnectedToInternet() {
+              if let url = URL(string: moreLink), UIApplication.shared.canOpenURL(url) {
+                  UIApplication.shared.open(url, options: [:], completionHandler: nil)
+              } else {
+                  self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
+              }
           } else {
-              if NetworkManager.sharedInstance.isConnectedToInternet() {
-                         if let url = URL(string: moreLink), UIApplication.shared.canOpenURL(url) {
-                             UIApplication.shared.open(url, options: [:]) { success in
-                                 print(success ? "URL was opened successfully." : "Failed to open URL.")
-                             }
-                         } else {
-                             self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
-                         }
-                         
-                     } else {
-                         self.view.makeToast("No internet connection", duration: 2.0, position: .top)
-                     }
-              
+              self.view.makeToast("No internet connection", duration: 2.0, position: .top)
           }
-      case 14:
+      case (3, 5):
           if NetworkManager.sharedInstance.isConnectedToInternet() {
-                     if let url = URL(string: FAQ) {
-                         UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                     } else {
-                         self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
-                     }
-                     
-                 } else {
-                     self.view.makeToast("No internet connection", duration: 2.0, position: .top)
-                 }
-
-      // Login / Profile commented out.
-      // case 15:
-      //     self.openProfile()
+              if let url = URL(string: FAQ) {
+                  UIApplication.shared.open(url, options: [:], completionHandler: nil)
+              } else {
+                  self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
+              }
+          } else {
+              self.view.makeToast("No internet connection", duration: 2.0, position: .top)
+          }
       default:
-        break
-          
+          break
       }
   }
     

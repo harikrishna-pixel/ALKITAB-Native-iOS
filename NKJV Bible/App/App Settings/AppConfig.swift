@@ -65,7 +65,7 @@ struct FallbackIAPConstants {
     
     // Subscription Product Identifiers
     static let lifetimeProductID = "com.bmrbibles.alkitabbibleinindonesian.lifetimeadfree"
-    static let oneYearProductID = "com.bmrbibles.alkitabbibleinindonesian.oneyearadfree"
+    static let oneYearProductID = "com.bmrbibles.alkitabbibleinindonesian.oneyearauto"
     static let sixMonthProductID = ""  // Six month subscription (if available)
     static let oneMonthProductID = "com.bmrbibles.alkitabbibleinindonesian.onemonthauto"  // One month subscription
     static let threeMonthProductID = ""  // Three month subscription (if available)

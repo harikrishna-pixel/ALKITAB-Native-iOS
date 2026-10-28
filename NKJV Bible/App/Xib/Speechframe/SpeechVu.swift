@@ -963,23 +963,23 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
                 return
             }
         }
-        // Pitch/speed change stops the current utterance, then resumes the rest of the verse.
-        // The stop must not skip ahead. Once that resumed verse actually finishes, keep going.
+        // Moving pitch or speed stops the current line, then speaks the rest of this verse.
+        // That stop is not the end of the verse. When the restarted verse finishes, keep going.
         if isAdjustingSlider {
-            if resumeHasStarted {
-                self.settingsResumeUtterance = nil
-                self.resumeHasStarted = false
-                self.isAdjustingSlider = false
-                self.adjustmentStartIndex = -1
-                self.speechStartIndex = 0
-                self.spokenCharacterIndex = 0
-                self.continueAfterCurrentVerse()
-                self.ReloadPlayerIcons()
-                return
-            } else {
+            if settingsResumeUtterance == nil || utterance !== settingsResumeUtterance {
                 self.ReloadPlayerIcons()
                 return
             }
+            self.settingsResumeUtterance = nil
+            self.resumeHasStarted = false
+            self.isAdjustingSlider = false
+            self.adjustmentStartIndex = -1
+            self.speechStartIndex = 0
+            self.spokenCharacterIndex = 0
+            self.SliderEnd = true
+            self.continueAfterCurrentVerse()
+            self.ReloadPlayerIcons()
+            return
         }
         
         if SliderEnd {

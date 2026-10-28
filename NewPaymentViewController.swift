@@ -74,7 +74,6 @@ class NewPaymentViewController: UIViewController, SKPaymentTransactionObserver, 
             GetAppInfo.shared.CallParams()
         }
         
-        
         self.lifetime.isHidden = (SUBSCRIPTIONID_LifeTime == "" ? true:false)
         self.oneYear.isHidden = (SUBSCRIPTIONID_OneYear == "" ? true:false)
         self.sixMonth.isHidden = (SUBSCRIPTIONID_OneYear == "" ? true:false)

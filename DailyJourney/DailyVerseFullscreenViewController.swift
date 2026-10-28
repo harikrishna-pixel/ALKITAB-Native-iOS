@@ -21,6 +21,9 @@ final class DailyVerseFullscreenViewController: UIViewController {
     private let gradientView = UIView()
     private let closeButton = UIButton(type: .system)
     private let ctaButton = UIButton(type: .system)
+    private let watermarkLabel = UILabel()
+    private var watermarkAboveButton: NSLayoutConstraint?
+    private var watermarkAtBottom: NSLayoutConstraint?
     private let scrollView = UIScrollView()
     private let referenceLabel = UILabel()
     private let referenceUnderline = UIView()
@@ -111,6 +114,17 @@ final class DailyVerseFullscreenViewController: UIViewController {
         ctaButton.addTarget(self, action: #selector(continueTapped), for: .touchUpInside)
         view.addSubview(ctaButton)
 
+        watermarkLabel.translatesAutoresizingMaskIntoConstraints = false
+        watermarkLabel.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
+        watermarkLabel.textColor = UIColor.white.withAlphaComponent(0.92)
+        watermarkLabel.textAlignment = .center
+        watermarkLabel.text = todaysVerseAppName()
+        watermarkLabel.layer.shadowColor = UIColor.black.cgColor
+        watermarkLabel.layer.shadowOpacity = 0.45
+        watermarkLabel.layer.shadowRadius = 3
+        watermarkLabel.layer.shadowOffset = CGSize(width: 0, height: 1)
+        view.addSubview(watermarkLabel)
+
         dotsStack.translatesAutoresizingMaskIntoConstraints = false
         dotsStack.axis = .horizontal
         dotsStack.spacing = 8
@@ -189,10 +203,14 @@ final class DailyVerseFullscreenViewController: UIViewController {
             ctaButton.bottomAnchor.constraint(equalTo: dotsStack.topAnchor, constant: -18),
             ctaButton.heightAnchor.constraint(equalToConstant: 54),
 
+            watermarkLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            watermarkLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
+            watermarkLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -24),
+
             scrollView.topAnchor.constraint(equalTo: closeButton.bottomAnchor, constant: 16),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: ctaButton.topAnchor, constant: -24),
+            scrollView.bottomAnchor.constraint(equalTo: watermarkLabel.topAnchor, constant: -12),
 
             verseBlock.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             verseBlock.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
@@ -212,6 +230,15 @@ final class DailyVerseFullscreenViewController: UIViewController {
 
             scrollView.contentLayoutGuide.heightAnchor.constraint(greaterThanOrEqualTo: scrollView.frameLayoutGuide.heightAnchor)
         ])
+
+        watermarkAboveButton = watermarkLabel.bottomAnchor.constraint(equalTo: ctaButton.topAnchor, constant: -16)
+        watermarkAtBottom = watermarkLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
+        watermarkAboveButton?.isActive = true
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        watermarkLabel.text = todaysVerseAppName()
     }
 
     override func viewDidLayoutSubviews() {
@@ -261,7 +288,7 @@ final class DailyVerseFullscreenViewController: UIViewController {
         let store = DailyJourneyStore.shared
         store.reload()
         if store.allStepsComplete {
-            ctaButton.setTitle("Today's Journey Completed", for: .normal)
+            ctaButton.setTitle("Continue", for: .normal)
             ctaButton.backgroundColor = UIColor(red: 0.11, green: 0.48, blue: 0.24, alpha: 1)
         } else if store.memoryCompleted {
             ctaButton.setTitle("Start Reflection", for: .normal)
@@ -303,13 +330,19 @@ final class DailyVerseFullscreenViewController: UIViewController {
         onContinue?()
     }
 
-    /// Full-screen verse card: wallpaper, reference, and verse. Buttons stay off the image.
+    /// Full-screen verse card: wallpaper, reference, verse, and the app-name watermark. Buttons stay off the image.
     func makeShareImage() -> UIImage {
         let chrome = [closeButton, shareButton, saveButton, ctaButton, dotsStack]
         chrome.forEach { $0.isHidden = true }
+        watermarkAboveButton?.isActive = false
+        watermarkAtBottom?.isActive = true
+        watermarkLabel.text = todaysVerseAppName()
         view.layoutIfNeeded()
-        let image = view.asImage().withAppNameWatermark()
+        let image = view.asImage()
+        watermarkAtBottom?.isActive = false
+        watermarkAboveButton?.isActive = true
         chrome.forEach { $0.isHidden = false }
+        view.layoutIfNeeded()
         return image
     }
 
@@ -322,10 +355,19 @@ final class DailyVerseFullscreenViewController: UIViewController {
     }
 }
 
+func todaysVerseAppName() -> String {
+    let saved = (UserDefaults.standard.string(forKey: "app_name") ?? "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    if !saved.isEmpty { return saved }
+    let splash = APPNAME_SPLASH.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !splash.isEmpty { return splash }
+    return APPNAME.trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
 extension UIImage {
     /// App name along the bottom of the shared verse image only.
     func withAppNameWatermark() -> UIImage {
-        let name = APPNAME_SPLASH.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = todaysVerseAppName()
         guard !name.isEmpty else { return self }
 
         let format = UIGraphicsImageRendererFormat()

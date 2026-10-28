@@ -3,4 +3,94 @@
    uuid = "E96329BD-BC8D-4AEE-8A9B-EBB22ED484BD"
    type = "0"
    version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "71358625-CEA9-4417-92E3-F094FDEC6A96"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "NewPaymentViewController.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "62"
+            endingLineNumber = "62"
+            landmarkName = "NewPaymentViewController"
+            landmarkType = "3">
+            <Locations>
+               <Location
+                  uuid = "71358625-CEA9-4417-92E3-F094FDEC6A96 - 71696d928dee63a6"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "NKJV_Bible.NewPaymentViewController.timer.getter : Swift.Optional&lt;__C.NSTimer&gt;"
+                  moduleName = "ALKITAB Bible.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/marberx/Downloads/ALKITAB-Native-iOS/NewPaymentViewController.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "63"
+                  endingLineNumber = "63">
+               </Location>
+               <Location
+                  uuid = "71358625-CEA9-4417-92E3-F094FDEC6A96 - 28ec9abe5cc787b2"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "NKJV_Bible.NewPaymentViewController.timer.setter : Swift.Optional&lt;__C.NSTimer&gt;"
+                  moduleName = "ALKITAB Bible.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/marberx/Downloads/ALKITAB-Native-iOS/NewPaymentViewController.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "63"
+                  endingLineNumber = "63">
+               </Location>
+               <Location
+                  uuid = "71358625-CEA9-4417-92E3-F094FDEC6A96 - 24f5655f8fef44a5"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "NKJV_Bible.NewPaymentViewController.timer.modify : Swift.Optional&lt;__C.NSTimer&gt;"
+                  moduleName = "ALKITAB Bible.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/marberx/Downloads/ALKITAB-Native-iOS/NewPaymentViewController.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "63"
+                  endingLineNumber = "63">
+               </Location>
+               <Location
+                  uuid = "71358625-CEA9-4417-92E3-F094FDEC6A96 - 33eb23b93a266901"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "NKJV_Bible.NewPaymentViewController.init(nibName: Swift.Optional&lt;Swift.String&gt;, bundle: Swift.Optional&lt;__C.NSBundle&gt;) -&gt; NKJV_Bible.NewPaymentViewController"
+                  moduleName = "ALKITAB Bible.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/marberx/Downloads/ALKITAB-Native-iOS/NewPaymentViewController.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "63"
+                  endingLineNumber = "63">
+               </Location>
+               <Location
+                  uuid = "71358625-CEA9-4417-92E3-F094FDEC6A96 - 521edbf8d0f794d0"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "NKJV_Bible.NewPaymentViewController.init(coder: __C.NSCoder) -&gt; Swift.Optional&lt;NKJV_Bible.NewPaymentViewController&gt;"
+                  moduleName = "ALKITAB Bible.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/marberx/Downloads/ALKITAB-Native-iOS/NewPaymentViewController.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "63"
+                  endingLineNumber = "63">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
 </Bucket>

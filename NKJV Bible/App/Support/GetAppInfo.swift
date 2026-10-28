@@ -697,10 +697,9 @@ class GetAppInfo: NSObject {
             SUBSCRIPTIONID_LifeTime = FallbackIAPConstants.lifetimeProductID
         }
         
-        SUBSCRIPTIONID_OneYear = UserDefaults.standard.string(forKey: "sub_identifier_oneyear") ?? ""
-        if SUBSCRIPTIONID_OneYear.isEmpty && !hasCachedAPIData {
-            SUBSCRIPTIONID_OneYear = FallbackIAPConstants.oneYearProductID
-        }
+        SUBSCRIPTIONID_OneYear = FallbackIAPConstants.oneYearProductID
+        UserDefaults.standard.set(SUBSCRIPTIONID_OneYear, forKey: "sub_identifier_oneyear")
+        sub_identifier_oneyear = SUBSCRIPTIONID_OneYear
         
         SUBSCRIPTIONID_Six_month = UserDefaults.standard.string(forKey: "sub_identifier_six_month") ?? ""
         if SUBSCRIPTIONID_Six_month.isEmpty {

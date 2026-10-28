@@ -33,8 +33,15 @@ final class DailyJourneyStore: ObservableObject {
     private let reflectionOptionDateKey = "DailyJourney.reflectionOptionDate"
     private let memoryStateKey = "DailyJourney.memoryState"
     private let memoryStateDateKey = "DailyJourney.memoryStateDate"
+    private let dayRecordsKey = "DailyJourney.dayRecords"
 
     private init() {
+        let defaults = UserDefaults.standard
+        // Fresh installs stay on Start Reading. People who already opened the app keep Continue Reading.
+        if defaults.object(forKey: ContinueReadingSnapshot.startedKey) == nil {
+            let alreadyOpened = (defaults.string(forKey: "AppOpenFirst") ?? "0") == "1"
+            defaults.set(alreadyOpened, forKey: ContinueReadingSnapshot.startedKey)
+        }
         reload()
     }
 
@@ -100,6 +107,20 @@ final class DailyJourneyStore: ObservableObject {
         } else {
             savedMemory = nil
         }
+
+        if allStepsComplete {
+            archiveCurrentDay()
+        }
+    }
+
+    /// Saved verse, memory challenge, and reflection for a completed calendar day.
+    func dayRecord(for dayKey: String) -> DailyJourneyDayRecord? {
+        if let saved = loadDayRecords()[dayKey], saved.hasContent {
+            return saved
+        }
+        guard dayKey == todayKey, allStepsComplete else { return nil }
+        let current = currentDayRecord()
+        return current.hasContent ? current : nil
     }
 
     /// Whether a full journey streak was saved for this calendar day.
@@ -121,6 +142,7 @@ final class DailyJourneyStore: ObservableObject {
         guard !verseCompleted else { return }
         UserDefaults.standard.set(todayKey, forKey: verseKey)
         verseCompleted = true
+        archiveCurrentDay()
         updateStreakIfNeeded()
     }
 
@@ -133,6 +155,7 @@ final class DailyJourneyStore: ObservableObject {
         }
         savedMemory = state
         memoryCompleted = true
+        archiveCurrentDay()
         updateStreakIfNeeded()
         OnboardingNotificationScheduler.refreshConditionalReminders()
     }
@@ -149,7 +172,48 @@ final class DailyJourneyStore: ObservableObject {
         }
         reflectionText = text
         reflectionCompleted = true
+        archiveCurrentDay()
         updateStreakIfNeeded()
+    }
+
+    private func archiveCurrentDay() {
+        var records = loadDayRecords()
+        records[todayKey] = currentDayRecord()
+        if records.count > 120 {
+            let keep = Set(records.keys.sorted().suffix(120))
+            records = records.filter { keep.contains($0.key) }
+        }
+        if let data = try? JSONEncoder().encode(records) {
+            UserDefaults.standard.set(data, forKey: dayRecordsKey)
+        }
+    }
+
+    private func currentDayRecord() -> DailyJourneyDayRecord {
+        let pinned = DailyVerseSnapshot.pinnedFields()
+        var record = loadDayRecords()[todayKey] ?? DailyJourneyDayRecord()
+        if !pinned.reference.isEmpty {
+            record.verseReference = pinned.reference
+            record.verseText = pinned.text
+        }
+        if !pinned.imageName.isEmpty {
+            record.verseImageName = pinned.imageName
+        }
+        if let savedMemory = savedMemory {
+            record.memory = savedMemory
+        }
+        if reflectionCompleted {
+            record.reflectionText = reflectionText
+            record.reflectionOptionIndex = reflectionOptionIndex
+        }
+        return record
+    }
+
+    private func loadDayRecords() -> [String: DailyJourneyDayRecord] {
+        guard let data = UserDefaults.standard.data(forKey: dayRecordsKey),
+              let decoded = try? JSONDecoder().decode([String: DailyJourneyDayRecord].self, from: data) else {
+            return [:]
+        }
+        return decoded
     }
 
     private func updateStreakIfNeeded() {
@@ -219,6 +283,19 @@ final class DailyJourneyStore: ObservableObject {
     }
 }
 
+struct DailyJourneyDayRecord: Codable {
+    var verseReference: String = ""
+    var verseText: String = ""
+    var verseImageName: String = ""
+    var memory: MemoryChallengeSavedState? = nil
+    var reflectionText: String = ""
+    var reflectionOptionIndex: Int? = nil
+
+    var hasContent: Bool {
+        !verseText.isEmpty || memory != nil || !reflectionText.isEmpty
+    }
+}
+
 struct MemoryChallengeSavedState: Codable {
     let displayTokens: [String]
     let blankIndices: [Int]
@@ -271,6 +348,16 @@ struct DailyVerseSnapshot {
         )
     }
 
+    /// Verse pinned for today, plus the wallpaper currently shown on Home.
+    static func pinnedFields() -> (reference: String, text: String, imageName: String) {
+        let defaults = UserDefaults.standard
+        return (
+            defaults.string(forKey: shownVerseReferenceKey) ?? "",
+            defaults.string(forKey: shownVerseTextKey) ?? "",
+            HomeVerseImage
+        )
+    }
+
     /// Pins a verse as today's Home verse (used so the onboarding verse matches Home on day one).
     /// Does nothing if a verse is already pinned for today.
     static func pinForToday(reference: String, text: String) {
@@ -310,18 +397,24 @@ struct ContinueReadingSnapshot {
     let snippet: String
     let buttonTitle: String
 
+    static let startedKey = "DailyJourney.hasStartedReading"
+
     static func loadCurrent() -> ContinueReadingSnapshot {
         let book = UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName
         let chapter = UserDefaults.standard.integer(forKey: "BookChapter")
         let chapterIndex = max(chapter - 1, 0)
         let verses = BibleContent.sharedInstance.AudioBibleList(selecterBookName: book, selectedId: chapterIndex)
         let snippet = verses.first ?? ""
-        let isFirst = (UserDefaults.standard.string(forKey: "AppOpenFirst") ?? "0") == "0"
+        let hasStarted = UserDefaults.standard.bool(forKey: startedKey)
         return ContinueReadingSnapshot(
-            sectionTitle: isFirst ? "START READING" : "CONTINUE READING",
+            sectionTitle: hasStarted ? "CONTINUE READING" : "Start Reading",
             title: "\(book) \(max(chapter, 1)) • Verse 1",
             snippet: snippet,
-            buttonTitle: isFirst ? "Start" : "Continue"
+            buttonTitle: hasStarted ? "Continue" : "Start"
         )
+    }
+
+    static func markStarted() {
+        UserDefaults.standard.set(true, forKey: startedKey)
     }
 }

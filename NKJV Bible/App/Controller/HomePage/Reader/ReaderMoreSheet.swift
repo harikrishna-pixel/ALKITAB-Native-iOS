@@ -2,7 +2,7 @@
 //  ReaderMoreSheet.swift
 //  NKJV Bible
 //
-//  Bottom-bar More sheet: Profile, Bible Companion, Settings.
+//  Bottom-bar More sheet: Bible Companion, Recent Arrivals, Settings.
 //
 
 import UIKit
@@ -11,6 +11,7 @@ final class ReaderMoreSheet: UIView {
 
     var onProfile: (() -> Void)?
     var onCompanion: (() -> Void)?
+    var onRecentArrivals: (() -> Void)?
     var onSettings: (() -> Void)?
 
     private weak var tabView: UIView?
@@ -62,7 +63,7 @@ final class ReaderMoreSheet: UIView {
         let tabFrame = tab.convert(tab.bounds, to: self)
         dimView.frame = CGRect(x: 0, y: 0, width: bounds.width, height: max(0, tabFrame.minY))
         let width = bounds.width
-        let height: CGFloat = 235
+        let height: CGFloat = APP_TYPE == "1" ? 315 : 235
         sheetView.bounds.size = CGSize(width: width, height: height)
         sheetView.center = CGPoint(x: width / 2, y: tabFrame.minY - height / 2)
         sheetView.layoutIfNeeded()
@@ -102,6 +103,9 @@ final class ReaderMoreSheet: UIView {
         // Profile commented out.
         // stack.addArrangedSubview(makeRow(title: "Profile", symbol: "person.fill", accent: accent, night: night, action: #selector(profileTapped)))
         stack.addArrangedSubview(makeRow(title: "Bible Companion", symbol: "bubble.left.and.bubble.right.fill", accent: accent, night: night, action: #selector(companionTapped)))
+        if APP_TYPE == "1" {
+            stack.addArrangedSubview(makeRow(title: "Recent Arrivals", symbol: "book.fill", accent: accent, night: night, action: #selector(recentArrivalsTapped)))
+        }
         stack.addArrangedSubview(makeRow(title: "Settings", symbol: "gearshape.fill", accent: accent, night: night, action: #selector(settingsTapped)))
 
         sheetView.addSubview(grabber)
@@ -195,6 +199,10 @@ final class ReaderMoreSheet: UIView {
 
     @objc private func companionTapped() {
         onCompanion?()
+    }
+
+    @objc private func recentArrivalsTapped() {
+        onRecentArrivals?()
     }
 
     @objc private func settingsTapped() {

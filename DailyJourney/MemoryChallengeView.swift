@@ -8,6 +8,8 @@ import SwiftUI
 struct MemoryChallengeView: View {
     let verse: DailyVerseSnapshot
     @ObservedObject var store: DailyJourneyStore
+    var isLockedReview: Bool = false
+    var lockedReview: MemoryChallengeSavedState? = nil
     var onDone: () -> Void
     var onProceed: (() -> Void)? = nil
 
@@ -27,7 +29,7 @@ struct MemoryChallengeView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
-                    Text(isReviewMode ? "Your Memory Challenge" : "Memory Challenge")
+                    Text(isLockedReview || isReviewMode ? "Your Memory Challenge" : "Memory Challenge")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.black)
 
@@ -35,9 +37,11 @@ struct MemoryChallengeView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(Color(hex: "1C46B2"))
 
-                    Text(isReviewMode
-                          ? "Here’s what you answered today. Resets tomorrow."
-                          : "Fill in the blanks. Tap the correct words to complete the verse.")
+                    Text(isLockedReview
+                          ? "Here’s what you answered."
+                          : (isReviewMode
+                             ? "Here’s what you answered today. Resets tomorrow."
+                             : "Fill in the blanks. Tap the correct words to complete the verse."))
                         .font(.system(size: 15))
                         .foregroundColor(Color.black.opacity(0.55))
 
@@ -123,7 +127,7 @@ struct MemoryChallengeView: View {
 
     private var primaryCTATitle: String {
         if isReviewMode || isCorrect {
-            return onProceed != nil ? "Continue to Reflection" : "Done"
+            return onProceed != nil ? "Continue" : "Done"
         }
         return "Check Answer"
     }
@@ -163,6 +167,24 @@ struct MemoryChallengeView: View {
     }
 
     private func buildChallenge() {
+        if isLockedReview {
+            if let saved = lockedReview {
+                displayTokens = saved.displayTokens
+                blankIndices = saved.blankIndices
+                wordBank = saved.wordBank
+                filled = Dictionary(uniqueKeysWithValues: saved.filled.compactMap { key, value in
+                    guard let idx = Int(key) else { return nil }
+                    return (idx, value)
+                })
+                correctWords = blankIndices.compactMap { displayTokens.indices.contains($0) ? displayTokens[$0] : nil }
+            }
+            selectedBlank = nil
+            isCorrect = true
+            isReviewMode = true
+            feedback = "Completed"
+            return
+        }
+
         if store.memoryCompleted, let saved = store.savedMemory {
             displayTokens = saved.displayTokens
             blankIndices = saved.blankIndices

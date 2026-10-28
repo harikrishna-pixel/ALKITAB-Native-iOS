@@ -68,7 +68,8 @@ final class DailyJourneyHomeViewController: UIViewController {
                 self?.presentVerseFullscreen(verse: verse, onUpdated: onUpdated)
             },
             onOpenMemoryChallenge: { [weak self] verse in
-                let proceed = !DailyJourneyStore.shared.reflectionCompleted
+                let store = DailyJourneyStore.shared
+                let proceed = !store.reflectionCompleted || store.allStepsComplete
                 self?.presentMemoryChallenge(verse: verse, proceedToReflection: proceed)
             },
             onOpenReflection: { [weak self] verse in
@@ -184,7 +185,7 @@ final class DailyJourneyHomeViewController: UIViewController {
             store.reload()
             let verseSnapshot = current
             if store.allStepsComplete {
-                self?.dismissJourneyModal()
+                self?.presentMemoryChallenge(verse: verseSnapshot, proceedToReflection: true)
             } else if store.memoryCompleted {
                 self?.presentReflection(verse: verseSnapshot)
             } else {
@@ -257,6 +258,7 @@ final class DailyJourneyHomeViewController: UIViewController {
         let title = "\(book) \(chapter):1"
         UserDefaults.standard.set(title, forKey: "readdata")
         UserDefaults.standard.set("1", forKey: "AppOpenFirst")
+        ContinueReadingSnapshot.markStarted()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             App_Protocol.delegateReaderSource?.navigateToSelectedVerse()
         }

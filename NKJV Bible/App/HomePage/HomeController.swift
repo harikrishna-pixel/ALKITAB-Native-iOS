@@ -122,7 +122,7 @@ class HomeController: UIViewController, UICollectionViewDelegate, UICollectionVi
         
         
         if UserDefaults.standard.string(forKey: "AppOpenFirst") ?? "0" == "0" {
-            self.ContinuetoreadBtn.setTitle("Read", for: .normal)
+            self.ContinuetoreadBtn.setTitle("Start", for: .normal)
             self.Readtitle.text = "Start Reading"
         } else {
             
@@ -224,6 +224,7 @@ class HomeController: UIViewController, UICollectionViewDelegate, UICollectionVi
     
     
     @IBAction func ContinueToRead(_ sender: Any) {
+        ContinueReadingSnapshot.markStarted()
         UserDefaults.standard.set(self.LastReadTitle.text!, forKey: "readdata")
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.3) {
             App_Protocol.delegateReaderSource?.navigateToSelectedVerse()

@@ -4,10 +4,12 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct StreakCalendarView: View {
     @ObservedObject var store: DailyJourneyStore
     @State private var displayedMonth: Date = Date()
+    @State private var reviewRecord: DailyJourneyDayRecord?
 
     /// Fixed Sun → Sat week order (calendar date aligned).
     private let weekdaySymbols = ["S", "M", "T", "W", "T", "F", "S"]
@@ -40,7 +42,7 @@ struct StreakCalendarView: View {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7), spacing: 10) {
                         ForEach(monthDayItems) { item in
                             if let day = item.day {
-                                dayCell(day: day, isStreakDay: item.isStreakDay, isToday: item.isToday)
+                                dayCell(day: day, dayKey: item.dayKey, isStreakDay: item.isStreakDay, isToday: item.isToday)
                             } else {
                                 Color.clear
                                     .frame(height: 36)
@@ -60,6 +62,17 @@ struct StreakCalendarView: View {
         .background(Color(hex: "F7F8FC").ignoresSafeArea())
         .navigationTitle("Streak Calendar")
         .navigationBarTitleDisplayMode(.inline)
+        .background(
+            NavigationLink(
+                destination: CompletedStreakFlowView(record: reviewRecord ?? DailyJourneyDayRecord()),
+                isActive: Binding(
+                    get: { reviewRecord != nil },
+                    set: { if !$0 { reviewRecord = nil } }
+                ),
+                label: { EmptyView() }
+            )
+            .hidden()
+        )
     }
 
     private var streakHeader: some View {
@@ -125,8 +138,8 @@ struct StreakCalendarView: View {
         }
     }
 
-    private func dayCell(day: Int, isStreakDay: Bool, isToday: Bool) -> some View {
-        ZStack {
+    private func dayCell(day: Int, dayKey: String?, isStreakDay: Bool, isToday: Bool) -> some View {
+        let cell = ZStack {
             Circle()
                 .fill(isStreakDay ? Color(hex: "34C759") : Color(hex: "F3F5FA"))
                 .frame(width: 36, height: 36)
@@ -143,6 +156,22 @@ struct StreakCalendarView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 36)
+
+        return Group {
+            if isStreakDay, let dayKey = dayKey {
+                Button(action: { openCompletedDay(dayKey) }) {
+                    cell
+                }
+                .buttonStyle(PlainButtonStyle())
+            } else {
+                cell
+            }
+        }
+    }
+
+    private func openCompletedDay(_ dayKey: String) {
+        guard let record = store.dayRecord(for: dayKey) else { return }
+        reviewRecord = record
     }
 
     private func shiftMonth(by value: Int) {
@@ -159,7 +188,7 @@ struct StreakCalendarView: View {
         let firstWeekday = calendar.component(.weekday, from: monthInterval.start)
         let leadingEmpty = weekdayDisplayIndex(forWeekday: firstWeekday)
 
-        var items: [CalendarDayItem] = Array(repeating: CalendarDayItem(day: nil, isStreakDay: false, isToday: false), count: leadingEmpty)
+        var items: [CalendarDayItem] = Array(repeating: CalendarDayItem(day: nil, dayKey: nil, isStreakDay: false, isToday: false), count: leadingEmpty)
 
         for day in dayRange {
             guard let date = calendar.date(byAdding: .day, value: day - 1, to: monthInterval.start) else { continue }
@@ -167,6 +196,7 @@ struct StreakCalendarView: View {
             items.append(
                 CalendarDayItem(
                     day: day,
+                    dayKey: dayKey,
                     isStreakDay: store.hasSavedStreak(on: dayKey),
                     isToday: calendar.isDateInToday(date)
                 )
@@ -192,6 +222,149 @@ struct StreakCalendarView: View {
 private struct CalendarDayItem: Identifiable {
     let id = UUID()
     let day: Int?
+    let dayKey: String?
     let isStreakDay: Bool
     let isToday: Bool
+}
+
+/// Read-only Today's Verse → Memory Challenge → Reflection for a completed streak day.
+private struct CompletedStreakFlowView: View {
+    let record: DailyJourneyDayRecord
+    @Environment(\.presentationMode) private var presentationMode
+    @State private var step = 0
+
+    private var verse: DailyVerseSnapshot {
+        DailyVerseSnapshot(
+            reference: record.verseReference,
+            text: record.verseText,
+            imageName: record.verseImageName.isEmpty ? HomeVerseImage : record.verseImageName
+        )
+    }
+
+    var body: some View {
+        Group {
+            if step == 0 {
+                CompletedStreakVerseView(
+                    record: record,
+                    onBack: { presentationMode.wrappedValue.dismiss() },
+                    onContinue: { step = 1 }
+                )
+            } else if step == 1 {
+                MemoryChallengeView(
+                    verse: verse,
+                    store: .shared,
+                    isLockedReview: true,
+                    lockedReview: record.memory,
+                    onDone: { presentationMode.wrappedValue.dismiss() },
+                    onProceed: { step = 2 }
+                )
+            } else {
+                ReflectionView(
+                    verse: verse,
+                    store: .shared,
+                    isLockedReview: true,
+                    lockedText: record.reflectionText,
+                    lockedOption: record.reflectionOptionIndex,
+                    onDone: { presentationMode.wrappedValue.dismiss() }
+                )
+            }
+        }
+        .navigationBarHidden(step == 0)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: { step = max(step - 1, 0) }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.black)
+                }
+            }
+        }
+    }
+}
+
+private struct CompletedStreakVerseView: View {
+    let record: DailyJourneyDayRecord
+    var onBack: () -> Void
+    var onContinue: () -> Void
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                Group {
+                    if let image = UIImage(named: record.verseImageName), !record.verseImageName.isEmpty {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color(hex: "1C46B2"), Color(hex: "0B1B3A")]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    }
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height)
+                .clipped()
+
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.black.opacity(0.42), Color.black.opacity(0.38), Color.black.opacity(0.55)]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .allowsHitTesting(false)
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Button(action: onBack) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(width: 40, height: 40)
+                                .background(Color.black.opacity(0.40))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, geometry.safeAreaInsets.top + 8)
+
+                    Spacer()
+
+                    VStack(alignment: .center, spacing: 16) {
+                        Text(record.verseReference.uppercased())
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                        Rectangle()
+                            .fill(Color.white.opacity(0.85))
+                            .frame(width: 28, height: 1.5)
+                        Text(record.verseText.isEmpty ? "This day's verse wasn't saved." : record.verseText)
+                            .font(.system(size: 22, weight: .regular, design: .serif))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, 28)
+
+                    Spacer()
+
+                    Button(action: onContinue) {
+                        Text("Memory Challenge")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(Color(hex: "1C46B2"))
+                            .cornerRadius(16)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, max(geometry.safeAreaInsets.bottom, 24))
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .navigationBarTitleDisplayMode(.inline)
+    }
 }
