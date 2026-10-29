@@ -616,7 +616,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         self.Pageindex = UserDefaults.standard.integer(forKey: "BookChapter")
         self.Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
         
-        self.view.backgroundColor = (self.Themecolor == BGNightMode ? BGNightMode:UIColor.white)
+        self.view.backgroundColor = onboardingReaderPageColor(theme: self.Themecolor)
         BannerVu.backgroundColor = (self.Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         TabVu.backgroundColor = (self.Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         AVMainView.backgroundColor = (self.Themecolor == BGNightMode ? DarkModeColor:Themecolor) // self.Themecolor
@@ -961,7 +961,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         if PLayerConstrain.constant == -200 {
             self.verseBottomWithoutPlayer = self.VeresViewBottom.constant
             UIView.animate(withDuration: 0.4, animations: {
-                self.PLayerConstrain.constant = 10
+                self.PLayerConstrain.constant = self.openPlayerBottomConstant()
                 self.VeresViewBottom.constant = self.verseContentBottom(resting: self.verseBottomWithoutPlayer)
                 self.SwipeDisable.isHidden = false
                 self.view.layoutIfNeeded()
@@ -978,11 +978,18 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         }
     }
 
+    /// Player bottom sits above the tab bar. Closed position stays -200.
+    private func openPlayerBottomConstant() -> CGFloat {
+        guard BottomMenyConstrain.constant > 0 else { return 10 }
+        let tabHeight = TabVu.bounds.height > 1 ? TabVu.bounds.height : 50
+        return BottomMenyConstrain.constant + tabHeight + 8
+    }
+
     /// Keeps the chapter above the audio player, with a gap, whenever that player is open.
     private func verseContentBottom(resting: CGFloat) -> CGFloat {
         guard PLayerConstrain.constant > -100 else { return resting }
         let playerHeight = AVMainView.bounds.height > 1 ? AVMainView.bounds.height : 150
-        let clearance = playerHeight + 10 + 12
+        let clearance = PLayerConstrain.constant + playerHeight + 12
         return min(resting, -clearance)
     }
     
@@ -1364,7 +1371,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
 
     private func clearNavigateframeTabChildren() {
         for child in children {
-            if child is DailyJourneyHomeViewController || child is HomeController || child is MyLibraryViewController || child is PrayerWallViewController || child is ChallengeHubViewController || child is SelectionViewController {
+            if child is DailyJourneyHomeViewController || child is HomeController || child is MyLibraryViewController || child is PrayerWallViewController || child is ChallengeHubViewController || child is SelectionViewController || child is BookAdListViewController {
                 child.willMove(toParent: nil)
                 child.view.removeFromSuperview()
                 child.removeFromParent()
@@ -1374,6 +1381,9 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     }
 
     private func showEmbeddedTab(_ viewController: UIViewController) {
+        if !(viewController is BookAdListViewController) {
+            exploreBooksReturnTab = nil
+        }
         clearNavigateframeTabChildren()
         addChild(viewController)
         viewController.view.frame = Navigateframe.bounds
@@ -1684,9 +1694,42 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         }
     }
 
+    private var exploreBooksReturnTab: String?
+
     private func openMoreRecentArrivals() {
+        dismissMoreSheet()
+        hideBottomMenu(Status: false)
+        if exploreBooksReturnTab == nil {
+            exploreBooksReturnTab = SelectedTab
+        }
+        playerONOFFCheck()
+        ClosePlayerPopup()
+        SpeakVu.isHidden = true
+        AudioVu.isHidden = true
+        MenuVu.isHidden = true
+        selectBottomTabHighlight(.more)
+        Navigateframe.isHidden = false
         let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "BookAdListViewController") as! BookAdListViewController
-        navigationController?.pushViewController(vc, animated: true)
+        vc.embeddedInReader = true
+        showEmbeddedTab(vc)
+    }
+
+    func closeExploreBooks() {
+        let previous = exploreBooksReturnTab ?? "0"
+        exploreBooksReturnTab = nil
+        SelectedTab = ""
+        switch previous {
+        case "1":
+            DailyVereseAction(UIButton())
+        case "2":
+            MylibraryAction(UIButton())
+        case "3":
+            PrayerWall_Action(UIButton())
+        case "4":
+            Quiz_Action(UIButton())
+        default:
+            CallHomeView()
+        }
     }
 
     private func openMoreSettings() {
@@ -2075,11 +2118,13 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         // No animation — Mark as Read / Get Summary must not slide or jump at chapter bottom.
         let resting = (Top < 0.0 ? 0.0 : -72.0)
         self.verseBottomWithoutPlayer = resting
-        let verseBottom = self.verseContentBottom(resting: resting)
         UIView.performWithoutAnimation {
-            self.VeresViewBottom.constant = verseBottom
             self.topBannerConstant.constant = Top
             self.BottomMenyConstrain.constant = bottom
+            if self.PLayerConstrain.constant > -100 {
+                self.PLayerConstrain.constant = self.openPlayerBottomConstant()
+            }
+            self.VeresViewBottom.constant = self.verseContentBottom(resting: resting)
             self.MenuConstrain.constant = bottom >= 20 ? 20 : 0
             self.view.layoutIfNeeded()
         }

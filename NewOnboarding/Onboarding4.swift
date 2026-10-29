@@ -118,19 +118,26 @@ struct Onboarding4: View {
                         }
                     }
                     .padding(.horizontal, 26)
+                    .padding(.bottom, usesOldOnboarding ? 0 : max(geometry.safeAreaInsets.bottom, 16))
                     .background(
-                        NavigationLink(
-                            destination: Onboarding5(),
-                            isActive: $navigateForward
-                        ) {
-                            EmptyView()
+                        Group {
+                            if usesOldOnboarding {
+                                NavigationLink(destination: BeforeOnboarding5(), isActive: $navigateForward) {
+                                    EmptyView()
+                                }
+                            } else {
+                                NavigationLink(destination: Onboarding5(), isActive: $navigateForward) {
+                                    EmptyView()
+                                }
+                            }
                         }
                         .hidden()
                     )
-
-                    OnboardingPageDots(current: 3, total: 5)
-                        .padding(.top, 14)
-                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 34))
+                    if usesOldOnboarding {
+                        OnboardingPageDots(current: 3, total: 5)
+                            .padding(.top, 14)
+                            .padding(.bottom, max(geometry.safeAreaInsets.bottom, 34))
+                    }
                 }
             }
         }
@@ -367,4 +374,353 @@ private struct OnboardingExplainTyping: View {
 
 #Preview {
     Onboarding4()
+}
+
+struct OnboardingComfortView: View {
+    @State private var theme = "light"
+    @State private var fontSize: CGFloat = 20
+    @State private var navigateForward = false
+
+    private var cardBackground: Color {
+        if theme == "dark" { return Color(hex: "14213D") }
+        if theme == "sepia" { return Color(hex: "F2E6CC") }
+        return .white
+    }
+
+    private var cardInk: Color {
+        theme == "dark" ? .white : OnboardingTheme.paperInk
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                OnboardingTheme.paper.ignoresSafeArea()
+                VStack(spacing: 0) {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 0) {
+                            OnboardingEyebrow(text: "Your Bible, your way")
+                                .padding(.top, 16)
+                            OnboardingSerifTitle(
+                                lines: ["Make It", "Comfortable"],
+                                size: min(geometry.size.width * 0.08, 31),
+                                onDark: false
+                            )
+                            .padding(.horizontal, 24)
+                            .padding(.top, 4)
+                            OnboardingLede(text: "Pick how you like to read.")
+                                .padding(.horizontal, 32)
+                                .padding(.top, 8)
+
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(OnboardingBibleVerse.reference)
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(cardInk.opacity(0.7))
+                                Text(OnboardingBibleVerse.text)
+                                    .font(.system(size: fontSize, weight: .regular, design: .serif))
+                                    .foregroundColor(cardInk)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .padding(18)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(RoundedRectangle(cornerRadius: 16).fill(cardBackground))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(OnboardingTheme.paperLine, lineWidth: 1))
+                            .padding(.horizontal, 26)
+                            .padding(.top, 16)
+
+                            Text("THEME")
+                                .font(.system(size: 11, weight: .heavy))
+                                .tracking(1.4)
+                                .foregroundColor(Color(hex: "7488A6"))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 26)
+                                .padding(.top, 18)
+
+                            HStack(spacing: 8) {
+                                themeChip("Light", id: "light", swatch: Color.white, border: true)
+                                themeChip("Sepia", id: "sepia", swatch: Color(hex: "F2E6CC"), border: false)
+                                themeChip("Dark", id: "dark", swatch: Color(hex: "14213D"), border: false)
+                            }
+                            .padding(.horizontal, 26)
+                            .padding(.top, 8)
+
+                            Text("TEXT SIZE")
+                                .font(.system(size: 11, weight: .heavy))
+                                .tracking(1.4)
+                                .foregroundColor(Color(hex: "7488A6"))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 26)
+                                .padding(.top, 18)
+
+                            OnboardingTextSizeLine(fontSize: $fontSize)
+                                .padding(.horizontal, 26)
+                                .padding(.top, 10)
+                            Spacer(minLength: 20)
+                        }
+                    }
+
+                    VStack(spacing: 12) {
+                        OnboardingPrimaryButton(title: "Continue", onDark: false) {
+                            OnboardingTheme.applyReadingChoice(theme: theme, fontSize: fontSize)
+                            navigateForward = true
+                        }
+                        Text("You can change this anytime in Settings.")
+                            .font(.system(size: 13))
+                            .foregroundColor(OnboardingTheme.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .padding(.horizontal, 26)
+                    .padding(.bottom, max(geometry.safeAreaInsets.bottom, 16))
+                    .background(
+                        NavigationLink(destination: OnboardingVerseImageView(), isActive: $navigateForward) {
+                            EmptyView()
+                        }
+                        .hidden()
+                    )
+                }
+            }
+        }
+        .navigationBarHidden(true)
+    }
+
+    private func themeChip(_ title: String, id: String, swatch: Color, border: Bool) -> some View {
+        Button(action: { theme = id }) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(swatch)
+                    .frame(width: 14, height: 14)
+                    .overlay(Circle().stroke(Color(hex: "CDD7E6"), lineWidth: border ? 1 : 0))
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            .foregroundColor(OnboardingTheme.paperInk)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color.white))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(theme == id ? OnboardingTheme.primaryBlue : OnboardingTheme.paperLine, lineWidth: theme == id ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct OnboardingVerseImageView: View {
+    @State private var background = "candle"
+    @State private var serif = true
+    @State private var navigateForward = false
+
+    private var imageName: String {
+        if background == "gold" { return "verse_bg_gold" }
+        if background == "ivory" { return "verse_bg_ivory" }
+        return "verse_bg_candle"
+    }
+
+    private var ink: Color {
+        if background == "ivory" { return Color(hex: "33250F") }
+        if background == "gold" { return Color(hex: "FBF3E0") }
+        return Color(hex: "FFF4DC")
+    }
+
+    private var accent: Color {
+        if background == "ivory" { return Color(hex: "9A722C") }
+        if background == "gold" { return Color(hex: "D9B35E") }
+        return Color(hex: "E8C57A")
+    }
+
+    private var frameColor: Color {
+        if background == "ivory" { return Color(hex: "9A722C").opacity(0.55) }
+        if background == "gold" { return Color(hex: "D9B35E").opacity(0.6) }
+        return Color(hex: "E8C57A").opacity(0.7)
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                OnboardingTheme.paper.ignoresSafeArea()
+                VStack(spacing: 0) {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 0) {
+                            OnboardingEyebrow(text: "Make it beautiful")
+                                .padding(.top, 16)
+                            OnboardingSerifTitle(
+                                lines: ["Your First", "Verse Image"],
+                                size: min(geometry.size.width * 0.08, 31),
+                                onDark: false
+                            )
+                            .padding(.horizontal, 24)
+                            .padding(.top, 4)
+                            OnboardingLede(text: "Turn any verse into an image to keep or share. Try a background.")
+                                .padding(.horizontal, 32)
+                                .padding(.top, 8)
+
+                            ZStack {
+                                Image(imageName)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .clipped()
+                                VStack(spacing: 14) {
+                                    Group {
+                                        if serif {
+                                            Text("“\(OnboardingBibleVerse.text)”")
+                                                .font(.system(size: 22, weight: .regular, design: .serif))
+                                                .italic()
+                                        } else {
+                                            Text("“\(OnboardingBibleVerse.text)”")
+                                                .font(.system(size: 20, weight: .bold))
+                                        }
+                                    }
+                                    .foregroundColor(ink)
+                                    .multilineTextAlignment(.center)
+                                    Rectangle()
+                                        .fill(accent.opacity(0.8))
+                                        .frame(width: 34, height: 1.5)
+                                    Text(OnboardingBibleVerse.reference.uppercased())
+                                        .font(.system(size: 11.5, weight: .bold))
+                                        .tracking(1.4)
+                                        .foregroundColor(accent)
+                                }
+                                .padding(28)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 258)
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(frameColor, lineWidth: 1.5)
+                                    .padding(11)
+                            )
+                            .shadow(color: Color(hex: "0A1432").opacity(0.28), radius: 17, y: 8)
+                            .padding(.horizontal, 26)
+                            .padding(.top, 8)
+
+                            Text("BACKGROUND")
+                                .font(.system(size: 11, weight: .heavy))
+                                .tracking(1.4)
+                                .foregroundColor(Color(hex: "7488A6"))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 26)
+                                .padding(.top, 16)
+
+                            HStack(spacing: 8) {
+                                bgChip("Candle", id: "candle", image: "verse_bg_candle")
+                                bgChip("Gold", id: "gold", image: "verse_bg_gold")
+                                bgChip("Ivory", id: "ivory", image: "verse_bg_ivory")
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 26)
+                            .padding(.top, 8)
+
+                            Text("FONT")
+                                .font(.system(size: 11, weight: .heavy))
+                                .tracking(1.4)
+                                .foregroundColor(Color(hex: "7488A6"))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 26)
+                                .padding(.top, 16)
+
+                            HStack(spacing: 8) {
+                                fontChip("Serif", isSerif: true)
+                                fontChip("Clean", isSerif: false)
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 26)
+                            .padding(.top, 8)
+                            Spacer(minLength: 20)
+                        }
+                    }
+
+                    OnboardingPrimaryButton(title: "Continue", onDark: false) {
+                        UserDefaults.standard.set(background, forKey: OnboardingTheme.verseImageBgKey)
+                        UserDefaults.standard.set(serif ? "serif" : "sans", forKey: OnboardingTheme.verseImageFontKey)
+                        navigateForward = true
+                    }
+                    .padding(.horizontal, 26)
+                    .padding(.bottom, max(geometry.safeAreaInsets.bottom, 16))
+                    .background(
+                        NavigationLink(destination: Onboarding5(), isActive: $navigateForward) {
+                            EmptyView()
+                        }
+                        .hidden()
+                    )
+                }
+            }
+        }
+        .navigationBarHidden(true)
+    }
+
+    private func bgChip(_ title: String, id: String, image: String) -> some View {
+        let selected = background == id
+        return Button(action: { background = id }) {
+            HStack(spacing: 8) {
+                Image(image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 22, height: 22)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                    )
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundColor(selected ? OnboardingTheme.primaryBlue : Color(hex: "31456A"))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color.white))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(selected ? OnboardingTheme.primaryBlue : OnboardingTheme.paperLine, lineWidth: 1.5)
+            )
+            .shadow(color: selected ? OnboardingTheme.primaryBlue.opacity(0.12) : .clear, radius: 0, y: 0)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private func fontChip(_ title: String, isSerif: Bool) -> some View {
+        Button(action: { serif = isSerif }) {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(serif == isSerif ? OnboardingTheme.primaryBlue : Color(hex: "31456A"))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color.white))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(serif == isSerif ? OnboardingTheme.primaryBlue : OnboardingTheme.paperLine, lineWidth: serif == isSerif ? 1.5 : 1)
+                )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct OnboardingTextSizeLine: View {
+    @Binding var fontSize: CGFloat
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Button(action: { fontSize = max(16, fontSize - 2) }) {
+                Text("A")
+                    .font(.system(size: 16, weight: .semibold))
+            }
+            GeometryReader { bar in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(OnboardingTheme.primaryBlue.opacity(0.25))
+                    Capsule()
+                        .fill(OnboardingTheme.primaryBlue)
+                        .frame(width: max(8, bar.size.width * min(1, (fontSize - 16) / 12)))
+                }
+            }
+            .frame(height: 4)
+            Button(action: { fontSize = min(28, fontSize + 2) }) {
+                Text("A")
+                    .font(.system(size: 22, weight: .semibold))
+            }
+        }
+        .foregroundColor(OnboardingTheme.paperInk)
+    }
 }

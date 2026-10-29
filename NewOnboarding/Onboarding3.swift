@@ -163,19 +163,26 @@ struct Onboarding3: View {
                         }
                     }
                     .padding(.horizontal, 26)
+                    .padding(.bottom, usesOldOnboarding ? 0 : max(geometry.safeAreaInsets.bottom, 16))
                     .background(
-                        NavigationLink(
-                            destination: OnboardingNotificationView(),
-                            isActive: $navigateForward
-                        ) {
-                            EmptyView()
+                        Group {
+                            if usesOldOnboarding {
+                                NavigationLink(destination: OnboardingNotificationView(), isActive: $navigateForward) {
+                                    EmptyView()
+                                }
+                            } else {
+                                NavigationLink(destination: OnboardingComfortView(), isActive: $navigateForward) {
+                                    EmptyView()
+                                }
+                            }
                         }
                         .hidden()
                     )
-
-                    OnboardingPageDots(current: 2, total: 5)
-                        .padding(.top, 14)
-                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 34))
+                    if usesOldOnboarding {
+                        OnboardingPageDots(current: 2, total: 5)
+                            .padding(.top, 14)
+                            .padding(.bottom, max(geometry.safeAreaInsets.bottom, 34))
+                    }
                 }
             }
         }

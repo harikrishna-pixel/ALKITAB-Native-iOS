@@ -109,6 +109,7 @@ class SelectionViewController: UIViewController, QuizSelect {
             UserDefaults.standard.set(UserDefaults.standard.integer(forKey: "WalletMoney") + 100, forKey: "WalletMoney")
         }
         self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
+        hideUnusedBackButton()
         
         if !UserDefaults.standard.bool(forKey: "FirstTime") {
 
@@ -307,6 +308,36 @@ class SelectionViewController: UIViewController, QuizSelect {
     
     
     
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        hideUnusedBackButton()
+    }
+
+    /// Quiz tab has nowhere to go back. Mark as Read → quiz play is pushed, so that arrow stays.
+    private func hideUnusedBackButton() {
+        let showBack = isPushedForQuizPlay
+        let backImage = UIImage(named: "BackArrow")
+        for view in BannerVu.subviews {
+            if let imageView = view as? UIImageView {
+                let matchesBack = backImage != nil && imageView.image?.isEqual(backImage) == true
+                let onLeft = BannerVu.bounds.width > 0 && imageView.frame.width > 0 && imageView.frame.midX < 80
+                if matchesBack || onLeft {
+                    imageView.isHidden = !showBack
+                }
+            }
+            if let button = view as? UIButton,
+               button.actions(forTarget: self, forControlEvent: .touchUpInside)?.contains("Back:") == true {
+                button.isHidden = !showBack
+            }
+        }
+    }
+
+    private var isPushedForQuizPlay: Bool {
+        if markAsReadDestination != nil { return true }
+        guard let navigationController = navigationController else { return false }
+        return navigationController.topViewController === self && navigationController.viewControllers.count > 1
+    }
+
     @IBAction func Back(_ sender: Any) {
         navigationController?.popToQuizHubIfPresent(fallback: ReaderViewController.self)
     }

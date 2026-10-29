@@ -30,62 +30,70 @@ class WallpaperCollectionViewCell: UICollectionViewCell {
         WaterMarkVu.backgroundColor = .clear
         WaterMarkVu.layer.cornerRadius = 0
         WaterMarkVu.clipsToBounds = false
-        BibleName.textAlignment = .right
-        BibleName.font = UIFont.systemFont(ofSize: 12, weight: .medium)
-        BibleName.textColor = UIColor.white.withAlphaComponent(0.85)
+        BibleName.textAlignment = .left
+        BibleName.font = UIFont.systemFont(ofSize: 11, weight: .semibold)
+        BibleName.textColor = .white
         BibleName.alpha = 1
-        BibleName.shadowColor = UIColor.black.withAlphaComponent(0.35)
-        BibleName.shadowOffset = CGSize(width: 0, height: 0.5)
         for case let label as UILabel in WaterMarkVu.subviews where label !== BibleName {
-            label.textAlignment = .right
-            label.font = UIFont.systemFont(ofSize: 9, weight: .regular)
-            label.textColor = UIColor.white.withAlphaComponent(0.75)
+            label.textAlignment = .left
+            label.font = UIFont.systemFont(ofSize: 8)
+            label.textColor = UIColor.white.withAlphaComponent(0.85)
             label.alpha = 1
-            label.shadowColor = UIColor.black.withAlphaComponent(0.3)
-            label.shadowOffset = CGSize(width: 0, height: 0.5)
+            label.text = "Search in app store"
         }
         for case let icon as UIImageView in WaterMarkVu.subviews {
-            icon.isHidden = true
+            icon.isHidden = false
+            icon.image = UIImage(named: "About-logo-white.png")
         }
         applyVerseWatermarkName()
     }
 
-    func showTapHint(_ show: Bool) {
-        TabTxt.layer.removeAllAnimations()
-        TabTxt.isHidden = !show
-        TabTxt.alpha = 1
-        guard show else { return }
-        blinkTapHint()
+    private var tapHintLink: CADisplayLink?
+    private var tapHintStart: CFTimeInterval = 0
+
+    deinit {
+        tapHintLink?.invalidate()
     }
 
-    private func blinkTapHint() {
-        guard !TabTxt.isHidden else { return }
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        stopTapHintBlink()
+        TabTxt.isHidden = true
         TabTxt.alpha = 1
-        UIView.animate(withDuration: 0.7, delay: 0, options: [.curveEaseInOut, .allowUserInteraction]) {
-            self.TabTxt.alpha = 0.2
-        } completion: { _ in
-            guard !self.TabTxt.isHidden else { return }
-            UIView.animate(withDuration: 0.7, delay: 0, options: [.curveEaseInOut, .allowUserInteraction]) {
-                self.TabTxt.alpha = 1
-            } completion: { _ in
-                self.blinkTapHint()
-            }
+    }
+
+    func showTapHint(_ show: Bool) {
+        TabTxt.layer.removeAllAnimations()
+        if !show {
+            stopTapHintBlink()
+            TabTxt.isHidden = true
+            TabTxt.alpha = 1
+            return
         }
+        TabTxt.isHidden = false
+        guard tapHintLink == nil else { return }
+        tapHintStart = CACurrentMediaTime()
+        TabTxt.alpha = 1
+        let link = CADisplayLink(target: self, selector: #selector(stepTapHint))
+        link.add(to: .main, forMode: .common)
+        tapHintLink = link
+    }
+
+    private func stopTapHintBlink() {
+        tapHintLink?.invalidate()
+        tapHintLink = nil
+    }
+
+    /// Fade on a clock. An ad can cancel a UIView animation; this keeps the same fade going.
+    @objc private func stepTapHint() {
+        guard tapHintLink != nil, !TabTxt.isHidden else { return }
+        let wave = (cos((CACurrentMediaTime() - tapHintStart) / 1.4 * 2 * Double.pi) + 1) / 2
+        TabTxt.alpha = 0.2 + (0.8 * CGFloat(wave))
     }
 
     /// Uses the configured app name, including the name loaded after the app config changes.
     func applyVerseWatermarkName() {
-        let saved = (UserDefaults.standard.string(forKey: "app_name") ?? "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let splash = APPNAME_SPLASH.trimmingCharacters(in: .whitespacesAndNewlines)
-        let app = APPNAME.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !saved.isEmpty {
-            BibleName.text = saved
-        } else if !splash.isEmpty {
-            BibleName.text = splash
-        } else {
-            BibleName.text = app
-        }
+        BibleName.text = todaysVerseAppName()
     }
     
     

@@ -184,7 +184,7 @@ class SlideCardView: UIView, UICollectionViewDelegate, UICollectionViewDataSourc
         BGImage.removeAll()
         
         for i in 0 ..< self.VerseArray.count {
-            if BGImageCount >= 11 {
+            if BGImageCount >= verticalVerseImageCount {
                 BGImageCount = 0
             }
             BGImageCount = BGImageCount+1

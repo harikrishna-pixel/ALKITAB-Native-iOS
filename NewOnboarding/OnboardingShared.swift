@@ -28,6 +28,25 @@ enum OnboardingTheme {
         return name.isEmpty ? "BIBLE" : name
     }
 
+    static let readThemeKey = "OnboardingReadTheme"
+    static let verseImageBgKey = "OnboardingVerseImageBg"
+    static let verseImageFontKey = "OnboardingVerseImageFont"
+    static let reminderSummaryKey = "OnboardingReminderSummary"
+
+    static func applyReadingChoice(theme: String, fontSize: CGFloat) {
+        let defaults = UserDefaults.standard
+        defaults.set(theme, forKey: readThemeKey)
+        defaults.set(Float(fontSize), forKey: "FontSize")
+        if theme == "dark" {
+            defaults.set(BGNightMode, forKey: "AppThemeColor")
+        } else if theme == "sepia" {
+            defaults.set(SepiaThemeColor, forKey: "AppThemeColor")
+            defaults.set(SepiaThemeColor, forKey: "SourceThemecolor")
+        } else if defaults.color(forKey: "AppThemeColor") == BGNightMode {
+            defaults.set(PrimaryColor, forKey: "AppThemeColor")
+        }
+    }
+
     static var darkPageGradient: LinearGradient {
         LinearGradient(
             colors: [Color(hex: "0A1A38"), Color(hex: "153769"), Color(hex: "0C2149")],
@@ -499,6 +518,7 @@ struct OnboardingLede: View {
 struct OnboardingPhotocard: View {
     let verseText: String
     let reference: String
+    var versionTag: String = ""
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -537,6 +557,12 @@ struct OnboardingPhotocard: View {
                 Text(reference)
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundColor(Color(hex: "5D6E86"))
+                if !versionTag.isEmpty {
+                    Text(versionTag)
+                        .font(.system(size: 15, weight: .semibold, design: .serif))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
             }
             .padding(.horizontal, 22)
             .padding(.top, 30)

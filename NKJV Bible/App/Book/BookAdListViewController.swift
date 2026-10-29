@@ -25,6 +25,7 @@ class BookAdListViewController: UIViewController {
     var book_url: [String] = []
     var storeTitle: [String] = []
     
+    var embeddedInReader = false
     var ImgWidth: CGFloat = 0.0
     var ImgHeight: CGFloat = 0.0
     let Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
@@ -35,6 +36,7 @@ class BookAdListViewController: UIViewController {
         
         self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
         self.BookCatagory!.register(UINib(nibName: "BookCell", bundle: nil), forCellWithReuseIdentifier: "BookCell")
+        applyExploreBooksHeader()
         
         
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
@@ -95,7 +97,47 @@ class BookAdListViewController: UIViewController {
     
     
     
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        applyExploreBooksHeader()
+    }
+
+    /// Header matches the Explore Books screen: title plus the Ads badge.
+    private func applyExploreBooksHeader() {
+        guard let title = BannerVu.subviews.compactMap({ $0 as? UILabel }).first else { return }
+        title.text = "Explore Books"
+        title.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
+        for constraint in BannerVu.constraints where (constraint.firstItem as? UILabel) == title && constraint.firstAttribute == .centerX {
+            constraint.constant = -22
+        }
+
+        let badgeTag = 77120
+        let badge: UILabel
+        if let existing = BannerVu.viewWithTag(badgeTag) as? UILabel {
+            badge = existing
+        } else {
+            let label = UILabel()
+            label.tag = badgeTag
+            label.text = "Ads"
+            label.font = UIFont.systemFont(ofSize: 11, weight: .semibold)
+            label.textColor = .white
+            label.textAlignment = .center
+            label.layer.borderColor = UIColor.white.cgColor
+            label.layer.borderWidth = 1
+            label.layer.cornerRadius = 9
+            label.clipsToBounds = true
+            BannerVu.addSubview(label)
+            badge = label
+        }
+        let badgeHeight: CGFloat = 18
+        badge.frame = CGRect(x: title.frame.maxX + 8, y: title.frame.midY - badgeHeight / 2, width: 36, height: badgeHeight)
+    }
+
     @IBAction func Back(_ sender: Any) {
+        if embeddedInReader, let reader = parent as? ReaderViewController {
+            reader.closeExploreBooks()
+            return
+        }
         navigationController?.popViewController(animated: true)
     }
 

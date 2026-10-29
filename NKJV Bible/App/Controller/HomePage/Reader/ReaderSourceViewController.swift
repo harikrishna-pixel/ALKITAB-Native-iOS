@@ -104,8 +104,8 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
         self.AudioBibleList = BibleContent.sharedInstance.AudioBibleList(selecterBookName: Book , selectedId: ChapterNo-1)
         self.SecondaryBook()
         self.BookFilter = ReloadCoredata()
-        self.BibleCollectionView.backgroundColor = (self.Themecolor == BGNightMode ? self.Themecolor:UIColor.white)
-        self.view.backgroundColor = (self.Themecolor == BGNightMode ? self.Themecolor:UIColor.white)
+        self.BibleCollectionView.backgroundColor = onboardingReaderPageColor(theme: self.Themecolor)
+        self.view.backgroundColor = onboardingReaderPageColor(theme: self.Themecolor)
         self.Pageindex = UserDefaults.standard.integer(forKey: "BookChapter")
         
         BookURL.sharedInstance.bookURL(BookNo: String(self.Pageindex))
@@ -142,8 +142,8 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
         self.AudioBibleList = BibleContent.sharedInstance.AudioBibleList(selecterBookName: Book , selectedId: ChapterNo-1)
         self.SecondaryBook()
         BookFilter = ReloadCoredata()
-        self.BibleCollectionView.backgroundColor = (self.Themecolor == BGNightMode ? self.Themecolor:UIColor.white)
-        self.view.backgroundColor = (self.Themecolor == BGNightMode ? self.Themecolor:UIColor.white)
+        self.BibleCollectionView.backgroundColor = onboardingReaderPageColor(theme: self.Themecolor)
+        self.view.backgroundColor = onboardingReaderPageColor(theme: self.Themecolor)
         Pageindex = UserDefaults.standard.integer(forKey: "BookChapter")
         
         
@@ -196,8 +196,11 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
             cell.setMarkAsRead(self.MarkAsReadArray.contains("\(Book)-\(self.Pageindex)"))
 
               cell.MarkAsReadBtn.addTarget(self, action: #selector(MarkAsReadAction), for: .touchUpInside)
-              cell.SummaryButton.addTarget(self, action: #selector(SummaryAction), for: .touchUpInside)
-              AIUsageLimiter.shared.applyLockBadge(to: cell.SummaryButton, feature: .chapterSummary)
+              cell.setChapterSummaryVisible(usesOldOnboarding)
+              if usesOldOnboarding {
+                  cell.SummaryButton.addTarget(self, action: #selector(SummaryAction), for: .touchUpInside)
+                  AIUsageLimiter.shared.applyLockBadge(to: cell.SummaryButton, feature: .chapterSummary)
+              }
                           
              return cell
 

@@ -53,6 +53,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     private var tableAboveSuggestionsConstraint: NSLayoutConstraint?
     private var tableAboveComposerConstraint: NSLayoutConstraint?
     private var verseSuggestionFooterWidth: CGFloat = 0
+    private var contextHeaderShowsGreeting: Bool?
     var launchContext: AIChatLaunchContext?
 
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
@@ -644,55 +645,59 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
                 titleLabel.centerYAnchor.constraint(equalTo: card.centerYAnchor)
             ])
 
-            let avatar = UIView()
-            avatar.translatesAutoresizingMaskIntoConstraints = false
-            avatar.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.12) : themeColor.withAlphaComponent(0.12)
-            avatar.layer.cornerRadius = 16
-            header.addSubview(avatar)
+            if messages.isEmpty {
+                let avatar = UIView()
+                avatar.translatesAutoresizingMaskIntoConstraints = false
+                avatar.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.12) : themeColor.withAlphaComponent(0.12)
+                avatar.layer.cornerRadius = 16
+                header.addSubview(avatar)
 
-            let spark = UIImageView(image: UIImage(systemName: "sparkles"))
-            spark.translatesAutoresizingMaskIntoConstraints = false
-            spark.tintColor = isNight ? .white : themeColor
-            avatar.addSubview(spark)
+                let spark = UIImageView(image: UIImage(systemName: "sparkles"))
+                spark.translatesAutoresizingMaskIntoConstraints = false
+                spark.tintColor = isNight ? .white : themeColor
+                avatar.addSubview(spark)
 
-            let bubble = UIView()
-            bubble.translatesAutoresizingMaskIntoConstraints = false
-            bubble.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.1) : .white
-            bubble.layer.cornerRadius = 16
-            header.addSubview(bubble)
+                let bubble = UIView()
+                bubble.translatesAutoresizingMaskIntoConstraints = false
+                bubble.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.1) : .white
+                bubble.layer.cornerRadius = 16
+                header.addSubview(bubble)
 
-            let greeting = UILabel()
-            greeting.translatesAutoresizingMaskIntoConstraints = false
-            let name = passageName(from: context.title)
-            greeting.text = usesIndonesian
-                ? "Saya siap membantu Anda memahami \(name).\nApa yang ingin Anda ketahui?"
-                : "I'm ready to help you understand \(name).\nWhat would you like to know?"
-            greeting.numberOfLines = 0
-            greeting.font = UIFont.systemFont(ofSize: 16)
-            greeting.textColor = isNight ? .white : .black
-            bubble.addSubview(greeting)
+                let greeting = UILabel()
+                greeting.translatesAutoresizingMaskIntoConstraints = false
+                let name = passageName(from: context.title)
+                greeting.text = usesIndonesian
+                    ? "Saya siap membantu Anda memahami \(name).\nApa yang ingin Anda ketahui?"
+                    : "I'm ready to help you understand \(name).\nWhat would you like to know?"
+                greeting.numberOfLines = 0
+                greeting.font = UIFont.systemFont(ofSize: 16)
+                greeting.textColor = isNight ? .white : .black
+                bubble.addSubview(greeting)
 
-            NSLayoutConstraint.activate([
-                avatar.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
-                avatar.topAnchor.constraint(equalTo: card.bottomAnchor, constant: 16),
-                avatar.widthAnchor.constraint(equalToConstant: 32),
-                avatar.heightAnchor.constraint(equalToConstant: 32),
+                NSLayoutConstraint.activate([
+                    avatar.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+                    avatar.topAnchor.constraint(equalTo: card.bottomAnchor, constant: 16),
+                    avatar.widthAnchor.constraint(equalToConstant: 32),
+                    avatar.heightAnchor.constraint(equalToConstant: 32),
 
-                spark.centerXAnchor.constraint(equalTo: avatar.centerXAnchor),
-                spark.centerYAnchor.constraint(equalTo: avatar.centerYAnchor),
-                spark.widthAnchor.constraint(equalToConstant: 16),
-                spark.heightAnchor.constraint(equalToConstant: 16),
+                    spark.centerXAnchor.constraint(equalTo: avatar.centerXAnchor),
+                    spark.centerYAnchor.constraint(equalTo: avatar.centerYAnchor),
+                    spark.widthAnchor.constraint(equalToConstant: 16),
+                    spark.heightAnchor.constraint(equalToConstant: 16),
 
-                bubble.leadingAnchor.constraint(equalTo: avatar.trailingAnchor, constant: 8),
-                bubble.topAnchor.constraint(equalTo: avatar.topAnchor),
-                bubble.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -24),
-                bubble.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8),
+                    bubble.leadingAnchor.constraint(equalTo: avatar.trailingAnchor, constant: 8),
+                    bubble.topAnchor.constraint(equalTo: avatar.topAnchor),
+                    bubble.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -24),
+                    bubble.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8),
 
-                greeting.topAnchor.constraint(equalTo: bubble.topAnchor, constant: 12),
-                greeting.leadingAnchor.constraint(equalTo: bubble.leadingAnchor, constant: 14),
-                greeting.trailingAnchor.constraint(equalTo: bubble.trailingAnchor, constant: -14),
-                greeting.bottomAnchor.constraint(equalTo: bubble.bottomAnchor, constant: -12)
-            ])
+                    greeting.topAnchor.constraint(equalTo: bubble.topAnchor, constant: 12),
+                    greeting.leadingAnchor.constraint(equalTo: bubble.leadingAnchor, constant: 14),
+                    greeting.trailingAnchor.constraint(equalTo: bubble.trailingAnchor, constant: -14),
+                    greeting.bottomAnchor.constraint(equalTo: bubble.bottomAnchor, constant: -12)
+                ])
+            } else {
+                card.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8).isActive = true
+            }
         } else {
             let subtitle = UILabel()
             subtitle.translatesAutoresizingMaskIntoConstraints = false

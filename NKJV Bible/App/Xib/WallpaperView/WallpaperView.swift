@@ -84,7 +84,7 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
         
         
         for i in 0 ..< self.VerseArray.count {
-            if BGImageCount >= 11 {
+            if BGImageCount >= verticalVerseImageCount {
                 BGImageCount = 0
             }
             BGImageCount = BGImageCount+1
@@ -226,11 +226,10 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
             self.WallPaperCollection.isPagingEnabled = true
                         
             self.WallpaperCell = self.WallPaperCollection.cellForItem(at: indexPath as IndexPath)  as? WallpaperCollectionViewCell
-            let tapHint = self.WallpaperCell?.TabTxt
-            let tapHintWasHidden = tapHint?.isHidden ?? true
-            tapHint?.isHidden = true
+            let tapHintWasHidden = self.WallpaperCell?.TabTxt.isHidden ?? true
+            self.WallpaperCell?.TabTxt.isHidden = true
             self.saveImage = self.WallpaperCell!.Walpaperframe.asImage()
-            tapHint?.isHidden = tapHintWasHidden
+            self.WallpaperCell?.TabTxt.isHidden = tapHintWasHidden
             
             let url = URL(fileURLWithPath: NSTemporaryDirectory())
             let fileURL = url.appendingPathComponent("\((self.WallpaperCell?.Booktext.text)! as String).png")
@@ -252,11 +251,10 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
         
 //        App_Protocol.delegateReader?.SliderCardPreview(Verese:(self.WallpaperCell?.Versetext.text)! , Book: (self.WallpaperCell?.Booktext.text)!)
         
-        let tapHint = self.WallpaperCell?.TabTxt
-        let tapHintWasHidden = tapHint?.isHidden ?? true
-        tapHint?.isHidden = true
+        let tapHintWasHidden = self.WallpaperCell?.TabTxt.isHidden ?? true
+        self.WallpaperCell?.TabTxt.isHidden = true
         let saveImage = self.WallpaperCell!.Walpaperframe.asImage()
-        tapHint?.isHidden = tapHintWasHidden
+        self.WallpaperCell?.TabTxt.isHidden = tapHintWasHidden
         // First Save this app session only → interstitial, shown after the "saved" toast (never over the permission alert).
         NKJV_Bible.SaveImage.sharedInstance.onNextSaveSuccess = {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
@@ -408,7 +406,7 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
         func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
             self.WallpaperCell = self.WallPaperCollection.cellForItem(at: indexPath)  as? WallpaperCollectionViewCell
 
-            if BGImageCount >= 10 {
+            if BGImageCount >= verticalVerseImageCount {
                 BGImageCount = 0
             }
             

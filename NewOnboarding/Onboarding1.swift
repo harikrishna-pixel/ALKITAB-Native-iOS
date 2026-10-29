@@ -31,6 +31,129 @@ struct Onboarding1: View {
             let heroTop = h * (isCompact ? 0.10 : 0.14)
 
             ZStack {
+                Image("onboard_welcome_bg")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
+                    .edgesIgnoringSafeArea(.all)
+
+                VStack(spacing: 0) {
+                    OnboardingTopBar()
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                        .offset(y: topSafeInset)
+
+                    VStack(spacing: 0) {
+                        Text("\(OnboardingTheme.brandTitle) · PRO")
+                            .font(.system(size: 10.5, weight: .bold))
+                            .tracking(4.2)
+                            .foregroundColor(Color(hex: "7E97BE"))
+
+                        OnboardingSerifTitle(
+                            lines: ["Make Room", "for His Word"],
+                            goldWord: "His Word",
+                            size: titleSize
+                        )
+                        .padding(.top, isCompact ? 8 : 10)
+                        .padding(.horizontal, 24)
+
+                        OnboardingGoldOrnament()
+                            .padding(.top, isCompact ? 8 : 10)
+
+                        Text("No ads. No noise.\nJust you and Scripture.")
+                            .font(.system(size: isCompact ? 14 : 15, weight: .medium))
+                            .lineSpacing(4)
+                            .foregroundColor(Color.white.opacity(0.96))
+                            .multilineTextAlignment(.center)
+                            .shadow(color: Color.black.opacity(0.55), radius: 4, x: 0, y: 1)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .layoutPriority(1)
+                            .padding(.top, isCompact ? 10 : 12)
+                            .padding(.horizontal, 32)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, heroTop)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                    Spacer(minLength: isCompact ? 8 : 16)
+
+                    OnboardingPillarRow(items: [
+                        ("nosign", "No Ads"),
+                        ("headphones", "Listen"),
+                        ("iphone.slash", "Offline")
+                    ])
+                    .padding(.bottom, isCompact ? 12 : 18)
+
+                    OnboardingPrimaryButton(title: "Continue") {
+                        requestTrackingThenContinue()
+                    }
+                    .padding(.horizontal, 26)
+                    .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20) + (isCompact ? 16 : 28))
+                    .background(
+                        NavigationLink(
+                            destination: Onboarding2(),
+                            isActive: $navigateToNext
+                        ) {
+                            EmptyView()
+                        }
+                        .hidden()
+                    )
+                }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+        }
+        .edgesIgnoringSafeArea(.all)
+        .navigationBarHidden(true)
+    }
+
+    /// GeometryReader reports 0 after ignoresSafeArea; use the window so Skip clears the status bar.
+    private var topSafeInset: CGFloat {
+        let window = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+        let inset = window?.safeAreaInsets.top ?? 0
+        return inset > 0 ? inset : 54
+    }
+
+    private func requestTrackingThenContinue() {
+        if #available(iOS 14, *) {
+            ATTrackingManager.requestTrackingAuthorization { _ in
+                DispatchQueue.main.async {
+                    navigateToNext = true
+                }
+            }
+        } else {
+            navigateToNext = true
+        }
+    }
+}
+
+struct BeforeOnboarding1: View {
+    @State private var navigateToNext = false
+
+    var body: some View {
+        if #available(iOS 16.0, *) {
+            NavigationStack {
+                onboardingContent
+            }
+        } else {
+            NavigationView {
+                onboardingContent
+            }
+            .navigationViewStyle(StackNavigationViewStyle())
+        }
+    }
+
+    private var onboardingContent: some View {
+        GeometryReader { geometry in
+            let h = geometry.size.height
+            let isCompact = h < 700
+            let titleSize = min(geometry.size.width * (isCompact ? 0.095 : 0.1), isCompact ? 36 : 41)
+            let heroTop = h * (isCompact ? 0.10 : 0.14)
+
+            ZStack {
                 Image("onboarding1_bg")
                     .resizable()
                     .scaledToFill()
@@ -38,7 +161,6 @@ struct Onboarding1: View {
                     .clipped()
                     .edgesIgnoringSafeArea(.all)
 
-                // Light top-to-bottom wash — keep sunrise + book clear (reference).
                 LinearGradient(
                     colors: [
                         Color.black.opacity(0.28),
@@ -96,7 +218,7 @@ struct Onboarding1: View {
                     .padding(.horizontal, 26)
                     .background(
                         NavigationLink(
-                            destination: Onboarding2(),
+                            destination: BeforeOnboarding2(),
                             isActive: $navigateToNext
                         ) {
                             EmptyView()
@@ -115,7 +237,6 @@ struct Onboarding1: View {
         .navigationBarHidden(true)
     }
 
-    /// GeometryReader reports 0 after ignoresSafeArea; use the window so Skip clears the status bar.
     private var topSafeInset: CGFloat {
         let window = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }

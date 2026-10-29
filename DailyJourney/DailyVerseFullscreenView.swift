@@ -85,7 +85,7 @@ struct DailyVerseFullscreenView: View {
 
                     HStack {
                         Spacer()
-                        ForEach(1..<9, id: \.self) { i in
+                        ForEach(1...verticalVerseImageCount, id: \.self) { i in
                             Circle()
                                 .fill(verse.imageName == "S\(i).jpg" ? Color.white : Color.white.opacity(0.35))
                                 .frame(width: 7, height: 7)

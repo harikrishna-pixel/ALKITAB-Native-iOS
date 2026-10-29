@@ -128,7 +128,7 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
         }
         
         
-        self.bibleName.text = APPNAME_SPLASH
+        self.bibleName.text = todaysVerseAppName()
         self.bibleName.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
         
         
@@ -682,7 +682,7 @@ extension IMageEditingPageVc {
         if self.ColorList {
             return self.BGColor.count
         } else {
-            return 16
+            return verticalVerseImageCount
         }
         
     }

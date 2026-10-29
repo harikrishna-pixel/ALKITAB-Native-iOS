@@ -8,6 +8,8 @@ import UIKit
 
 struct StreakCalendarView: View {
     @ObservedObject var store: DailyJourneyStore
+    /// Dismisses the calendar (and the streak screen, when it presented the calendar) back to Home.
+    var onReturnHome: () -> Void = {}
     @State private var displayedMonth: Date = Date()
     @State private var reviewRecord: DailyJourneyDayRecord?
 
@@ -64,7 +66,10 @@ struct StreakCalendarView: View {
         .navigationBarTitleDisplayMode(.inline)
         .background(
             NavigationLink(
-                destination: CompletedStreakFlowView(record: reviewRecord ?? DailyJourneyDayRecord()),
+                destination: CompletedStreakFlowView(
+                    record: reviewRecord ?? DailyJourneyDayRecord(),
+                    onReturnHome: returnHomeFromCompletedFlow
+                ),
                 isActive: Binding(
                     get: { reviewRecord != nil },
                     set: { if !$0 { reviewRecord = nil } }
@@ -179,6 +184,14 @@ struct StreakCalendarView: View {
         displayedMonth = next
     }
 
+    private func returnHomeFromCompletedFlow() {
+        var transaction = Transaction(animation: nil)
+        withTransaction(transaction) {
+            reviewRecord = nil
+        }
+        onReturnHome()
+    }
+
     private var monthDayItems: [CalendarDayItem] {
         guard
             let monthInterval = calendar.dateInterval(of: .month, for: displayedMonth),
@@ -233,11 +246,12 @@ private struct CompletedStreakFlowView: View {
     @Environment(\.presentationMode) private var presentationMode
     @State private var step = 0
 
+    var onReturnHome: () -> Void
     private var verse: DailyVerseSnapshot {
         DailyVerseSnapshot(
             reference: record.verseReference,
             text: record.verseText,
-            imageName: record.verseImageName.isEmpty ? HomeVerseImage : record.verseImageName
+            imageName: normalizedVerticalVerseImageName(record.verseImageName.isEmpty ? HomeVerseImage : record.verseImageName)
         )
     }
 
@@ -265,7 +279,7 @@ private struct CompletedStreakFlowView: View {
                     isLockedReview: true,
                     lockedText: record.reflectionText,
                     lockedOption: record.reflectionOptionIndex,
-                    onDone: { presentationMode.wrappedValue.dismiss() }
+                    onDone: onReturnHome
                 )
             }
         }
@@ -292,7 +306,7 @@ private struct CompletedStreakVerseView: View {
         GeometryReader { geometry in
             ZStack {
                 Group {
-                    if let image = UIImage(named: record.verseImageName), !record.verseImageName.isEmpty {
+                    if let image = UIImage(named: normalizedVerticalVerseImageName(record.verseImageName)), !record.verseImageName.isEmpty {
                         Image(uiImage: image)
                             .resizable()
                             .scaledToFill()

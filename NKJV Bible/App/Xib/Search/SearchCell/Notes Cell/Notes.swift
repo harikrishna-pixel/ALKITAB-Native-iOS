@@ -231,7 +231,7 @@ final class ExplanationLibraryCell: UICollectionViewCell {
         verseBottomCollapsedConstraint = verseBottomCollapsed
         let dividerBelowVerse = divider.topAnchor.constraint(equalTo: verseLabel.bottomAnchor, constant: 12)
         dividerBelowVerseConstraint = dividerBelowVerse
-        let dividerBelowHeader = divider.topAnchor.constraint(equalTo: chevronCircle.bottomAnchor, constant: 12)
+        let dividerBelowHeader = divider.topAnchor.constraint(equalTo: menuCircle.bottomAnchor, constant: 12)
         dividerBelowHeaderConstraint = dividerBelowHeader
         dividerBelowVerse.isActive = true
 
@@ -241,8 +241,13 @@ final class ExplanationLibraryCell: UICollectionViewCell {
             cardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
             cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
 
-            chevronCircle.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
-            chevronCircle.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -12),
+            menuCircle.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
+            menuCircle.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -12),
+            menuCircle.widthAnchor.constraint(equalToConstant: Self.actionCircleSize),
+            menuCircle.heightAnchor.constraint(equalToConstant: Self.actionCircleSize),
+
+            chevronCircle.centerYAnchor.constraint(equalTo: menuCircle.centerYAnchor),
+            chevronCircle.trailingAnchor.constraint(equalTo: menuCircle.leadingAnchor, constant: -8),
             chevronCircle.widthAnchor.constraint(equalToConstant: Self.actionCircleSize),
             chevronCircle.heightAnchor.constraint(equalToConstant: Self.actionCircleSize),
 
@@ -250,11 +255,6 @@ final class ExplanationLibraryCell: UICollectionViewCell {
             chevronImageView.centerYAnchor.constraint(equalTo: chevronCircle.centerYAnchor),
             chevronImageView.widthAnchor.constraint(equalToConstant: 20),
             chevronImageView.heightAnchor.constraint(equalToConstant: 20),
-
-            menuCircle.centerYAnchor.constraint(equalTo: chevronCircle.centerYAnchor),
-            menuCircle.trailingAnchor.constraint(equalTo: chevronCircle.leadingAnchor, constant: -8),
-            menuCircle.widthAnchor.constraint(equalToConstant: Self.actionCircleSize),
-            menuCircle.heightAnchor.constraint(equalToConstant: Self.actionCircleSize),
 
             menuImageView.centerXAnchor.constraint(equalTo: menuCircle.centerXAnchor),
             menuImageView.centerYAnchor.constraint(equalTo: menuCircle.centerYAnchor),
@@ -266,12 +266,12 @@ final class ExplanationLibraryCell: UICollectionViewCell {
             menuBtn.widthAnchor.constraint(equalToConstant: Self.actionHitSize),
             menuBtn.heightAnchor.constraint(equalToConstant: Self.actionHitSize),
 
-            referenceLabel.centerYAnchor.constraint(equalTo: chevronCircle.centerYAnchor),
+            referenceLabel.centerYAnchor.constraint(equalTo: menuCircle.centerYAnchor),
             referenceLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 14),
-            referenceLabel.trailingAnchor.constraint(equalTo: menuCircle.leadingAnchor, constant: -8),
+            referenceLabel.trailingAnchor.constraint(equalTo: chevronCircle.leadingAnchor, constant: -8),
             referenceLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 22),
 
-            verseLabel.topAnchor.constraint(equalTo: chevronCircle.bottomAnchor, constant: 10),
+            verseLabel.topAnchor.constraint(equalTo: menuCircle.bottomAnchor, constant: 10),
             verseLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 14),
             verseLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
 

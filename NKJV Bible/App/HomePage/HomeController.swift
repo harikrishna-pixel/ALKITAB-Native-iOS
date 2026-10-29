@@ -530,7 +530,7 @@ extension HomeController {
             if collectionView == QuizAnswerCV {
                 return self.Blank.count
             } else {
-                return 16
+                return verticalVerseImageCount
             }
             
         }

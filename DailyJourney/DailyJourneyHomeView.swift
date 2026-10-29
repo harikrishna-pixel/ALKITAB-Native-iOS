@@ -122,7 +122,7 @@ struct DailyJourneyHomeView: View {
         }
         .sheet(isPresented: $showCalendar) {
             NavigationView {
-                StreakCalendarView(store: store)
+                StreakCalendarView(store: store, onReturnHome: { showCalendar = false })
                     .toolbar {
                         ToolbarItem(placement: .navigationBarLeading) {
                             Button(action: { showCalendar = false }) {
@@ -138,7 +138,8 @@ struct DailyJourneyHomeView: View {
         .onAppear {
             store.reload()
             var loaded = DailyVerseSnapshot.loadCurrent()
-            loaded.imageName = HomeVerseImage
+            loaded.imageName = normalizedVerticalVerseImageName(HomeVerseImage)
+            HomeVerseImage = loaded.imageName
             verse = loaded
             continueReading = ContinueReadingSnapshot.loadCurrent()
             isVerseImageSaved = false
@@ -332,7 +333,7 @@ struct DailyJourneyHomeView: View {
 
             HStack {
                 Spacer()
-                ForEach(1..<9, id: \.self) { i in
+                ForEach(1...verticalVerseImageCount, id: \.self) { i in
                     Circle()
                         .fill(verse.imageName == "S\(i).jpg" ? Color(hex: "1C46B2") : Color.black.opacity(0.15))
                         .frame(width: 7, height: 7)

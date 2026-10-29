@@ -382,14 +382,16 @@ final class DailyJourneyHomeViewController: UIViewController {
     private func renderVerseCardImage(_ verse: DailyVerseSnapshot) -> UIImage {
         // Match classic HomeController VerseImageVu: full wallpaper + dim overlay +
         // centered verse text (not bottom-pinned), so long verses still share cleanly.
-        let side: CGFloat = 1080
-        let container = UIView(frame: CGRect(x: 0, y: 0, width: side, height: side))
+        let width: CGFloat = 1080
+        let height: CGFloat = 1920
+        let container = UIView(frame: CGRect(x: 0, y: 0, width: width, height: height))
         container.backgroundColor = UIColor(red: 0.11, green: 0.18, blue: 0.42, alpha: 1)
         
         let bgView = UIImageView(frame: container.bounds)
         bgView.contentMode = .scaleAspectFill
         bgView.clipsToBounds = true
-        bgView.image = UIImage(named: verse.imageName) ?? UIImage(named: HomeVerseImage)
+        let imageName = normalizedVerticalVerseImageName(verse.imageName)
+        bgView.image = UIImage(named: imageName) ?? UIImage(named: HomeVerseImage)
         container.addSubview(bgView)
         
         let dimOverlay = UIView(frame: container.bounds)
@@ -398,8 +400,8 @@ final class DailyJourneyHomeViewController: UIViewController {
         container.addSubview(dimOverlay)
         
         let padding: CGFloat = 72
-        let contentWidth = side - padding * 2
-        let maxTextHeight = side * 0.55
+        let contentWidth = width - padding * 2
+        let maxTextHeight = height * 0.55
         
         let textLabel = UILabel()
         textLabel.text = verse.text
@@ -426,7 +428,7 @@ final class DailyJourneyHomeViewController: UIViewController {
         textHeight = min(textHeight, maxTextHeight)
         let refHeight = ceil(refLabel.sizeThatFits(CGSize(width: contentWidth, height: 120)).height)
         let blockHeight = textHeight + 28 + refHeight
-        let blockTop = (side - blockHeight) / 2
+        let blockTop = (height - blockHeight) / 2
         
         textLabel.frame = CGRect(x: padding, y: blockTop, width: contentWidth, height: textHeight)
         refLabel.frame = CGRect(x: padding, y: blockTop + textHeight + 28, width: contentWidth, height: refHeight)

@@ -255,7 +255,7 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
         BGImage.removeAll()
         
         for _ in 0 ..< self.VerseArray.count {
-            if BGImageCount >= 10 {
+            if BGImageCount >= verticalVerseImageCount {
                 BGImageCount = 0
             }
             BGImageCount = BGImageCount+1
@@ -341,7 +341,7 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
         let indexPaths = NSIndexPath(row: self.SelectedPath, section: 0)
         self.CardCell = self.CardCollectionCell.cellForItem(at: indexPaths as IndexPath)  as? SlideCardCell
         
-        if BGImageCount >= 10 {
+        if BGImageCount >= verticalVerseImageCount {
             BGImageCount = 0
         }
         
@@ -829,7 +829,7 @@ extension SlideCardVC {
                 self.CardCell!.Book.text = "\(self.BookArrayTitle):\(indexPath.row+1)"
                 
                 var B_Title = "\(BookName)-\(ChaterNumber):\(indexPath.row+1)"
-                self.CardCell!.WaterMarkLbl.text = APPNAME_SPLASH
+                self.CardCell!.WaterMarkLbl.text = todaysVerseAppName()
                 
                 
                 DispatchQueue.main.async {

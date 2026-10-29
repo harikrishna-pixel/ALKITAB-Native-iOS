@@ -208,13 +208,12 @@ struct ReflectionView: View {
     }
 
     private var reflectionButtonTitle: String {
-        if isLockedReview { return "Done" }
-        if wasAlreadyCompleted { return "Today's Journey Completed" }
+        if isLockedReview || wasAlreadyCompleted { return "Today's Journey Completed" }
         return "Save Reflection"
     }
 
     private var reflectionButtonColor: Color {
-        wasAlreadyCompleted && !isLockedReview ? Color(hex: "1C7A3D") : Color(hex: "1C46B2")
+        isLockedReview || wasAlreadyCompleted ? Color(hex: "1C7A3D") : Color(hex: "1C46B2")
     }
 
     private var canSaveReflection: Bool {

@@ -687,7 +687,7 @@ extension AppDelegate : UNUserNotificationCenterDelegate {
 extension AppDelegate {
     
     
-    func onRegisterPushNotification() {
+    func onRegisterPushNotification(clearSwitchesIfDenied: Bool = true) {
                  
         Text_List.sharedInstance.AlertList()
         self.AlertTitle  = Text_List.sharedInstance.AlertTitle
@@ -706,7 +706,7 @@ extension AppDelegate {
                 print(success)
               
                 
-            } else {
+            } else if clearSwitchesIfDenied {
                 UserDefaults.standard.setValue(false, forKey: "Shift1ON")
                 UserDefaults.standard.setValue(false, forKey: "Shift2ON")
                 UserDefaults.standard.setValue(false, forKey: "Shift3ON")

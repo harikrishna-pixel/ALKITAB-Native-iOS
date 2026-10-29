@@ -53,6 +53,13 @@ let APP_TYPE = "1"     // BIBLE WITH SINGLE BOOK
 //let APP_TYPE = "2"       // BIBLE WITH DUEL BOOK
 //let APP_TYPE = "3"     // BIBLE WITH MULTI BOOK
 
+// "2" = new onboarding. Get Explanation and AI Chat stay hidden.
+// "1" = the earlier onboarding, then the old paywall. Get Explanation and AI Chat stay shown.
+let ONBOARDING_OPTION = "2"
+//let ONBOARDING_OPTION = "1"
+
+var usesOldOnboarding: Bool { ONBOARDING_OPTION == "1" }
+
 
 
 // MARK: - FALLBACK CONSTANTS (Used when API fails to load)

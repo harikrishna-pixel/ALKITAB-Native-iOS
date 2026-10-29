@@ -63,7 +63,10 @@ final class ReaderMoreSheet: UIView {
         let tabFrame = tab.convert(tab.bounds, to: self)
         dimView.frame = CGRect(x: 0, y: 0, width: bounds.width, height: max(0, tabFrame.minY))
         let width = bounds.width
-        let height: CGFloat = APP_TYPE == "1" ? 315 : 235
+        var height: CGFloat = APP_TYPE == "1" ? 315 : 235
+        if !usesOldOnboarding {
+            height -= 80
+        }
         sheetView.bounds.size = CGSize(width: width, height: height)
         sheetView.center = CGPoint(x: width / 2, y: tabFrame.minY - height / 2)
         sheetView.layoutIfNeeded()
@@ -102,9 +105,11 @@ final class ReaderMoreSheet: UIView {
         stack.spacing = 12
         // Profile commented out.
         // stack.addArrangedSubview(makeRow(title: "Profile", symbol: "person.fill", accent: accent, night: night, action: #selector(profileTapped)))
-        stack.addArrangedSubview(makeRow(title: "Bible Companion", symbol: "bubble.left.and.bubble.right.fill", accent: accent, night: night, action: #selector(companionTapped)))
+        if usesOldOnboarding {
+            stack.addArrangedSubview(makeRow(title: "Bible Companion", symbol: "bubble.left.and.bubble.right.fill", accent: accent, night: night, action: #selector(companionTapped)))
+        }
         if APP_TYPE == "1" {
-            stack.addArrangedSubview(makeRow(title: "Recent Arrivals", symbol: "book.fill", accent: accent, night: night, action: #selector(recentArrivalsTapped)))
+            stack.addArrangedSubview(makeRow(title: "Explore Our Bible Books", symbol: "book.fill", accent: accent, night: night, action: #selector(recentArrivalsTapped)))
         }
         stack.addArrangedSubview(makeRow(title: "Settings", symbol: "gearshape.fill", accent: accent, night: night, action: #selector(settingsTapped)))
 

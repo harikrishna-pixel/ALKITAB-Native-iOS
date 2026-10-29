@@ -168,6 +168,14 @@ let SUBSCRIPTION_GETRECREPT = "https://bibleoffice.com/BibleReplications/dev/v1/
 
 let PrimaryColor:UIColor = UIColor(red: 28.0 / 255.0, green: 70.0 / 255.0, blue: 178.0 / 255.0, alpha: 1.0)//#1c46b2
 let BGNightMode:UIColor = UIColor(red: 52.0 / 255.0, green: 57.0 / 255.0, blue: 63.0 / 255.0, alpha: 1.0)
+let BGSepiaPage:UIColor = UIColor(red: 242.0 / 255.0, green: 230.0 / 255.0, blue: 204.0 / 255.0, alpha: 1.0)
+/// Sepia from onboarding. Dark enough for the same white header text the other theme colours use.
+let SepiaThemeColor:UIColor = UIColor(red: 139.0 / 255.0, green: 94.0 / 255.0, blue: 60.0 / 255.0, alpha: 1.0)
+
+func onboardingReaderPageColor(theme: UIColor?) -> UIColor {
+    if theme == BGNightMode { return BGNightMode }
+    return UIColor.white
+}
 let DefaultYellow:UIColor = UIColor(red: 255.0 / 255.0, green: 215.0 / 255.0, blue: 0.0 / 255.0, alpha: 1.0)
 let DarkModeColor:UIColor = UIColor(red: 45.0 / 255.0, green: 45.0 / 255.0, blue: 48.0 / 255.0, alpha: 1.0)
 let SpeechColor:UIColor = UIColor(red: 223.0 / 255.0, green: 255.0 / 255.0, blue: 0.0 / 255.0, alpha: 1.0)
@@ -286,7 +294,28 @@ var IRONSOURCE_ENABLE = true
 var UNITY_ENABLE = true
 
 
-var HomeVerseImage = "S\(Int.random(in: 1..<9)).jpg"
+/// Portrait verse wallpapers. S10 and above are square and are not used on verse images.
+let verticalVerseImageCount = 9
+
+func verticalVerseImageName(at index: Int) -> String {
+    let count = verticalVerseImageCount
+    let wrapped = ((index - 1) % count + count) % count + 1
+    return "S\(wrapped).jpg"
+}
+
+func normalizedVerticalVerseImageName(_ name: String) -> String {
+    let digits = name
+        .replacingOccurrences(of: "S", with: "")
+        .replacingOccurrences(of: ".jpg", with: "")
+        .replacingOccurrences(of: ".JPG", with: "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    if let value = Int(digits), (1...verticalVerseImageCount).contains(value) {
+        return "S\(value).jpg"
+    }
+    return verticalVerseImageName(at: 1)
+}
+
+var HomeVerseImage = verticalVerseImageName(at: Int.random(in: 1...verticalVerseImageCount))
 
 // MARK: - AD ID'S
 

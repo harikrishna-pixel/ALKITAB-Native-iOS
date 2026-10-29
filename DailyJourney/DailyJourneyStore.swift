@@ -369,23 +369,23 @@ struct DailyVerseSnapshot {
         defaults.set(text, forKey: shownVerseTextKey)
     }
 
-    /// Cycles wallpaper the same way as HomeController wallpaper list (S1…S8).
+    /// Cycles the portrait wallpapers only (S1…S9).
     mutating func cycleWallpaper(backward: Bool = false) {
         var index = 1
         let digits = imageName
             .replacingOccurrences(of: "S", with: "")
             .replacingOccurrences(of: ".jpg", with: "")
             .replacingOccurrences(of: ".JPG", with: "")
-        if let value = Int(digits) {
+        if let value = Int(digits), (1...verticalVerseImageCount).contains(value) {
             index = value
         }
         let next: Int
         if backward {
-            next = index <= 1 ? 8 : index - 1
+            next = index <= 1 ? verticalVerseImageCount : index - 1
         } else {
-            next = index >= 8 ? 1 : index + 1
+            next = index >= verticalVerseImageCount ? 1 : index + 1
         }
-        let name = "S\(next).jpg"
+        let name = verticalVerseImageName(at: next)
         imageName = name
         HomeVerseImage = name
     }

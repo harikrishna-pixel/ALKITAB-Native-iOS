@@ -322,6 +322,31 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
             self.halfBlockVu.isHidden = true
             self.LifeLine = 3
         }
+        showPurchasedQuizNoteIfNeeded()
+    }
+
+    /// Paid users see the reward-ad note once, the first time a quiz question is on screen.
+    private func showPurchasedQuizNoteIfNeeded() {
+        guard !UserDefaults.standard.bool(forKey: "PayNote") else { return }
+        guard hasPurchasedQuizAccess() else { return }
+        PayNote.isHidden = false
+        view.bringSubviewToFront(PayNote)
+    }
+
+    private func hasPurchasedQuizAccess() -> Bool {
+        if PaymentHistory.sharedInstance.hasActivePurchase() { return true }
+        if LegacyPaidAppService.shared.isLegacyPaidAppUser { return true }
+        if PaymentHistory.sharedInstance.paymentInfo() == false && ADS_TYPE != 0 { return true }
+        let paymentId = UserDefaults.standard.string(forKey: "PaymentId") ?? ""
+        let lower = paymentId.lowercased()
+        if !lower.isEmpty && lower.contains("lifetime") { return true }
+        let ids = [
+            SUBSCRIPTIONID_LifeTime,
+            SUBSCRIPTIONID_ExitOffer,
+            FallbackIAPConstants.lifetimeProductID,
+            FallbackIAPConstants.exitOfferProductID
+        ]
+        return ids.contains { !$0.isEmpty && $0.caseInsensitiveCompare(paymentId) == .orderedSame }
     }
     
 
@@ -399,12 +424,7 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
         }
         
         presentLoadedQuizQuestion()
-        
-                
-        
-        if PaymentHistory.sharedInstance.paymentInfo() == false && UserDefaults.standard.bool(forKey: "PayNote") == false {
-            self.PayNote.isHidden = false
-        }
+        showPurchasedQuizNoteIfNeeded()
         
         
         

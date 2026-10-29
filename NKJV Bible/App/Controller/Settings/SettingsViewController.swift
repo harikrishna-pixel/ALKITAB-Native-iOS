@@ -103,6 +103,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   }
 
   func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        if section == 2 && !usesOldOnboarding { return 0 }
         return 28
   }
 
@@ -117,6 +118,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   }
 
   func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        if section == 2 && !usesOldOnboarding {
+            return UIView()
+        }
         let titles = ["NOTIFICATION", "FONT & THEME", "FEATURES", "ABOUT & SUPPORT"]
         let header = UIView()
         header.backgroundColor = .clear
@@ -141,7 +145,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         switch section {
         case 0: return 1
         case 1: return 2
-        case 2: return 1
+        case 2: return usesOldOnboarding ? 1 : 0
         case 3: return 6
         default: return 0
         }

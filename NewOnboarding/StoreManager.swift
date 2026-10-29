@@ -343,6 +343,21 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     
     // MARK: - API Calls
     
+    /// Fetches the lifetime price again after the paywall "Try Again" button.
+    func retryLifetimePrice() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            isLoading3 = false
+            if price3.isEmpty {
+                hasProductLoadError = true
+                productLoadErrorMessage = "No internet connection. Please check your connection and try again."
+            }
+            return
+        }
+        productIDIndex = 2
+        hasProductLoadError = false
+        callAPI(index: 2)
+    }
+
     func callAPI(index: Int) {
         print("📞 [StoreManager] callAPI(index: \(index))")
         guard index < productIDs.count else {

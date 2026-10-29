@@ -50,8 +50,18 @@ class MyLibraryViewController: UIViewController, MyLibraryDelegate, UIGestureRec
     var ExplanationsArray:Array<String> = []
     
     
-    private let titles = ["BookMark", "Highlights", "Underline", "Notes", "Explanations", "Images"]
-    private let titlesimg = ["bookmark-gray",  "Hightlight", "underline",  "note-gray",  "ExplainVerse",  "image-gray" ]
+    private var titles: [String] {
+        var items = ["BookMark", "Highlights", "Underline", "Notes"]
+        if usesOldOnboarding { items.append("Explanations") }
+        items.append("Images")
+        return items
+    }
+    private var titlesimg: [String] {
+        var items = ["bookmark-gray", "Hightlight", "underline", "note-gray"]
+        if usesOldOnboarding { items.append("ExplainVerse") }
+        items.append("image-gray")
+        return items
+    }
     
     
     
@@ -109,7 +119,7 @@ class MyLibraryViewController: UIViewController, MyLibraryDelegate, UIGestureRec
     
     @objc func handleSwipe(_ gestureRecognizer: UISwipeGestureRecognizer) {
             if gestureRecognizer.direction == .left {
-                if self.selectedItem < 5 {
+                if self.selectedItem < self.titles.count - 1 {
                     self.selectedItem = self.selectedItem+1
                 }
             } else if gestureRecognizer.direction == .right {
@@ -227,36 +237,36 @@ class MyLibraryViewController: UIViewController, MyLibraryDelegate, UIGestureRec
         self.SearchCollectionMVC = SearchCollectionMainView.fromNib(named: "SearchCollectionMainView")
         
         
-        switch self.selectedItem {
-        case 0:
+        switch self.titles[self.selectedItem] {
+        case "BookMark":
             self.CellTitle = "BookMark"
             self.SearchCollectionMVC!.corevalue = self.BookmarkArray
             self.SearchCollectionMVC!.coreTitle = self.CellTitle
 //            self.CollecrtionNibinit(Sublist: self.BookmarkArray)
 
-        case 1:
+        case "Highlights":
             self.CellTitle = "Highlites"
             self.SearchCollectionMVC!.corevalue = self.ColorArray
             self.SearchCollectionMVC!.coreTitle = self.CellTitle
 //            self.CollecrtionNibinit(Sublist: self.ColorArray)
             
-        case 2:
+        case "Underline":
             self.CellTitle = "Underline"
             self.SearchCollectionMVC!.corevalue = self.UnderlineArray
             self.SearchCollectionMVC!.coreTitle = self.CellTitle
 //            self.CollecrtionNibinit(Sublist: self.UnderlineArray)
-        case 3:
+        case "Notes":
             self.CellTitle = "Notes"
             self.SearchCollectionMVC!.corevalue = self.NotesArray
             self.SearchCollectionMVC!.coreTitle = self.CellTitle
 //            self.CollecrtionNibinit(Sublist: self.NotesArray)
             
-        case 4:
+        case "Explanations":
             self.CellTitle = "Explanations"
             self.SearchCollectionMVC!.corevalue = self.ExplanationsArray
             self.SearchCollectionMVC!.coreTitle = self.CellTitle
 
-        case 5:
+        case "Images":
             self.CellTitle = "Notes"
             self.SearchCollectionMVC!.coreTitle = self.CellTitle
             self.ImageGalleryView.isHidden = false

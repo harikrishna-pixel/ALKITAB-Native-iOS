@@ -231,11 +231,13 @@ final class VerseExplanationView: UIView {
         footerContainer.addSubview(footerDivider)
 
         let copyAction = makeActionButton(title: "Copy", imageName: "CopyNewImg", action: #selector(copyTapped))
-        let readAction = makeActionButton(title: "Ask", imageName: "read", systemName: "bubble.left", action: #selector(askTapped))
         let shareAction = makeActionButton(title: "Share", imageName: "shareVerse", action: #selector(shareTapped))
         let saveAction = makeActionButton(title: "Save", imageName: "save", action: #selector(saveTapped))
         actionStack.addArrangedSubview(copyAction)
-        actionStack.addArrangedSubview(readAction)
+        if usesOldOnboarding {
+            let readAction = makeActionButton(title: "Ask", imageName: "read", systemName: "bubble.left", action: #selector(askTapped))
+            actionStack.addArrangedSubview(readAction)
+        }
         actionStack.addArrangedSubview(shareAction)
         actionStack.addArrangedSubview(saveAction)
         footerContainer.addSubview(actionStack)

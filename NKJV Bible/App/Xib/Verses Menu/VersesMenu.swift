@@ -93,7 +93,9 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        setupGetExplanationButton()
+        if usesOldOnboarding {
+            setupGetExplanationButton()
+        }
         ColorCC.delegate = self
         ColorCC.dataSource = self
         ColorCC.register(UINib(nibName: "ColorCell", bundle: nil), forCellWithReuseIdentifier: "ColorCell")
@@ -119,7 +121,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         
         self.BookNameTxt.text =  "\(BookName)-\(Pageindex-1):\(VersePosition)"
         
-        FrameHeight.constant = (isIpad ? 368 : 348) + Self.getExplanationExtraHeight
+        FrameHeight.constant = (isIpad ? 368 : 348) + (usesOldOnboarding ? Self.getExplanationExtraHeight : 0)
         getExplanationButton?.backgroundColor = Themecolor
         
         

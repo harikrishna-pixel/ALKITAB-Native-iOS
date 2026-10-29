@@ -197,4 +197,83 @@ enum OnboardingNotificationScheduler {
         )
         UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
     }
+
+    /// Daily verse 7:00 AM is Morning. Evening nudge 8:00 PM is Night.
+    /// A reminder left off only turns that Settings switch off. Permission is asked when one is on.
+    static func applyChosenReminders(morning: Bool, evening: Bool, completion: (() -> Void)? = nil) {
+        let defaults = UserDefaults.standard
+        defaults.set(true, forKey: PrefKey.configured)
+        defaults.set(morning, forKey: PrefKey.dailyVerse)
+        defaults.set(evening, forKey: PrefKey.journey)
+        defaults.set(false, forKey: PrefKey.memory)
+        defaults.set(false, forKey: PrefKey.prayer)
+        let summary: String
+        if morning && evening {
+            summary = "Reminders: Daily verse · 7:00 AM + Evening nudge · 8:00 PM"
+        } else if morning {
+            summary = "Reminders: Daily verse · 7:00 AM"
+        } else if evening {
+            summary = "Reminders: Evening nudge · 8:00 PM"
+        } else {
+            summary = "Reminders off · turn on any time"
+        }
+        defaults.set(summary, forKey: OnboardingTheme.reminderSummaryKey)
+        defaults.set(morning, forKey: "Shift1ON")
+        defaults.set(evening, forKey: "Shift3ON")
+        if morning { defaults.set("07:00", forKey: "Shift 1") }
+        if evening { defaults.set("20:00", forKey: "Shift 3") }
+        let enabledCount = ["Shift1ON", "Shift2ON", "Shift3ON", "Shift4ON"].filter { defaults.bool(forKey: $0) }.count
+        defaults.set(enabledCount, forKey: "PerDay")
+        defaults.set(enabledCount > 0 ? "1" : "0", forKey: "NotifiStatue")
+        guard morning || evening else {
+            completion?()
+            return
+        }
+        let center = UNUserNotificationCenter.current()
+        center.getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                switch settings.authorizationStatus {
+                case .notDetermined:
+                    center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
+                        DispatchQueue.main.async {
+                            if granted {
+                                Self.scheduleChosenReminders()
+                            }
+                            completion?()
+                        }
+                    }
+                case .denied:
+                    Self.showNotificationPermissionAlert(completion: completion)
+                default:
+                    Self.scheduleChosenReminders()
+                    completion?()
+                }
+            }
+        }
+    }
+
+    private static func scheduleChosenReminders() {
+        UIApplication.shared.registerForRemoteNotifications()
+        (UIApplication.shared.delegate as? AppDelegate)?.onRegisterPushNotification(clearSwitchesIfDenied: false)
+    }
+
+    private static func showNotificationPermissionAlert(completion: (() -> Void)?) {
+        let alert = UIAlertController(
+            title: "Alert!",
+            message: "Turn on Notifications to Stay Connected.\nTap on Settings -> Bible app  -> Notifications",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Ok", style: .default) { _ in
+            completion?()
+        })
+        guard let root = UIApplication.shared.keyWindow?.rootViewController else {
+            completion?()
+            return
+        }
+        var top = root
+        while let presented = top.presentedViewController {
+            top = presented
+        }
+        top.present(alert, animated: true)
+    }
 }

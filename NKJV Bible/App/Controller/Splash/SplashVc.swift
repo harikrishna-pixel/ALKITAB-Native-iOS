@@ -252,9 +252,13 @@ class SplashVc: UIViewController, SplashDelegate {
 
     private func presentOnboarding() {
         DispatchQueue.main.async {
-            let onboardingView = Onboarding1()
-            let hostingController = UIHostingController(rootView: onboardingView)
-            self.navigationController?.pushViewController(hostingController, animated: true)
+            if usesOldOnboarding {
+                let hostingController = UIHostingController(rootView: BeforeOnboarding1())
+                self.navigationController?.pushViewController(hostingController, animated: true)
+            } else {
+                let hostingController = UIHostingController(rootView: Onboarding1())
+                self.navigationController?.pushViewController(hostingController, animated: true)
+            }
         }
     }
     

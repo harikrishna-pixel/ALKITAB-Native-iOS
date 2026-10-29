@@ -160,7 +160,7 @@ extension NotificationListVC {
             UserDefaults.standard.setValue(false, forKey: "Shift1ON")
             UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "PerDay")-1, forKey: "PerDay")
         }
-        self.NotificationReload()
+        self.NotificationReload(askForPermission: sender.isOn)
     }
     
     
@@ -179,7 +179,7 @@ extension NotificationListVC {
             UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "PerDay")-1, forKey: "PerDay")
         }
         
-        self.NotificationReload()
+        self.NotificationReload(askForPermission: sender.isOn)
     }
     
     @objc func Shift3_Value(sender:UISwitch!) {
@@ -196,7 +196,7 @@ extension NotificationListVC {
             UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "PerDay")-1, forKey: "PerDay")
         }
         
-        self.NotificationReload()
+        self.NotificationReload(askForPermission: sender.isOn)
     }
     
     
@@ -215,37 +215,45 @@ extension NotificationListVC {
             UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "PerDay")-1, forKey: "PerDay")
         }
         
-        self.NotificationReload()
+        self.NotificationReload(askForPermission: sender.isOn)
     }
     
     
     
     
-    func NotificationReload() {
-        if UserDefaults.standard.bool(forKey: "Shift1ON") || UserDefaults.standard.bool(forKey: "Shift2ON") || UserDefaults.standard.bool(forKey: "Shift3ON") || UserDefaults.standard.bool(forKey: "Shift4ON") {
-            UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-            AppDelegate().onRegisterPushNotification()
-        }
-        
-        if !UserDefaults.standard.bool(forKey: "Shift1ON") && !UserDefaults.standard.bool(forKey: "Shift2ON") && !UserDefaults.standard.bool(forKey: "Shift3ON") && !UserDefaults.standard.bool(forKey: "Shift4ON") {
+    func NotificationReload(askForPermission: Bool) {
+        let anyOn = UserDefaults.standard.bool(forKey: "Shift1ON") || UserDefaults.standard.bool(forKey: "Shift2ON") || UserDefaults.standard.bool(forKey: "Shift3ON") || UserDefaults.standard.bool(forKey: "Shift4ON")
+        if !anyOn {
             UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
         }
         self.SettingsTable.reloadData()
-        
-        
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { success, error in
-            if success {
-                
-            } else {
-                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.5) {
-                    let alert = UIAlertController(title: "Alert!", message: "Turn on Notifications to Stay Connected.\nTap on Settings -> Bible app  -> Notifications", preferredStyle: UIAlertController.Style.alert)
-                    alert.addAction(UIAlertAction(title: "Ok", style: UIAlertAction.Style.default, handler: nil))
-                    self.present(alert, animated: true, completion: nil)
-                    
+
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let allowed: Bool
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                allowed = true
+            default:
+                allowed = false
+            }
+            DispatchQueue.main.async {
+                if allowed && anyOn {
+                    AppDelegate().onRegisterPushNotification()
+                } else if askForPermission && !allowed {
+                    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { success, _ in
+                        DispatchQueue.main.async {
+                            if success {
+                                AppDelegate().onRegisterPushNotification()
+                            } else {
+                                let alert = UIAlertController(title: "Alert!", message: "Turn on Notifications to Stay Connected.\nTap on Settings -> Bible app  -> Notifications", preferredStyle: UIAlertController.Style.alert)
+                                alert.addAction(UIAlertAction(title: "Ok", style: UIAlertAction.Style.default, handler: nil))
+                                self.present(alert, animated: true, completion: nil)
+                            }
+                        }
+                    }
                 }
             }
         }
-        
     }
     
     

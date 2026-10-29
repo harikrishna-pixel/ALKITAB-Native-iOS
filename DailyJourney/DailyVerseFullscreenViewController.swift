@@ -21,7 +21,8 @@ final class DailyVerseFullscreenViewController: UIViewController {
     private let gradientView = UIView()
     private let closeButton = UIButton(type: .system)
     private let ctaButton = UIButton(type: .system)
-    private let watermarkLabel = UILabel()
+    private let watermarkView = UIView()
+    private let watermarkNameLabel = UILabel()
     private let scrollView = UIScrollView()
     private let referenceLabel = UILabel()
     private let referenceUnderline = UIView()
@@ -115,16 +116,42 @@ final class DailyVerseFullscreenViewController: UIViewController {
         ctaButton.isHidden = !showsCTA
         view.addSubview(ctaButton)
 
-        watermarkLabel.translatesAutoresizingMaskIntoConstraints = false
-        watermarkLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
-        watermarkLabel.textColor = UIColor.white.withAlphaComponent(0.85)
-        watermarkLabel.textAlignment = .right
-        watermarkLabel.text = todaysVerseAppName()
-        watermarkLabel.layer.shadowColor = UIColor.black.cgColor
-        watermarkLabel.layer.shadowOpacity = 0.45
-        watermarkLabel.layer.shadowRadius = 3
-        watermarkLabel.layer.shadowOffset = CGSize(width: 0, height: 1)
-        view.addSubview(watermarkLabel)
+        watermarkView.translatesAutoresizingMaskIntoConstraints = false
+        watermarkView.backgroundColor = .clear
+        view.addSubview(watermarkView)
+
+        let watermarkIcon = UIImageView(image: UIImage(named: "About-logo-white.png"))
+        watermarkIcon.translatesAutoresizingMaskIntoConstraints = false
+        watermarkIcon.contentMode = .scaleAspectFit
+        watermarkIcon.widthAnchor.constraint(equalToConstant: 14).isActive = true
+        watermarkIcon.heightAnchor.constraint(equalToConstant: 14).isActive = true
+
+        watermarkNameLabel.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
+        watermarkNameLabel.textColor = .white
+        watermarkNameLabel.text = todaysVerseAppName()
+
+        let watermarkSubtitle = UILabel()
+        watermarkSubtitle.font = UIFont.systemFont(ofSize: 11)
+        watermarkSubtitle.textColor = UIColor.white.withAlphaComponent(0.85)
+        watermarkSubtitle.text = "Search in app store"
+
+        let textColumn = UIStackView(arrangedSubviews: [watermarkNameLabel, watermarkSubtitle])
+        textColumn.axis = .vertical
+        textColumn.alignment = .leading
+        textColumn.spacing = 1
+
+        let row = UIStackView(arrangedSubviews: [watermarkIcon, textColumn])
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 4
+        watermarkView.addSubview(row)
+        NSLayoutConstraint.activate([
+            row.topAnchor.constraint(equalTo: watermarkView.topAnchor),
+            row.leadingAnchor.constraint(equalTo: watermarkView.leadingAnchor),
+            row.trailingAnchor.constraint(equalTo: watermarkView.trailingAnchor),
+            row.bottomAnchor.constraint(equalTo: watermarkView.bottomAnchor)
+        ])
 
         dotsStack.translatesAutoresizingMaskIntoConstraints = false
         dotsStack.axis = .horizontal
@@ -196,7 +223,7 @@ final class DailyVerseFullscreenViewController: UIViewController {
             referenceUnderline.heightAnchor.constraint(equalToConstant: 1.5),
 
             dotsStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            dotsStack.bottomAnchor.constraint(equalTo: watermarkLabel.topAnchor, constant: -10),
+            dotsStack.bottomAnchor.constraint(equalTo: watermarkView.topAnchor, constant: -10),
             dotsStack.heightAnchor.constraint(equalToConstant: 8),
 
             ctaButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 28),
@@ -204,9 +231,9 @@ final class DailyVerseFullscreenViewController: UIViewController {
             ctaButton.bottomAnchor.constraint(equalTo: dotsStack.topAnchor, constant: showsCTA ? -18 : 0),
             ctaButton.heightAnchor.constraint(equalToConstant: showsCTA ? 54 : 0),
 
-            watermarkLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            watermarkLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
-            watermarkLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
+            watermarkView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            watermarkView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
+            watermarkView.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
 
             scrollView.topAnchor.constraint(equalTo: closeButton.bottomAnchor, constant: 16),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -232,11 +259,12 @@ final class DailyVerseFullscreenViewController: UIViewController {
             scrollView.contentLayoutGuide.heightAnchor.constraint(greaterThanOrEqualTo: scrollView.frameLayoutGuide.heightAnchor)
         ])
 
+        view.bringSubviewToFront(watermarkView)
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        watermarkLabel.text = todaysVerseAppName()
+        watermarkNameLabel.text = todaysVerseAppName()
     }
 
     override func viewDidLayoutSubviews() {
@@ -261,7 +289,9 @@ final class DailyVerseFullscreenViewController: UIViewController {
     }
 
     private func applyVerse() {
-        backgroundImageView.image = UIImage(named: verse.imageName)
+        let imageName = normalizedVerticalVerseImageName(verse.imageName)
+        verse.imageName = imageName
+        backgroundImageView.image = UIImage(named: imageName)
         referenceLabel.text = verse.reference.uppercased()
         verseLabel.text = verse.text
         // Comfortable serif line height like the mockup.
@@ -302,7 +332,7 @@ final class DailyVerseFullscreenViewController: UIViewController {
             dotsStack.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
-        for i in 1...8 {
+        for i in 1...verticalVerseImageCount {
             let dot = UIView()
             dot.translatesAutoresizingMaskIntoConstraints = false
             let isActive = verse.imageName == "S\(i).jpg"
@@ -330,11 +360,15 @@ final class DailyVerseFullscreenViewController: UIViewController {
 
     /// Full-screen verse card: wallpaper, reference, verse, and the app-name watermark. Buttons stay off the image.
     func makeShareImage() -> UIImage {
+        watermarkNameLabel.text = todaysVerseAppName()
+        view.layoutIfNeeded()
         let chrome = [closeButton, shareButton, saveButton, ctaButton, dotsStack]
         chrome.forEach { $0.isHidden = true }
-        watermarkLabel.text = todaysVerseAppName()
         view.layoutIfNeeded()
-        let image = view.asImage()
+        let renderer = UIGraphicsImageRenderer(bounds: view.bounds)
+        let image = renderer.image { _ in
+            view.drawHierarchy(in: view.bounds, afterScreenUpdates: true)
+        }
         chrome.forEach { $0.isHidden = false }
         ctaButton.isHidden = !showsCTA
         view.layoutIfNeeded()
@@ -360,7 +394,7 @@ func todaysVerseAppName() -> String {
 }
 
 extension UIImage {
-    /// App name along the bottom of the shared verse image only.
+    /// Same icon, app name, and “Search in app store” line used on verse images.
     func withAppNameWatermark() -> UIImage {
         let name = todaysVerseAppName()
         guard !name.isEmpty else { return self }
@@ -371,23 +405,40 @@ extension UIImage {
         return renderer.image { _ in
             draw(in: CGRect(origin: .zero, size: size))
 
-            let font = UIFont.systemFont(ofSize: 17, weight: .semibold)
-            let shadow = NSShadow()
-            shadow.shadowColor = UIColor.black.withAlphaComponent(0.45)
-            shadow.shadowOffset = CGSize(width: 0, height: 1)
-            shadow.shadowBlurRadius = 3
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: font,
-                .foregroundColor: UIColor.white.withAlphaComponent(0.9),
-                .shadow: shadow
-            ]
-            let text = name as NSString
-            let textSize = text.size(withAttributes: attributes)
-            let origin = CGPoint(
-                x: (size.width - textSize.width) / 2,
-                y: size.height - textSize.height - 36
+            let fitted = max(size.width / 390, 1)
+            let nameFont = UIFont.systemFont(ofSize: 13 * fitted, weight: .semibold)
+            let subtitleFont = UIFont.systemFont(ofSize: 11 * fitted)
+            let nameText = name as NSString
+            let subtitleText = "Search in app store" as NSString
+            let nameSize = nameText.size(withAttributes: [.font: nameFont])
+            let subtitleSize = subtitleText.size(withAttributes: [.font: subtitleFont])
+            let iconSide = 14 * fitted
+            let textWidth = max(nameSize.width, subtitleSize.width)
+            let blockWidth = iconSide + (4 * fitted) + textWidth
+            let blockHeight = nameSize.height + subtitleSize.height + fitted
+            let margin = 16 * fitted
+            let originX = size.width - margin - blockWidth
+            let originY = size.height - margin - blockHeight
+            if let icon = UIImage(named: "About-logo-white.png") {
+                icon.draw(in: CGRect(
+                    x: originX,
+                    y: originY + (blockHeight - iconSide) / 2,
+                    width: iconSide,
+                    height: iconSide
+                ))
+            }
+            let textX = originX + iconSide + (4 * fitted)
+            nameText.draw(
+                at: CGPoint(x: textX, y: originY),
+                withAttributes: [.font: nameFont, .foregroundColor: UIColor.white]
             )
-            text.draw(at: origin, withAttributes: attributes)
+            subtitleText.draw(
+                at: CGPoint(x: textX, y: originY + nameSize.height + fitted),
+                withAttributes: [
+                    .font: subtitleFont,
+                    .foregroundColor: UIColor.white.withAlphaComponent(0.85)
+                ]
+            )
         }
     }
 }

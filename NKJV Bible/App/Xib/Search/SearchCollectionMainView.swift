@@ -374,11 +374,58 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
         if self.SearchTxt.count != 0 {
             
             App_Protocol.delegateSearch?.popupvuew(SelectedVerse: self.SearchTxt[sender.tag])
+        } else if coreTitle == "Explanations" {
+            showExplanationCardMenu(from: sender, record: self.corevalueReverced[sender.tag])
         } else {
             dic = ["CompleteVerseInfo": self.corevalueReverced[sender.tag], "TagSelected": self.coreTitle!]
             App_Protocol.delegateMyLibrary?.popupvuew(SelectedVerse: self.corevalueReverced[sender.tag], SelectedTag: self.coreTitle!)
             NotificationCenter.default.post(name: NSNotification.Name(rawValue: "PopupData"),object: nil, userInfo: dic)
         }
+    }
+
+    private func showExplanationCardMenu(from source: UIView, record: String) {
+        guard let host = window else { return }
+        host.viewWithTag(8822104)?.removeFromSuperview()
+
+        let parts = record.components(separatedBy: ExplanationRecordDelimiter)
+        let storedVerse = parts.count > 3 ? parts[3] : ""
+        let storedExplanation = parts.count > 2 ? parts[2] : ""
+        let bookVerse = parts.first ?? ""
+        let bibleVersion = parts.count > 1 ? parts[1] : APPNAME
+        let bookTitle = bookVerse.replacingOccurrences(of: "-", with: " ")
+        let isChapter = SearchCollectionMainView.isNumberedChapterDump(storedVerse)
+        let summary = SearchCollectionMainView.librarySummaryText(verse: storedVerse, explanation: storedExplanation)
+        let shown = isChapter ? summary : storedVerse
+
+        let menu = ExplanationCardMenu(frame: host.bounds)
+        menu.tag = 8822104
+        menu.present(
+            in: host,
+            source: source,
+            onCopy: {
+                if isChapter {
+                    UIPasteboard.general.string = "\(summary)\n\n\(bookTitle)\n\n\(APP_LINK)"
+                } else {
+                    UIPasteboard.general.string = "\(storedExplanation)\n\n\(shown)\n\n\(bookTitle)\n\n\(APP_LINK)"
+                }
+                (UIApplication.shared.keyWindow?.rootViewController)?.view.makeToast("Copied successfully", duration: 2.0, position: .top)
+            },
+            onShare: {
+                App_Protocol.delegateReader?.shared(VerseStr: shown, Bookname: bookTitle)
+            },
+            onRead: {
+                UserDefaults.standard.set(bookTitle, forKey: "readdata")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    App_Protocol.delegateReaderSource?.navigateToSelectedVerse()
+                }
+                App_Protocol.delegateReader?.CloseView()
+            },
+            onDelete: {
+                CoreDataModel.sharedInstance.deleteVerseExplanation(bookVerse: bookVerse, bibleVersion: bibleVersion)
+                (UIApplication.shared.keyWindow?.rootViewController)?.view.makeToast("Explanation removed", duration: 2.0, position: .top)
+                App_Protocol.delegateMyLibrary?.ReloadAllData()
+            }
+        )
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
@@ -451,6 +498,95 @@ extension SearchCollectionMainView {
             return SearchCollectionMainView.librarySummaryText(verse: verse, explanation: explanation)
         }
         return verse.isEmpty ? explanation : verse
+    }
+}
+
+private final class ExplanationCardMenu: UIView {
+
+    func present(
+        in host: UIView,
+        source: UIView,
+        onCopy: @escaping () -> Void,
+        onShare: @escaping () -> Void,
+        onRead: @escaping () -> Void,
+        onDelete: @escaping () -> Void
+    ) {
+        frame = host.bounds
+        autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        backgroundColor = .clear
+        host.addSubview(self)
+
+        let dismiss = UIButton(type: .custom)
+        dismiss.frame = bounds
+        dismiss.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        dismiss.addTarget(self, action: #selector(close), for: .touchUpInside)
+        addSubview(dismiss)
+
+        let card = UIView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        card.backgroundColor = .white
+        card.layer.cornerRadius = 16
+        card.layer.shadowColor = UIColor.black.cgColor
+        card.layer.shadowOpacity = 0.12
+        card.layer.shadowRadius = 12
+        card.layer.shadowOffset = CGSize(width: 0, height: 6)
+        addSubview(card)
+
+        let rows: [(String, String, UIColor, () -> Void)] = [
+            ("Copy", "doc", UIColor(white: 0.2, alpha: 1), onCopy),
+            ("Share", "square.and.arrow.up", UIColor(white: 0.2, alpha: 1), onShare),
+            ("Read in Bible", "book", UIColor(white: 0.2, alpha: 1), onRead),
+            ("Delete", "trash", UIColor(red: 0.86, green: 0.22, blue: 0.18, alpha: 1), onDelete)
+        ]
+        let stack = UIStackView()
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .vertical
+        stack.spacing = 0
+        card.addSubview(stack)
+
+        for row in rows {
+            let button = UIButton(type: .system)
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.contentHorizontalAlignment = .left
+            button.tintColor = row.2
+            button.setTitleColor(row.2, for: .normal)
+            button.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+            button.setTitle("  \(row.0)", for: .normal)
+            let icon = UIImage(systemName: row.1)?.withConfiguration(UIImage.SymbolConfiguration(pointSize: 16, weight: .regular))
+            button.setImage(icon, for: .normal)
+            button.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+            button.titleEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: -8)
+            button.heightAnchor.constraint(equalToConstant: 46).isActive = true
+            button.addAction(UIAction { [weak self] _ in
+                self?.close()
+                row.3()
+            }, for: .touchUpInside)
+            stack.addArrangedSubview(button)
+        }
+
+        let sourceFrame = source.convert(source.bounds, to: host)
+        let menuWidth: CGFloat = 196
+        let menuHeight: CGFloat = 46 * 4
+        var originX = sourceFrame.maxX - menuWidth
+        var originY = sourceFrame.maxY + 8
+        originX = max(12, min(originX, host.bounds.width - menuWidth - 12))
+        if originY + menuHeight > host.bounds.height - 24 {
+            originY = max(12, sourceFrame.minY - menuHeight - 8)
+        }
+
+        NSLayoutConstraint.activate([
+            card.leadingAnchor.constraint(equalTo: leadingAnchor, constant: originX),
+            card.topAnchor.constraint(equalTo: topAnchor, constant: originY),
+            card.widthAnchor.constraint(equalToConstant: menuWidth),
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: 6),
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -6)
+        ])
+    }
+
+    @objc private func close() {
+        removeFromSuperview()
     }
 }
 

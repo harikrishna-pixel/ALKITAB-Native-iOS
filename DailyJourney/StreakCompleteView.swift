@@ -137,7 +137,7 @@ struct StreakCompleteView: View {
         }
         .background(
             NavigationLink(
-                destination: StreakCalendarView(store: store),
+                destination: StreakCalendarView(store: store, onReturnHome: onDone),
                 isActive: $showCalendar,
                 label: { EmptyView() }
             )

@@ -53,6 +53,37 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
         }
     }
     
+    /// Option 2 hides Get Summary. Mark as Read then uses the full row.
+    func setChapterSummaryVisible(_ visible: Bool) {
+        guard let summaryButton = SummaryButton else { return }
+        summaryButton.isHidden = !visible
+        summaryButton.isUserInteractionEnabled = visible
+        guard let content = summaryButton.superview else { return }
+        for constraint in content.constraints {
+            let first = constraint.firstItem as? UIView
+            let second = constraint.secondItem as? UIView
+            if first === summaryButton && constraint.firstAttribute == .leading && second === MarkAsReadBtn {
+                constraint.constant = visible ? 16 : 0
+            }
+            if constraint.firstAttribute == .trailing && second === summaryButton {
+                constraint.constant = visible ? 16.5 : 18
+            }
+            if first === summaryButton && constraint.firstAttribute == .width && second === MarkAsReadBtn {
+                constraint.isActive = visible
+            }
+        }
+        let hiddenWidth = summaryButton.constraints.first { $0.identifier == "SummaryHiddenWidth" }
+        if visible {
+            hiddenWidth?.isActive = false
+        } else if hiddenWidth == nil {
+            let width = summaryButton.widthAnchor.constraint(equalToConstant: 0)
+            width.identifier = "SummaryHiddenWidth"
+            width.isActive = true
+        } else {
+            hiddenWidth?.isActive = true
+        }
+    }
+
     func setupSummaryButton() {
         guard let summaryButton = self.SummaryButton else { return }
         // Set initial corner radius (button height is 40, so radius is 20)
