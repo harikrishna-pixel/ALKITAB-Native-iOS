@@ -61,6 +61,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
     var Coins:[Int] = []
     var Offer:[Int] = []
     var PayList:[String] = []
+    var shownPackIndexes:[Int] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -99,7 +100,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
     
     
     func Callapi(i:Int) {
-        if productIDIndex <= 2  {
+        if i == productIDIndex && i < PriductIDArray.count {
             self.callingApi(i: i)
         }
     }
@@ -177,7 +178,9 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
           case 3:
               
               self.WalletTableCell = (self.WalletViewTableView.dequeueReusableCell(withIdentifier: "WalletMoney") as! WalletCell?)
-              self.WalletTableCell.coinTxt.text = "\(Coins[indexPath.row]) Coins"
+              let packIndex = indexPath.row < shownPackIndexes.count ? shownPackIndexes[indexPath.row] : indexPath.row
+              let coinCount = packIndex < Coins.count ? Coins[packIndex] : 0
+              self.WalletTableCell.coinTxt.text = "\(coinCount) Coins"
               
                   self.WalletTableCell.CoinPayBtn.setTitle(PayList[indexPath.row], for: .normal)
                   self.WalletTableCell.PayList.isHidden = true
@@ -185,7 +188,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
                   self.WalletTableCell.CoinPayBtn.addTarget(self, action: #selector(payment), for: .touchUpInside)
                   self.WalletTableCell.WalletMoneyVu.backgroundColor = Themecolor
 
-              let offerValue = indexPath.row < self.Offer.count ? self.Offer[indexPath.row] : 0
+              let offerValue = packIndex < self.Offer.count ? self.Offer[packIndex] : 0
               if offerValue > 0, let offerImage = UIImage(named: "\(offerValue)") {
                   self.WalletTableCell.OfferImg.isHidden = false
                   self.WalletTableCell.OfferImg.image = offerImage
@@ -420,6 +423,7 @@ extension WalletViewController {
                         
                 self.iapProducts.append(response.products)
                 self.PayList.append(numberFormatter.string(from: purchasingProduct.price)!)
+                self.shownPackIndexes.append(self.productIDIndex)
             }
 
         }
@@ -505,12 +509,8 @@ extension WalletViewController {
                         UserDefaults.standard.set(true, forKey: "isPurchased")
                         
                         
-                        if productID == PriductIDArray[0] {
-                            UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+Pack1, forKey: "WalletMoney")
-                        } else if productID == PriductIDArray[1] {
-                            UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+Pack2, forKey: "WalletMoney")
-                        } else if productID == PriductIDArray[2] {
-                            UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+Pack3, forKey: "WalletMoney")
+                        if let packIndex = PriductIDArray.firstIndex(of: productID), packIndex < Coins.count {
+                            UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+Coins[packIndex], forKey: "WalletMoney")
                         }
 
                         self.WalletLbl.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"

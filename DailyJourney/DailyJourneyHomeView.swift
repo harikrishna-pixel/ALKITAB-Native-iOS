@@ -21,7 +21,7 @@ struct DailyJourneyHomeView: View {
     var onOpenPrayerWall: () -> Void
     var onShareVerse: (DailyVerseSnapshot) -> Void
     var onBookmarkVerse: (DailyVerseSnapshot, @escaping (Bool) -> Void) -> Void
-    var onOpenVerseFullscreen: (DailyVerseSnapshot, @escaping (DailyVerseSnapshot) -> Void) -> Void
+    var onOpenVerseFullscreen: (DailyVerseSnapshot, Bool, @escaping (DailyVerseSnapshot) -> Void) -> Void
     var onOpenMemoryChallenge: (DailyVerseSnapshot) -> Void
     var onOpenReflection: (DailyVerseSnapshot) -> Void
     var onPresentStreakComplete: () -> Void
@@ -32,7 +32,7 @@ struct DailyJourneyHomeView: View {
         onOpenPrayerWall: @escaping () -> Void,
         onShareVerse: @escaping (DailyVerseSnapshot) -> Void = { _ in },
         onBookmarkVerse: @escaping (DailyVerseSnapshot, @escaping (Bool) -> Void) -> Void = { _, completion in completion(false) },
-        onOpenVerseFullscreen: @escaping (DailyVerseSnapshot, @escaping (DailyVerseSnapshot) -> Void) -> Void = { _, _ in },
+        onOpenVerseFullscreen: @escaping (DailyVerseSnapshot, Bool, @escaping (DailyVerseSnapshot) -> Void) -> Void = { _, _, _ in },
         onOpenMemoryChallenge: @escaping (DailyVerseSnapshot) -> Void = { _ in },
         onOpenReflection: @escaping (DailyVerseSnapshot) -> Void = { _ in },
         onPresentStreakComplete: @escaping () -> Void = {}
@@ -312,7 +312,7 @@ struct DailyJourneyHomeView: View {
             .contentShape(Rectangle())
             .onTapGesture {
                 store.markVerseCompleted()
-                openVerseFullscreen()
+                openVerseFullscreen(showsCTA: false)
             }
             .simultaneousGesture(
                 DragGesture(minimumDistance: 40)
@@ -367,7 +367,7 @@ struct DailyJourneyHomeView: View {
                     done: store.verseCompleted,
                     action: {
                         store.markVerseCompleted()
-                        openVerseFullscreen()
+                        openVerseFullscreen(showsCTA: true)
                     }
                 )
                 Divider().padding(.leading, 52)
@@ -550,8 +550,8 @@ struct DailyJourneyHomeView: View {
         return colors[index % colors.count]
     }
 
-    private func openVerseFullscreen() {
-        onOpenVerseFullscreen(verse) { updated in
+    private func openVerseFullscreen(showsCTA: Bool) {
+        onOpenVerseFullscreen(verse, showsCTA) { updated in
             verse = updated
             isVerseImageSaved = false
         }

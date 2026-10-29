@@ -38,7 +38,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
       self.SettingsTable.separatorStyle = .none
       self.SettingsTable.rowHeight = 56
       self.SettingsTable.estimatedRowHeight = 56
-      self.SettingsTable.contentInset = UIEdgeInsets(top: 8, left: 0, bottom: 24, right: 0)
+      self.SettingsTable.sectionHeaderHeight = 28
+      self.SettingsTable.sectionFooterHeight = 0
+      self.SettingsTable.estimatedSectionHeaderHeight = 28
+      self.SettingsTable.estimatedSectionFooterHeight = 0
+      self.SettingsTable.sectionHeaderTopPadding = 0
+      self.SettingsTable.contentInset = UIEdgeInsets(top: 4, left: 0, bottom: 24, right: 0)
       
   }
   
@@ -98,11 +103,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   }
 
   func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        return 36
+        return 28
   }
 
   func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
-        return 8
+        return 0
   }
 
   func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
@@ -123,7 +128,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         header.addSubview(label)
         NSLayoutConstraint.activate([
             label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 20),
-            label.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -6)
+            label.centerYAnchor.constraint(equalTo: header.centerYAnchor)
         ])
         return header
   }

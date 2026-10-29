@@ -57,10 +57,7 @@ class GetAppInfo: NSObject {
         UserDefaults.standard.set(String(FallbackIAPConstants.iapEnabled), forKey: "is_subscription_enabled")
         UserDefaults.standard.set(FallbackIAPConstants.lifetimeProductID, forKey: "sub_identifier_lifetime")
         UserDefaults.standard.set(FallbackIAPConstants.oneYearProductID, forKey: "sub_identifier_oneyear")
-        let monthlyProductID = FallbackIAPConstants.sixMonthProductID.isEmpty
-            ? FallbackIAPConstants.oneMonthProductID
-            : FallbackIAPConstants.sixMonthProductID
-        UserDefaults.standard.set(monthlyProductID, forKey: "sub_identifier_six_month")
+        UserDefaults.standard.set(FallbackIAPConstants.oneMonthProductID, forKey: "sub_identifier_six_month")
         UserDefaults.standard.set(FallbackIAPConstants.exitOfferProductID, forKey: "sub_identifier_exit_offer")
         UserDefaults.standard.set(FallbackIAPConstants.exitOfferValue, forKey: "sub_identifier_exit_offer_value")
         UserDefaults.standard.set(FallbackIAPConstants.exitOfferItem1, forKey: "sub_identifier_exit_offer_item1")
@@ -701,12 +698,8 @@ class GetAppInfo: NSObject {
         UserDefaults.standard.set(SUBSCRIPTIONID_OneYear, forKey: "sub_identifier_oneyear")
         sub_identifier_oneyear = SUBSCRIPTIONID_OneYear
         
-        SUBSCRIPTIONID_Six_month = UserDefaults.standard.string(forKey: "sub_identifier_six_month") ?? ""
-        if SUBSCRIPTIONID_Six_month.isEmpty {
-            SUBSCRIPTIONID_Six_month = FallbackIAPConstants.sixMonthProductID.isEmpty
-                ? FallbackIAPConstants.oneMonthProductID
-                : FallbackIAPConstants.sixMonthProductID
-        }
+        SUBSCRIPTIONID_Six_month = FallbackIAPConstants.oneMonthProductID
+        UserDefaults.standard.set(SUBSCRIPTIONID_Six_month, forKey: "sub_identifier_six_month")
         
         SUBSCRIPTIONID_ExitOffer = UserDefaults.standard.string(forKey: "sub_identifier_exit_offer") ?? ""
         if SUBSCRIPTIONID_ExitOffer.isEmpty && !hasCachedAPIData {

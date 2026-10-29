@@ -22,16 +22,16 @@ final class DailyVerseFullscreenViewController: UIViewController {
     private let closeButton = UIButton(type: .system)
     private let ctaButton = UIButton(type: .system)
     private let watermarkLabel = UILabel()
-    private var watermarkAboveButton: NSLayoutConstraint?
-    private var watermarkAtBottom: NSLayoutConstraint?
     private let scrollView = UIScrollView()
     private let referenceLabel = UILabel()
     private let referenceUnderline = UIView()
     private let verseLabel = UILabel()
     private let dotsStack = UIStackView()
+    private let showsCTA: Bool
 
-    init(verse: DailyVerseSnapshot) {
+    init(verse: DailyVerseSnapshot, showsCTA: Bool = false) {
         self.verse = verse
+        self.showsCTA = showsCTA
         super.init(nibName: nil, bundle: nil)
         modalPresentationStyle = .fullScreen
     }
@@ -112,12 +112,13 @@ final class DailyVerseFullscreenViewController: UIViewController {
         ctaButton.layer.shadowRadius = 10
         ctaButton.layer.shadowOffset = CGSize(width: 0, height: 4)
         ctaButton.addTarget(self, action: #selector(continueTapped), for: .touchUpInside)
+        ctaButton.isHidden = !showsCTA
         view.addSubview(ctaButton)
 
         watermarkLabel.translatesAutoresizingMaskIntoConstraints = false
-        watermarkLabel.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
-        watermarkLabel.textColor = UIColor.white.withAlphaComponent(0.92)
-        watermarkLabel.textAlignment = .center
+        watermarkLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+        watermarkLabel.textColor = UIColor.white.withAlphaComponent(0.85)
+        watermarkLabel.textAlignment = .right
         watermarkLabel.text = todaysVerseAppName()
         watermarkLabel.layer.shadowColor = UIColor.black.cgColor
         watermarkLabel.layer.shadowOpacity = 0.45
@@ -195,22 +196,22 @@ final class DailyVerseFullscreenViewController: UIViewController {
             referenceUnderline.heightAnchor.constraint(equalToConstant: 1.5),
 
             dotsStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            dotsStack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -14),
+            dotsStack.bottomAnchor.constraint(equalTo: watermarkLabel.topAnchor, constant: -10),
             dotsStack.heightAnchor.constraint(equalToConstant: 8),
 
             ctaButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 28),
             ctaButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -28),
-            ctaButton.bottomAnchor.constraint(equalTo: dotsStack.topAnchor, constant: -18),
-            ctaButton.heightAnchor.constraint(equalToConstant: 54),
+            ctaButton.bottomAnchor.constraint(equalTo: dotsStack.topAnchor, constant: showsCTA ? -18 : 0),
+            ctaButton.heightAnchor.constraint(equalToConstant: showsCTA ? 54 : 0),
 
-            watermarkLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            watermarkLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            watermarkLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
             watermarkLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
-            watermarkLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -24),
 
             scrollView.topAnchor.constraint(equalTo: closeButton.bottomAnchor, constant: 16),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: watermarkLabel.topAnchor, constant: -12),
+            scrollView.bottomAnchor.constraint(equalTo: showsCTA ? ctaButton.topAnchor : dotsStack.topAnchor, constant: -12),
 
             verseBlock.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             verseBlock.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
@@ -231,9 +232,6 @@ final class DailyVerseFullscreenViewController: UIViewController {
             scrollView.contentLayoutGuide.heightAnchor.constraint(greaterThanOrEqualTo: scrollView.frameLayoutGuide.heightAnchor)
         ])
 
-        watermarkAboveButton = watermarkLabel.bottomAnchor.constraint(equalTo: ctaButton.topAnchor, constant: -16)
-        watermarkAtBottom = watermarkLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
-        watermarkAboveButton?.isActive = true
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -334,14 +332,11 @@ final class DailyVerseFullscreenViewController: UIViewController {
     func makeShareImage() -> UIImage {
         let chrome = [closeButton, shareButton, saveButton, ctaButton, dotsStack]
         chrome.forEach { $0.isHidden = true }
-        watermarkAboveButton?.isActive = false
-        watermarkAtBottom?.isActive = true
         watermarkLabel.text = todaysVerseAppName()
         view.layoutIfNeeded()
         let image = view.asImage()
-        watermarkAtBottom?.isActive = false
-        watermarkAboveButton?.isActive = true
         chrome.forEach { $0.isHidden = false }
+        ctaButton.isHidden = !showsCTA
         view.layoutIfNeeded()
         return image
     }

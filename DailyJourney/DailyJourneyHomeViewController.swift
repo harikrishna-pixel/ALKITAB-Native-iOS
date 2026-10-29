@@ -64,8 +64,8 @@ final class DailyJourneyHomeViewController: UIViewController {
             onBookmarkVerse: { [weak self] verse, completion in
                 self?.bookmarkVerse(verse, completion: completion)
             },
-            onOpenVerseFullscreen: { [weak self] verse, onUpdated in
-                self?.presentVerseFullscreen(verse: verse, onUpdated: onUpdated)
+            onOpenVerseFullscreen: { [weak self] verse, showsCTA, onUpdated in
+                self?.presentVerseFullscreen(verse: verse, showsCTA: showsCTA, onUpdated: onUpdated)
             },
             onOpenMemoryChallenge: { [weak self] verse in
                 let store = DailyJourneyStore.shared
@@ -160,10 +160,11 @@ final class DailyJourneyHomeViewController: UIViewController {
     
     private func presentVerseFullscreen(
         verse: DailyVerseSnapshot,
+        showsCTA: Bool,
         onUpdated: @escaping (DailyVerseSnapshot) -> Void
     ) {
         var current = verse
-        let vc = DailyVerseFullscreenViewController(verse: current)
+        let vc = DailyVerseFullscreenViewController(verse: current, showsCTA: showsCTA)
         vc.onClose = { [weak self] in
             self?.dismissJourneyModal()
         }

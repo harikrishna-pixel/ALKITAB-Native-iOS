@@ -127,8 +127,8 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
                 let parts = self.corevalueReverced[indexPath.row].components(separatedBy: ExplanationRecordDelimiter)
                 let storedVerse = parts.count > 3 ? parts[3] : ""
                 let storedExplanation = parts.count > 2 ? parts[2] : ""
-                let explanation = librarySummaryText(verse: storedVerse, explanation: storedExplanation)
-                let verseText = explanationPreviewText(verse: storedVerse, explanation: storedExplanation)
+                let explanation = SearchCollectionMainView.librarySummaryText(verse: storedVerse, explanation: storedExplanation)
+                let verseText = SearchCollectionMainView.explanationPreviewText(verse: storedVerse, explanation: storedExplanation)
                 let fontName = UserDefaults.standard.string(forKey: "FontName")
                 let verseFont = UIFont(name: fontName ?? "", size: CGFloat(fontsize)) ?? UIFont.systemFont(ofSize: CGFloat(fontsize))
                 let bodyFont = verseFont
@@ -243,9 +243,9 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
                 let isExpanded = (expandedExplanationIndex == indexPath.row)
 
                 cell.configure(
-                    verseText: explanationPreviewText(verse: storedVerse, explanation: storedExplanation),
+                    verseText: SearchCollectionMainView.explanationPreviewText(verse: storedVerse, explanation: storedExplanation),
                     reference: reference,
-                    explanation: librarySummaryText(verse: storedVerse, explanation: storedExplanation),
+                    explanation: SearchCollectionMainView.librarySummaryText(verse: storedVerse, explanation: storedExplanation),
                     themeColor: isNight ? .white : Themecolor,
                     isNight: isNight,
                     verseFont: verseFont,
@@ -415,36 +415,40 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
 
 extension SearchCollectionMainView {
     /// Chapter summaries are saved with every numbered verse in one field. Library cards show the summary only.
-    func isNumberedChapterDump(_ text: String) -> Bool {
+    static func isNumberedChapterDump(_ text: String) -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let numbered = trimmed.components(separatedBy: .newlines).filter {
+            $0.range(of: #"^\s*\d+[\.\)]\s+"#, options: .regularExpression) != nil
+        }
+        if numbered.count >= 3 { return true }
         guard trimmed.hasPrefix("1.") else { return false }
         if trimmed.range(of: #"(?:\r\n|\n|\r)\s*2[\.\)]"#, options: .regularExpression) != nil { return true }
         if trimmed.range(of: #"\s2[\.\)]\s"#, options: .regularExpression) != nil { return true }
         return false
     }
 
-    func librarySummaryText(verse: String, explanation: String) -> String {
-        let chapterInVerse = isNumberedChapterDump(verse)
-        let chapterInExplanation = isNumberedChapterDump(explanation)
+    static func librarySummaryText(verse: String, explanation: String) -> String {
+        let chapterInVerse = SearchCollectionMainView.isNumberedChapterDump(verse)
+        let chapterInExplanation = SearchCollectionMainView.isNumberedChapterDump(explanation)
         if chapterInVerse && !chapterInExplanation { return explanation }
         if chapterInExplanation && !chapterInVerse { return verse }
         if chapterInVerse || chapterInExplanation {
-            let prose = proseWithoutNumberedVerses(explanation)
+            let prose = SearchCollectionMainView.proseWithoutNumberedVerses(explanation)
             return prose.isEmpty ? explanation : prose
         }
         return explanation
     }
 
-    func proseWithoutNumberedVerses(_ text: String) -> String {
+    static func proseWithoutNumberedVerses(_ text: String) -> String {
         let kept = text.components(separatedBy: .newlines).filter { line in
             line.range(of: #"^\s*\d+[\.\)]\s+"#, options: .regularExpression) == nil
         }
         return kept.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    func explanationPreviewText(verse: String, explanation: String) -> String {
-        if isNumberedChapterDump(verse) || isNumberedChapterDump(explanation) {
-            return librarySummaryText(verse: verse, explanation: explanation)
+    static func explanationPreviewText(verse: String, explanation: String) -> String {
+        if SearchCollectionMainView.isNumberedChapterDump(verse) || SearchCollectionMainView.isNumberedChapterDump(explanation) {
+            return SearchCollectionMainView.librarySummaryText(verse: verse, explanation: explanation)
         }
         return verse.isEmpty ? explanation : verse
     }

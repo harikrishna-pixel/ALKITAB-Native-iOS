@@ -48,6 +48,11 @@ class PopupMenu: UIView {
      var VCSelection: String!
      var TagSelection: String!
      var explanationStoredText: String = ""
+     private var explanationIsChapterSummary = false
+     private var explanationTextHeightConstraint: NSLayoutConstraint?
+     private var summaryScrollView: UIScrollView?
+     private var summaryScrollLabel: UILabel?
+     private var explanationTextColor: UIColor?
     
     
     
@@ -78,9 +83,16 @@ class PopupMenu: UIView {
         } else if TagSelection == "Explanations" {
             self.DeleteVu.isHidden = false
             let parts = getString.components(separatedBy: ExplanationRecordDelimiter)
-            explanationStoredText = parts.count > 2 ? parts[2] : ""
-            self.Popupframetext.text = " \(parts.count > 3 ? parts[3] : "")"
+            let storedVerse = parts.count > 3 ? parts[3] : ""
+            let storedExplanation = parts.count > 2 ? parts[2] : ""
+            explanationStoredText = storedExplanation
+            explanationIsChapterSummary = SearchCollectionMainView.isNumberedChapterDump(storedVerse)
+            let shown = explanationIsChapterSummary
+                ? SearchCollectionMainView.librarySummaryText(verse: storedVerse, explanation: storedExplanation)
+                : storedVerse
+            self.Popupframetext.text = " \(shown)"
             self.PopupframeBook.text = parts.first?.replacingOccurrences(of: "-", with: " ") ?? ""
+            self.FrameHeightConstrain.constant = CGFloat(187 + Popupframetext.maxNumberOfLinesHome)
         } else {
             self.DeleteVu.isHidden = false
             self.Popupframetext.text = " \(seperateArray[3])"
@@ -120,6 +132,9 @@ class PopupMenu: UIView {
         
         
         self.Popupframetext.text = self.Popupframetext.text!.trimmingCharacters(in: .whitespaces)
+        if TagSelection == "Explanations" {
+            fitExplanationFullView()
+        }
         
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
 //            self.Popupframe.layer.cornerRadius = 30
@@ -177,7 +192,11 @@ class PopupMenu: UIView {
     @IBAction func copYText(_ sender: Any) {
         self.makeToast("Copied successfully", duration: 2.0, position: .top)
         if TagSelection == "Explanations" {
-            UIPasteboard.general.string = "\(explanationStoredText)\n\n\(self.Popupframetext.text!)\n\n\(self.PopupframeBook.text!)\n\n\(APP_LINK)"
+            if explanationIsChapterSummary {
+                UIPasteboard.general.string = "\(self.Popupframetext.text!)\n\n\(self.PopupframeBook.text!)\n\n\(APP_LINK)"
+            } else {
+                UIPasteboard.general.string = "\(explanationStoredText)\n\n\(self.Popupframetext.text!)\n\n\(self.PopupframeBook.text!)\n\n\(APP_LINK)"
+            }
         } else {
             UIPasteboard.general.string = "\(self.Popupframetext.text!)\n\n\(self.PopupframeBook.text!)\n\n\(APP_LINK)"
         }
@@ -234,7 +253,91 @@ class PopupMenu: UIView {
         App_Protocol.delegateReader?.CloseView()
         App_Protocol.delegateMyLibrary?.ReloadAllData()
     }
-    
+
+    /// Long saved summaries used to grow the sheet above the screen, so the start of the text was cut off.
+    private func fitExplanationFullView() {
+        let width = max((bounds.width > 0 ? bounds.width : UIScreen.main.bounds.width) - 44, 280)
+        let font = Popupframetext.font ?? UIFont.systemFont(ofSize: 18)
+        let text = Popupframetext.text ?? ""
+        let textHeight = ceil((text as NSString).boundingRect(
+            with: CGSize(width: width, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: font],
+            context: nil
+        ).height)
+        let screenHeight = bounds.height > 0 ? bounds.height : UIScreen.main.bounds.height
+        let chrome: CGFloat = 187
+        let maxSheet = screenHeight - 24
+        let needed = chrome + textHeight
+
+        if explanationTextColor == nil {
+            explanationTextColor = Popupframetext.textColor ?? .black
+        }
+
+        if needed <= maxSheet {
+            FrameHeightConstrain.constant = needed
+            explanationTextHeightConstraint?.isActive = false
+            summaryScrollView?.isHidden = true
+            Popupframetext.textColor = explanationTextColor
+            return
+        }
+
+        let maxTextHeight = maxSheet - chrome
+        FrameHeightConstrain.constant = maxSheet
+        Popupframetext.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        if explanationTextHeightConstraint == nil {
+            let height = Popupframetext.heightAnchor.constraint(equalToConstant: maxTextHeight)
+            height.priority = .required
+            height.isActive = true
+            explanationTextHeightConstraint = height
+        }
+        explanationTextHeightConstraint?.constant = maxTextHeight
+        explanationTextHeightConstraint?.isActive = true
+        installSummaryScroll(text: text, font: font)
+    }
+
+    private func installSummaryScroll(text: String, font: UIFont) {
+        let visibleColor = explanationTextColor ?? .black
+        let scroll: UIScrollView
+        let label: UILabel
+        if let summaryScrollView = summaryScrollView, let summaryScrollLabel = summaryScrollLabel {
+            scroll = summaryScrollView
+            label = summaryScrollLabel
+        } else {
+            let createdScroll = UIScrollView()
+            createdScroll.translatesAutoresizingMaskIntoConstraints = false
+            createdScroll.backgroundColor = .clear
+            createdScroll.alwaysBounceVertical = true
+            createdScroll.showsVerticalScrollIndicator = true
+            Popupframetext.superview?.addSubview(createdScroll)
+            NSLayoutConstraint.activate([
+                createdScroll.topAnchor.constraint(equalTo: Popupframetext.topAnchor),
+                createdScroll.leadingAnchor.constraint(equalTo: Popupframetext.leadingAnchor),
+                createdScroll.trailingAnchor.constraint(equalTo: Popupframetext.trailingAnchor),
+                createdScroll.bottomAnchor.constraint(equalTo: Popupframetext.bottomAnchor)
+            ])
+            let createdLabel = UILabel()
+            createdLabel.translatesAutoresizingMaskIntoConstraints = false
+            createdLabel.numberOfLines = 0
+            createdScroll.addSubview(createdLabel)
+            NSLayoutConstraint.activate([
+                createdLabel.topAnchor.constraint(equalTo: createdScroll.contentLayoutGuide.topAnchor),
+                createdLabel.leadingAnchor.constraint(equalTo: createdScroll.contentLayoutGuide.leadingAnchor),
+                createdLabel.trailingAnchor.constraint(equalTo: createdScroll.contentLayoutGuide.trailingAnchor),
+                createdLabel.bottomAnchor.constraint(equalTo: createdScroll.contentLayoutGuide.bottomAnchor),
+                createdLabel.widthAnchor.constraint(equalTo: createdScroll.frameLayoutGuide.widthAnchor)
+            ])
+            summaryScrollView = createdScroll
+            summaryScrollLabel = createdLabel
+            scroll = createdScroll
+            label = createdLabel
+        }
+        scroll.isHidden = false
+        label.font = font
+        label.textColor = visibleColor
+        label.text = text
+        Popupframetext.textColor = .clear
+    }
     
     
     
