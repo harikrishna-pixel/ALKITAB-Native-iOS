@@ -16,9 +16,11 @@ final class LegacyPaidAppService {
 
     private init() {}
 
-    /// CFBundleVersion of the FIRST free (paywall) production release.
-    /// 0 disables legacy detection. Set it once before release and never raise it afterwards.
+    /// 0 keeps the automatic launch check off. The Pro paywall Restore uses the build below.
     private let freeModelStartBuild = 0
+
+    /// Build of this free Pro paywall. A first download below this build paid to install the app.
+    static let proPaywallFreeModelStartBuild = 57
 
     enum LegacyStatus {
         case legacyPaid
@@ -36,7 +38,7 @@ final class LegacyPaidAppService {
         #if DEBUG
         if UserDefaults.standard.bool(forKey: debugForceLegacyKey) { return true }
         #endif
-        return freeModelStartBuild > 0 && UserDefaults.standard.bool(forKey: verifiedLegacyKey)
+        return UserDefaults.standard.bool(forKey: verifiedLegacyKey)
     }
 
     func refreshAtLaunch() {
@@ -46,14 +48,20 @@ final class LegacyPaidAppService {
     /// `forceRefresh` calls `AppTransaction.refresh()` (may prompt sign-in); use only from a user action.
     @discardableResult
     func checkLegacyStatus(forceRefresh: Bool = false) async -> LegacyStatus {
-        guard freeModelStartBuild > 0 else { return .unknown }
+        await checkLegacyStatus(startBuild: freeModelStartBuild, forceRefresh: forceRefresh)
+    }
+
+    /// Pro paywall Restore passes `proPaywallFreeModelStartBuild`. Launch stays off while `freeModelStartBuild` is 0.
+    @discardableResult
+    func checkLegacyStatus(startBuild: Int, forceRefresh: Bool = false) async -> LegacyStatus {
+        guard startBuild > 0 else { return .unknown }
         guard #available(iOS 16.0, *) else { return .unknown }
 
         do {
             let result = forceRefresh ? try await AppTransaction.refresh() : try await AppTransaction.shared
             switch result {
             case .verified(let appTransaction):
-                let status = classify(originalVersion: appTransaction.originalAppVersion)
+                let status = classify(originalVersion: appTransaction.originalAppVersion, startBuild: startBuild)
                 store(status)
                 return status
             case .unverified(_, let error):
@@ -66,13 +74,13 @@ final class LegacyPaidAppService {
         }
     }
 
-    private func classify(originalVersion: String) -> LegacyStatus {
-        print("[LegacyPaidApp] originalAppVersion:", originalVersion, "free model starts:", freeModelStartBuild)
+    private func classify(originalVersion: String, startBuild: Int) -> LegacyStatus {
+        print("[LegacyPaidApp] originalAppVersion:", originalVersion, "free model starts:", startBuild)
         guard let originalBuild = Int(originalVersion.trimmingCharacters(in: .whitespaces)) else {
             // Sandbox / TestFlight report "1.0", which is not a build number.
             return .unknown
         }
-        return originalBuild < freeModelStartBuild ? .legacyPaid : .freeAcquisition
+        return originalBuild < startBuild ? .legacyPaid : .freeAcquisition
     }
 
     private func store(_ status: LegacyStatus) {

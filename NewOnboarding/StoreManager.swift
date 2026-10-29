@@ -61,6 +61,10 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     private var didFinishRestoreUI = false
     /// True only after the user taps Restore. A buy must not run the restore path.
     private var userRequestedRestore = false
+    /// Pro paywall only. A paid app download is restored there, not on the other paywall.
+    private var awaitLegacyPaidDownload = false
+    private var legacyPaidDownloadResolved = true
+    private var iapRestoreFoundNothing = false
     /// Looks up the last App Store plan without saving it or closing the paywall.
     private var planLookupActive = false
     private var planLookupCancelled = false
@@ -569,10 +573,13 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         }
     }
     
-    func restorePurchases() {
+    func restorePurchases(includeLegacyPaidDownload: Bool = false) {
         cancelPlanLookup()
         userRequestedRestore = true
         didFinishRestoreUI = false
+        awaitLegacyPaidDownload = includeLegacyPaidDownload
+        legacyPaidDownloadResolved = !includeLegacyPaidDownload
+        iapRestoreFoundNothing = false
         guard NetworkManager.sharedInstance.isConnectedToInternet() else {
             finishRestore(success: false, message: "Please check your internet connection and try again.")
             return
@@ -586,7 +593,9 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         // FIXED: Add observer before restore
         SKPaymentQueue.default().add(self)
         SKPaymentQueue.default().restoreCompletedTransactions()
-        restoreLegacyPaidAppIfNeeded()
+        if includeLegacyPaidDownload {
+            restoreLegacyPaidAppIfNeeded()
+        }
     }
 
     /// Asks the App Store which plan was bought before. Does not save it and does not run Restore.
@@ -1083,6 +1092,8 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
                     self.refreshReceiptForRestore()
                 } else if LegacyPaidAppService.shared.isLegacyPaidAppUser {
                     self.finishRestore(success: true, message: "Original app purchase restored")
+                } else if self.awaitLegacyPaidDownload && !self.legacyPaidDownloadResolved {
+                    self.iapRestoreFoundNothing = true
                 } else {
                     self.finishRestore(success: false, message: "No active plan is found")
                 }
@@ -1125,17 +1136,25 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         restoreFromAppleReceipt(allowRefresh: false)
     }
     
-    /// Re-checks the original paid-app download (AppTransaction) alongside the normal IAP restore.
+    /// Pro paywall only. A paid download has no in-app purchase, so this check runs beside Restore.
     private func restoreLegacyPaidAppIfNeeded() {
         Task {
-            let status = await LegacyPaidAppService.shared.checkLegacyStatus(forceRefresh: true)
-            guard status == .legacyPaid else { return }
+            let status = await LegacyPaidAppService.shared.checkLegacyStatus(
+                startBuild: LegacyPaidAppService.proPaywallFreeModelStartBuild,
+                forceRefresh: true
+            )
             DispatchQueue.main.async {
-                App_Protocol.delegateReader?.paymentStatus()
-                App_Protocol.DelegateSlideCard?.paymentStatus()
-                ImageAppProtocol.ImageTxtEditDelegate?.CheckPay()
-                guard !self.hasRestoredTransactions else { return }
-                self.finishRestore(success: true, message: "Original app purchase restored")
+                self.legacyPaidDownloadResolved = true
+                if status == .legacyPaid {
+                    App_Protocol.delegateReader?.paymentStatus()
+                    App_Protocol.DelegateSlideCard?.paymentStatus()
+                    ImageAppProtocol.ImageTxtEditDelegate?.CheckPay()
+                    self.finishRestore(success: true, message: "Original app purchase restored")
+                    return
+                }
+                if self.iapRestoreFoundNothing {
+                    self.finishRestore(success: false, message: "No active plan is found")
+                }
             }
         }
     }

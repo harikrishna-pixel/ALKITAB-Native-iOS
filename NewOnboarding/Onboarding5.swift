@@ -885,7 +885,7 @@ struct OnboardingProPaywallView: View {
         Button(action: {
             if title == "Restore" {
                 purchaseWait = .restore
-                storeManager.restorePurchases()
+                storeManager.restorePurchases(includeLegacyPaidDownload: true)
             } else if let url = url {
                 openLegalPage(url)
             }
