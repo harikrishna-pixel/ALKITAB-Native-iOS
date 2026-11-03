@@ -216,6 +216,10 @@ extension ReaderViewController: AVplayerProtocol {
         } else {
             AutoNext(resumePlayback: true)
         }
+        // Keep the guard up briefly so a duplicate end event cannot start a second overlapping stream.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            ChapterPlaybackContinue.inProgress = false
+        }
     }
     
     
@@ -618,9 +622,19 @@ extension ReaderViewController: AVplayerProtocol {
     // Play pause function
     @objc func AVplayOn() {
         SpeechVu.active?.stopForChapterAudio()
-        ChapterPlaybackContinue.inProgress = false
+        // Do not clear ChapterPlaybackContinue here — finishChapterAndContinue owns that flag
+        // so a second end-of-chapter callback cannot start another overlapping stream.
         playStatus = true
         AudioPlayerService.sharedInstance.chapterWantsPlayback = true
+        let player = AudioPlayerService.sharedInstance.player
+        let alreadyPlaying = (player?.rate ?? 0) > 0 || player?.timeControlStatus == .playing
+        if alreadyPlaying, AudioPlayerService.sharedInstance.playerItem != nil {
+            // Same chapter already sounding — do not call startStreaming again.
+            self.PlayPause(ImageName: "pausePlayer")
+            timer?.invalidate()
+            AVstartTimer()
+            return
+        }
         if self.currentTimeacu <= 1 || AudioPlayerService.sharedInstance.player?.allowsExternalPlayback == false {
             self.PlayPause(ImageName: "pausePlayer")
             self.LocalOROnline()

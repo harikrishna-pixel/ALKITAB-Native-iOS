@@ -123,7 +123,7 @@ struct StreakCompleteView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(Color(hex: "1C46B2"))
+                    .background(DailyJourneyTheme.color)
                     .cornerRadius(27)
             }
             .padding(.horizontal, 20)

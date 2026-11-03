@@ -12,6 +12,7 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
     @IBOutlet weak var MarkAsReadBtn:UIButton!
     @IBOutlet weak var SummaryButton:UIButton!
     private var isMarkedRead = false
+    private var summaryRemaining: AIRemainingLineView?
     private var lastSummarySize: CGSize = .zero
     private var lastMarkSize: CGSize = .zero
     
@@ -30,6 +31,15 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
         super.awakeFromNib()
         self.setupSummaryButton()
         self.setupMarkAsReadButton()
+        NotificationCenter.default.addObserver(self, selector: #selector(aiUsageChanged), name: AIUsageLimiter.usageChanged, object: nil)
+    }
+
+    @objc private func aiUsageChanged() {
+        DispatchQueue.main.async {
+            guard self.summaryRemaining != nil, !(self.SummaryButton?.isHidden ?? true) else { return }
+            AIUsageLimiter.shared.applyLockBadge(to: self.SummaryButton, feature: .chapterSummary)
+            self.updateSummaryRemaining(visible: true)
+        }
     }
     
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
@@ -82,6 +92,34 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
         } else {
             hiddenWidth?.isActive = true
         }
+    }
+
+    /// "1 of 1 free summary left today" under Get Summary. Hidden for unlimited plans.
+    func updateSummaryRemaining(visible: Bool) {
+        guard let summaryButton = SummaryButton, let content = summaryButton.superview else { return }
+        if summaryRemaining == nil && visible {
+            let line = AIRemainingLineView(feature: .chapterSummary, fontSize: 10, compact: true, barHeight: 2)
+            line.translatesAutoresizingMaskIntoConstraints = false
+            content.addSubview(line)
+            NSLayoutConstraint.activate([
+                line.topAnchor.constraint(equalTo: summaryButton.bottomAnchor, constant: 3),
+                line.leadingAnchor.constraint(equalTo: summaryButton.leadingAnchor),
+                line.trailingAnchor.constraint(equalTo: summaryButton.trailingAnchor),
+                line.heightAnchor.constraint(equalToConstant: 16)
+            ])
+            summaryRemaining = line
+        }
+        guard let line = summaryRemaining else { return }
+        guard visible else {
+            line.isHidden = true
+            return
+        }
+        let themeColor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
+        let isNight = themeColor == BGNightMode
+        line.refresh(
+            tint: isNight ? .white : themeColor,
+            textColor: isNight ? UIColor.white.withAlphaComponent(0.6) : UIColor(white: 0.4, alpha: 1)
+        )
     }
 
     func setupSummaryButton() {

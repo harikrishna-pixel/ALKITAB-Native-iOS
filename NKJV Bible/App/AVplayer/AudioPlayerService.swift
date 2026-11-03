@@ -122,43 +122,60 @@ class AudioPlayerService  {
     /// True while the user expects this chapter to keep playing. An ad pause does not clear it.
     var chapterWantsPlayback = false
     private var playbackEndObserver: NSObjectProtocol?
+    /// Ignores stale async stream setups so only one chapter player can sound at a time.
+    private var streamGeneration = 0
+    private var remoteCommandsConfigured = false
     
     
     func RunPlayer() {
 //        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: nil)
 //        NotificationCenter.default.addObserver(self, selector: #selector(self.playerDidFinishPlaying(sender:)), name:      NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: self.playerItem)
     }
+
+    /// Fully silence and detach the current item so a previous AVPlayer cannot keep overlapping.
+    private func tearDownCurrentPlayer() {
+        player?.pause()
+        player?.replaceCurrentItem(with: nil)
+        if let playbackEndObserver {
+            NotificationCenter.default.removeObserver(playbackEndObserver)
+            self.playbackEndObserver = nil
+        }
+        playerItem = nil
+    }
     
     
     // MARK: - Start Streaming
     func startStreaming(url:NSURL,name:String,title:String) {
-        
-        self.player?.pause()
-        let dispatchQueue = DispatchQueue.global()
-        dispatchQueue.async(execute: { [self] in
-                            do{
-                                self.Urlstring = String(format: "%@", url as NSURL)
-                                self.playerItem = AVPlayerItem(url: url as URL)
-                                self.observePlaybackEnd(of: self.playerItem)
-                                player = AVPlayer(playerItem: self.playerItem)
-                                
-                                let playerLayer = AVPlayerLayer(player: player)
-                                playerLayer.frame = CGRect(x: 0, y: 0, width: 10, height: 10)
-                                Name = name
-                                Titel = title
-                                playAudios()
-                                setupAudioSession()                                
-                            }
-                            catch{
-                                print("\(error)")
-                            }
-                    });
+        streamGeneration += 1
+        let generation = streamGeneration
+        // Stop any existing playback first — recreating AVPlayer without this left orphan audio overlapping.
+        tearDownCurrentPlayer()
+
+        Urlstring = String(format: "%@", url as NSURL)
+        Name = name
+        Titel = title
+
+        let item = AVPlayerItem(url: url as URL)
+        playerItem = item
+        observePlaybackEnd(of: item)
+        if let existing = player {
+            existing.replaceCurrentItem(with: item)
+        } else {
+            player = AVPlayer(playerItem: item)
+        }
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, generation == self.streamGeneration else { return }
+            self.playAudios()
+            self.setupAudioSession()
+        }
     }
     
      
     func playAudios() {
         SpeechVu.active?.stopForChapterAudio()
-        player!.play()
+        guard let player = player else { return }
+        player.play()
         setupNowPlaying()
         setupRemoteCommandCenter()
     }
@@ -215,26 +232,29 @@ class AudioPlayerService  {
     
     
     func setupRemoteCommandCenter() {
-        let commandCenter = MPRemoteCommandCenter.shared();
+        // Register once — adding targets on every play stacked PlayControl and could restart audio over itself.
+        guard !remoteCommandsConfigured else { return }
+        remoteCommandsConfigured = true
+        let commandCenter = MPRemoteCommandCenter.shared()
         commandCenter.playCommand.isEnabled = true
-        commandCenter.playCommand.addTarget {event in
-            App_Protocol.delegateAVplayerProtocol!.PlayControl()
+        commandCenter.playCommand.addTarget { _ in
+            App_Protocol.delegateAVplayerProtocol?.PlayControl()
             return .success
         }
         commandCenter.pauseCommand.isEnabled = true
-        commandCenter.pauseCommand.addTarget {event in
-            App_Protocol.delegateAVplayerProtocol!.PlayControl()
+        commandCenter.pauseCommand.addTarget { _ in
+            App_Protocol.delegateAVplayerProtocol?.PlayControl()
             return .success
         }
         
         commandCenter.nextTrackCommand.isEnabled = true
-        commandCenter.nextTrackCommand.addTarget {event in
-            self.seekForward(time: 10)
+        commandCenter.nextTrackCommand.addTarget { [weak self] _ in
+            self?.seekForward(time: 10)
             return .success
         }
         commandCenter.previousTrackCommand.isEnabled = true
-        commandCenter.previousTrackCommand.addTarget {event in
-            self.seekBackward(time: 10)
+        commandCenter.previousTrackCommand.addTarget { [weak self] _ in
+            self?.seekBackward(time: 10)
             return .success
         }
     }

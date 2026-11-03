@@ -46,6 +46,10 @@ class SettingsTableCell: UITableViewCell {
     private let cardView = UIView()
     private let cardLine = UIView()
     private var addedChevron: UIImageView?
+    /// Drawn above the card on the first row of a section so titles never pin over rows (plain-table sticky headers).
+    private let sectionTitleLabel = UILabel()
+    private var showsSectionTitle = false
+    static let sectionTitleBand: CGFloat = 32
 
     let Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
 
@@ -55,8 +59,9 @@ class SettingsTableCell: UITableViewCell {
         contentView.backgroundColor = .clear
     }
 
-    func applyCard(edge: CardEdge, night: Bool) {
+    func applyCard(edge: CardEdge, night: Bool, sectionTitle: String? = nil) {
         cardEdge = edge
+        showsSectionTitle = !(sectionTitle?.isEmpty ?? true)
         if cardView.superview == nil {
             cardView.isUserInteractionEnabled = false
             insertSubview(cardView, at: 0)
@@ -64,6 +69,19 @@ class SettingsTableCell: UITableViewCell {
             cardLine.isUserInteractionEnabled = false
             contentView.addSubview(cardLine)
         }
+        if sectionTitleLabel.superview == nil {
+            sectionTitleLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+            sectionTitleLabel.textColor = UIColor(white: 0.55, alpha: 1)
+            sectionTitleLabel.isUserInteractionEnabled = false
+            insertSubview(sectionTitleLabel, aboveSubview: cardView)
+        }
+        sectionTitleLabel.text = sectionTitle
+        sectionTitleLabel.isHidden = !showsSectionTitle
+        // Old storyboard header labels inside prototype cells must stay hidden.
+        Notification?.isHidden = true
+        FontTheme?.isHidden = true
+        AboutApp?.isHidden = true
+        Support?.isHidden = true
         backgroundColor = .clear
         contentView.backgroundColor = .clear
         contentView.isOpaque = false
@@ -103,7 +121,23 @@ class SettingsTableCell: UITableViewCell {
     override func layoutSubviews() {
         super.layoutSubviews()
         let inset: CGFloat = 16
-        cardView.frame = CGRect(x: inset, y: 0, width: max(0, bounds.width - inset * 2), height: bounds.height)
+        let titleBand = showsSectionTitle ? SettingsTableCell.sectionTitleBand : 0
+        // Keep row labels/chevrons in the card band only — title sits above and scrolls with the row.
+        contentView.frame = CGRect(x: 0, y: titleBand, width: bounds.width, height: max(0, bounds.height - titleBand))
+        if showsSectionTitle {
+            sectionTitleLabel.frame = CGRect(
+                x: 20,
+                y: titleBand - 20,
+                width: max(0, bounds.width - 40),
+                height: 16
+            )
+        }
+        cardView.frame = CGRect(
+            x: inset,
+            y: titleBand,
+            width: max(0, bounds.width - inset * 2),
+            height: max(0, bounds.height - titleBand)
+        )
         cardView.layer.cornerRadius = cardEdge == .middle ? 0 : 14
         switch cardEdge {
         case .single:
@@ -122,7 +156,14 @@ class SettingsTableCell: UITableViewCell {
         cardView.layer.shadowOpacity = cardEdge == .middle ? 0 : 0.05
         cardView.layer.shadowRadius = 6
         cardView.layer.shadowOffset = CGSize(width: 0, height: 2)
-        cardLine.frame = CGRect(x: 36, y: bounds.height - 0.5, width: max(0, bounds.width - 72), height: 0.5)
+        cardLine.frame = CGRect(x: 36, y: contentView.bounds.height - 0.5, width: max(0, bounds.width - 72), height: 0.5)
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        showsSectionTitle = false
+        sectionTitleLabel.isHidden = true
+        sectionTitleLabel.text = nil
     }
 
     override func setSelected(_ selected: Bool, animated: Bool) {

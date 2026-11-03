@@ -596,6 +596,7 @@
 		6F9FDDDE2EEFFEA600CE0114 /* Onboarding2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDD92EEFFEA600CE0114 /* Onboarding2.swift */; };
 		6F9FDDDF2EEFFEA600CE0114 /* Onboarding1.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDD82EEFFEA600CE0114 /* Onboarding1.swift */; };
 		6F9FDDE12EEFFEDD00CE0114 /* BibleSubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDE02EEFFEDD00CE0114 /* BibleSubscriptionView.swift */; };
+		A1B2C3D42F46A10100000051 /* PaywallTriggerScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000050 /* PaywallTriggerScreens.swift */; };
 		6F9FDDE32EEFFF2400CE0114 /* StoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDE22EEFFF2400CE0114 /* StoreManager.swift */; };
 		6FC2A3B02F05260000E2331E /* BibleHiPromotionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FC2A3AE2F05260000E2331E /* BibleHiPromotionView.swift */; };
 		A1B2C3D42F46A10100000001 /* OnboardingShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000011 /* OnboardingShared.swift */; };
@@ -671,6 +672,7 @@
 		C4E5F60A2F48E30100000006 /* ChallengeQuizProfilePhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F60A2F48E30100000016 /* ChallengeQuizProfilePhoto.swift */; };
 		D42E2B172BF79432006D4D18 /* puzzal Notification in Resources */ = {isa = PBXBuildFile; fileRef = D42E2B162BF79432006D4D18 /* puzzal Notification */; };
 		D6E7F8092F49F60100000001 /* AIUsageLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */; };
+		D6E7F8092F49F60100000002 /* AIUsageExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E7F8092F49F60100000012 /* AIUsageExtras.swift */; };
 		E7F1A0022F8B4C0100A1B001 /* streak_flame.gif in Resources */ = {isa = PBXBuildFile; fileRef = E7F1A0012F8B4C0100A1B001 /* streak_flame.gif */; };
 		E7F8091A2F4AF70100000001 /* LegacyPaidAppService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */; };
 /* End PBXBuildFile section */
@@ -1304,6 +1306,7 @@
 		6F9FDDDA2EEFFEA600CE0114 /* Onboarding3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding3.swift; sourceTree = "<group>"; };
 		6F9FDDDB2EEFFEA600CE0114 /* Onboarding4.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding4.swift; sourceTree = "<group>"; };
 		6F9FDDE02EEFFEDD00CE0114 /* BibleSubscriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BibleSubscriptionView.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000050 /* PaywallTriggerScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallTriggerScreens.swift; sourceTree = "<group>"; };
 		6F9FDDE22EEFFF2400CE0114 /* StoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreManager.swift; sourceTree = "<group>"; };
 		6FC2A3AE2F05260000E2331E /* BibleHiPromotionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BibleHiPromotionView.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000011 /* OnboardingShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingShared.swift; sourceTree = "<group>"; };
@@ -1378,6 +1381,7 @@
 		C4E5F60A2F48E30100000016 /* ChallengeQuizProfilePhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeQuizProfilePhoto.swift; sourceTree = "<group>"; };
 		D42E2B162BF79432006D4D18 /* puzzal Notification */ = {isa = PBXFileReference; lastKnownFileType = file; path = "puzzal Notification"; sourceTree = "<group>"; };
 		D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUsageLimiter.swift; sourceTree = "<group>"; };
+		D6E7F8092F49F60100000012 /* AIUsageExtras.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUsageExtras.swift; sourceTree = "<group>"; };
 		E7F1A0012F8B4C0100A1B001 /* streak_flame.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = streak_flame.gif; sourceTree = "<group>"; };
 		E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyPaidAppService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -2988,6 +2992,7 @@
 				01AIC10129FBD2210006BD01 /* OpenAIChatService.swift */,
 				01AIC10329FBD2210006BD03 /* OpenAIExplanationService.swift */,
 				D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */,
+				D6E7F8092F49F60100000012 /* AIUsageExtras.swift */,
 			);
 			path = OpenAIChat;
 			sourceTree = "<group>";
@@ -3607,6 +3612,7 @@
 				A1B2C3D42F46A10100000035 /* AuthHubProfileView.swift */,
 				A1B2C3D42F46A10100000011 /* OnboardingShared.swift */,
 				6F9FDDE02EEFFEDD00CE0114 /* BibleSubscriptionView.swift */,
+				A1B2C3D42F46A10100000050 /* PaywallTriggerScreens.swift */,
 				6F9FDDE22EEFFF2400CE0114 /* StoreManager.swift */,
 			);
 			path = NewOnboarding;
@@ -4511,6 +4517,7 @@
 				018F8C1729430F60005F9F30 /* MenuCC.swift in Sources */,
 				0144EEB92A90CD530022EABF /* FilterCCell.swift in Sources */,
 				6F9FDDE12EEFFEDD00CE0114 /* BibleSubscriptionView.swift in Sources */,
+				A1B2C3D42F46A10100000051 /* PaywallTriggerScreens.swift in Sources */,
 				0128C0562C197B07002B4FD9 /* BookAdListViewController.swift in Sources */,
 				017C394A2A40401C004C64FA /* QuizAnswerCC.swift in Sources */,
 				01B1279D294872B100D95467 /* ImageTint.swift in Sources */,
@@ -4545,6 +4552,7 @@
 				01AIC30129FBD2210006BD21 /* OpenAIChatService.swift in Sources */,
 				01AIC30329FBD2210006BD23 /* OpenAIExplanationService.swift in Sources */,
 				D6E7F8092F49F60100000001 /* AIUsageLimiter.swift in Sources */,
+				D6E7F8092F49F60100000002 /* AIUsageExtras.swift in Sources */,
 				01AIC30229FBD2210006BD22 /* AIChatViewController.swift in Sources */,
 				01OPC30129FBD2210006BD31 /* OpenChatService.swift in Sources */,
 				01OPC30229FBD2210006BD32 /* OpenChatViewController.swift in Sources */,

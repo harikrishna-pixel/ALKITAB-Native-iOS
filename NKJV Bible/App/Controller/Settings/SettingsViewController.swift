@@ -24,6 +24,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   var Picker_Vu:UIView?
   let dateFormatter = DateFormatter()
   let Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
+
+  /// Same page fill as the table — section headers must be opaque so sticky plain-style headers do not show card rows through them.
+  private var settingsPageColor: UIColor {
+      Themecolor == BGNightMode ? BGNightMode : UIColor(red: 0.95, green: 0.96, blue: 0.98, alpha: 1)
+  }
     
   override func viewDidLoad() {
       super.viewDidLoad()
@@ -32,15 +37,16 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
       self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
       BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
       
-      let page = Themecolor == BGNightMode ? BGNightMode : UIColor(red: 0.95, green: 0.96, blue: 0.98, alpha: 1)
+      let page = settingsPageColor
       self.SettingsTable.backgroundColor = page
       self.view.backgroundColor = page
       self.SettingsTable.separatorStyle = .none
       self.SettingsTable.rowHeight = 56
       self.SettingsTable.estimatedRowHeight = 56
-      self.SettingsTable.sectionHeaderHeight = 28
+      // Section titles live on the first row (not sticky headers) so they cannot pin over cards.
+      self.SettingsTable.sectionHeaderHeight = CGFloat.leastNormalMagnitude
       self.SettingsTable.sectionFooterHeight = 0
-      self.SettingsTable.estimatedSectionHeaderHeight = 28
+      self.SettingsTable.estimatedSectionHeaderHeight = 0
       self.SettingsTable.estimatedSectionFooterHeight = 0
       self.SettingsTable.sectionHeaderTopPadding = 0
       self.SettingsTable.contentInset = UIEdgeInsets(top: 4, left: 0, bottom: 24, right: 0)
@@ -98,13 +104,18 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   
   // MARK:- Tableview Delegate
   
+  private let sectionTitles = ["NOTIFICATION", "FONT & THEME", "FEATURES", "ABOUT & SUPPORT"]
+
   func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        // First row of each section includes the title band above the card (same look as FEATURES / ABOUT).
+        if indexPath.row == 0 {
+            return 56 + SettingsTableCell.sectionTitleBand
+        }
         return 56
   }
 
   func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        if section == 2 && !usesOldOnboarding { return 0 }
-        return 28
+        return CGFloat.leastNormalMagnitude
   }
 
   func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
@@ -118,23 +129,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   }
 
   func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        if section == 2 && !usesOldOnboarding {
-            return UIView()
-        }
-        let titles = ["NOTIFICATION", "FONT & THEME", "FEATURES", "ABOUT & SUPPORT"]
-        let header = UIView()
-        header.backgroundColor = .clear
-        let label = UILabel()
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = titles[section]
-        label.font = UIFont.systemFont(ofSize: 12, weight: .medium)
-        label.textColor = UIColor(white: 0.55, alpha: 1)
-        header.addSubview(label)
-        NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 20),
-            label.centerYAnchor.constraint(equalTo: header.centerYAnchor)
-        ])
-        return header
+        return nil
+  }
+
+  private func sectionTitle(for indexPath: IndexPath) -> String? {
+        guard indexPath.row == 0, indexPath.section < sectionTitles.count else { return nil }
+        if indexPath.section == 2 && !usesOldOnboarding { return nil }
+        return sectionTitles[indexPath.section]
   }
   
   func numberOfSections(in tableView: UITableView) -> Int {
@@ -146,7 +147,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         case 0: return 1
         case 1: return 2
         case 2: return usesOldOnboarding ? 1 : 0
-        case 3: return 6
+        case 3: return PaywallTriggerGate.shared.showsSettingsPremiumRow ? 7 : 6
         default: return 0
         }
     }
@@ -210,10 +211,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
       case (3, 5):
           cell = tableView.dequeueReusableCell(withIdentifier: "Help", for: indexPath) as! SettingsTableCell
           styleRowTitle(cell.Help)
+      case (3, 6):
+          cell = tableView.dequeueReusableCell(withIdentifier: "FeedBack", for: indexPath) as! SettingsTableCell
+          cell.Feedback?.text = "★  Go Premium"
+          styleRowTitle(cell.Feedback)
       default:
           return UITableViewCell()
       }
-      cell.applyCard(edge: cardEdge(for: indexPath, in: tableView), night: night)
+      cell.applyCard(edge: cardEdge(for: indexPath, in: tableView), night: night, sectionTitle: sectionTitle(for: indexPath))
       return cell
     }
   
@@ -273,6 +278,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           } else {
               self.view.makeToast("No internet connection", duration: 2.0, position: .top)
           }
+      case (3, 6):
+          PaywallTriggerGate.shared.requestUserStarted("settings")
       default:
           break
       }

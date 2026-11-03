@@ -42,7 +42,7 @@ struct ReflectionView: View {
 
                     Text(verse.reference)
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(hex: "1C46B2"))
+                        .foregroundColor(DailyJourneyTheme.color)
 
                     Text(isLockedReview
                           ? "Completed for this day."
@@ -59,21 +59,21 @@ struct ReflectionView: View {
                             }) {
                                 HStack(spacing: 12) {
                                     Image(systemName: option.icon)
-                                        .foregroundColor(selectedOption == index ? Color(hex: "1C46B2") : Color.black.opacity(0.35))
+                                        .foregroundColor(selectedOption == index ? DailyJourneyTheme.color : Color.black.opacity(0.35))
                                         .frame(width: 24)
                                     Text(option.title)
                                         .font(.system(size: 15, weight: .medium))
                                         .foregroundColor(.black)
                                     Spacer()
                                     Image(systemName: selectedOption == index ? "checkmark.circle.fill" : "circle")
-                                        .foregroundColor(selectedOption == index ? Color(hex: "1C46B2") : Color.black.opacity(0.2))
+                                        .foregroundColor(selectedOption == index ? DailyJourneyTheme.color : Color.black.opacity(0.2))
                                 }
                                 .padding(14)
                                 .background(Color.white)
                                 .cornerRadius(14)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 14)
-                                        .stroke(selectedOption == index ? Color(hex: "1C46B2") : Color.black.opacity(0.08), lineWidth: 1.5)
+                                        .stroke(selectedOption == index ? DailyJourneyTheme.color : Color.black.opacity(0.08), lineWidth: 1.5)
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -197,7 +197,7 @@ struct ReflectionView: View {
             ZStack(alignment: .leading) {
                 Capsule().fill(Color.black.opacity(0.08))
                 Capsule()
-                    .fill(Color(hex: "1C46B2"))
+                    .fill(DailyJourneyTheme.color)
                     .frame(width: geo.size.width * (wasAlreadyCompleted || store.reflectionCompleted ? 1.0 : 0.75))
             }
         }
@@ -213,7 +213,7 @@ struct ReflectionView: View {
     }
 
     private var reflectionButtonColor: Color {
-        isLockedReview || wasAlreadyCompleted ? Color(hex: "1C7A3D") : Color(hex: "1C46B2")
+        isLockedReview || wasAlreadyCompleted ? Color(hex: "1C7A3D") : DailyJourneyTheme.color
     }
 
     private var canSaveReflection: Bool {

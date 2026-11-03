@@ -21,7 +21,7 @@ struct DailyVerseFullscreenView: View {
                             .scaledToFill()
                     } else {
                         LinearGradient(
-                            gradient: Gradient(colors: [Color(hex: "1C46B2"), Color(hex: "0B1B3A")]),
+                            gradient: Gradient(colors: [DailyJourneyTheme.color, Color(hex: "0B1B3A")]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )

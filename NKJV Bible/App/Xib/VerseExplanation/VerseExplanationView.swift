@@ -70,6 +70,11 @@ final class VerseExplanationView: UIView {
     override func didMoveToSuperview() {
         super.didMoveToSuperview()
         guard superview != nil else { return }
+        // Block dim taps briefly so a leftover Continue/menu finger-up cannot close the sheet instantly.
+        dimButton.isEnabled = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) { [weak self] in
+            self?.dimButton.isEnabled = true
+        }
         applyContent()
     }
 
@@ -498,10 +503,9 @@ final class VerseExplanationView: UIView {
                 self.explanationText = text
                 self.showSuccess(text)
             case .failure(.networkError):
-                let window = self.window
-                self.onDismiss?()
+                // Keep the sheet open — auto-dismiss looked like Get Explanation never opened.
                 let message = getConnection.shared.networkBlockMessage() ?? "No internet connection."
-                window?.makeToast(message, duration: 2.0, position: .top)
+                self.showError(message)
             case .failure(let error):
                 self.showError(error.localizedDescription)
             }
@@ -528,10 +532,9 @@ final class VerseExplanationView: UIView {
                 self.explanationText = text
                 self.showSuccess(text)
             case .failure(.networkError):
-                let window = self.window
-                self.onDismiss?()
+                // Keep the sheet open — auto-dismiss looked like the summary never opened.
                 let message = getConnection.shared.networkBlockMessage() ?? "No internet connection."
-                window?.makeToast(message, duration: 2.0, position: .top)
+                self.showError(message)
             case .failure(let error):
                 self.showError(error.localizedDescription)
             }

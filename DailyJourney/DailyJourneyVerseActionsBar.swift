@@ -59,8 +59,8 @@ final class VerseActionsContainer: UIView {
 
     private let shareButton = UIButton(type: .custom)
     private let bookmarkButton = UIButton(type: .custom)
-    private let accentColor = UIColor(red: 28 / 255, green: 70 / 255, blue: 178 / 255, alpha: 1)
-    private let buttonBackground = UIColor(red: 232 / 255, green: 238 / 255, blue: 255 / 255, alpha: 1)
+    private var accentColor: UIColor { DailyJourneyTheme.uiColor }
+    private var buttonBackground: UIColor { accentColor.withAlphaComponent(0.12) }
 
     override init(frame: CGRect) {
         super.init(frame: frame)

@@ -426,50 +426,49 @@ struct OnboardingComfortView: View {
                             .overlay(RoundedRectangle(cornerRadius: 16).stroke(OnboardingTheme.paperLine, lineWidth: 1))
                             .padding(.horizontal, 26)
                             .padding(.top, 16)
-
-                            Text("THEME")
-                                .font(.system(size: 11, weight: .heavy))
-                                .tracking(1.4)
-                                .foregroundColor(Color(hex: "7488A6"))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 26)
-                                .padding(.top, 18)
-
-                            HStack(spacing: 8) {
-                                themeChip("Light", id: "light", swatch: Color.white, border: true)
-                                themeChip("Sepia", id: "sepia", swatch: Color(hex: "F2E6CC"), border: false)
-                                themeChip("Dark", id: "dark", swatch: Color(hex: "14213D"), border: false)
-                            }
-                            .padding(.horizontal, 26)
-                            .padding(.top, 8)
-
-                            Text("TEXT SIZE")
-                                .font(.system(size: 11, weight: .heavy))
-                                .tracking(1.4)
-                                .foregroundColor(Color(hex: "7488A6"))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 26)
-                                .padding(.top, 18)
-
-                            OnboardingTextSizeLine(fontSize: $fontSize)
-                                .padding(.horizontal, 26)
-                                .padding(.top, 10)
-                            Spacer(minLength: 20)
+                            Spacer(minLength: 12)
                         }
                     }
 
-                    VStack(spacing: 12) {
+                    VStack(spacing: 0) {
+                        Text("THEME")
+                            .font(.system(size: 11, weight: .heavy))
+                            .tracking(1.4)
+                            .foregroundColor(Color(hex: "7488A6"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        HStack(spacing: 8) {
+                            themeChip("Light", id: "light", swatch: Color.white, border: true)
+                            themeChip("Sepia", id: "sepia", swatch: Color(hex: "F2E6CC"), border: false)
+                            themeChip("Dark", id: "dark", swatch: Color(hex: "14213D"), border: false)
+                        }
+                        .padding(.top, 8)
+
+                        Text("TEXT SIZE")
+                            .font(.system(size: 11, weight: .heavy))
+                            .tracking(1.4)
+                            .foregroundColor(Color(hex: "7488A6"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 16)
+
+                        OnboardingTextSizeLine(fontSize: $fontSize)
+                            .padding(.top, 10)
+
                         OnboardingPrimaryButton(title: "Continue", onDark: false) {
                             OnboardingTheme.applyReadingChoice(theme: theme, fontSize: fontSize)
                             navigateForward = true
                         }
+                        .padding(.top, 18)
+
                         Text("You can change this anytime in Settings.")
                             .font(.system(size: 13))
                             .foregroundColor(OnboardingTheme.textSecondary)
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
+                            .padding(.top, 12)
                     }
                     .padding(.horizontal, 26)
+                    .padding(.top, 8)
                     .padding(.bottom, max(geometry.safeAreaInsets.bottom, 16))
                     .background(
                         NavigationLink(destination: OnboardingVerseImageView(), isActive: $navigateForward) {
@@ -700,23 +699,51 @@ struct OnboardingVerseImageView: View {
 struct OnboardingTextSizeLine: View {
     @Binding var fontSize: CGFloat
 
+    private let minSize: CGFloat = 16
+    private let maxSize: CGFloat = 28
+    private let thumbSize: CGFloat = 22
+
+    private var progress: CGFloat {
+        min(1, max(0, (fontSize - minSize) / (maxSize - minSize)))
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: { fontSize = max(16, fontSize - 2) }) {
+            Button(action: { fontSize = max(minSize, fontSize - 2) }) {
                 Text("A")
                     .font(.system(size: 16, weight: .semibold))
             }
             GeometryReader { bar in
+                let usable = max(1, bar.size.width - thumbSize)
+                let thumbX = usable * progress
                 ZStack(alignment: .leading) {
                     Capsule()
                         .fill(OnboardingTheme.primaryBlue.opacity(0.25))
+                        .frame(height: 4)
                     Capsule()
                         .fill(OnboardingTheme.primaryBlue)
-                        .frame(width: max(8, bar.size.width * min(1, (fontSize - 16) / 12)))
+                        .frame(width: max(thumbSize / 2, thumbX + thumbSize / 2), height: 4)
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: thumbSize, height: thumbSize)
+                        .overlay(Circle().stroke(OnboardingTheme.primaryBlue, lineWidth: 2.5))
+                        .shadow(color: Color.black.opacity(0.12), radius: 2, y: 1)
+                        .offset(x: thumbX)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            let p = min(1, max(0, (value.location.x - thumbSize / 2) / usable))
+                            let raw = minSize + p * (maxSize - minSize)
+                            fontSize = (raw / 2).rounded() * 2
+                            fontSize = min(maxSize, max(minSize, fontSize))
+                        }
+                )
             }
-            .frame(height: 4)
-            Button(action: { fontSize = min(28, fontSize + 2) }) {
+            .frame(height: thumbSize)
+            Button(action: { fontSize = min(maxSize, fontSize + 2) }) {
                 Text("A")
                     .font(.system(size: 22, weight: .semibold))
             }

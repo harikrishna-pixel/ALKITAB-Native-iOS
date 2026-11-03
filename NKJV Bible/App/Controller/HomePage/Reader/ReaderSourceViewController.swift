@@ -112,7 +112,33 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
         App_Protocol.delegateReader?.PageConfig()
         App_Protocol.delegatePageController?.ReloadAllData(index: Pageindex) 
         self.reloadCollectionView(collectionView: self.BibleCollectionView)
-        
+        scheduleExplanationReminder()
+    }
+
+    /// "Your free explanation is waiting" card on the reading tab, at most once a day.
+    private func scheduleExplanationReminder() {
+        guard usesOldOnboarding else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
+            guard let self = self,
+                  self.view.window != nil,
+                  !self.AudioBibleList.isEmpty,
+                  let reader = App_Protocol.delegateReader as? ReaderViewController,
+                  reader.SelectedTab == "1",
+                  reader.MenuFrame == nil,
+                  reader.myView == nil,
+                  reader.presentedViewController == nil,
+                  reader.navigationController?.topViewController === reader else { return }
+            let book = self.Book
+            let page = self.Pageindex
+            let verses = self.AudioBibleList
+            AIFeatureReminder.showIfNeeded(in: reader.view, below: reader.Navigateframe, reference: "\(book) \(page):1") {
+                AIUsageLimiter.shared.requestAccess(.explanation) {
+                    DispatchQueue.main.async {
+                        App_Protocol.delegateReader?.ExplanationNib(VersePosition: 1, BookName: book, Pageindex: page + 1, BookVerse: verses)
+                    }
+                }
+            }
+        }
     }
     
     
@@ -201,6 +227,7 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
                   cell.SummaryButton.addTarget(self, action: #selector(SummaryAction), for: .touchUpInside)
                   AIUsageLimiter.shared.applyLockBadge(to: cell.SummaryButton, feature: .chapterSummary)
               }
+              cell.updateSummaryRemaining(visible: usesOldOnboarding)
                           
              return cell
 
@@ -300,6 +327,7 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
         
         // BUG FIX (DOUBLE POPUP): NEW CODE - Call popup only once after updating data
         if self.MarkAsReadArray.contains("\(Book)-\(self.Pageindex)") {
+            PaywallTriggerGate.shared.noteChapterMarked(book: Book, marked: self.MarkAsReadArray)
             App_Protocol.delegateReader?.MarkAsReadPopup()
         }
         
@@ -320,13 +348,26 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
             (self.view.window ?? self.view).makeToast(message, duration: 2.0, position: .top)
             return
         }
-        AIUsageLimiter.shared.requestAccess(.chapterSummary) { [weak self] in
-            guard let self = self else { return }
-            App_Protocol.delegateReader?.ChapterSummaryNib(
-                BookName: self.Book,
-                Pageindex: self.Pageindex,
-                BookVerse: self.AudioBibleList
-            )
+        // Capture now — same Continue handoff as Get Explanation; do not rely on this VC staying in the closure.
+        let bookName = Book
+        let pageIndex = Pageindex
+        let bookVerse = AudioBibleList
+        guard !bookVerse.isEmpty else {
+            (self.view.window ?? self.view).makeToast("Please try again", duration: 2.0, position: .top)
+            return
+        }
+        AIUsageLimiter.shared.requestAccess(.chapterSummary) {
+            DispatchQueue.main.async {
+                guard let reader = App_Protocol.delegateReader else {
+                    OnboardingAuthManager.topViewController()?.view.makeToast("Please try again", duration: 2.0, position: .top)
+                    return
+                }
+                reader.ChapterSummaryNib(
+                    BookName: bookName,
+                    Pageindex: pageIndex,
+                    BookVerse: bookVerse
+                )
+            }
         }
     }
     
@@ -340,18 +381,17 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
             let RAteUs = showDate1.interval(ofComponent: .day, fromDate: Date())
             
             if RAteUs < 0 {
-                let alert = UIAlertController(title: "Rate App", message: "If you love using Bible, would you mind taking a moment to rate it? It won't take more than a minute. Thanks for your support!" , preferredStyle: .alert)
-                    alert.addAction(UIAlertAction(title: "No, Thanks", style: .cancel, handler:{ (UIAlertAction)in
-                        UserDefaults.standard.setValue(true, forKey: "RateUSoneTime")
-                    }))
-                    alert.addAction(UIAlertAction(title: "Rate It Now", style: .default, handler:{ (UIAlertAction)in
-                        SKStoreReviewController.requestReviewInCurrentScene()
-                        UserDefaults.standard.setValue(true, forKey: "RateUSoneTime")
-                    }))
-
-                alert.popoverPresentationController?.sourceView = self.view
-                self.present(alert, animated: true, completion: {
-                 })
+                let prompt = RateAppPromptController()
+                prompt.modalPresentationStyle = .overFullScreen
+                prompt.modalTransitionStyle = .crossDissolve
+                prompt.onDecline = {
+                    UserDefaults.standard.setValue(true, forKey: "RateUSoneTime")
+                }
+                prompt.onRate = {
+                    SKStoreReviewController.requestReviewInCurrentScene()
+                    UserDefaults.standard.setValue(true, forKey: "RateUSoneTime")
+                }
+                self.present(prompt, animated: true, completion: nil)
             }
         }
     }
@@ -552,9 +592,21 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
     
     
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        
-        if let reader = App_Protocol.delegateReader as? ReaderViewController {
-            reader.closePlayerPopupWithoutAnimation()
+        // Do not close Speak/Audio here — that belongs to cancel / menu only (not mixed with scroll chrome).
+        guard let reader = App_Protocol.delegateReader as? ReaderViewController else { return }
+        // Only the Read tab owns scroll hide/show. Momentum after switching to Quiz/Home must not hide the bar.
+        guard reader.SelectedTab == "1" else {
+            if scrollView.contentOffset.y >= 60 {
+                lastContentOffset = scrollView.contentOffset.y
+            }
+            return
+        }
+        // While the audio player is open, do not hide/show the bottom bar on scroll either.
+        if reader.isAudioPlayerOpen {
+            if scrollView.contentOffset.y >= 60 {
+                lastContentOffset = scrollView.contentOffset.y
+            }
+            return
         }
         
         // Near the chapter end, do not hide or show the bars. That resize moves Mark as Read and Get Summary.
@@ -579,7 +631,103 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
             lastContentOffset = scrollView.contentOffset.y
         }
     }
+
+    /// Bars visible again after cancel player or leaving/returning from Home (scroll-hide state reset).
+    func resetScrollChromeHiddenState() {
+        upDownStatus = false
+        lastContentOffset = 60
+    }
     
+}
+
+private final class RateAppPromptController: UIViewController {
+    var onDecline: (() -> Void)?
+    var onRate: (() -> Void)?
+
+    private let ink = UIColor(red: 0.07, green: 0.08, blue: 0.12, alpha: 1)
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.4)
+
+        let card = UIView()
+        card.backgroundColor = .white
+        card.layer.cornerRadius = 20
+        card.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(card)
+
+        let title = UILabel()
+        title.text = "Rate App"
+        title.font = .systemFont(ofSize: 18, weight: .bold)
+        title.textColor = ink
+        title.textAlignment = .center
+        title.numberOfLines = 0
+
+        let message = UILabel()
+        message.text = "If you love using Bible, would you mind taking a moment to rate it? It won't take more than a minute. Thanks for your support!"
+        message.font = .systemFont(ofSize: 16, weight: .medium)
+        message.textColor = ink
+        message.textAlignment = .center
+        message.numberOfLines = 0
+
+        let decline = pillButton(title: "No, Thanks")
+        decline.addTarget(self, action: #selector(declineTapped), for: .touchUpInside)
+        let rate = pillButton(title: "Rate It Now")
+        rate.addTarget(self, action: #selector(rateTapped), for: .touchUpInside)
+
+        let buttons = UIStackView(arrangedSubviews: [decline, rate])
+        buttons.axis = .horizontal
+        buttons.spacing = 10
+        buttons.distribution = .fillEqually
+
+        let stack = UIStackView(arrangedSubviews: [title, message, buttons])
+        stack.axis = .vertical
+        stack.spacing = 14
+        stack.setCustomSpacing(18, after: message)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(stack)
+
+        let preferredWidth = card.widthAnchor.constraint(equalToConstant: 320)
+        preferredWidth.priority = UILayoutPriority(999)
+
+        NSLayoutConstraint.activate([
+            card.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            card.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            preferredWidth,
+            card.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 24),
+            card.trailingAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -24),
+
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: 22),
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 18),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -18),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -18),
+
+            decline.heightAnchor.constraint(equalToConstant: 44),
+            rate.heightAnchor.constraint(equalToConstant: 44)
+        ])
+    }
+
+    private func pillButton(title: String) -> UIButton {
+        let button = UIButton(type: .custom)
+        button.setTitle(title, for: .normal)
+        button.setTitleColor(ink, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        button.titleLabel?.adjustsFontSizeToFitWidth = true
+        button.titleLabel?.minimumScaleFactor = 0.8
+        button.backgroundColor = UIColor(red: 0.93, green: 0.94, blue: 0.96, alpha: 1)
+        button.layer.cornerRadius = 12
+        return button
+    }
+
+    @objc private func declineTapped() {
+        let action = onDecline
+        dismiss(animated: true) { action?() }
+    }
+
+    @objc private func rateTapped() {
+        let action = onRate
+        dismiss(animated: true) { action?() }
+    }
 }
 
 

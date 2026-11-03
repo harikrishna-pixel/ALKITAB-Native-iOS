@@ -573,20 +573,6 @@ struct OnboardingProPaywallView: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                HStack {
-                    Spacer()
-                    if !exitAlreadyShown {
-                        Button(action: openExit) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(Color(hex: "51607A"))
-                                .frame(width: 32, height: 32)
-                        }
-                    }
-                }
-                .padding(.horizontal, 18)
-                .padding(.top, 8)
-
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
                         Image("onboard_paywall_bible")
@@ -687,6 +673,18 @@ struct OnboardingProPaywallView: View {
                 }
                 .padding(.top, 10)
                 .padding(.bottom, 16)
+            }
+            .overlay(alignment: .topTrailing) {
+                if !exitAlreadyShown {
+                    Button(action: openExit) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(Color(hex: "51607A"))
+                            .frame(width: 32, height: 32)
+                    }
+                    .padding(.trailing, 18)
+                    .padding(.top, 8)
+                }
             }
 
             if showExit {

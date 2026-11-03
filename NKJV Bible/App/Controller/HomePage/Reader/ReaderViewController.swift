@@ -26,6 +26,8 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     private static var didShowVerseImageSaveAdThisSession = false
     /// Verse Image tap/swipe count this app session (IS at 10, 20, 30…).
     private static var verseImageViewAdCount = 0
+    /// Reading chapter swipes this app session. Interstitial every show_interstitial_row (10).
+    private static var chapterSwipeAdCount = 0
     
     var myView:UIView?
     var VerseView:UIView?
@@ -305,6 +307,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     }
     
     override func viewDidAppear(_ animated: Bool) {
+        PaywallTriggerGate.shared.flush()
 
         
         if PaymentHistory.sharedInstance.paymentInfo() && self.AdShow {
@@ -831,6 +834,17 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         }
         
     }
+
+    /// Finished chapter swipe. Same gate and interstitial as the other reading ads, every show_interstitial_row swipes.
+    func noteChapterSwipe() {
+        guard PaymentHistory.sharedInstance.paymentInfo() else { return }
+        let configured = Int(show_interstitial_row) ?? 0
+        let every = configured > 0 ? configured : 10
+        Self.chapterSwipeAdCount += 1
+        guard Self.chapterSwipeAdCount >= every else { return }
+        Self.chapterSwipeAdCount = 0
+        IndestrialAd()
+    }
     
     
     func CallWallpaperAds() {
@@ -868,6 +882,10 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     func TextToSpeech() {
+        // Drop any leftover overlay first so reopen Speak cannot stack dead sheets.
+        self.myView?.removeFromSuperview()
+        self.myView = nil
+        self.SpeechView = nil
         self.myView = UIView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height))
         //        self.myView?.backgroundColor = self.Themecolor
         self.view.addSubview(self.myView!)
@@ -969,20 +987,35 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
 //                self.PlayerButton.isEnabled = true
             })
         } else {
+            // Cancel / close: animate only the player. Background/content inset updates without animation.
             UIView.animate(withDuration: 0.4, animations: {
                 self.PLayerConstrain.constant = -200
-                self.VeresViewBottom.constant = self.verseBottomWithoutPlayer
-                self.SwipeDisable.isHidden = true
                 self.view.layoutIfNeeded()
+            }, completion: { _ in
+                UIView.performWithoutAnimation {
+                    self.VeresViewBottom.constant = self.verseBottomWithoutPlayer
+                    self.SwipeDisable.isHidden = true
+                    self.view.layoutIfNeeded()
+                }
+                self.showBottomChrome()
             })
         }
     }
 
-    /// Player bottom sits above the tab bar. Closed position stays -200.
+    /// Same bottom inset as the text-to-speech player: 10pt from the screen bottom. It does not follow the tab bar.
     private func openPlayerBottomConstant() -> CGFloat {
-        guard BottomMenyConstrain.constant > 0 else { return 10 }
-        let tabHeight = TabVu.bounds.height > 1 ? TabVu.bounds.height : 50
-        return BottomMenyConstrain.constant + tabHeight + 8
+        return 10 - view.safeAreaInsets.bottom
+    }
+
+    /// True while the chapter audio player sheet is on screen (not the Speak/Audio FAB popup).
+    var isAudioPlayerOpen: Bool {
+        PLayerConstrain.constant > -100
+    }
+
+    /// Show top + bottom chrome only. Does not open/close Speak/Audio or the audio player.
+    func showBottomChrome() {
+        (App_Protocol.delegateReaderSource as? ReaderSourceViewController)?.resetScrollChromeHiddenState()
+        ConstrainChange(Top: 0.0, bottom: StatusbarHeight)
     }
 
     /// Keeps the chapter above the audio player, with a gap, whenever that player is open.
@@ -1128,8 +1161,9 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     @IBAction func AudioPlayer_Action(_ sender: Any) {
+        // Close the Speak/Audio FAB first (no race with the chapter player open animation).
+        self.closePlayerPopupWithoutAnimation()
         self.playerAnimationAction()
-        self.OpenClosePLayAnimation()
     }
     
     @IBAction func TextPlayer_Action(_ sender: Any) {
@@ -1219,6 +1253,8 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                 self.Buttonfram()
                 self.selectBottomTabHighlight(.home)
                 self.Navigateframe.isHidden = false
+                // Home always gets the bottom tab bar — do not keep Read scroll-hide state.
+                self.showBottomChrome()
                 let vc = DailyJourneyHomeViewController()
                 self.showEmbeddedTab(vc)
     }
@@ -1234,6 +1270,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             
             self.Buttonfram()
             self.selectBottomTabHighlight(.read)
+            self.showBottomChrome()
         }
         
         if AUDIO_ENABLE == "0" && SPEECH_ENABLE == "0" {
@@ -1282,6 +1319,8 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             
             HomePageCall(Status: false)
         }
+        // Returning to Read always restores the bottom bar (separate from audio cancel).
+        self.showBottomChrome()
     }
     
     
@@ -1299,6 +1338,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                 self.Buttonfram()
                 self.selectBottomTabHighlight(.library)
                 self.Navigateframe.isHidden = false
+                self.showBottomChrome()
                 
                 let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "MyLibraryViewController") as! MyLibraryViewController
                 self.showEmbeddedTab(vc)
@@ -1326,6 +1366,8 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     @IBAction func Quiz_Action(_ sender: Any) {
         dismissMoreSheet()
+        // Always restore the bar (covers late Read-scroll hide after landing on Quiz).
+        self.showBottomChrome()
         if self.SelectedTab != "4" {
             self.playerONOFFCheck()
             self.SelectedTab = "4"
@@ -1358,6 +1400,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             self.MenuVu.isHidden = true
             self.Buttonfram()
             self.selectBottomTabHighlight(.prayer)
+            self.showBottomChrome()
             if NetworkManager.sharedInstance.isConnectedToInternet() {
                 self.Navigateframe.isHidden = false
                 let vc = PrayerWallViewController()
@@ -1752,17 +1795,9 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                     // BUG FIX 3 (OFFLINE IAP NAVIGATION): NEW CODE - Require internet connection
                     if NetworkManager.sharedInstance.isConnectedToInternet() {
                         if #available(iOS 15.0, *) {
-                            // OLD CODE: Presented IAP without specifying it's from within the app
-                            // This caused flicker when dismissing as it tried to navigate instead of dismiss
-                            // let swiftUIView = BibleSubscriptionView()
-                            
-                            // NEW CODE: Pass isPresentedFromOnboarding = false to enable smooth dismiss
-                            var swiftUIView = BibleSubscriptionView(isPresentedFromOnboarding: false)
-                            swiftUIView.dismissHandler = { [weak self] in
-                                self?.navigationController?.popViewController(animated: true)
+                            if !PaywallTriggerPresenter.show(trigger: "settings", from: self, onClose: {}) {
+                                self.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
                             }
-                            let hostingController = UIHostingController(rootView: swiftUIView)
-                            self.navigationController?.pushViewController(hostingController, animated: true)
                         } else {
                             // Fallback on earlier versions
                             let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "SubscrbViewController") as! SubscrbViewController
@@ -1779,16 +1814,9 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
                 // BUG FIX 3 (OFFLINE IAP NAVIGATION): NEW CODE - Require internet connection
                 if NetworkManager.sharedInstance.isConnectedToInternet() {
                     if #available(iOS 15.0, *) {
-                        // OLD CODE: Presented IAP without specifying it's from within the app
-                        // let swiftUIView = BibleSubscriptionView()
-                        
-                        // NEW CODE: Pass isPresentedFromOnboarding = false to enable smooth dismiss
-                        var swiftUIView = BibleSubscriptionView(isPresentedFromOnboarding: false)
-                        swiftUIView.dismissHandler = { [weak self] in
-                            self?.navigationController?.popViewController(animated: true)
+                        if !PaywallTriggerPresenter.show(trigger: "settings", from: self, onClose: {}) {
+                            self.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
                         }
-                        let hostingController = UIHostingController(rootView: swiftUIView)
-                        self.navigationController?.pushViewController(hostingController, animated: true)
                     } else {
                         // Fallback on earlier versions
                         let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "SubscrbViewController") as! SubscrbViewController
@@ -1868,6 +1896,12 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
 
     func ExplanationNib(VersePosition: Int, BookName: String, Pageindex: Int, BookVerse: Array<String>) {
         self.CloseMenu()
+        guard VersePosition >= 1, VersePosition <= BookVerse.count else {
+            self.view.makeToast("Please try again", duration: 2.0, position: .top)
+            return
+        }
+        // Replace any leftover overlay so Continue always lands on a fresh explanation sheet.
+        self.myView?.removeFromSuperview()
         self.myView = UIView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height))
         self.view.addSubview(self.myView!)
 
@@ -1892,6 +1926,10 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
 
     func ChapterSummaryNib(BookName: String, Pageindex: Int, BookVerse: Array<String>) {
         self.CloseMenu()
+        guard !BookVerse.isEmpty else {
+            self.view.makeToast("Please try again", duration: 2.0, position: .top)
+            return
+        }
         // The header is often slid off-screen at the chapter end. Put the theme color back before the sheet, with no animation, so the top does not flash white.
         let theme = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
         self.Themecolor = theme
@@ -1901,6 +1939,8 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             self.view.layoutIfNeeded()
         }
 
+        // Replace any leftover overlay so Continue always lands on a fresh summary sheet.
+        self.myView?.removeFromSuperview()
         self.myView = UIView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height))
         self.view.addSubview(self.myView!)
 
@@ -2121,9 +2161,6 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         UIView.performWithoutAnimation {
             self.topBannerConstant.constant = Top
             self.BottomMenyConstrain.constant = bottom
-            if self.PLayerConstrain.constant > -100 {
-                self.PLayerConstrain.constant = self.openPlayerBottomConstant()
-            }
             self.VeresViewBottom.constant = self.verseContentBottom(resting: resting)
             self.MenuConstrain.constant = bottom >= 20 ? 20 : 0
             self.view.layoutIfNeeded()

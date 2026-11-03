@@ -54,7 +54,7 @@ final class DailyVerseFullscreenViewController: UIViewController {
     }
 
     private func setupUI() {
-        view.backgroundColor = UIColor(red: 0.11, green: 0.18, blue: 0.42, alpha: 1)
+        view.backgroundColor = DailyJourneyTheme.uiColor
 
         backgroundImageView.translatesAutoresizingMaskIntoConstraints = false
         backgroundImageView.contentMode = .scaleAspectFill
@@ -75,7 +75,7 @@ final class DailyVerseFullscreenViewController: UIViewController {
         view.addSubview(closeButton)
 
         // Share / Save — top-right, same style as the other verse image screens.
-        let accent = UIColor(red: 28 / 255, green: 70 / 255, blue: 178 / 255, alpha: 1)
+        let accent = DailyJourneyTheme.uiColor
         [shareButton, saveButton].forEach { button in
             button.translatesAutoresizingMaskIntoConstraints = false
             button.backgroundColor = UIColor.white.withAlphaComponent(0.85)
@@ -106,7 +106,7 @@ final class DailyVerseFullscreenViewController: UIViewController {
         ctaButton.setTitle("Start Memory Challenge", for: .normal)
         ctaButton.setTitleColor(.white, for: .normal)
         ctaButton.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .bold)
-        ctaButton.backgroundColor = UIColor(red: 0.15, green: 0.39, blue: 0.92, alpha: 1)
+        ctaButton.backgroundColor = DailyJourneyTheme.uiColor
         ctaButton.layer.cornerRadius = 16
         ctaButton.layer.shadowColor = UIColor.black.cgColor
         ctaButton.layer.shadowOpacity = 0.28
@@ -320,10 +320,10 @@ final class DailyVerseFullscreenViewController: UIViewController {
             ctaButton.backgroundColor = UIColor(red: 0.11, green: 0.48, blue: 0.24, alpha: 1)
         } else if store.memoryCompleted {
             ctaButton.setTitle("Start Reflection", for: .normal)
-            ctaButton.backgroundColor = UIColor(red: 0.15, green: 0.39, blue: 0.92, alpha: 1)
+            ctaButton.backgroundColor = DailyJourneyTheme.uiColor
         } else {
             ctaButton.setTitle("Start Memory Challenge", for: .normal)
-            ctaButton.backgroundColor = UIColor(red: 0.15, green: 0.39, blue: 0.92, alpha: 1)
+            ctaButton.backgroundColor = DailyJourneyTheme.uiColor
         }
     }
 

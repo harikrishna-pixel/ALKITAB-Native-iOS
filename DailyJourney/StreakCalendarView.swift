@@ -116,7 +116,7 @@ struct StreakCalendarView: View {
             Button(action: { shiftMonth(by: -1) }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(hex: "1C46B2"))
+                    .foregroundColor(DailyJourneyTheme.color)
                     .frame(width: 32, height: 32)
                     .background(Color(hex: "EEF1F7"))
                     .clipShape(Circle())
@@ -134,7 +134,7 @@ struct StreakCalendarView: View {
             Button(action: { shiftMonth(by: 1) }) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(hex: "1C46B2"))
+                    .foregroundColor(DailyJourneyTheme.color)
                     .frame(width: 32, height: 32)
                     .background(Color(hex: "EEF1F7"))
                     .clipShape(Circle())
@@ -156,7 +156,7 @@ struct StreakCalendarView: View {
             } else {
                 Text("\(day)")
                     .font(.system(size: 14, weight: isToday ? .bold : .medium))
-                    .foregroundColor(isToday ? Color(hex: "1C46B2") : Color.black.opacity(0.75))
+                    .foregroundColor(isToday ? DailyJourneyTheme.color : Color.black.opacity(0.75))
             }
         }
         .frame(maxWidth: .infinity)
@@ -312,7 +312,7 @@ private struct CompletedStreakVerseView: View {
                             .scaledToFill()
                     } else {
                         LinearGradient(
-                            gradient: Gradient(colors: [Color(hex: "1C46B2"), Color(hex: "0B1B3A")]),
+                            gradient: Gradient(colors: [DailyJourneyTheme.color, Color(hex: "0B1B3A")]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -369,7 +369,7 @@ private struct CompletedStreakVerseView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
-                            .background(Color(hex: "1C46B2"))
+                            .background(DailyJourneyTheme.color)
                             .cornerRadius(16)
                     }
                     .buttonStyle(PlainButtonStyle())

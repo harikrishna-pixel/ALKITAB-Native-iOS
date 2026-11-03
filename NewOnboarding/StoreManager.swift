@@ -208,9 +208,10 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
             print("   → Exit offer price: '\(self.exitOfferPrice)'")
             print("   → Exit offer loaded flag: \(self.isExitOfferProductLoaded)")
             
-            // FIXED: If product wasn't copied but should be available, try to fetch it
-            if self.exitOfferProduct == nil && !self.exitOfferProductID.isEmpty && !self.exitOfferPrice.isEmpty {
-                print("   ⚠️ Exit offer product missing but price exists - attempting to fetch...")
+            // iPad often opens this screen before the offer price arrives, so fetch it when it is still empty.
+            let iPadMissingOffer = UIDevice.current.userInterfaceIdiom == .pad && self.exitOfferPrice.isEmpty
+            if self.exitOfferProduct == nil && !self.exitOfferProductID.isEmpty && (!self.exitOfferPrice.isEmpty || iPadMissingOffer) {
+                print("   ⚠️ Exit offer product missing — attempting to fetch...")
                 self.fetchExitOfferProduct()
             }
             

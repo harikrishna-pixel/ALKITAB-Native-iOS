@@ -47,6 +47,9 @@ struct ChallengeQuizPreviewView: View {
                         ForEach(Array(questions[safeIndex].options.enumerated()), id: \.offset) { offset, option in
                             previewOption(option, offset: offset, correctIndex: questions[safeIndex].correctIndex)
                         }
+
+                        AIQuizNote(reference: verseReference, question: questions[safeIndex].prompt)
+                            .padding(.top, 6)
                     }
                     .padding(20)
                 }

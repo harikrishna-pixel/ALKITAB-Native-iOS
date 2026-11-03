@@ -191,6 +191,7 @@ extension InterstitialViewController  {
     
     func didClose(with adInfo: ISAdInfo!) {
         PlaybackAdHold.resume()
+        PaywallTriggerGate.shared.noteInterstitialClosed()
         self.CloseVc()
     }
     

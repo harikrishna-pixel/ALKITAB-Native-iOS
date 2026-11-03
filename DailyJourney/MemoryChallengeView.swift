@@ -35,7 +35,7 @@ struct MemoryChallengeView: View {
 
                     Text(verse.reference)
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(hex: "1C46B2"))
+                        .foregroundColor(DailyJourneyTheme.color)
 
                     Text(isLockedReview
                           ? "Here’s what you answered."
@@ -55,19 +55,23 @@ struct MemoryChallengeView: View {
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(Color.black.opacity(0.45))
 
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 10)], spacing: 10) {
-                            ForEach(Array(wordBank.enumerated()), id: \.offset) { _, word in
-                                Button(action: { selectWord(word) }) {
-                                    Text(word)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.black)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 10)
-                                        .background(Color(hex: "EEF1F7"))
-                                        .cornerRadius(12)
+                        if UIDevice.current.userInterfaceIdiom == .pad {
+                            MemoryPadWordBank(words: wordBank, onSelect: selectWord)
+                        } else {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 10)], spacing: 10) {
+                                ForEach(Array(wordBank.enumerated()), id: \.offset) { _, word in
+                                    Button(action: { selectWord(word) }) {
+                                        Text(word)
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.black)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 10)
+                                            .background(Color(hex: "EEF1F7"))
+                                            .cornerRadius(12)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
-                                .buttonStyle(PlainButtonStyle())
                             }
                         }
                     }
@@ -88,7 +92,7 @@ struct MemoryChallengeView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
-                        .background(Color(hex: "1C46B2"))
+                        .background(DailyJourneyTheme.color)
                         .cornerRadius(27)
                 }
 
@@ -110,7 +114,7 @@ struct MemoryChallengeView: View {
                         Button(action: revealHint) {
                             Text("Need a hint?")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: "1C46B2"))
+                                .foregroundColor(DailyJourneyTheme.color)
                         }
                     }
                     .padding(.horizontal, 4)
@@ -137,7 +141,7 @@ struct MemoryChallengeView: View {
             ZStack(alignment: .leading) {
                 Capsule().fill(Color.black.opacity(0.08))
                 Capsule()
-                    .fill(Color(hex: "1C46B2"))
+                    .fill(DailyJourneyTheme.color)
                     .frame(width: geo.size.width * (isReviewMode ? 1.0 : 0.5))
             }
         }
@@ -300,6 +304,80 @@ struct MemoryChallengeView: View {
     }
 }
 
+/// iPad word bank: each chip is as wide as its word, then the next chip uses the leftover row.
+private struct MemoryPadWordBank: View {
+    let words: [String]
+    let onSelect: (String) -> Void
+    @State private var rowWidth: CGFloat = UIScreen.main.bounds.width - 40
+
+    var body: some View {
+        let rows = packedRows(maxWidth: rowWidth)
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                HStack(spacing: 10) {
+                    ForEach(Array(row.enumerated()), id: \.offset) { _, word in
+                        Button(action: { onSelect(word) }) {
+                            Text(word)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.black)
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .background(Color(hex: "EEF1F7"))
+                                .cornerRadius(12)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .fixedSize(horizontal: true, vertical: false)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(key: MemoryBankWidthKey.self, value: geo.size.width)
+            }
+        )
+        .onPreferenceChange(MemoryBankWidthKey.self) { newWidth in
+            if newWidth > 1, abs(newWidth - rowWidth) > 1 {
+                rowWidth = newWidth
+            }
+        }
+    }
+
+    private func packedRows(maxWidth: CGFloat) -> [[String]] {
+        var rows: [[String]] = [[]]
+        var used: CGFloat = 0
+        let limit = max(maxWidth, 1)
+        for word in words {
+            let chip = chipWidth(word)
+            if used > 0, used + 10 + chip > limit {
+                rows.append([word])
+                used = chip
+            } else {
+                rows[rows.count - 1].append(word)
+                used += (used > 0 ? 10 : 0) + chip
+            }
+        }
+        return rows.filter { !$0.isEmpty }
+    }
+
+    private func chipWidth(_ word: String) -> CGFloat {
+        let font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        let textWidth = ceil((word as NSString).size(withAttributes: [.font: font]).width)
+        return textWidth + 28
+    }
+}
+
+private struct MemoryBankWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 /// Lays verse words out like normal reading text (wraps naturally).
 private struct MemoryVerseFlowView: View {
     let tokens: [String]
@@ -335,8 +413,8 @@ private struct MemoryVerseFlowView: View {
                 }) {
                     Text(filled[index] ?? "______")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(filled[index] == nil ? Color.black.opacity(0.35) : Color(hex: "1C46B2"))
-                        .underline(color: selectedBlank == index ? Color(hex: "1C46B2") : Color.black.opacity(0.2))
+                        .foregroundColor(filled[index] == nil ? Color.black.opacity(0.35) : DailyJourneyTheme.color)
+                        .underline(color: selectedBlank == index ? DailyJourneyTheme.color : Color.black.opacity(0.2))
                 }
                 .buttonStyle(PlainButtonStyle())
                 .disabled(isReviewMode)

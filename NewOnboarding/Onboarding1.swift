@@ -284,9 +284,14 @@ struct UIKitNavigationHelper {
                     return
                 }
 
-                let subscriptionView = BibleSubscriptionView()
-                let hostingController = UIHostingController(rootView: subscriptionView)
-                navigationController.pushViewController(hostingController, animated: true)
+                if PaywallTriggerGate.shared.isEnabled {
+                    let hostingController = UIHostingController(rootView: PaywallTriggerOnboardingView())
+                    navigationController.pushViewController(hostingController, animated: true)
+                } else {
+                    let subscriptionView = BibleSubscriptionView()
+                    let hostingController = UIHostingController(rootView: subscriptionView)
+                    navigationController.pushViewController(hostingController, animated: true)
+                }
             } else {
                 navigateToReaderViewController()
             }

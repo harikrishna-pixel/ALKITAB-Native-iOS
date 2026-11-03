@@ -1969,3 +1969,472 @@ private enum PaywallProcessHUD {
         BibleSubscriptionView()
     }
 }
+
+/// Plan prompts for the individual app's current paywall only. The Pro paywall does not use this.
+final class PaywallTriggerGate {
+
+    static let shared = PaywallTriggerGate()
+
+    private let installKey = "PaywallTriggerInstallAt"
+    private let lastPopupKey = "PaywallTriggerLastPopupAt"
+    private let lastRatingKey = "PaywallTriggerLastRatingAt"
+    private let ratingVersionKey = "PaywallTriggerRatingVersion"
+    private let imageDayKey = "PaywallTriggerImageDay"
+    private let imageCountKey = "PaywallTriggerImageCount"
+    private let adDayKey = "PaywallTriggerAdDay"
+    private let adCountKey = "PaywallTriggerAdCount"
+    private let shownKey = "PaywallTriggerShown"
+    private let finishedBooksKey = "PaywallTriggerFinishedBooks"
+    private let feedbackAtKey = "PaywallTriggerFeedbackAt"
+
+    private var shownThisSession = false
+    private var paywallShownThisSession = false
+    private var negativeThisSession = false
+    private var pendingMilestone: String?
+    private var openingMilestones = Set<String>()
+    private var pendingFeedback = false
+    private var pendingFeedbackBook = ""
+    private var pendingFeedbackChapters = 0
+    private var skipDay30Flush = false
+    private var didDeferDay30 = false
+    private var suppressDay3ThisSession = false
+    private var imageSheetTries = 0
+    private var imageSheetOpening = false
+    private var feedbackTries = 0
+    private var feedbackOpening = false
+    private var userCooldown: [String: Date] = [:]
+
+    private init() {}
+
+    /// Individual single-book app, on the current paywall. Pro onboarding never enters here.
+    var isEnabled: Bool { APP_TYPE == "1" && usesOldOnboarding }
+
+    var showsSettingsPremiumRow: Bool { isEnabled && !isEntitled }
+
+    func isUserStartedCoolingDown(_ name: String) -> Bool {
+        if name == "settings" || name == "chatLimit" || name == "chatCredits" { return false }
+        guard let last = userCooldown[name] else { return false }
+        return Date().timeIntervalSince(last) < 30 * 60
+    }
+
+    func requestUserStarted(_ name: String) {
+        guard isEnabled else { return }
+        guard !isEntitled else { return }
+        guard !isBusy else { return }
+        if name != "settings", blockedAfterRating() { return }
+        let chatCanRepeat = name == "chatLimit" || name == "chatCredits"
+        if name != "settings", !chatCanRepeat, isUserStartedCoolingDown(name) { return }
+        guard PaywallTriggerPresenter.canPresent(name) else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
+            return
+        }
+        userCooldown[name] = Date()
+        presentCurrentPaywall(countsAsPopup: false, trigger: name)
+    }
+
+    func noteChapterMarked(book: String, marked: [String]) {
+        guard isEnabled, !book.isEmpty else { return }
+        let total = marked.count
+        if total == 5 { pendingMilestone = "chapter.5" }
+        if total == 10 { pendingMilestone = "chapter.10" }
+        let prefix = book + "-"
+        let readInBook = marked.filter { $0.hasPrefix(prefix) }.count
+        let chapterCount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: book)
+        guard chapterCount > 0, readInBook >= chapterCount else { return }
+        var finished = UserDefaults.standard.stringArray(forKey: finishedBooksKey) ?? []
+        guard !finished.contains(book) else { return }
+        let firstBook = finished.isEmpty
+        finished.append(book)
+        UserDefaults.standard.set(finished, forKey: finishedBooksKey)
+        if firstBook || feedbackIsDue() {
+            rememberFeedback(book: book, chapters: readInBook)
+            presentPendingFeedback()
+        } else {
+            pendingMilestone = "book." + book
+            presentPendingBookCard()
+        }
+    }
+
+    private func feedbackIsDue() -> Bool {
+        let last = UserDefaults.standard.double(forKey: feedbackAtKey)
+        if last == 0 { return true }
+        return Date().timeIntervalSince1970 - last >= 60 * 24 * 60 * 60
+    }
+
+    private func rememberFeedback(book: String, chapters: Int) {
+        pendingFeedback = true
+        pendingFeedbackBook = book
+        pendingFeedbackChapters = chapters
+        pendingMilestone = nil
+        let defaults = UserDefaults.standard
+        defaults.set(true, forKey: "PaywallTriggerFeedbackPending")
+        defaults.set(book, forKey: "PaywallTriggerFeedbackBook")
+        defaults.set(chapters, forKey: "PaywallTriggerFeedbackChapters")
+    }
+
+    /// HTML: after the first finished book, then at most every 60 days. Great closes. Could be better opens the form. Great does not ask for a rating.
+    private func presentPendingFeedback() {
+        guard isEnabled else { return }
+        guard UserDefaults.standard.bool(forKey: "PaywallTriggerFeedbackPending") || pendingFeedback else { return }
+        let last = UserDefaults.standard.double(forKey: feedbackAtKey)
+        if last > 0 && Date().timeIntervalSince1970 - last < 60 * 24 * 60 * 60 {
+            UserDefaults.standard.set(false, forKey: "PaywallTriggerFeedbackPending")
+            pendingFeedback = false
+            return
+        }
+        guard !feedbackOpening else { return }
+        guard !isBusy else {
+            feedbackTries += 1
+            guard feedbackTries <= 6 else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                self?.presentPendingFeedback()
+            }
+            return
+        }
+        let book = UserDefaults.standard.string(forKey: "PaywallTriggerFeedbackBook") ?? pendingFeedbackBook
+        let chapters = max(UserDefaults.standard.integer(forKey: "PaywallTriggerFeedbackChapters"), pendingFeedbackChapters)
+        feedbackOpening = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.feedbackOpening = false
+            guard let top = OnboardingAuthManager.topViewController() else { return }
+            if top.presentedViewController != nil { return }
+            PaywallTriggerPresenter.showFeedback(book: book, chapters: chapters, from: top)
+            UserDefaults.standard.set(false, forKey: "PaywallTriggerFeedbackPending")
+            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: self.feedbackAtKey)
+            self.pendingFeedback = false
+            self.feedbackTries = 0
+            self.shownThisSession = true
+        }
+    }
+
+    /// HTML image 15: the finished-book card stays on the reading screen. It is not dropped if another rule blocks this moment.
+    private func presentPendingBookCard() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+            guard let self = self else { return }
+            guard self.isEnabled, !self.isEntitled, !self.isBusy else { return }
+            guard let key = self.pendingMilestone, key.hasPrefix("book.") else { return }
+            guard !self.hasShown(key), !self.openingMilestones.contains(key) else { return }
+            guard PaywallTriggerPresenter.canPresent(key) else { return }
+            self.pendingMilestone = nil
+            self.presentCurrentPaywall(countsAsPopup: true, milestone: key, trigger: key)
+        }
+    }
+
+    func noteVerseImageSaved() {
+        guard isEnabled else { return }
+        let defaults = UserDefaults.standard
+        if defaults.string(forKey: imageDayKey) != today {
+            defaults.set(0, forKey: "PaywallTriggerImageBonus")
+        }
+        let count = savedImagesToday() + 1
+        defaults.set(today, forKey: imageDayKey)
+        defaults.set(count, forKey: imageCountKey)
+        if count == 3 { requestRatingIfEligible() }
+        let free = 3 + defaults.integer(forKey: "PaywallTriggerImageBonus")
+        if count == free + 1 {
+            defaults.set(true, forKey: "PaywallTriggerImageSheetPending")
+            imageSheetTries = 0
+            presentImageLimitSheet()
+        }
+    }
+
+    /// HTML image 03. The 4th download of the day opens this sheet, and it stays pending until it can show.
+    private func presentImageLimitSheet() {
+        guard isEnabled, !isEntitled else {
+            UserDefaults.standard.set(false, forKey: "PaywallTriggerImageSheetPending")
+            return
+        }
+        guard UserDefaults.standard.bool(forKey: "PaywallTriggerImageSheetPending") else { return }
+        guard !imageSheetOpening else { return }
+        guard !isBusy, PaywallTriggerPresenter.canPresent("image") else {
+            imageSheetTries += 1
+            guard imageSheetTries <= 6 else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                self?.presentImageLimitSheet()
+            }
+            return
+        }
+        imageSheetOpening = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.imageSheetOpening = false
+            guard let top = OnboardingAuthManager.topViewController() else { return }
+            guard NetworkManager.sharedInstance.isConnectedToInternet() else { return }
+            guard PaywallTriggerPresenter.show(trigger: "image", from: top, onClose: {}) else { return }
+            UserDefaults.standard.set(false, forKey: "PaywallTriggerImageSheetPending")
+            self.imageSheetTries = 0
+            self.paywallShownThisSession = true
+        }
+    }
+
+    func noteInterstitialClosed() {
+        guard isEnabled else { return }
+        let defaults = UserDefaults.standard
+        if defaults.string(forKey: adDayKey) != today {
+            defaults.set(0, forKey: "PaywallTriggerAd3At")
+        }
+        let count = interstitialsToday() + 1
+        defaults.set(today, forKey: adDayKey)
+        defaults.set(count, forKey: adCountKey)
+        let key = "ad.3." + today
+        guard count >= 3, !negativeThisSession, !hasShown(key) else { return }
+        if defaults.double(forKey: "PaywallTriggerAd3At") == 0 {
+            defaults.set(Date().timeIntervalSince1970, forKey: "PaywallTriggerAd3At")
+        }
+    }
+
+    func noteNegativeMoment() {
+        guard isEnabled else { return }
+        negativeThisSession = true
+    }
+
+    func noteStreakDay(_ day: Int) {
+        guard isEnabled else { return }
+        guard day == 3 || day == 7 || day == 30 else { return }
+        if day == 3 { return }
+        if day == 30 {
+            UserDefaults.standard.set(true, forKey: "PaywallTriggerDay30Pending")
+            if !didDeferDay30 {
+                didDeferDay30 = true
+                skipDay30Flush = true
+            }
+            return
+        }
+        if day == 7, ratingIsEligible(), !hasShown("streak.7") {
+            markShown("streak.7")
+            playSystemRating()
+            return
+        }
+        showMilestone("streak.\(day)")
+    }
+
+    /// HTML: after the streak celebration. Day 3 card. Day 7 is Apple's rating, or the card when rating is not allowed. Day 30 is the Lifetime screen. Never rating and the card together.
+    func noteStreakCelebrationFinished(_ day: Int) {
+        guard isEnabled else { return }
+        switch day {
+        case 30:
+            UserDefaults.standard.set(true, forKey: "PaywallTriggerDay30Pending")
+            skipDay30Flush = false
+            showMilestone("streak.30")
+            if hasShown("streak.30") {
+                UserDefaults.standard.set(false, forKey: "PaywallTriggerDay30Pending")
+            }
+        case 7:
+            guard !hasShown("streak.7") else { return }
+            if ratingIsEligible() {
+                markShown("streak.7")
+                playSystemRating()
+            } else {
+                showMilestone("streak.7")
+            }
+        case 3:
+            UserDefaults.standard.set(true, forKey: "PaywallTriggerDay3Pending")
+            suppressDay3ThisSession = true
+        default:
+            break
+        }
+    }
+
+    func playSystemRating() {
+        requestRatingIfEligible()
+    }
+
+    func flush() {
+        guard isEnabled else { return }
+        if UserDefaults.standard.bool(forKey: "PaywallTriggerImageSheetPending") {
+            imageSheetTries = 0
+            presentImageLimitSheet()
+        }
+        if !suppressDay3ThisSession, UserDefaults.standard.bool(forKey: "PaywallTriggerDay3Pending") {
+            showMilestone("streak.3")
+            if hasShown("streak.3") {
+                UserDefaults.standard.set(false, forKey: "PaywallTriggerDay3Pending")
+            }
+            if hasShown("streak.3") || openingMilestones.contains("streak.3") { return }
+        }
+        let adAt = UserDefaults.standard.double(forKey: "PaywallTriggerAd3At")
+        if UserDefaults.standard.string(forKey: adDayKey) != today {
+            UserDefaults.standard.set(0, forKey: "PaywallTriggerAd3At")
+        } else if adAt > 0 {
+            let elapsed = Date().timeIntervalSince1970 - adAt
+            let key = "ad.3." + today
+            if elapsed >= 60, !hasShown(key) {
+                showMilestone(key)
+                if hasShown(key) || openingMilestones.contains(key) {
+                    UserDefaults.standard.set(0, forKey: "PaywallTriggerAd3At")
+                    return
+                }
+            }
+        }
+        if !skipDay30Flush, UserDefaults.standard.bool(forKey: "PaywallTriggerDay30Pending") {
+            showMilestone("streak.30")
+            if hasShown("streak.30") {
+                UserDefaults.standard.set(false, forKey: "PaywallTriggerDay30Pending")
+            }
+            if hasShown("streak.30") { return }
+        }
+        if skipDay30Flush { skipDay30Flush = false }
+        if pendingFeedback || UserDefaults.standard.bool(forKey: "PaywallTriggerFeedbackPending") {
+            feedbackTries = 0
+            presentPendingFeedback()
+            return
+        }
+        guard let key = pendingMilestone else { return }
+        if key.hasPrefix("book.") {
+            presentPendingBookCard()
+            return
+        }
+        pendingMilestone = nil
+        showMilestone(key)
+    }
+
+    private var isEntitled: Bool {
+        if PaymentHistory.sharedInstance.hasActivePurchase() { return true }
+        if LegacyPaidAppService.shared.isLegacyPaidAppUser { return true }
+        let paymentId = UserDefaults.standard.string(forKey: "PaymentId") ?? ""
+        let lower = paymentId.lowercased()
+        if !lower.isEmpty && lower.contains("lifetime") { return true }
+        let ids = [
+            SUBSCRIPTIONID_LifeTime,
+            SUBSCRIPTIONID_ExitOffer,
+            FallbackIAPConstants.lifetimeProductID,
+            FallbackIAPConstants.exitOfferProductID
+        ]
+        return ids.contains { !$0.isEmpty && $0.caseInsensitiveCompare(paymentId) == .orderedSame }
+    }
+
+    private var isBusy: Bool {
+        guard let top = OnboardingAuthManager.topViewController() else { return true }
+        if top.presentedViewController != nil { return true }
+        let name = String(describing: type(of: top))
+        if name.contains("Quiz") { return true }
+        return false
+    }
+
+    private func showMilestone(_ key: String) {
+        guard automaticRulesPass() else { return }
+        guard !hasShown(key), !openingMilestones.contains(key) else { return }
+        guard PaywallTriggerPresenter.canPresent(key) else {
+            pendingMilestone = key
+            return
+        }
+        openingMilestones.insert(key)
+        presentCurrentPaywall(countsAsPopup: true, milestone: key, trigger: key)
+    }
+
+    private func automaticRulesPass() -> Bool {
+        guard isEnabled, !isEntitled, !isBusy, !negativeThisSession else { return false }
+        rememberInstallDate()
+        let install = UserDefaults.standard.double(forKey: installKey)
+        if Date().timeIntervalSince1970 - install < 10 * 60 { return false }
+        if shownThisSession { return false }
+        let last = UserDefaults.standard.double(forKey: lastPopupKey)
+        if last > 0 && Date().timeIntervalSince1970 - last < 24 * 60 * 60 { return false }
+        if blockedAfterRating() { return false }
+        return true
+    }
+
+    private func blockedAfterRating() -> Bool {
+        let last = UserDefaults.standard.double(forKey: lastRatingKey)
+        return last > 0 && Date().timeIntervalSince1970 - last < 48 * 60 * 60
+    }
+
+    private func requestRatingIfEligible() {
+        guard ratingIsEligible() else { return }
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        UserDefaults.standard.set(version, forKey: ratingVersionKey)
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: lastRatingKey)
+        shownThisSession = true
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: lastPopupKey)
+        if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+            SKStoreReviewController.requestReview(in: scene)
+        }
+    }
+
+    private func ratingIsEligible() -> Bool {
+        guard isEnabled, !isBusy, !paywallShownThisSession, !negativeThisSession else { return false }
+        rememberInstallDate()
+        let install = UserDefaults.standard.double(forKey: installKey)
+        if Date().timeIntervalSince1970 - install < 7 * 24 * 60 * 60 { return false }
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        if UserDefaults.standard.string(forKey: ratingVersionKey) == version { return false }
+        let last = UserDefaults.standard.double(forKey: lastRatingKey)
+        if last > 0 && Date().timeIntervalSince1970 - last < 90 * 24 * 60 * 60 { return false }
+        return true
+    }
+
+    private func presentCurrentPaywall(countsAsPopup: Bool, milestone: String? = nil, trigger: String) {
+        DispatchQueue.main.async {
+            guard let top = OnboardingAuthManager.topViewController() else {
+                self.releaseMilestone(milestone)
+                return
+            }
+            guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+                self.releaseMilestone(milestone)
+                return
+            }
+            let name = trigger
+            guard PaywallTriggerPresenter.show(trigger: name, from: top, onClose: {}) else {
+                self.releaseMilestone(milestone)
+                return
+            }
+            if name == "chatLimit" || name == "chatCredits" {
+                AIUsageLimiter.shared.markChatUpsellShown()
+            }
+            if let milestone = milestone {
+                self.markShown(milestone)
+                self.openingMilestones.remove(milestone)
+            }
+            if countsAsPopup {
+                self.shownThisSession = true
+                self.paywallShownThisSession = true
+                UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: self.lastPopupKey)
+            } else {
+                self.paywallShownThisSession = true
+            }
+        }
+    }
+
+    private func rememberInstallDate() {
+        let defaults = UserDefaults.standard
+        guard defaults.object(forKey: installKey) == nil else { return }
+        let alreadyUsing = (defaults.string(forKey: "AppOpenFirst") ?? "0") == "1"
+        let start = alreadyUsing ? Date().addingTimeInterval(-8 * 24 * 60 * 60) : Date()
+        defaults.set(start.timeIntervalSince1970, forKey: installKey)
+    }
+
+    private var today: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd-MM-yyyy"
+        return formatter.string(from: Date())
+    }
+
+    private func savedImagesToday() -> Int {
+        guard UserDefaults.standard.string(forKey: imageDayKey) == today else { return 0 }
+        return UserDefaults.standard.integer(forKey: imageCountKey)
+    }
+
+    private func interstitialsToday() -> Int {
+        guard UserDefaults.standard.string(forKey: adDayKey) == today else { return 0 }
+        return UserDefaults.standard.integer(forKey: adCountKey)
+    }
+
+    private func releaseMilestone(_ key: String?) {
+        guard let key = key else { return }
+        openingMilestones.remove(key)
+        pendingMilestone = key
+    }
+
+    private func hasShown(_ key: String) -> Bool {
+        let shown = UserDefaults.standard.stringArray(forKey: shownKey) ?? []
+        return shown.contains(key)
+    }
+
+    private func markShown(_ key: String) {
+        var shown = UserDefaults.standard.stringArray(forKey: shownKey) ?? []
+        guard !shown.contains(key) else { return }
+        shown.append(key)
+        UserDefaults.standard.set(shown, forKey: shownKey)
+    }
+}

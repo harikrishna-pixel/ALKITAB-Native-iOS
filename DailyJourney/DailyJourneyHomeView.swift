@@ -4,6 +4,17 @@
 //
 
 import SwiftUI
+import UIKit
+
+enum DailyJourneyTheme {
+    static var uiColor: UIColor {
+        UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
+    }
+
+    static var color: Color {
+        Color(uiColor)
+    }
+}
 
 struct DailyJourneyHomeView: View {
     @ObservedObject var store: DailyJourneyStore
@@ -25,6 +36,7 @@ struct DailyJourneyHomeView: View {
     var onOpenMemoryChallenge: (DailyVerseSnapshot) -> Void
     var onOpenReflection: (DailyVerseSnapshot) -> Void
     var onPresentStreakComplete: () -> Void
+    var onOpenAIFeature: (AIUsageFeature) -> Void
 
     init(
         store: DailyJourneyStore = .shared,
@@ -35,7 +47,8 @@ struct DailyJourneyHomeView: View {
         onOpenVerseFullscreen: @escaping (DailyVerseSnapshot, Bool, @escaping (DailyVerseSnapshot) -> Void) -> Void = { _, _, _ in },
         onOpenMemoryChallenge: @escaping (DailyVerseSnapshot) -> Void = { _ in },
         onOpenReflection: @escaping (DailyVerseSnapshot) -> Void = { _ in },
-        onPresentStreakComplete: @escaping () -> Void = {}
+        onPresentStreakComplete: @escaping () -> Void = {},
+        onOpenAIFeature: @escaping (AIUsageFeature) -> Void = { _ in }
     ) {
         self.store = store
         self.onContinueReading = onContinueReading
@@ -46,6 +59,7 @@ struct DailyJourneyHomeView: View {
         self.onOpenMemoryChallenge = onOpenMemoryChallenge
         self.onOpenReflection = onOpenReflection
         self.onPresentStreakComplete = onPresentStreakComplete
+        self.onOpenAIFeature = onOpenAIFeature
         _verse = State(initialValue: DailyVerseSnapshot.loadCurrent())
         _continueReading = State(initialValue: ContinueReadingSnapshot.loadCurrent())
     }
@@ -78,9 +92,30 @@ struct DailyJourneyHomeView: View {
             VStack(alignment: .leading, spacing: 18) {
                 header
 
+                if PaywallTriggerGate.shared.showsSettingsPremiumRow {
+                    Button(action: { PaywallTriggerGate.shared.requestUserStarted("settings") }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "star.fill")
+                                .foregroundColor(Color(hex: "C8963E"))
+                            Text("Go Premium")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(Color(hex: "12315C"))
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(Color(hex: "8B95A7"))
+                        }
+                        .padding(16)
+                        .background(RoundedRectangle(cornerRadius: 16).fill(Color(hex: "EEF3FB")))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+
                 if store.allStepsComplete {
                     streakSummaryCard
                 }
+
+                AIHomeBanner(onOpen: onOpenAIFeature)
 
                 todaysVerseCard
 
@@ -145,6 +180,8 @@ struct DailyJourneyHomeView: View {
             isVerseImageSaved = false
             loadPrayerCount()
             UserDefaults.standard.set("1", forKey: "AppOpenFirst")
+            PaywallTriggerGate.shared.noteStreakDay(store.streakCount)
+            PaywallTriggerGate.shared.flush()
             if store.allStepsComplete {
                 didAutoPresentStreak = true
             }
@@ -276,7 +313,7 @@ struct DailyJourneyHomeView: View {
                             .scaledToFill()
                     } else {
                         LinearGradient(
-                            gradient: Gradient(colors: [Color(hex: "1C46B2"), Color(hex: "0B1B3A")]),
+                            gradient: Gradient(colors: [DailyJourneyTheme.color, Color(hex: "0B1B3A")]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -335,7 +372,7 @@ struct DailyJourneyHomeView: View {
                 Spacer()
                 ForEach(1...verticalVerseImageCount, id: \.self) { i in
                     Circle()
-                        .fill(verse.imageName == "S\(i).jpg" ? Color(hex: "1C46B2") : Color.black.opacity(0.15))
+                        .fill(verse.imageName == "S\(i).jpg" ? DailyJourneyTheme.color : Color.black.opacity(0.15))
                         .frame(width: 7, height: 7)
                 }
                 Spacer()
@@ -412,7 +449,7 @@ struct DailyJourneyHomeView: View {
         subtitle: String,
         icon: String,
         done: Bool,
-        iconTint: Color = Color(hex: "1C46B2"),
+        iconTint: Color = DailyJourneyTheme.color,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -476,7 +513,7 @@ struct DailyJourneyHomeView: View {
                     }
                     Text(prayerCount > 3 ? "+\(max(prayerCount - 3, 0))" : "+")
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(Color(hex: "1C46B2"))
+                        .foregroundColor(DailyJourneyTheme.color)
                         .frame(width: 32, height: 32)
                         .background(Color(hex: "E8EEFF"))
                         .clipShape(Circle())
@@ -518,7 +555,7 @@ struct DailyJourneyHomeView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(Color(UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor))
+                    .background(DailyJourneyTheme.color)
                     .cornerRadius(20)
                 }
             }

@@ -43,8 +43,8 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     private let inputTextView = UITextView()
     private let placeholderLabel = UILabel()
     private let freeCountLabel = UILabel()
+    private let freeCountBar = AIUsageBarView()
     private let sendButton = UIButton(type: .custom)
-    private let typingLabel = UILabel()
 
     private var bannerHeightConstraint: NSLayoutConstraint?
     private var composerBottomConstraint: NSLayoutConstraint?
@@ -70,6 +70,13 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         super.viewDidLoad()
         setupUI()
         setupKeyboardObservers()
+        NotificationCenter.default.addObserver(self, selector: #selector(chatCreditsAdded(_:)), name: AIUsageLimiter.chatCreditsAdded, object: nil)
+    }
+
+    @objc private func chatCreditsAdded(_ note: Notification) {
+        refreshSendLock()
+        let amount = note.userInfo?["amount"] as? Int ?? 20
+        view.makeToast("\(amount) credits added to the wallet", duration: 2.0, position: .top)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -107,14 +114,31 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     private func refreshFreeCount() {
-        let unlimited = AIUsageLimiter.shared.hasUnlimitedPlan
-        freeCountLabel.isHidden = unlimited
-        guard !unlimited else {
-            freeCountLabel.text = nil
+        if AIUsageLimiter.shared.hasUnlimitedPlan {
+            let green = UIColor(red: 0.11, green: 0.48, blue: 0.24, alpha: 1)
+            let line = NSMutableAttributedString()
+            if let crown = UIImage(systemName: "crown.fill")?.withTintColor(green, renderingMode: .alwaysOriginal) {
+                let attachment = NSTextAttachment()
+                attachment.image = crown
+                attachment.bounds = CGRect(x: 0, y: -2, width: 15, height: 12)
+                line.append(NSAttributedString(attachment: attachment))
+                line.append(NSAttributedString(string: " "))
+            }
+            line.append(NSAttributedString(string: "Unlimited AI messages with Premium", attributes: [
+                .foregroundColor: green,
+                .font: UIFont.systemFont(ofSize: 12, weight: .semibold)
+            ]))
+            freeCountLabel.attributedText = line
+            freeCountBar.fillColor = green
+            freeCountBar.fraction = 1
             return
         }
-        let left = AIUsageLimiter.shared.freeUsesLeft(.aiChat)
-        freeCountLabel.text = left == 1 ? "1 free message left" : "\(left) free messages left"
+        freeCountLabel.attributedText = nil
+        freeCountLabel.font = UIFont.systemFont(ofSize: 12)
+        freeCountLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.55) : UIColor(white: 0.45, alpha: 1)
+        freeCountLabel.text = AIUsageLimiter.shared.remainingText(.aiChat)
+        freeCountBar.fillColor = isNight ? .white : themeColor
+        freeCountBar.fraction = AIUsageLimiter.shared.remainingFraction(.aiChat)
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -161,7 +185,6 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         tableView.estimatedRowHeight = 88
         tableView.rowHeight = UITableView.automaticDimension
         tableView.register(AIChatBubbleCell.self, forCellReuseIdentifier: AIChatBubbleCell.reuseId)
-        tableView.register(AIChatTypingCell.self, forCellReuseIdentifier: AIChatTypingCell.reuseId)
         view.addSubview(tableView)
 
         suggestionContainer.translatesAutoresizingMaskIntoConstraints = false
@@ -204,6 +227,9 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         freeCountLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.55) : UIColor(white: 0.45, alpha: 1)
         composerContainer.addSubview(freeCountLabel)
 
+        freeCountBar.translatesAutoresizingMaskIntoConstraints = false
+        composerContainer.addSubview(freeCountBar)
+
         sendButton.translatesAutoresizingMaskIntoConstraints = false
         let sendConfig = UIImage.SymbolConfiguration(pointSize: 36, weight: .semibold)
         sendButton.setImage(UIImage(systemName: "arrow.up.circle.fill", withConfiguration: sendConfig), for: .normal)
@@ -215,13 +241,6 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         sendButton.imageView?.clipsToBounds = false
         sendButton.addTarget(self, action: #selector(sendTapped), for: .touchUpInside)
         composerContainer.addSubview(sendButton)
-
-        typingLabel.translatesAutoresizingMaskIntoConstraints = false
-        typingLabel.text = "Searching the Scriptures for you..."
-        typingLabel.font = UIFont.systemFont(ofSize: 12)
-        typingLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.6) : .darkGray
-        typingLabel.isHidden = true
-        composerContainer.addSubview(typingLabel)
 
         setupEmptyState()
 
@@ -263,10 +282,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             composerLine.trailingAnchor.constraint(equalTo: composerContainer.trailingAnchor),
             composerLine.heightAnchor.constraint(equalToConstant: 0.5),
 
-            typingLabel.topAnchor.constraint(equalTo: composerContainer.topAnchor, constant: 8),
-            typingLabel.leadingAnchor.constraint(equalTo: composerContainer.leadingAnchor, constant: 20),
-
-            inputTextView.topAnchor.constraint(equalTo: typingLabel.bottomAnchor, constant: 6),
+            inputTextView.topAnchor.constraint(equalTo: composerContainer.topAnchor, constant: 10),
             inputTextView.leadingAnchor.constraint(equalTo: composerContainer.leadingAnchor, constant: 16),
             inputTextView.trailingAnchor.constraint(equalTo: sendButton.leadingAnchor, constant: -8),
             inputHeightConstraint!,
@@ -274,7 +290,12 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             freeCountLabel.topAnchor.constraint(equalTo: inputTextView.bottomAnchor, constant: 4),
             freeCountLabel.leadingAnchor.constraint(equalTo: inputTextView.leadingAnchor, constant: 16),
             freeCountLabel.trailingAnchor.constraint(equalTo: inputTextView.trailingAnchor),
-            freeCountLabel.bottomAnchor.constraint(equalTo: composerContainer.safeAreaLayoutGuide.bottomAnchor, constant: -6),
+
+            freeCountBar.topAnchor.constraint(equalTo: freeCountLabel.bottomAnchor, constant: 4),
+            freeCountBar.leadingAnchor.constraint(equalTo: freeCountLabel.leadingAnchor),
+            freeCountBar.widthAnchor.constraint(equalTo: freeCountLabel.widthAnchor, multiplier: 0.6),
+            freeCountBar.heightAnchor.constraint(equalToConstant: 3),
+            freeCountBar.bottomAnchor.constraint(equalTo: composerContainer.safeAreaLayoutGuide.bottomAnchor, constant: -6),
 
             placeholderLabel.topAnchor.constraint(equalTo: inputTextView.topAnchor, constant: 10),
             placeholderLabel.leadingAnchor.constraint(equalTo: inputTextView.leadingAnchor, constant: 16),
@@ -328,6 +349,13 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         super.viewDidLayoutSubviews()
         installContextHeaderIfNeeded()
         installVerseSuggestionFooterIfNeeded()
+        fitEmptyStateToSpace()
+    }
+
+    /// With the keyboard up on small screens the welcome text has no room and would sit under the suggestion chips.
+    private func fitEmptyStateToSpace() {
+        let needed = emptyStateView.subviews.map { $0.frame.maxY }.max() ?? 0
+        emptyStateView.alpha = emptyStateView.bounds.height >= needed ? 1 : 0
     }
 
     private func setupEmptyState() {
@@ -928,7 +956,6 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         refreshInputHeight()
         emptyStateView.isHidden = true
         isSending = true
-        typingLabel.isHidden = false
         refreshFollowUpSuggestions()
         reloadChatAndScrollToBottom(animated: true)
         // Keep keyboard/composer frame stable while the reply loads (avoids screen jump).
@@ -937,7 +964,6 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         OpenAIChatService.shared.send(input: payload) { [weak self] result in
             guard let self = self else { return }
             self.isSending = false
-            self.typingLabel.isHidden = true
 
             switch result {
             case .success(let reply):
@@ -1020,16 +1046,10 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return messages.count + (isSending ? 1 : 0)
+        return messages.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        if indexPath.row >= messages.count {
-            let cell = tableView.dequeueReusableCell(withIdentifier: AIChatTypingCell.reuseId, for: indexPath) as! AIChatTypingCell
-            cell.configure(isNight: isNight, themeColor: themeColor)
-            return cell
-        }
-
         let cell = tableView.dequeueReusableCell(withIdentifier: AIChatBubbleCell.reuseId, for: indexPath) as! AIChatBubbleCell
         cell.configure(message: messages[indexPath.row], isNight: isNight, themeColor: themeColor)
         cell.onCopy = { [weak self] text in
@@ -1178,48 +1198,5 @@ private final class AIChatBubbleCell: UITableViewCell {
 
     @objc private func shareTapped() {
         onShare?(currentMessageText)
-    }
-}
-
-private final class AIChatTypingCell: UITableViewCell {
-    static let reuseId = "AIChatTypingCell"
-
-    private let bubbleView = UIView()
-    private let label = UILabel()
-
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-        super.init(style: style, reuseIdentifier: reuseIdentifier)
-        selectionStyle = .none
-        backgroundColor = .clear
-        contentView.backgroundColor = .clear
-
-        bubbleView.translatesAutoresizingMaskIntoConstraints = false
-        bubbleView.layer.cornerRadius = 16
-        contentView.addSubview(bubbleView)
-
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = "Typing..."
-        label.font = UIFont.italicSystemFont(ofSize: 14)
-        bubbleView.addSubview(label)
-
-        NSLayoutConstraint.activate([
-            bubbleView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            bubbleView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 6),
-            bubbleView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
-
-            label.topAnchor.constraint(equalTo: bubbleView.topAnchor, constant: 10),
-            label.leadingAnchor.constraint(equalTo: bubbleView.leadingAnchor, constant: 14),
-            label.trailingAnchor.constraint(equalTo: bubbleView.trailingAnchor, constant: -14),
-            label.bottomAnchor.constraint(equalTo: bubbleView.bottomAnchor, constant: -10)
-        ])
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    func configure(isNight: Bool, themeColor: UIColor) {
-        bubbleView.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.1) : .white
-        label.textColor = isNight ? UIColor.white.withAlphaComponent(0.7) : .gray
     }
 }

@@ -306,6 +306,7 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
             
             if status == PHAuthorizationStatus.authorized {
                 CustomPhotoAlbum.sharedInstance.saveImage(image: self.saveImage!)
+                PaywallTriggerGate.shared.noteVerseImageSaved()
                 DispatchQueue.main.async {
                     self.makeToast("Image Saved Successfully!", duration: 2.0, position: .top)
                 }

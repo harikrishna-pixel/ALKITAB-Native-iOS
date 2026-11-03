@@ -569,6 +569,7 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
                     self.WatermarkClose.isHidden = false
                     
                     CustomPhotoAlbum.sharedInstance.saveImage(image: self.makeImageFrom(self.Mainview))
+                    PaywallTriggerGate.shared.noteVerseImageSaved()
                     self.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .top)
                 }
             case .denied:

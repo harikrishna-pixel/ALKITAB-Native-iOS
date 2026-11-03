@@ -126,6 +126,14 @@ class PageSwipeVc: UIPageViewController, UIPageViewControllerDataSource, UIPageV
 
 
 
+    func pageViewController(_ pageViewController: UIPageViewController, didFinishAnimating finished: Bool, previousViewControllers: [UIViewController], transitionCompleted completed: Bool) {
+        guard finished, completed else { return }
+        guard let page = pageViewController.viewControllers?.first as? ReaderSourceViewController,
+              let previous = previousViewControllers.first as? ReaderSourceViewController,
+              page.Pageindex != previous.Pageindex else { return }
+        (App_Protocol.delegateReader as? ReaderViewController)?.noteChapterSwipe()
+    }
+
     func presentationCountForPageViewController(pageViewController: UIPageViewController!) -> Int {
         return self.identifiers.count
     }

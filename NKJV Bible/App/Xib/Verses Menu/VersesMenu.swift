@@ -68,6 +68,14 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     private static var getExplanationExtraHeight: CGFloat {
         getExplanationTopInset + getExplanationButtonHeight + getExplanationBookNameGap
     }
+    private static let explanationRemainingGap: CGFloat = 5
+    private static let explanationRemainingHeight: CGFloat = 21
+    private var explanationRemainingView: AIRemainingLineView?
+    private var explanationRemainingTop: NSLayoutConstraint?
+    private var explanationRemainingHeightConstraint: NSLayoutConstraint?
+    private var explanationRemainingExtraHeight: CGFloat {
+        AIUsageLimiter.shared.hasUnlimitedPlan ? 0 : Self.explanationRemainingGap + Self.explanationRemainingHeight
+    }
     
     var SelectedColor:Int = -1
     
@@ -121,8 +129,9 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         
         self.BookNameTxt.text =  "\(BookName)-\(Pageindex-1):\(VersePosition)"
         
-        FrameHeight.constant = (isIpad ? 368 : 348) + (usesOldOnboarding ? Self.getExplanationExtraHeight : 0)
+        FrameHeight.constant = (isIpad ? 368 : 348) + (usesOldOnboarding ? Self.getExplanationExtraHeight + explanationRemainingExtraHeight : 0)
         getExplanationButton?.backgroundColor = Themecolor
+        refreshExplanationRemaining()
         
         
         
@@ -227,8 +236,23 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         ])
         AIUsageLimiter.shared.applyLockBadge(to: button, feature: .explanation, tint: .white)
 
+        let remaining = AIRemainingLineView(feature: .explanation, fontSize: 12)
+        remaining.translatesAutoresizingMaskIntoConstraints = false
+        MainView.addSubview(remaining)
+        explanationRemainingView = remaining
+        let remainingTop = remaining.topAnchor.constraint(equalTo: button.bottomAnchor, constant: Self.explanationRemainingGap)
+        let remainingHeight = remaining.heightAnchor.constraint(equalToConstant: Self.explanationRemainingHeight)
+        explanationRemainingTop = remainingTop
+        explanationRemainingHeightConstraint = remainingHeight
+        NSLayoutConstraint.activate([
+            remainingTop,
+            remainingHeight,
+            remaining.leadingAnchor.constraint(equalTo: button.leadingAnchor),
+            remaining.trailingAnchor.constraint(equalTo: button.trailingAnchor)
+        ])
+
         hideVerseMenuCloseIcon()
-        repositionBookNameBelowGetExplanationButton(button, gap: Self.getExplanationBookNameGap)
+        repositionBookNameBelowGetExplanationButton(remaining, gap: Self.getExplanationBookNameGap)
         pinActionRowBelowBookName()
     }
 
@@ -367,6 +391,14 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
                 button.isUserInteractionEnabled = false
             }
         }
+    }
+
+    private func refreshExplanationRemaining() {
+        guard let remaining = explanationRemainingView else { return }
+        let shows = !AIUsageLimiter.shared.hasUnlimitedPlan
+        explanationRemainingTop?.constant = shows ? Self.explanationRemainingGap : 0
+        explanationRemainingHeightConstraint?.constant = shows ? Self.explanationRemainingHeight : 0
+        remaining.refresh(tint: Themecolor ?? PrimaryColor, textColor: UIColor(white: 0.45, alpha: 1))
     }
 
     private func repositionBookNameBelowGetExplanationButton(_ button: UIView, gap: CGFloat) {
@@ -646,14 +678,25 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
             makeToast(message, duration: 2.0, position: .top)
             return
         }
-        AIUsageLimiter.shared.requestAccess(.explanation) { [weak self] in
-            guard let self = self else { return }
-            App_Protocol.delegateReader?.ExplanationNib(
-                VersePosition: self.VersePosition,
-                BookName: self.BookName,
-                Pageindex: self.Pageindex,
-                BookVerse: self.BookVerse!
-            )
+        guard let bookVerse = BookVerse else { return }
+        let versePosition = VersePosition
+        let bookName = BookName
+        let pageIndex = Pageindex
+        // Close the menu first so the disclaimer is not blocked, and Continue does not rely on this view staying alive.
+        App_Protocol.delegateReader?.CloseMenu()
+        AIUsageLimiter.shared.requestAccess(.explanation) {
+            DispatchQueue.main.async {
+                guard let reader = App_Protocol.delegateReader else {
+                    OnboardingAuthManager.topViewController()?.view.makeToast("Please try again", duration: 2.0, position: .top)
+                    return
+                }
+                reader.ExplanationNib(
+                    VersePosition: versePosition,
+                    BookName: bookName,
+                    Pageindex: pageIndex,
+                    BookVerse: bookVerse
+                )
+            }
         }
     }
     

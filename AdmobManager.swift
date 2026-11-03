@@ -171,6 +171,8 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
         if Interstitial_ID == "OpenSplash" {
             App_Protocol.DelegateSplash?.OpenAd()
             Interstitial_ID = ""
+        } else {
+            PaywallTriggerGate.shared.noteInterstitialClosed()
         }
         
         // Reload immediately so the next 10th/20th/30th Verse Image trigger has an ad ready.
@@ -243,6 +245,8 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
             App_Protocol.CardShowdelegate?.cardNavigate()
         } else if RewardAd == "SubscrbViewController" {
             App_Protocol.UnituAdCallDelegate?.AdDidClosed()
+        } else if RewardAd == "PaywallTrigger" {
+            PaywallTriggerReward.deliver()
         }
         
         
@@ -325,7 +329,7 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
     
     private func showAdWaitToastIfNeeded() {
         switch RewardAd {
-        case "Tryagain", "FreeCoins", "MainFreeCoins", "WatchAd", "Scratch", "ImageWatermark", "OpenCard", "SubscrbViewController":
+        case "Tryagain", "FreeCoins", "MainFreeCoins", "WatchAd", "Scratch", "ImageWatermark", "OpenCard", "SubscrbViewController", "PaywallTrigger":
             DispatchQueue.main.async {
                 self.visibleToastView()?.makeToast("Please wait for few secs..", duration: 2.0, position: .top)
             }
@@ -336,7 +340,7 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
 
     private func showAdUnavailableToastIfNeeded() {
         switch RewardAd {
-        case "Tryagain", "FreeCoins", "MainFreeCoins", "WatchAd", "Scratch", "ImageWatermark", "OpenCard", "SubscrbViewController":
+        case "Tryagain", "FreeCoins", "MainFreeCoins", "WatchAd", "Scratch", "ImageWatermark", "OpenCard", "SubscrbViewController", "PaywallTrigger":
             DispatchQueue.main.async {
                 self.visibleToastView()?.makeToast("Ad is not available", duration: 2.0, position: .top)
             }
@@ -378,6 +382,8 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
             RewardAd = ""
         } else if RewardAd == "SubscrbViewController" {
             App_Protocol.UnituAdCallDelegate?.NoAdClosed()
+        } else if RewardAd == "PaywallTrigger" {
+            PaywallTriggerReward.onReward = nil
         }
     }
     

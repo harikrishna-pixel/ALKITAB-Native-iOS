@@ -78,8 +78,38 @@ final class DailyJourneyHomeViewController: UIViewController {
             onPresentStreakComplete: { [weak self] in
                 guard let self = self, self.journeyModalHost == nil else { return }
                 self.presentStreakComplete()
+            },
+            onOpenAIFeature: { [weak self] feature in
+                self?.openAIFeature(feature)
             }
         )
+    }
+
+    private func openAIFeature(_ feature: AIUsageFeature) {
+        switch feature {
+        case .aiChat:
+            guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+                presentingController().view.makeToast("No internet connection", duration: 2.0, position: .top)
+                return
+            }
+            let vc = AIChatViewController()
+            let presenter = presentingController()
+            if let nav = (presenter as? UINavigationController) ?? presenter.navigationController {
+                nav.pushViewController(vc, animated: true)
+            } else {
+                presenter.present(vc, animated: true)
+            }
+        case .explanation, .chapterSummary:
+            continueReading()
+            let hint = feature == .explanation
+                ? "Tap any verse, then Get Explanation"
+                : "Scroll to the end of the chapter for Chapter Summary"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+                self?.presentingController().view.makeToast(hint, duration: 2.5, position: .top)
+            }
+        case .quiz:
+            break
+        }
     }
     
     private func topModalPresenter() -> UIViewController {
@@ -244,7 +274,12 @@ final class DailyJourneyHomeViewController: UIViewController {
     private func presentStreakComplete() {
         let root = NavigationView {
             StreakCompleteView(store: .shared) { [weak self] in
-                self?.dismissJourneyModal()
+                let day = DailyJourneyStore.shared.streakCount
+                self?.dismissJourneyModal {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        PaywallTriggerGate.shared.noteStreakCelebrationFinished(day)
+                    }
+                }
             }
         }
             .navigationViewStyle(StackNavigationViewStyle())
@@ -328,6 +363,7 @@ final class DailyJourneyHomeViewController: UIViewController {
             DispatchQueue.main.async {
                 if newStatus == .authorized || newStatus == .limited {
                     CustomPhotoAlbum.sharedInstance.saveImage(image: image)
+                    PaywallTriggerGate.shared.noteVerseImageSaved()
                     presenter.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .top)
                     completion(true)
                 } else {
@@ -385,7 +421,7 @@ final class DailyJourneyHomeViewController: UIViewController {
         let width: CGFloat = 1080
         let height: CGFloat = 1920
         let container = UIView(frame: CGRect(x: 0, y: 0, width: width, height: height))
-        container.backgroundColor = UIColor(red: 0.11, green: 0.18, blue: 0.42, alpha: 1)
+        container.backgroundColor = DailyJourneyTheme.uiColor
         
         let bgView = UIImageView(frame: container.bounds)
         bgView.contentMode = .scaleAspectFill

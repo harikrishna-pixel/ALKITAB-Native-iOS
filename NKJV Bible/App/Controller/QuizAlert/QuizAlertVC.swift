@@ -56,6 +56,9 @@ class QuizAlertVC: UIViewController, QuizAlert {
         AskQuiz.text = Quiztxt
 
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.LogoImage!, colorVu: Themecolor)
+        // Back chevron must stay readable on the light success background (was white-on-light).
+        let backTint: UIColor = (Themecolor == BGNightMode) ? .white : UIColor(white: 0.22, alpha: 1)
+        ImageTint.sharedInstance.imageTintcolorMethod(img: self.BackImg!, colorVu: backTint)
         YesButton.backgroundColor = Themecolor
         YesButton.setTitleColor(.white, for: .normal)
 
@@ -121,6 +124,7 @@ class QuizAlertVC: UIViewController, QuizAlert {
     func DismissVc(Close: Bool) {}
 
     @IBAction func Dismiss_Action(_ sender: Any) {
+        PaywallTriggerGate.shared.noteNegativeMoment()
         if PaymentHistory.sharedInstance.paymentInfo() && MARK_US_READ {
             AdmobManager.shared.IronSource_Interstitial_ShowAds(vw: (UIApplication.shared.keyWindow?.rootViewController)!)
             MARK_US_READ = false

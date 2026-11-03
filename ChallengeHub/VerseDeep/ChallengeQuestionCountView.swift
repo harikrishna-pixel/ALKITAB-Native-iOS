@@ -143,7 +143,13 @@ struct ChallengeQuestionCountView: View {
             .buttonStyle(PlainButtonStyle())
             .disabled(!canGenerate)
             .padding(.horizontal, 24)
-            .padding(.bottom, 24)
+            .padding(.bottom, kind.isPremium ? 10 : 24)
+
+            if kind.isPremium {
+                AIRemainingLine(feature: .quiz, tint: ChallengeVerseDeepTheme.blue, textColor: ChallengeVerseDeepTheme.muted)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
+            }
         }
         .background(Color.white.ignoresSafeArea())
     }

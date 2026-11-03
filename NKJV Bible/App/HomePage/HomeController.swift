@@ -322,6 +322,7 @@ class HomeController: UIViewController, UICollectionViewDelegate, UICollectionVi
                 if (newStatus == PHAuthorizationStatus.authorized) {
                     DispatchQueue.main.async {
                         CustomPhotoAlbum.sharedInstance.saveImage(image: self.VerseImageVu.asImage())
+                        PaywallTriggerGate.shared.noteVerseImageSaved()
                         self.view.makeToast("Image Saved Successfully!", duration: 2.0, position: .top)
                     }
                 }
