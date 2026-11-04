@@ -581,19 +581,25 @@ struct OnboardingProPaywallView: View {
                             .frame(height: 86)
                             .padding(.top, 4)
 
-                        Text("Grow Closer to God")
+                        Text(OnboardingLocale.text(id: "Lebih Dekat dengan Tuhan", en: "Grow Closer to God"))
                             .font(.system(size: 30, weight: .heavy))
                             .foregroundColor(.black)
                             .multilineTextAlignment(.center)
                             .padding(.top, 4)
 
-                        Text("Your Bible. Your quiet time. Yours for life.")
+                        Text(OnboardingLocale.text(
+                            id: "Alkitabmu. Waktu sunyimu. Milikmu seumur hidup.",
+                            en: "Your Bible. Your quiet time. Yours for life."
+                        ))
                             .font(.system(size: 14))
                             .foregroundColor(Color(hex: "51607A"))
                             .multilineTextAlignment(.center)
                             .padding(.top, 4)
 
-                        Text("✓  You just remembered \(OnboardingBibleVerse.reference)")
+                        Text(OnboardingLocale.text(
+                            id: "✓  Kamu baru saja mengingat \(OnboardingBibleVerse.reference)",
+                            en: "✓  You just remembered \(OnboardingBibleVerse.reference)"
+                        ))
                             .font(.system(size: 12.5, weight: .bold))
                             .foregroundColor(OnboardingTheme.grow)
                             .padding(.horizontal, 13)
@@ -603,17 +609,17 @@ struct OnboardingProPaywallView: View {
                             .padding(.top, 12)
 
                         VStack(alignment: .leading, spacing: 11) {
-                            benefit("nosign", "No Ads, Just Scripture")
-                            benefit("headphones", "Read & Listen, Even Offline")
-                            benefit("brain.head.profile", "Unlimited Verse Quizzes")
-                            benefit("books.vertical", "Highlights, Notes & Verse Images")
-                            benefit("flame.fill", "Streaks & Reading Reports")
+                            benefit("nosign", OnboardingLocale.text(id: "Tanpa Iklan, Hanya Firman", en: "No Ads, Just Scripture"))
+                            benefit("headphones", OnboardingLocale.text(id: "Baca & Dengarkan, Termasuk Offline", en: "Read & Listen, Even Offline"))
+                            benefit("brain.head.profile", OnboardingLocale.text(id: "Kuis Ayat Tanpa Batas", en: "Unlimited Verse Quizzes"))
+                            benefit("books.vertical", OnboardingLocale.text(id: "Sorotan, Catatan & Gambar Ayat", en: "Highlights, Notes & Verse Images"))
+                            benefit("flame.fill", OnboardingLocale.text(id: "Streak & Laporan Bacaan", en: "Streaks & Reading Reports"))
                         }
                         .padding(.top, 16)
                         .padding(.horizontal, 8)
 
                         VStack(spacing: 8) {
-                            Text("Lifetime Access")
+                            Text(OnboardingLocale.text(id: "Akses Seumur Hidup", en: "Lifetime Access"))
                                 .font(.system(size: 21, weight: .heavy))
                                 .foregroundColor(.black)
                             lifetimePriceStatus
@@ -628,7 +634,7 @@ struct OnboardingProPaywallView: View {
                                 .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color(hex: "2844A8"), lineWidth: 2.5))
                         )
                         .overlay(
-                            Text("Pay Once · Keep Forever")
+                            Text(OnboardingLocale.text(id: "Bayar Sekali · Simpan Selamanya", en: "Pay Once · Keep Forever"))
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 18)
@@ -639,7 +645,10 @@ struct OnboardingProPaywallView: View {
                         )
                         .padding(.top, 28)
 
-                        Text("One-time purchase • No subscription • Yours forever")
+                        Text(OnboardingLocale.text(
+                            id: "Pembelian sekali • Tanpa langganan • Milikmu selamanya",
+                            en: "One-time purchase • No subscription • Yours forever"
+                        ))
                             .font(.system(size: 12.5))
                             .foregroundColor(Color(hex: "6B7487"))
                             .multilineTextAlignment(.center)
@@ -718,24 +727,33 @@ struct OnboardingProPaywallView: View {
                     .foregroundColor(OnboardingTheme.primaryBlue)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                Text("Faith Without an Expiry Date")
+                Text(OnboardingLocale.text(id: "Iman Tanpa Tanggal Kedaluwarsa", en: "Faith Without an Expiry Date"))
                     .font(.system(size: 14, weight: .regular, design: .serif))
                     .italic()
                     .foregroundColor(Color(hex: "4B5563"))
             }
         case .loading:
-            priceWaitStatus(title: "Getting your price...", subtitle: "Please wait a moment")
+            priceWaitStatus(
+                title: OnboardingLocale.text(id: "Mengambil harga...", en: "Getting your price..."),
+                subtitle: OnboardingLocale.text(id: "Mohon tunggu sebentar", en: "Please wait a moment")
+            )
         case .retrying:
-            priceWaitStatus(title: "Retrying...", subtitle: "Please wait a moment")
+            priceWaitStatus(
+                title: OnboardingLocale.text(id: "Mencoba lagi...", en: "Retrying..."),
+                subtitle: OnboardingLocale.text(id: "Mohon tunggu sebentar", en: "Please wait a moment")
+            )
         case .unavailable:
             VStack(spacing: 8) {
                 Image(systemName: "wifi.slash")
                     .font(.system(size: 26, weight: .medium))
                     .foregroundColor(Color(hex: "607089"))
-                Text("Price unavailable")
+                Text(OnboardingLocale.text(id: "Harga tidak tersedia", en: "Price unavailable"))
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(Color(hex: "1A1A1A"))
-                Text("We couldn't load the purchase price.\nCheck your internet connection and try again.")
+                Text(OnboardingLocale.text(
+                    id: "Kami tidak bisa memuat harga pembelian.\nPeriksa koneksi internetmu dan coba lagi.",
+                    en: "We couldn't load the purchase price.\nCheck your internet connection and try again."
+                ))
                     .font(.system(size: 13))
                     .foregroundColor(Color(hex: "8B95A7"))
                     .multilineTextAlignment(.center)
@@ -761,19 +779,19 @@ struct OnboardingProPaywallView: View {
     private var lifetimeCTALabel: some View {
         switch pricePhase {
         case .loading, .retrying:
-            Text("Loading price...")
+            Text(OnboardingLocale.text(id: "Memuat harga...", en: "Loading price..."))
                 .font(.system(size: 17, weight: .bold))
                 .foregroundColor(.white)
         case .unavailable:
             HStack(spacing: 8) {
-                Text("Try Again")
+                Text(OnboardingLocale.text(id: "Coba Lagi", en: "Try Again"))
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 16, weight: .bold))
             }
             .font(.system(size: 17, weight: .bold))
             .foregroundColor(.white)
         case .ready:
-            Text("Grow With God Forever  →")
+            Text(OnboardingLocale.text(id: "Tumbuh Bersama Tuhan Selamanya  →", en: "Grow With God Forever  →"))
                 .font(.system(size: 17, weight: .bold))
                 .foregroundColor(.white)
         }

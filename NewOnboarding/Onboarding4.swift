@@ -7,60 +7,25 @@ import SwiftUI
 
 struct Onboarding4: View {
     @State private var explainRevealed = false
+    @State private var explanationReady = false
+    @State private var isLoadingExplanation = false
+    /// Non-empty AI body in referral language; nil/empty → hardcoded English fallback.
+    @State private var aiExplanation: String?
     @State private var navigateForward = false
     /// Verse text loaded once when Explain is tapped, so typing does not re-read the Bible.
     @State private var revealedVerse = ""
 
-    private static var isIndonesian: Bool {
-        let code = UserDefaults.standard.string(forKey: "language_code") ?? FallbackAppConfigConstants.languageCode
-        return code.caseInsensitiveCompare("Indonesian") == .orderedSame
-    }
-
-    private static var contextTitle: String {
-        isIndonesian ? "Dalam konteks" : "In context"
-    }
-
-    private static var contextText: String {
-        isIndonesian
-            ? "Paulus menulis ini dari dalam penjara. Ia tidak menjanjikan bahwa kamu bisa meraih apa pun yang kamu inginkan — ia berkata bahwa ia telah belajar mencukupkan diri, baik dalam kelimpahan maupun dalam kekurangan, karena kekuatannya tidak pernah berasal dari keadaannya."
-            : "Paul wrote this from a prison cell. He isn't promising you can achieve anything you set your mind to — he's saying he has learned to be content with plenty and with almost nothing, because his strength never came from his circumstances."
-    }
+    /// Hardcoded English fallback when AI is unavailable.
+    private static let contextTitle = "In context"
+    private static let contextText =
+        "Paul wrote this from a prison cell. He isn't promising a life without hardship — he's saying that through Christ he has strength for every situation he faces."
+    private static let todayTitle = "What it means today"
+    private static let todayText =
+        "The promise isn't that hard things stop coming. It's that you are given the strength you need to meet them — one day at a time — from Christ."
 
     private static func quoteLine(_ verse: String) -> String {
-        let label = isIndonesian ? "ayat 11" : "verse 11"
-        let text = verse.isEmpty
-            ? (isIndonesian
-                ? "Aku telah belajar mencukupkan diri dalam segala keadaan."
-                : "I have learned how to be content with whatever I have.")
-            : verse
-        return "\"\(text)\"\n— \(label)"
-    }
-
-    private static var todayTitle: String {
-        isIndonesian ? "Artinya bagi kita hari ini" : "What it means today"
-    }
-
-    private static var todayText: String {
-        isIndonesian
-            ? "Janji ini bukan berarti masa sulit tidak akan datang lagi. Artinya, kamu diberi apa yang kamu butuhkan untuk menghadapinya — hari demi hari, dari sumber di luar dirimu."
-            : "The promise isn't that hard things stop coming. It's that you are given what you need to meet them — one day at a time, from a source outside yourself."
-    }
-
-    /// Philippians 4:11 from the bundled Bible, so the quote matches the reading language.
-    private static var verseElevenQuote: String {
-        let fallback = isIndonesian
-            ? "Aku telah belajar mencukupkan diri dalam segala keadaan."
-            : "I have learned how to be content with whatever I have."
-        guard UserDefaults.standard.string(forKey: "SelectedLanguage") != nil else { return fallback }
-        let books = BibleContent.sharedInstance.BookToPosition()
-        let bookIndex = 49
-        guard bookIndex < books.count else { return fallback }
-        let bookName = books[bookIndex].components(separatedBy: "-")[0]
-        let verses = BibleContent.sharedInstance.AudioBibleList(selecterBookName: bookName, selectedId: 3)
-        let verseIndex = 10
-        guard verseIndex < verses.count else { return fallback }
-        let text = verses[verseIndex].trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.isEmpty ? fallback : text
+        let text = verse.isEmpty ? OnboardingBibleVerse.text : verse
+        return "\"\(text)\"\n— verse 13"
     }
 
     var body: some View {
@@ -71,7 +36,10 @@ struct Onboarding4: View {
                 VStack(spacing: 0) {
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 0) {
-                            OnboardingEyebrow(text: "Understand with clarity", alignment: .leading)
+                            OnboardingEyebrow(
+                                text: "Understand with clarity",
+                                alignment: .leading
+                            )
                                 .padding(.horizontal, 26)
                                 .padding(.top, 16)
 
@@ -98,10 +66,12 @@ struct Onboarding4: View {
                                     .padding(.top, 14)
                                     .transition(.opacity.combined(with: .move(edge: .bottom)))
 
-                                reachBanner
-                                    .padding(.horizontal, 26)
-                                    .padding(.top, 13)
-                                    .padding(.bottom, 12)
+                                if explanationReady {
+                                    reachBanner
+                                        .padding(.horizontal, 26)
+                                        .padding(.top, 13)
+                                        .padding(.bottom, 12)
+                                }
                             }
 
                             Spacer(minLength: 20)
@@ -109,12 +79,16 @@ struct Onboarding4: View {
                     }
 
                     Group {
-                        if explainRevealed {
+                        if explanationReady {
                             OnboardingPrimaryButton(title: "Continue") {
                                 navigateForward = true
                             }
                         } else {
-                            OnboardingPrimaryButton(title: "Try it to continue", isEnabled: false, onDark: false) {}
+                            OnboardingPrimaryButton(
+                                title: "Try it to continue",
+                                isEnabled: false,
+                                onDark: false
+                            ) {}
                         }
                     }
                     .padding(.horizontal, 26)
@@ -143,6 +117,7 @@ struct Onboarding4: View {
         }
         .navigationBarHidden(true)
         .animation(.easeOut(duration: 0.42), value: explainRevealed)
+        .animation(.easeOut(duration: 0.35), value: explanationReady)
     }
 
     private var verseChip: some View {
@@ -176,12 +151,7 @@ struct Onboarding4: View {
     }
 
     private var explainButton: some View {
-        Button(action: {
-            if revealedVerse.isEmpty {
-                revealedVerse = Self.verseElevenQuote
-            }
-            explainRevealed = true
-        }) {
+        Button(action: startExplain) {
             HStack(spacing: 9) {
                 Text("✦")
                 Text("Explain This Verse")
@@ -223,14 +193,30 @@ struct Onboarding4: View {
                 alignment: .bottom
             )
 
-            OnboardingExplainTyping(
-                contextTitle: Self.contextTitle,
-                contextText: Self.contextText,
-                quoteText: Self.quoteLine(revealedVerse),
-                todayTitle: Self.todayTitle,
-                todayText: Self.todayText
-            )
-            .padding(17)
+            Group {
+                if isLoadingExplanation {
+                    HStack(spacing: 10) {
+                        SwiftUI.ProgressView()
+                        Text("Getting explanation…")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color(hex: "31435F"))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(17)
+                } else if let ai = aiExplanation, !ai.isEmpty {
+                    OnboardingExplainAITyping(text: ai)
+                        .padding(17)
+                } else {
+                    OnboardingExplainTyping(
+                        contextTitle: Self.contextTitle,
+                        contextText: Self.contextText,
+                        quoteText: Self.quoteLine(revealedVerse),
+                        todayTitle: Self.todayTitle,
+                        todayText: Self.todayText
+                    )
+                    .padding(17)
+                }
+            }
         }
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 18))
@@ -270,6 +256,93 @@ struct Onboarding4: View {
         )
     }
 
+    private func startExplain() {
+        guard !explainRevealed else { return }
+        if revealedVerse.isEmpty {
+            revealedVerse = OnboardingBibleVerse.text
+        }
+        explainRevealed = true
+        explanationReady = false
+        isLoadingExplanation = true
+        aiExplanation = nil
+
+        let reference = OnboardingBibleVerse.reference
+        let verseText = revealedVerse.isEmpty ? OnboardingBibleVerse.text : revealedVerse
+        let languageCode = UserDefaults.standard.string(forKey: "language_code") ?? language_code
+
+        OpenAIExplanationService.shared.fetchExplanation(
+            verseReference: reference,
+            verseText: verseText,
+            bibleVersion: APPNAME,
+            responseLanguageCode: languageCode
+        ) { result in
+            DispatchQueue.main.async {
+                isLoadingExplanation = false
+                switch result {
+                case .success(let text):
+                    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    aiExplanation = trimmed.isEmpty ? nil : trimmed
+                case .failure:
+                    aiExplanation = nil
+                }
+                explanationReady = true
+            }
+        }
+    }
+
+}
+
+/// Types a single AI explanation paragraph. Used when the AI module returns text.
+private struct OnboardingExplainAITyping: View {
+    let text: String
+
+    @State private var typedCount = 0
+    @State private var clock = Clock()
+
+    var body: some View {
+        typedText(text, visible: String(text.prefix(typedCount)))
+            .font(.system(size: 14.5))
+            .foregroundColor(Color(hex: "31435F"))
+            .lineSpacing(5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .transaction { transaction in
+                transaction.animation = nil
+                transaction.disablesAnimations = true
+            }
+            .onAppear(perform: startTyping)
+    }
+
+    private func typedText(_ full: String, visible: String) -> some View {
+        ZStack(alignment: .topLeading) {
+            Text(full).hidden()
+            Text(visible)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func startTyping() {
+        guard !clock.started else { return }
+        clock.started = true
+        let total = text.count
+        let timer = Timer(timeInterval: 0.02, repeats: true) { timer in
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                typedCount = min(typedCount + 2, total)
+            }
+            if typedCount >= total {
+                timer.invalidate()
+                clock.timer = nil
+            }
+        }
+        clock.timer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    private final class Clock {
+        var timer: Timer?
+        var started = false
+    }
 }
 
 /// Same type-on explanation as before. Updates stay in this view so the rest of the screen does not redraw.

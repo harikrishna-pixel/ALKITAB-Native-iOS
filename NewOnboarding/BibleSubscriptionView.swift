@@ -1007,8 +1007,13 @@ private struct PaywallScrollStackView: View {
 
     private var titleBlock: some View {
         VStack(spacing: isPad ? 4 : 2) {
-            Text("Go Deeper").foregroundColor(.white)
-            Text("in God's Word").foregroundColor(Color(hex: "F0C75E"))
+            if OnboardingLocale.isIndonesian {
+                Text("Selami Lebih Dalam").foregroundColor(.white)
+                Text("Firman Tuhan").foregroundColor(Color(hex: "F0C75E"))
+            } else {
+                Text("Go Deeper").foregroundColor(.white)
+                Text("in God's Word").foregroundColor(Color(hex: "F0C75E"))
+            }
         }
         .font(.system(size: isPad ? 36 : (isSmallDevice ? 26 : 30), weight: .bold, design: .serif))
         .multilineTextAlignment(.center)
@@ -1019,8 +1024,14 @@ private struct PaywallScrollStackView: View {
 
     private var subtitleBlock: some View {
         VStack(spacing: 2) {
-            Text("Powerful study tools to help you")
-            Text("read, understand and grow.")
+            Text(OnboardingLocale.text(
+                id: "Alat belajar yang kuat untuk membantu",
+                en: "Powerful study tools to help you"
+            ))
+            Text(OnboardingLocale.text(
+                id: "membaca, memahami, dan bertumbuh.",
+                en: "read, understand and grow."
+            ))
         }
         .font(.system(size: isPad ? 16 : (isSmallDevice ? 12 : 13), weight: .medium))
         .foregroundColor(.white)
@@ -1046,12 +1057,12 @@ private struct PaywallScrollStackView: View {
             GridItem(.flexible(), spacing: isPad ? 12 : 8),
             GridItem(.flexible(), spacing: isPad ? 12 : 8)
         ], spacing: isPad ? 12 : 8) {
-            PaywallFeatureTile(systemIcon: "doc.text.magnifyingglass", iconColor: Color(hex: "4DA3FF"), title: "Unlimited AI Explanations")
-            PaywallFeatureTile(systemIcon: "doc.plaintext", iconColor: Color(hex: "4CD964"), title: "Unlimited Chapter Summaries")
-            PaywallFeatureTile(systemIcon: "bubble.left.and.bubble.right.fill", iconColor: Color(hex: "B07CFF"), title: "Ask Bible AI")
-            PaywallFeatureTile(systemIcon: "gamecontroller.fill", iconColor: Color(hex: "FF9F0A"), title: "Unlimited Quiz Generation")
-            PaywallFeatureTile(systemIcon: "nosign", iconColor: Color(hex: "FF453A"), title: "Ad-Free Reading")
-            PaywallFeatureTile(systemIcon: "book.fill", iconColor: Color(hex: "64D2FF"), title: "Clean Reading Experience")
+            PaywallFeatureTile(systemIcon: "doc.text.magnifyingglass", iconColor: Color(hex: "4DA3FF"), title: OnboardingLocale.text(id: "Penjelasan AI Tanpa Batas", en: "Unlimited AI Explanations"))
+            PaywallFeatureTile(systemIcon: "doc.plaintext", iconColor: Color(hex: "4CD964"), title: OnboardingLocale.text(id: "Ringkasan Pasal Tanpa Batas", en: "Unlimited Chapter Summaries"))
+            PaywallFeatureTile(systemIcon: "bubble.left.and.bubble.right.fill", iconColor: Color(hex: "B07CFF"), title: OnboardingLocale.text(id: "Tanya Alkitab AI", en: "Ask Bible AI"))
+            PaywallFeatureTile(systemIcon: "gamecontroller.fill", iconColor: Color(hex: "FF9F0A"), title: OnboardingLocale.text(id: "Buat Kuis Tanpa Batas", en: "Unlimited Quiz Generation"))
+            PaywallFeatureTile(systemIcon: "nosign", iconColor: Color(hex: "FF453A"), title: OnboardingLocale.text(id: "Baca Tanpa Iklan", en: "Ad-Free Reading"))
+            PaywallFeatureTile(systemIcon: "book.fill", iconColor: Color(hex: "64D2FF"), title: OnboardingLocale.text(id: "Pengalaman Baca yang Nyaman", en: "Clean Reading Experience"))
         }
         .padding(.horizontal, isPad ? 8 : 14)
         .padding(.bottom, isPad ? 8 : 8)
@@ -1083,7 +1094,7 @@ private struct PaywallScrollStackView: View {
 
     private var continueFreeButton: some View {
         Button(action: onContinueFree) {
-            Text("Continue with Free version")
+            Text(OnboardingLocale.text(id: "Lanjut dengan versi gratis", en: "Continue with Free version"))
                 .font(.system(size: isPad ? 15 : 14, weight: .semibold))
                 .foregroundColor(.white.opacity(0.92))
         }

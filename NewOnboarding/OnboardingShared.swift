@@ -5,6 +5,35 @@
 
 import SwiftUI
 
+/// Shared onboarding / paywall language. Empty `language_code` must not force English.
+enum OnboardingLocale {
+    static var isIndonesian: Bool {
+        let values = [
+            UserDefaults.standard.string(forKey: "language_code"),
+            UserDefaults.standard.string(forKey: "language_name"),
+            UserDefaults.standard.string(forKey: "SelectedLanguage"),
+            UserDefaults.standard.string(forKey: "short_lang_code"),
+            FallbackAppConfigConstants.languageCode,
+            FallbackAppConfigConstants.languageName
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+        .map { $0.lowercased() }
+
+        for value in values {
+            if value.contains("indonesia") || value == "id" || value.hasPrefix("id-") || value == "in" {
+                return true
+            }
+        }
+        let app = (APPNAME + " " + APPNAME_SPLASH).lowercased()
+        return app.contains("alkitab") || app.contains("indonesia")
+    }
+
+    static func text(id: String, en: String) -> String {
+        isIndonesian ? id : en
+    }
+}
+
 enum OnboardingTheme {
     static let primaryBlue = Color(hex: "2563EB")
     static let primaryBlueDark = Color(hex: "1B49C4")

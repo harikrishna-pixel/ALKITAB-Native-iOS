@@ -1544,9 +1544,9 @@ private struct TriggerExitOffer: View {
                         .buttonStyle(PlainButtonStyle())
                         .accessibilityLabel("Close")
                     }
-                    .padding(.top, closeTopInset + 28)
+                    // Keep close under the status bar, but pull the stack up like the referral (less top blank).
+                    .padding(.top, closeTopInset + 8)
                     .padding(.trailing, -6)
-                    Color.clear.frame(height: max(4, geo.size.height * 0.025 - 20))
                     Text("A ONE-TIME LIFETIME OPTION")
                         .font(.system(size: 11, weight: .heavy))
                         .kerning(1.1)
@@ -1554,7 +1554,7 @@ private struct TriggerExitOffer: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 7)
                         .overlay(Capsule().stroke(Color(hex: "F7D57C"), lineWidth: 1))
-                        .padding(.top, -18)
+                        .padding(.top, 10)
                     VStack(spacing: 0) {
                         Text("Read ad-free,")
                             .foregroundColor(.white)
@@ -1563,7 +1563,7 @@ private struct TriggerExitOffer: View {
                     }
                     .font(.system(size: 34, weight: .bold, design: .serif))
                     .multilineTextAlignment(.center)
-                    .padding(.top, 18)
+                    .padding(.top, 14)
                     Text("Pay once. No renewals. Yours to keep.")
                         .font(.system(size: 15))
                         .foregroundColor(Color(hex: "B9C6DE"))

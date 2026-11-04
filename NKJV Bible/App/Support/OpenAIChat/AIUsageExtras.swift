@@ -404,12 +404,11 @@ struct AIHomeBanner: View {
     private static var today: String { Date().string(format: "dd-MM-yyyy") }
 
     private var feature: AIUsageFeature? {
+        // Pro (ONBOARDING_OPTION "2") does not use AI chat — hide this home card entirely.
+        guard usesOldOnboarding else { return nil }
         let limiter = AIUsageLimiter.shared
         guard hiddenDay != Self.today, !limiter.hasUnlimitedPlan else { return nil }
-        var options: [AIUsageFeature] = [.aiChat]
-        if usesOldOnboarding {
-            options += [.explanation, .chapterSummary]
-        }
+        let options: [AIUsageFeature] = [.aiChat, .explanation, .chapterSummary]
         let open = options.filter { limiter.freeUsesLeft($0) > 0 }
         guard !open.isEmpty else { return nil }
         let day = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0
