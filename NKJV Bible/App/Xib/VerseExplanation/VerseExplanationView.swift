@@ -26,6 +26,12 @@ final class VerseExplanationView: UIView {
 
     private let themeColor: UIColor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
     private var isLoading = false
+    private var fetchTask: URLSessionTask?
+    private var fetchGeneration = 0
+    /// True when the latest result came from cache (do not consume another free use).
+    private var lastResultFromCache = false
+    /// When true, `didMoveToSuperview` only shows loading — caller starts the fetch after chapter text is ready.
+    var deferInitialFetch = false
 
     private let dimButton = UIButton(type: .custom)
     private let cardView = UIView()
@@ -88,6 +94,9 @@ final class VerseExplanationView: UIView {
         cardView.translatesAutoresizingMaskIntoConstraints = false
         cardView.backgroundColor = themeColor == BGNightMode ? BGNightMode : .white
         cardView.clipsToBounds = true
+        // Use layer corners (not a one-shot bounds mask). roundCorners on zero bounds hid the whole card and left only the dim.
+        cardView.layer.cornerRadius = 24
+        cardView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         cardView.layer.shadowColor = UIColor.black.cgColor
         cardView.layer.shadowOpacity = 0.12
         cardView.layer.shadowRadius = 18
@@ -352,10 +361,6 @@ final class VerseExplanationView: UIView {
 
         verseContainerHeightConstraint = verseContainer.heightAnchor.constraint(equalToConstant: 0)
         verseContainerHeightConstraint?.isActive = false
-
-        DispatchQueue.main.async {
-            self.cardView.roundCorners(corners: [.topLeft, .topRight], radius: 24)
-        }
     }
 
     private func makeActionButton(title: String, imageName: String, systemName: String? = nil, action: Selector) -> UIView {
@@ -461,7 +466,7 @@ final class VerseExplanationView: UIView {
 
         titleLabel.text = screenTitle ?? verseReference.replacingOccurrences(of: "-", with: " ")
 
-        if displayMode == .chapterSummary {
+        if isSummaryContent {
             verseLabel.text = nil
             verseLabel.isHidden = true
             verseContainer.isHidden = true
@@ -476,30 +481,63 @@ final class VerseExplanationView: UIView {
         switch displayMode {
         case .saved:
             showSuccess(explanationText)
+        case .fetchNew, .chapterSummary:
+            showLoading()
+            if deferInitialFetch { return }
+            // Let the sheet paint first — heavy chapter/prompt work was freezing before it appeared.
+            DispatchQueue.main.async { [weak self] in
+                self?.startFetchForCurrentMode()
+            }
+        }
+    }
+
+    /// Used when chapter text is built off the main thread after the sheet is already visible.
+    func startDeferredFetch() {
+        deferInitialFetch = false
+        guard superview != nil else { return }
+        startFetchForCurrentMode()
+    }
+
+    private func startFetchForCurrentMode() {
+        guard superview != nil else { return }
+        switch displayMode {
         case .fetchNew:
             requestExplanation()
         case .chapterSummary:
             requestChapterSummary()
+        case .saved:
+            break
         }
     }
 
     private func requestExplanation() {
         guard !isLoading else { return }
+        guard !verseText.isEmpty else {
+            showError("Please try again")
+            return
+        }
         isLoading = true
+        lastResultFromCache = false
         showLoading()
 
+        fetchGeneration += 1
+        let generation = fetchGeneration
         let languageCode = UserDefaults.standard.string(forKey: "language_code") ?? language_code
-        OpenAIExplanationService.shared.fetchExplanation(
+        fetchTask?.cancel()
+        let task = OpenAIExplanationService.shared.fetchExplanation(
             verseReference: verseReference,
             verseText: verseText,
             bibleVersion: bibleVersion,
             responseLanguageCode: languageCode
         ) { [weak self] result in
-            guard let self = self else { return }
+            guard let self = self, generation == self.fetchGeneration else { return }
+            self.fetchTask = nil
             self.isLoading = false
             switch result {
             case .success(let text):
-                AIUsageLimiter.shared.commit(.explanation)
+                if !self.lastResultFromCache {
+                    AIUsageLimiter.shared.commit(.explanation)
+                }
                 self.explanationText = text
                 self.showSuccess(text)
             case .failure(.networkError):
@@ -510,25 +548,52 @@ final class VerseExplanationView: UIView {
                 self.showError(error.localizedDescription)
             }
         }
+        fetchTask = task
+        // Nil task means cache hit (completion already queued on main).
+        lastResultFromCache = (task == nil)
+        stopIfTooSlow(generation: generation, after: 25)
+    }
+
+    /// A weak network can hold the request for 60s. Give up earlier and offer Retry.
+    private func stopIfTooSlow(generation: Int, after seconds: TimeInterval) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self] in
+            guard let self = self, self.isLoading, generation == self.fetchGeneration else { return }
+            self.fetchGeneration += 1
+            self.fetchTask?.cancel()
+            self.fetchTask = nil
+            self.isLoading = false
+            self.showError("This is taking too long. Please check your internet and tap Retry.")
+        }
     }
 
     private func requestChapterSummary() {
         guard !isLoading else { return }
+        guard !verseText.isEmpty else {
+            showError("Please try again")
+            return
+        }
         isLoading = true
+        lastResultFromCache = false
         showLoading()
 
+        fetchGeneration += 1
+        let generation = fetchGeneration
         let languageCode = UserDefaults.standard.string(forKey: "language_code") ?? language_code
-        OpenAIExplanationService.shared.fetchChapterSummary(
+        fetchTask?.cancel()
+        let task = OpenAIExplanationService.shared.fetchChapterSummary(
             chapterReference: screenTitle ?? verseReference.replacingOccurrences(of: "-", with: " "),
             chapterText: verseText,
             bibleVersion: bibleVersion,
             responseLanguageCode: languageCode
         ) { [weak self] result in
-            guard let self = self else { return }
+            guard let self = self, generation == self.fetchGeneration else { return }
+            self.fetchTask = nil
             self.isLoading = false
             switch result {
             case .success(let text):
-                AIUsageLimiter.shared.commit(.chapterSummary)
+                if !self.lastResultFromCache {
+                    AIUsageLimiter.shared.commit(.chapterSummary)
+                }
                 self.explanationText = text
                 self.showSuccess(text)
             case .failure(.networkError):
@@ -539,6 +604,9 @@ final class VerseExplanationView: UIView {
                 self.showError(error.localizedDescription)
             }
         }
+        fetchTask = task
+        lastResultFromCache = (task == nil)
+        stopIfTooSlow(generation: generation, after: 40)
     }
 
     private func showLoading() {
@@ -647,17 +715,34 @@ final class VerseExplanationView: UIView {
     }
 
     @objc private func closeTapped() {
+        fetchGeneration += 1
+        fetchTask?.cancel()
+        fetchTask = nil
+        isLoading = false
         onDismiss?()
         removeFromSuperview()
         superview?.removeFromSuperview()
     }
 
+    /// Chapter summaries (new or reopened from My Library) keep the whole numbered chapter in verseText.
+    private var isSummaryContent: Bool {
+        if displayMode == .chapterSummary { return true }
+        return displayMode == .saved && verseText.hasPrefix("1. ") && verseText.contains("\n2. ")
+    }
+
+    /// Summary references are stored as "Book-Chapter:1"; show "Book Chapter Summary".
+    private var summaryTitle: String {
+        if let screenTitle = screenTitle { return screenTitle }
+        var chapter = verseReference.replacingOccurrences(of: "-", with: " ")
+        if chapter.hasSuffix(":1") { chapter.removeLast(2) }
+        return "\(chapter) Summary"
+    }
+
     @objc private func copyTapped() {
         guard !explanationText.isEmpty else { return }
-        if displayMode == .chapterSummary {
+        if isSummaryContent {
             // verseText holds the whole chapter here — copy only the summary.
-            let title = screenTitle ?? verseReference.replacingOccurrences(of: "-", with: " ")
-            UIPasteboard.general.string = "\(title)\n\n\(explanationText)\n\n\(APP_LINK)"
+            UIPasteboard.general.string = "\(summaryTitle)\n\n\(explanationText)\n\n\(APP_LINK)"
             makeToast("Copied successfully", duration: 2.0, position: .top)
             return
         }
@@ -717,6 +802,14 @@ final class VerseExplanationView: UIView {
         // Display order only: verse + reference, then "Explanation", then explanation text.
         // Uses the same shared(VerseStr:Bookname:) path — no share/fetch logic changes.
         let reference = verseReference.replacingOccurrences(of: "-", with: " ")
+        if isSummaryContent {
+            // Share only the summary, never the full chapter text.
+            App_Protocol.delegateReader?.shared(
+                VerseStr: summaryTitle,
+                Bookname: "Summary\n\n\(explanationText)"
+            )
+            return
+        }
         App_Protocol.delegateReader?.shared(
             VerseStr: "\(verseText)\n\n\(reference)",
             Bookname: "Explanation\n\n\(explanationText)"

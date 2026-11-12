@@ -191,8 +191,9 @@ class NotificationTableCell: UITableViewCell {
     @IBOutlet var Shift3Switch: UISwitch!
     @IBOutlet var Shift4Switch: UISwitch!
     @IBOutlet var FAQ: UIButton!
-    
-    
+
+    private static let chromeTag = 0x4E071
+    private static let titleTag = 0x4E072
             
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -202,6 +203,111 @@ class NotificationTableCell: UITableViewCell {
 
     override func setSelected(_ selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)
+    }
+
+    /// Matches the referral Notification row: icon + title + time pill + toggle (no overlap).
+    func applyReferralChrome(title: String, symbolName: String, timeLabel: UILabel, toggle: UISwitch) {
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+        selectionStyle = .none
+        clipsToBounds = false
+        contentView.clipsToBounds = false
+
+        // Rebuild chrome so spacing updates after layout tweaks.
+        if let existing = contentView.viewWithTag(Self.chromeTag) {
+            // Put outlets back on contentView before removing the card.
+            if timeLabel.superview !== contentView {
+                timeLabel.removeFromSuperview()
+                contentView.addSubview(timeLabel)
+            }
+            if toggle.superview !== contentView {
+                toggle.removeFromSuperview()
+                contentView.addSubview(toggle)
+            }
+            existing.removeFromSuperview()
+        }
+
+        // Hide storyboard layout pieces; keep outlets and re-host them in the card.
+        for sub in contentView.subviews {
+            sub.isHidden = true
+        }
+
+        let card = UIView()
+        card.tag = Self.chromeTag
+        card.translatesAutoresizingMaskIntoConstraints = false
+        // Soft faded card like the referral (not hard pure white).
+        card.backgroundColor = UIColor(red: 0.98, green: 0.98, blue: 0.99, alpha: 0.92)
+        card.layer.cornerRadius = 14
+        card.layer.borderWidth = 0.8
+        card.layer.borderColor = UIColor(white: 0.82, alpha: 0.45).cgColor
+        contentView.addSubview(card)
+
+        let iconWrap = UIView()
+        iconWrap.translatesAutoresizingMaskIntoConstraints = false
+        iconWrap.backgroundColor = UIColor(red: 0.90, green: 0.93, blue: 0.98, alpha: 0.95)
+        iconWrap.layer.cornerRadius = 17
+        card.addSubview(iconWrap)
+
+        let icon = UIImageView(image: UIImage(systemName: symbolName))
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.tintColor = UIColor(red: 0.22, green: 0.42, blue: 0.86, alpha: 1)
+        icon.contentMode = .scaleAspectFit
+        iconWrap.addSubview(icon)
+
+        let titleLabel = UILabel()
+        titleLabel.tag = Self.titleTag
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = title
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        titleLabel.textColor = UIColor(white: 0.12, alpha: 1)
+        titleLabel.setContentHuggingPriority(.required, for: .horizontal)
+        titleLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+        card.addSubview(titleLabel)
+
+        // Plain default time text only (same as old screen — no clock/chevron picker look).
+        timeLabel.isHidden = false
+        timeLabel.removeFromSuperview()
+        timeLabel.translatesAutoresizingMaskIntoConstraints = false
+        timeLabel.font = UIFont.systemFont(ofSize: 12)
+        timeLabel.textColor = UIColor(white: 0.45, alpha: 1)
+        timeLabel.textAlignment = .left
+        timeLabel.setContentHuggingPriority(.required, for: .horizontal)
+        timeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        card.addSubview(timeLabel)
+
+        toggle.isHidden = false
+        toggle.removeFromSuperview()
+        toggle.translatesAutoresizingMaskIntoConstraints = false
+        toggle.setContentHuggingPriority(.required, for: .horizontal)
+        toggle.setContentCompressionResistancePriority(.required, for: .horizontal)
+        card.addSubview(toggle)
+
+        NSLayoutConstraint.activate([
+            card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 2),
+            card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -2),
+
+            iconWrap.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
+            iconWrap.centerYAnchor.constraint(equalTo: card.centerYAnchor),
+            iconWrap.widthAnchor.constraint(equalToConstant: 30),
+            iconWrap.heightAnchor.constraint(equalToConstant: 30),
+
+            icon.centerXAnchor.constraint(equalTo: iconWrap.centerXAnchor),
+            icon.centerYAnchor.constraint(equalTo: iconWrap.centerYAnchor),
+            icon.widthAnchor.constraint(equalToConstant: 14),
+            icon.heightAnchor.constraint(equalToConstant: 14),
+
+            titleLabel.leadingAnchor.constraint(equalTo: iconWrap.trailingAnchor, constant: 8),
+            titleLabel.centerYAnchor.constraint(equalTo: card.centerYAnchor),
+
+            toggle.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12),
+            toggle.centerYAnchor.constraint(equalTo: card.centerYAnchor),
+
+            timeLabel.trailingAnchor.constraint(equalTo: toggle.leadingAnchor, constant: -16),
+            timeLabel.leadingAnchor.constraint(greaterThanOrEqualTo: titleLabel.trailingAnchor, constant: 8),
+            timeLabel.centerYAnchor.constraint(equalTo: card.centerYAnchor)
+        ])
     }
 
 }

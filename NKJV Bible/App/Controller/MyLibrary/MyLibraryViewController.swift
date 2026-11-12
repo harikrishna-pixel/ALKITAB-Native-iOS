@@ -288,6 +288,11 @@ class MyLibraryViewController: UIViewController, MyLibraryDelegate, UIGestureRec
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        // Opening straight onto Images (or coming back to it) must fetch the saved photos, not only a tab tap.
+        self.status = PHPhotoLibrary.authorizationStatus()
+        if selectedItem == titles.count - 1 && self.status == .authorized {
+            App_Protocol.IMageReloaddelegate?.LoadImage()
+        }
         guard TitleCollection.numberOfItems(inSection: 0) > selectedItem else { return }
         TitleCollection.scrollToItem(at: IndexPath(row: selectedItem, section: 0), at: .centeredHorizontally, animated: false)
     }

@@ -112,14 +112,11 @@ final class VerseActionsContainer: UIView {
     }
 
     private func updateBookmarkIcon() {
-        if isSaved {
-            let image = UIImage(named: "save")?.withRenderingMode(.alwaysOriginal)
-            bookmarkButton.setImage(image, for: .normal)
-        } else {
-            let image = UIImage(named: "SaveBlue")?.withRenderingMode(.alwaysTemplate)
-            bookmarkButton.tintColor = accentColor
-            bookmarkButton.setImage(image, for: .normal)
-        }
+        // Same "save" asset as Verse Explanation / Chapter Summary footer.
+        let image = UIImage(named: "save")?.withRenderingMode(.alwaysTemplate)
+        bookmarkButton.tintColor = accentColor
+        bookmarkButton.alpha = isSaved ? 0.55 : 1
+        bookmarkButton.setImage(image, for: .normal)
     }
 
     private func bindTargets() {

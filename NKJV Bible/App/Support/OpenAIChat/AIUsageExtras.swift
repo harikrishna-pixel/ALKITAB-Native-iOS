@@ -23,7 +23,8 @@ extension AIUsageLimiter {
         case .aiChat:
             return "\(left) of \(limit) daily free AI messages remaining"
         case .explanation:
-            return "\(left) of \(limit) free explanation remaining today"
+            // Toast copy under Get Explanation (e.g. "1 free explanation available").
+            return left == 1 ? "1 free explanation available" : "\(left) free explanations available"
         case .chapterSummary:
             return compact ? "\(left) of \(limit) free summary left today" : "\(left) of \(limit) free chapter summary remaining today"
         case .quiz:
@@ -79,17 +80,29 @@ final class AIUsageBarView: UIView {
     }
 }
 
-/// Centered "X of Y remaining" text with a thin bar under it. Hidden for unlimited plans.
+/// Centered remaining-count line with a thin bar under it. Hidden for unlimited plans.
 final class AIRemainingLineView: UIView {
+
+    enum Style {
+        /// Compact "X of Y …" (summary / default).
+        case standard
+        /// Get Explanation toast: bolt + "N free explanation available" + full-width bar.
+        case toast
+    }
 
     let feature: AIUsageFeature
     private let compact: Bool
+    private let style: Style
     private let label = UILabel()
     private let bar = AIUsageBarView()
+    private let boltView = UIImageView()
+    private let titleRow = UIStackView()
 
-    init(feature: AIUsageFeature, fontSize: CGFloat, compact: Bool = false, barHeight: CGFloat = 3) {
+    init(feature: AIUsageFeature, fontSize: CGFloat, compact: Bool = false, barHeight: CGFloat = 3, style: Style = .standard) {
         self.feature = feature
         self.compact = compact
+        self.style = style
+        let resolvedBarHeight = style == .toast ? max(barHeight, 4) : barHeight
         super.init(frame: .zero)
         isUserInteractionEnabled = false
 
@@ -98,21 +111,49 @@ final class AIRemainingLineView: UIView {
         label.textAlignment = .center
         label.adjustsFontSizeToFitWidth = true
         label.minimumScaleFactor = 0.75
-        addSubview(label)
 
         bar.translatesAutoresizingMaskIntoConstraints = false
         addSubview(bar)
 
-        NSLayoutConstraint.activate([
-            label.topAnchor.constraint(equalTo: topAnchor),
-            label.leadingAnchor.constraint(equalTo: leadingAnchor),
-            label.trailingAnchor.constraint(equalTo: trailingAnchor),
+        if style == .toast {
+            let boltConfig = UIImage.SymbolConfiguration(pointSize: max(11, fontSize), weight: .semibold)
+            boltView.image = UIImage(systemName: "bolt.fill", withConfiguration: boltConfig)
+            boltView.contentMode = .scaleAspectFit
+            boltView.setContentHuggingPriority(.required, for: .horizontal)
 
-            bar.topAnchor.constraint(equalTo: label.bottomAnchor, constant: max(2, barHeight)),
-            bar.centerXAnchor.constraint(equalTo: centerXAnchor),
-            bar.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.5),
-            bar.heightAnchor.constraint(equalToConstant: barHeight)
-        ])
+            titleRow.translatesAutoresizingMaskIntoConstraints = false
+            titleRow.axis = .horizontal
+            titleRow.alignment = .center
+            titleRow.spacing = 6
+            titleRow.addArrangedSubview(boltView)
+            titleRow.addArrangedSubview(label)
+            addSubview(titleRow)
+
+            NSLayoutConstraint.activate([
+                titleRow.topAnchor.constraint(equalTo: topAnchor),
+                titleRow.centerXAnchor.constraint(equalTo: centerXAnchor),
+                titleRow.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor),
+                titleRow.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
+
+                bar.topAnchor.constraint(equalTo: titleRow.bottomAnchor, constant: 6),
+                bar.leadingAnchor.constraint(equalTo: leadingAnchor),
+                bar.trailingAnchor.constraint(equalTo: trailingAnchor),
+                bar.heightAnchor.constraint(equalToConstant: resolvedBarHeight),
+                bar.bottomAnchor.constraint(equalTo: bottomAnchor)
+            ])
+        } else {
+            addSubview(label)
+            NSLayoutConstraint.activate([
+                label.topAnchor.constraint(equalTo: topAnchor),
+                label.leadingAnchor.constraint(equalTo: leadingAnchor),
+                label.trailingAnchor.constraint(equalTo: trailingAnchor),
+
+                bar.topAnchor.constraint(equalTo: label.bottomAnchor, constant: max(2, resolvedBarHeight)),
+                bar.centerXAnchor.constraint(equalTo: centerXAnchor),
+                bar.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.5),
+                bar.heightAnchor.constraint(equalToConstant: resolvedBarHeight)
+            ])
+        }
     }
 
     required init?(coder: NSCoder) {
@@ -124,6 +165,7 @@ final class AIRemainingLineView: UIView {
         isHidden = text == nil
         label.text = text
         label.textColor = textColor
+        boltView.tintColor = tint
         bar.fillColor = tint
         bar.fraction = AIUsageLimiter.shared.remainingFraction(feature)
     }
@@ -229,8 +271,9 @@ enum AIDisclaimer {
         ))
         // Keep the reading screen underneath so dismissing does not re-run its appear work.
         host.modalPresentationStyle = .overFullScreen
-        host.modalTransitionStyle = .coverVertical
-        host.view.backgroundColor = .white
+        // Dim fades in place; AIDisclaimerView slides the bottom sheet up itself.
+        host.modalTransitionStyle = .crossDissolve
+        host.view.backgroundColor = .clear
         box.host = host
         shown = host
         top.view.endEditing(true)
@@ -313,21 +356,50 @@ private struct AIDisclaimerView: View {
     private var theme: Color { DailyJourneyTheme.color }
     private let ink = Color(hex: "12315C")
 
+    @State private var appeared = false
+    @State private var dragOffset: CGFloat = 0
+    @State private var isDismissing = false
+
     var body: some View {
+        ZStack(alignment: .bottom) {
+            Color.black.opacity(0.45 * dimOpacity)
+                .ignoresSafeArea()
+                .onTapGesture { dismissSheet() }
+
+            sheet
+                .offset(y: appeared ? max(0, dragOffset) : UIScreen.main.bounds.height)
+                .simultaneousGesture(sheetDismissDrag)
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.3)) {
+                appeared = true
+            }
+        }
+    }
+
+    private var sheet: some View {
         VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                Button(action: onClose) {
+            ZStack(alignment: .topTrailing) {
+                Capsule()
+                    .fill(Color(hex: "E1E6EF"))
+                    .frame(width: 42, height: 5)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 28)
+                Button(action: dismissSheet) {
                     Image(systemName: "xmark")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(ink)
                         .frame(width: 44, height: 44)
                 }
                 .buttonStyle(PlainButtonStyle())
+                .padding(.trailing, 8)
+                .padding(.top, 4)
             }
-            .padding(.horizontal, 12)
+            .contentShape(Rectangle())
+            .highPriorityGesture(sheetDismissDrag)
 
-            ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
                 VStack(spacing: 0) {
                     ZStack {
                         Image(systemName: "book.fill")
@@ -339,7 +411,7 @@ private struct AIDisclaimerView: View {
                             .offset(y: -44)
                     }
                     .frame(height: 100)
-                    .padding(.top, 20)
+                    .padding(.top, 8)
 
                     Text("About AI Bible Assistance")
                         .font(.system(size: 24, weight: .bold))
@@ -386,9 +458,170 @@ private struct AIDisclaimerView: View {
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.horizontal, 24)
-            .padding(.bottom, 16)
+            .padding(.bottom, max(16, sheetBottomInset + 8))
         }
-        .background(Color.white.ignoresSafeArea())
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity)
+        .background(
+            TopRoundedShape(radius: 28)
+                .fill(Color.white)
+                .ignoresSafeArea(edges: .bottom)
+        )
+    }
+
+    private var sheetBottomInset: CGFloat {
+        let window = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+        return window?.safeAreaInsets.bottom ?? 0
+    }
+
+    private var dimOpacity: Double {
+        guard dragOffset > 0 else { return 1 }
+        return max(0.25, 1 - Double(dragOffset) / 420)
+    }
+
+    private var sheetDismissDrag: some Gesture {
+        DragGesture(minimumDistance: 6, coordinateSpace: .global)
+            .onChanged { value in
+                guard !isDismissing else { return }
+                dragOffset = max(0, value.translation.height)
+            }
+            .onEnded { value in
+                guard !isDismissing else { return }
+                if value.translation.height > 90 || value.predictedEndTranslation.height > 160 {
+                    dismissSheet()
+                } else {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                        dragOffset = 0
+                    }
+                }
+            }
+    }
+
+    private func dismissSheet() {
+        guard !isDismissing else { return }
+        isDismissing = true
+        withAnimation(.easeIn(duration: 0.22)) {
+            dragOffset = UIScreen.main.bounds.height
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+            onClose()
+        }
+    }
+}
+
+// MARK: - Use credits pop-up
+
+/// "Use 20 credits?" card shown after today's free use is gone and the wallet has enough credits.
+enum AICreditsOffer {
+
+    static func present(title: String,
+                        message: String,
+                        creditsTitle: String,
+                        showUnlimited: Bool,
+                        onUnlimited: @escaping () -> Void,
+                        onUseCredits: @escaping () -> Void) {
+        guard let top = OnboardingAuthManager.topViewController() else { return }
+        if top.presentedViewController != nil { return }
+        weak var hostRef: UIViewController?
+        let close: (_ then: (() -> Void)?) -> Void = { then in
+            guard let host = hostRef else { return }
+            host.dismiss(animated: true) {
+                guard let then = then else { return }
+                // Let the dismiss finish before opening the paywall or the result.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: then)
+            }
+        }
+        let host = UIHostingController(rootView: AICreditsOfferView(
+            title: title,
+            message: message,
+            creditsTitle: creditsTitle,
+            showUnlimited: showUnlimited,
+            onClose: { close(nil) },
+            onUnlimited: { close(onUnlimited) },
+            onUseCredits: { close(onUseCredits) }
+        ))
+        host.modalPresentationStyle = .overFullScreen
+        host.modalTransitionStyle = .crossDissolve
+        host.view.backgroundColor = .clear
+        hostRef = host
+        top.view.endEditing(true)
+        top.present(host, animated: true)
+    }
+}
+
+private struct AICreditsOfferView: View {
+    let title: String
+    let message: String
+    let creditsTitle: String
+    let showUnlimited: Bool
+    var onClose: () -> Void
+    var onUnlimited: () -> Void
+    var onUseCredits: () -> Void
+
+    private let ink = Color(hex: "12315C")
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.25)
+                .ignoresSafeArea()
+                .onTapGesture(perform: onClose)
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top) {
+                    Text(title)
+                        .font(.system(size: 19, weight: .semibold))
+                        .foregroundColor(ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(Color(hex: "3A4A63"))
+                            .frame(width: 32, height: 32)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .offset(x: 6, y: -6)
+                }
+
+                Text(message)
+                    .font(.system(size: 16))
+                    .foregroundColor(Color(hex: "8B95A7"))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 8)
+
+                HStack(spacing: 10) {
+                    if showUnlimited {
+                        pill("Go Unlimited", action: onUnlimited)
+                    }
+                    pill(creditsTitle, action: onUseCredits)
+                }
+                .padding(.top, 22)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 22)
+            .padding(.bottom, 20)
+            .frame(maxWidth: 400)
+            .background(RoundedRectangle(cornerRadius: 30).fill(Color.white))
+            .shadow(color: Color.black.opacity(0.12), radius: 20, x: 0, y: 8)
+            .padding(.horizontal, 24)
+        }
+    }
+
+    private func pill(_ text: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(text)
+                .font(.system(size: 17, weight: .medium))
+                .foregroundColor(Color(hex: "1C1C1E"))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Capsule().fill(Color(hex: "E9EBEF")))
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -535,7 +768,47 @@ enum AIQuizReport {
 enum AIFeatureReminder {
 
     private static let dayKey = "AIExplanationReminderDay"
+    private static let actionCountKey = "AIExplanationReminderActionCount"
+    private static let actionDayKey = "AIExplanationReminderActionDay"
+    /// First BM / HL / Underline / Notes save of the day can show the card.
+    private static let actionThreshold = 1
     private static weak var card: UIView?
+
+    /// Call after the user bookmarks, highlights, underlines, or saves a note on a verse.
+    static func noteVerseAction(book: String, chapter: Int, verse: Int, verses: [String]) {
+        guard usesOldOnboarding, !book.isEmpty, chapter >= 1, verse >= 1, verse <= verses.count else { return }
+        let today = Date().string(format: "dd-MM-yyyy")
+        let defaults = UserDefaults.standard
+        if defaults.string(forKey: actionDayKey) != today {
+            defaults.set(today, forKey: actionDayKey)
+            defaults.set(0, forKey: actionCountKey)
+        }
+        let count = defaults.integer(forKey: actionCountKey) + 1
+        defaults.set(count, forKey: actionCountKey)
+        guard count == actionThreshold else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+            guard let reader = App_Protocol.delegateReader as? ReaderViewController,
+                  reader.view.window != nil,
+                  reader.SelectedTab == "1",
+                  reader.presentedViewController == nil,
+                  reader.navigationController?.topViewController === reader else { return }
+            App_Protocol.delegateReader?.CloseMenu()
+            let reference = "\(book) \(chapter):\(verse)"
+            showIfNeeded(in: reader.view, below: reader.Navigateframe, reference: reference) {
+                AIUsageLimiter.shared.requestAccess(.explanation) {
+                    DispatchQueue.main.async {
+                        App_Protocol.delegateReader?.ExplanationNib(
+                            VersePosition: verse,
+                            BookName: book,
+                            Pageindex: chapter,
+                            BookVerse: verses
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     /// `host` is the reading screen's view, so the verse menu and explanation sheet open above the card.
     static func showIfNeeded(in host: UIView, below sibling: UIView? = nil, reference: String, onTry: @escaping () -> Void) {
@@ -583,7 +856,8 @@ enum AIFeatureReminder {
 
         let close = UIButton(type: .system)
         close.translatesAutoresizingMaskIntoConstraints = false
-        close.setImage(UIImage(systemName: "xmark"), for: .normal)
+        let closeIcon = UIImage.SymbolConfiguration(pointSize: 9, weight: .semibold)
+        close.setImage(UIImage(systemName: "xmark", withConfiguration: closeIcon), for: .normal)
         close.tintColor = UIColor(white: 0.55, alpha: 1)
 
         let tryButton = UIButton(type: .system)
@@ -611,10 +885,10 @@ enum AIFeatureReminder {
             icon.widthAnchor.constraint(equalToConstant: 44),
             icon.heightAnchor.constraint(equalToConstant: 44),
 
-            close.topAnchor.constraint(equalTo: view.topAnchor, constant: 6),
-            close.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -6),
-            close.widthAnchor.constraint(equalToConstant: 36),
-            close.heightAnchor.constraint(equalToConstant: 36),
+            close.topAnchor.constraint(equalTo: view.topAnchor, constant: 10),
+            close.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
+            close.widthAnchor.constraint(equalToConstant: 20),
+            close.heightAnchor.constraint(equalToConstant: 20),
 
             title.topAnchor.constraint(equalTo: view.topAnchor, constant: 16),
             title.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 12),
@@ -644,8 +918,9 @@ enum AIFeatureReminder {
             view.alpha = 1
             view.transform = .identity
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak view] in
-            guard let view = view else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak view] in
+            guard let view = view, view.superview != nil, card === view else { return }
             hide(view)
         }
     }

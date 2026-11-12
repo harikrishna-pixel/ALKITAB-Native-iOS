@@ -66,7 +66,7 @@ struct Onboarding5: View {
 
                             OnboardingToggleRow(
                                 title: "Daily verse reminder",
-                                detail: "7:00 AM",
+                                detail: "8:00 AM",
                                 isOn: morningBinding
                             )
                             .padding(.horizontal, 26)
@@ -368,6 +368,7 @@ struct OnboardingBridgeView: View {
     @State private var shown = 0
     @State private var ready = false
     @State private var navigateForward = false
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
 
     private var themeLine: String {
         let theme = UserDefaults.standard.string(forKey: OnboardingTheme.readThemeKey) ?? "light"
@@ -395,46 +396,55 @@ struct OnboardingBridgeView: View {
                 OnboardingTheme.darkPageGradient.ignoresSafeArea()
                 VStack(spacing: 0) {
                     Spacer(minLength: 12)
-                    Text("✦")
-                        .font(.system(size: 30))
-                        .foregroundColor(OnboardingTheme.gold)
-                        .frame(width: 64, height: 64)
-                        .background(
-                            Circle().fill(OnboardingTheme.gold.opacity(0.18))
+                    Image("pro_crown_badge")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(
+                            width: isPad ? 210 : 150,
+                            height: isPad ? 140 : 100
                         )
                     OnboardingSerifTitle(
                         lines: ready ? ["Your Pro Bible", "Is Ready"] : ["Setting Up", "Your Pro Bible"],
-                        size: min(geometry.size.width * 0.08, 31)
+                        goldWord: isPad && ready ? "Is Ready" : nil,
+                        size: isPad ? 54 : min(geometry.size.width * 0.08, 31)
                     )
                     .padding(.horizontal, 26)
-                    .padding(.top, 12)
-                    OnboardingLede(
-                        text: ready ? "Unlock it once. Keep it for life." : "Putting your choices in place.",
-                        onDark: true
-                    )
-                    .padding(.top, 8)
+                    .padding(.top, isPad ? 20 : 12)
+                    if isPad {
+                        Text(ready ? "Unlock it once. Keep it for life." : "Putting your choices in place.")
+                            .font(.system(size: 21))
+                            .foregroundColor(OnboardingTheme.dim)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 18)
+                    } else {
+                        OnboardingLede(
+                            text: ready ? "Unlock it once. Keep it for life." : "Putting your choices in place.",
+                            onDark: true
+                        )
+                        .padding(.top, 8)
+                    }
 
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: isPad ? 26 : 16) {
                         ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                             let on = index < shown
-                            HStack(alignment: .center, spacing: 12) {
+                            HStack(alignment: .center, spacing: isPad ? 18 : 12) {
                                 ZStack {
                                     Circle()
                                         .fill(on ? OnboardingTheme.grow : Color.clear)
                                     Circle()
                                         .stroke(on ? OnboardingTheme.grow : Color(hex: "4D6A9C"), lineWidth: 1.5)
                                     Image(systemName: "checkmark")
-                                        .font(.system(size: 11, weight: .bold))
+                                        .font(.system(size: isPad ? 15 : 11, weight: .bold))
                                         .foregroundColor(.white)
                                 }
-                                .frame(width: 24, height: 24)
+                                .frame(width: isPad ? 34 : 24, height: isPad ? 34 : 24)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(row.title)
-                                        .font(.system(size: 14.5, weight: .semibold))
+                                        .font(.system(size: isPad ? 20 : 14.5, weight: .semibold))
                                         .foregroundColor(Color(hex: "DCE7F8"))
                                     if !row.detail.isEmpty {
                                         Text(row.detail)
-                                            .font(.system(size: 12, weight: .medium))
+                                            .font(.system(size: isPad ? 16 : 12, weight: .medium))
                                             .foregroundColor(Color(hex: "93A8C9"))
                                     }
                                 }
@@ -444,17 +454,27 @@ struct OnboardingBridgeView: View {
                             .offset(y: on ? 0 : 6)
                         }
                     }
-                    .padding(.horizontal, 32)
-                    .padding(.top, 22)
+                    .padding(.horizontal, isPad ? 30 : 32)
+                    .padding(.vertical, isPad ? 28 : 0)
+                    .frame(maxWidth: isPad ? 580 : .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 26)
+                            .fill(Color.white.opacity(isPad ? 0.07 : 0))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 26)
+                                    .stroke(Color.white.opacity(isPad ? 0.25 : 0), lineWidth: 1.5)
+                            )
+                    )
+                    .padding(.top, isPad ? 36 : 22)
                     Spacer()
 
                     Button(action: { navigateForward = true }) {
                         Text(ready ? "Keep My Verse" : "Setting up…")
-                            .font(.system(size: 16.5, weight: .bold))
+                            .font(.system(size: isPad ? 24 : 16.5, weight: .bold))
                             .foregroundColor(OnboardingTheme.goldInk)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 17)
-                            .background(RoundedRectangle(cornerRadius: 15).fill(ready ? OnboardingTheme.gold : Color(hex: "3F5578")))
+                            .frame(maxWidth: isPad ? 660 : .infinity)
+                            .padding(.vertical, isPad ? 22 : 17)
+                            .background(RoundedRectangle(cornerRadius: isPad ? 36 : 15).fill(ready ? OnboardingTheme.gold : Color(hex: "3F5578")))
                     }
                     .disabled(!ready)
                     .padding(.horizontal, 26)
@@ -493,31 +513,69 @@ struct OnboardingProPaywallView: View {
     @State private var showExit = false
     @State private var exitAlreadyShown = false
     private enum PurchaseWait { case lifetime, exit, restore }
-    private enum LifetimePricePhase { case loading, ready, unavailable, retrying }
+    private enum LifetimePricePhase { case loading, ready, unavailable, retrying, noInternet }
     @State private var purchaseWait: PurchaseWait?
     @State private var priceSheetWatcher = PriceSheetWatcher()
     @State private var didFinishPriceSetup = false
     @State private var isRetryingPrice = false
+    // Exit offer price states
+    private enum ExitPricePhase { case loading, ready, noInternet, unavailable, retrying }
+    @State private var exitRetrying = false
+    @State private var exitWaitExpired = false
+    @State private var exitWaitToken = 0
+
+    private var exitPhase: ExitPricePhase {
+        if exitPrice != "—" { return .ready }
+        if !NetworkManager.sharedInstance.isConnectedToInternet() { return .noInternet }
+        if exitRetrying { return .retrying }
+        if exitWaitExpired { return .unavailable }
+        return .loading
+    }
+
+    /// Stops waiting for the exit-offer price after 10 seconds and shows "Price unavailable".
+    private func startExitPriceWait(retry: Bool) {
+        exitWaitToken += 1
+        let token = exitWaitToken
+        exitWaitExpired = false
+        exitRetrying = retry
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+            guard token == exitWaitToken else { return }
+            exitRetrying = false
+            exitWaitExpired = true
+        }
+    }
+
+    private func retryExitPrice() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            paywallHost()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
+            return
+        }
+        startExitPriceWait(retry: true)
+        storeManager.retryLifetimePrice()
+        storeManager.retryExitOfferPrice()
+    }
 
     private var lifetimePrice: String {
         let live = storeManager.price3.trimmingCharacters(in: .whitespacesAndNewlines)
         let cached = (UserDefaults.standard.string(forKey: "PriceTag3") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let price = live.isEmpty ? cached : live
-        return price.isEmpty ? "" : price.cleanPrice()
+        // Exact StoreKit localized price — do not round (e.g. keep $14.99, not $15).
+        return live.isEmpty ? cached : live
     }
 
     private var pricePhase: LifetimePricePhase {
         if !lifetimePrice.isEmpty { return .ready }
         let fetching = storeManager.isLoading1 || storeManager.isLoading2 || storeManager.isLoading3
-        if isRetryingPrice { return fetching ? .retrying : .unavailable }
+        let online = NetworkManager.sharedInstance.isConnectedToInternet()
+        if isRetryingPrice { return fetching ? .retrying : (online ? .unavailable : .noInternet) }
         if fetching { return .loading }
-        if !didFinishPriceSetup && NetworkManager.sharedInstance.isConnectedToInternet() { return .loading }
+        if !online { return .noInternet }
+        if !didFinishPriceSetup { return .loading }
         return .unavailable
     }
 
     private var exitPrice: String {
         let offer = storeManager.exitOfferPrice.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !offer.isEmpty { return offer.cleanPrice() }
+        if !offer.isEmpty { return offer }
         return lifetimePrice.isEmpty ? "—" : lifetimePrice
     }
 
@@ -538,17 +596,6 @@ struct OnboardingProPaywallView: View {
         let cleaned = text.replacingOccurrences(of: ",", with: "")
         let digits = cleaned.filter { $0.isNumber || $0 == "." }
         return Double(digits)
-    }
-
-    private func roundedRupee(_ text: String) -> String {
-        guard let amount = priceAmount(text) else { return text }
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.groupingSeparator = ","
-        formatter.maximumFractionDigits = 0
-        let symbol = text.prefix { !$0.isNumber && $0 != "." && $0 != "," }
-        let number = formatter.string(from: NSNumber(value: amount.rounded())) ?? "\(Int(amount.rounded()))"
-        return "\(symbol)\(number)"
     }
 
     private func exitCheck(_ title: String) -> some View {
@@ -575,6 +622,19 @@ struct OnboardingProPaywallView: View {
             VStack(spacing: 0) {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
+                        HStack {
+                            Spacer(minLength: 0)
+                            if !exitAlreadyShown {
+                                Button(action: openExit) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(Color(hex: "51607A"))
+                                        .frame(width: 32, height: 32)
+                                }
+                            }
+                        }
+                        .padding(.top, 8)
+
                         Image("onboard_paywall_bible")
                             .resizable()
                             .scaledToFit()
@@ -657,23 +717,26 @@ struct OnboardingProPaywallView: View {
                     .padding(.horizontal, 22)
                 }
 
-                Button(action: lifetimeCTATapped) {
-                    ZStack {
-                        lifetimeCTALabel
-                            .opacity(purchaseWait == .lifetime ? 0 : 1)
-                        if purchaseWait == .lifetime {
-                            SwiftUI.ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                // Error states have their own "Try Again" button inside the price card.
+                if pricePhase != .unavailable && pricePhase != .noInternet {
+                    Button(action: lifetimeCTATapped) {
+                        ZStack {
+                            lifetimeCTALabel
+                                .opacity(purchaseWait == .lifetime ? 0 : 1)
+                            if purchaseWait == .lifetime {
+                                SwiftUI.ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            }
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(Capsule().fill(pricePhase == .loading || pricePhase == .retrying ? Color(hex: "C5D0E0") : Color(hex: "2844A8")))
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(Capsule().fill(pricePhase == .loading || pricePhase == .retrying ? Color(hex: "C5D0E0") : Color(hex: "2844A8")))
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(pricePhase == .loading || pricePhase == .retrying)
+                    .padding(.horizontal, 22)
+                    .padding(.top, 8)
                 }
-                .buttonStyle(PlainButtonStyle())
-                .disabled(pricePhase == .loading || pricePhase == .retrying)
-                .padding(.horizontal, 22)
-                .padding(.top, 8)
 
                 HStack(spacing: 18) {
                     legalButton("Terms of Use", url: TermsURL)
@@ -682,18 +745,6 @@ struct OnboardingProPaywallView: View {
                 }
                 .padding(.top, 10)
                 .padding(.bottom, 16)
-            }
-            .overlay(alignment: .topTrailing) {
-                if !exitAlreadyShown {
-                    Button(action: openExit) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(Color(hex: "51607A"))
-                            .frame(width: 32, height: 32)
-                    }
-                    .padding(.trailing, 18)
-                    .padding(.top, 8)
-                }
             }
 
             if showExit {
@@ -740,24 +791,59 @@ struct OnboardingProPaywallView: View {
         case .retrying:
             priceWaitStatus(
                 title: OnboardingLocale.text(id: "Mencoba lagi...", en: "Retrying..."),
-                subtitle: OnboardingLocale.text(id: "Mohon tunggu sebentar", en: "Please wait a moment")
+                subtitle: OnboardingLocale.text(id: "Mengambil harga lagi...", en: "Getting your price again...")
+            )
+        case .noInternet:
+            priceErrorStatus(
+                icon: "wifi.slash",
+                iconColor: Color(hex: "607089"),
+                title: OnboardingLocale.text(id: "Tidak Ada Koneksi Internet", en: "No Internet Connection"),
+                message: OnboardingLocale.text(
+                    id: "Periksa koneksi internetmu dan coba lagi.",
+                    en: "Please check your internet connection and try again."
+                )
             )
         case .unavailable:
-            VStack(spacing: 8) {
-                Image(systemName: "wifi.slash")
-                    .font(.system(size: 26, weight: .medium))
-                    .foregroundColor(Color(hex: "607089"))
-                Text(OnboardingLocale.text(id: "Harga tidak tersedia", en: "Price unavailable"))
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(Color(hex: "1A1A1A"))
-                Text(OnboardingLocale.text(
-                    id: "Kami tidak bisa memuat harga pembelian.\nPeriksa koneksi internetmu dan coba lagi.",
-                    en: "We couldn't load the purchase price.\nCheck your internet connection and try again."
-                ))
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "8B95A7"))
-                    .multilineTextAlignment(.center)
+            priceErrorStatus(
+                icon: "exclamationmark.circle",
+                iconColor: Color(hex: "E5483B"),
+                title: OnboardingLocale.text(id: "Harga tidak tersedia", en: "Price unavailable"),
+                message: OnboardingLocale.text(
+                    id: "Kami tidak bisa memuat harga pembelian. Ini mungkin masalah sementara. Silakan coba lagi.",
+                    en: "We couldn't load the purchase price. This may be a temporary issue. Please try again."
+                )
+            )
+        }
+    }
+
+    private func priceErrorStatus(icon: String, iconColor: Color, title: String, message: String) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 26, weight: .medium))
+                .foregroundColor(iconColor)
+            Text(title)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(Color(hex: "1A1A1A"))
+            Text(message)
+                .font(.system(size: 13))
+                .foregroundColor(Color(hex: "8B95A7"))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
+            Button(action: lifetimeCTATapped) {
+                HStack(spacing: 8) {
+                    Text(OnboardingLocale.text(id: "Coba Lagi", en: "Try Again"))
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 15, weight: .bold))
+                }
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Capsule().fill(Color(hex: "2844A8")))
             }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
         }
     }
 
@@ -782,7 +868,7 @@ struct OnboardingProPaywallView: View {
             Text(OnboardingLocale.text(id: "Memuat harga...", en: "Loading price..."))
                 .font(.system(size: 17, weight: .bold))
                 .foregroundColor(.white)
-        case .unavailable:
+        case .unavailable, .noInternet:
             HStack(spacing: 8) {
                 Text(OnboardingLocale.text(id: "Coba Lagi", en: "Try Again"))
                 Image(systemName: "arrow.clockwise")
@@ -815,23 +901,71 @@ struct OnboardingProPaywallView: View {
                         .font(.system(size: 10, weight: .heavy))
                         .tracking(1.6)
                         .foregroundColor(OnboardingTheme.gold)
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        if showsStruckPrice {
-                            Text(roundedRupee(lifetimePrice))
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(Color(hex: "8AA0C2"))
-                                .strikethrough(true, color: Color(hex: "8AA0C2"))
+                    switch exitPhase {
+                    case .ready:
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            if showsStruckPrice {
+                                Text(lifetimePrice)
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(Color(hex: "8AA0C2"))
+                                    .strikethrough(true, color: Color(hex: "8AA0C2"))
+                                    .lineLimit(1)
+                            }
+                            Text(exitPrice)
+                                .font(.system(size: 38, weight: .heavy))
+                                .foregroundColor(.white)
                                 .lineLimit(1)
+                                .minimumScaleFactor(0.7)
                         }
-                        Text(roundedRupee(exitPrice))
-                            .font(.system(size: 38, weight: .heavy))
+                        Text("Pay once. No subscription. Yours forever.")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "BFD2EC"))
+                    case .loading, .retrying:
+                        SwiftUI.ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "BFD2EC")))
+                            .scaleEffect(1.15)
+                            .padding(.top, 4)
+                        Text(exitPhase == .retrying
+                             ? OnboardingLocale.text(id: "Mencoba lagi...", en: "Retrying...")
+                             : OnboardingLocale.text(id: "Mengambil harga...", en: "Getting your price..."))
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
+                        Text(exitPhase == .retrying
+                             ? OnboardingLocale.text(id: "Mengambil harga lagi...", en: "Getting your price again...")
+                             : OnboardingLocale.text(id: "Mohon tunggu sebentar", en: "Please wait a moment"))
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "BFD2EC"))
+                    case .noInternet, .unavailable:
+                        let offline = exitPhase == .noInternet
+                        Image(systemName: offline ? "wifi.slash" : "exclamationmark.circle")
+                            .font(.system(size: 26, weight: .medium))
+                            .foregroundColor(offline ? Color(hex: "9FB0CC") : Color(hex: "FF6B5E"))
+                        Text(offline
+                             ? OnboardingLocale.text(id: "Tidak Ada Koneksi Internet", en: "No Internet Connection")
+                             : OnboardingLocale.text(id: "Harga tidak tersedia", en: "Price unavailable"))
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                        Text(offline
+                             ? OnboardingLocale.text(id: "Periksa koneksi internetmu dan coba lagi.", en: "Please check your internet connection and try again.")
+                             : OnboardingLocale.text(id: "Kami tidak bisa memuat harga pembelian. Ini mungkin masalah sementara. Silakan coba lagi.", en: "We couldn't load the purchase price. This may be a temporary issue. Please try again."))
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "BFD2EC"))
+                            .multilineTextAlignment(.center)
+                        Button(action: retryExitPrice) {
+                            HStack(spacing: 8) {
+                                Text(OnboardingLocale.text(id: "Coba Lagi", en: "Try Again"))
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 15, weight: .bold))
+                            }
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(OnboardingTheme.goldInk)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 13)
+                            .background(Capsule().fill(OnboardingTheme.gold))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.top, 4)
                     }
-                    Text("Pay once. No subscription. Yours forever.")
-                        .font(.system(size: 13))
-                        .foregroundColor(Color(hex: "BFD2EC"))
                 }
                 .padding(22)
                 .frame(maxWidth: .infinity)
@@ -854,9 +988,12 @@ struct OnboardingProPaywallView: View {
                 .padding(.horizontal, 36)
                 .padding(.top, 8)
                 Spacer()
+                if exitPhase == .ready || exitPhase == .loading || exitPhase == .retrying {
                 Button(action: buyExit) {
                     ZStack {
-                        Text("Claim Lifetime for \(roundedRupee(exitPrice))")
+                        Text(exitPhase == .ready
+                             ? "Claim Lifetime Access"
+                             : OnboardingLocale.text(id: "Memuat harga...", en: "Loading price..."))
                             .font(.system(size: 16.5, weight: .bold))
                             .foregroundColor(OnboardingTheme.goldInk)
                             .opacity(purchaseWait == .exit ? 0 : 1)
@@ -867,11 +1004,12 @@ struct OnboardingProPaywallView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 17)
-                    .background(RoundedRectangle(cornerRadius: 15).fill(OnboardingTheme.gold))
+                    .background(RoundedRectangle(cornerRadius: 15).fill(OnboardingTheme.gold.opacity(exitPhase == .ready ? 1 : 0.45)))
                 }
                 .buttonStyle(PlainButtonStyle())
-                .disabled(purchaseWait != nil)
+                .disabled(purchaseWait != nil || exitPhase != .ready)
                 .padding(.horizontal, 26)
+                }
                 Button(action: { showExit = false }) {
                     Text("No thanks")
                         .font(.system(size: 14.5, weight: .semibold))
@@ -881,6 +1019,7 @@ struct OnboardingProPaywallView: View {
                 .padding(.bottom, 20)
             }
         }
+        .onAppear { startExitPriceWait(retry: false) }
     }
 
     private func benefit(_ symbol: String, _ title: String) -> some View {
@@ -913,7 +1052,8 @@ struct OnboardingProPaywallView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
-        .disabled(title == "Restore" && purchaseWait != nil)
+        // Only block double-tap while Restore is already running — not during a regular purchase.
+        .disabled(title == "Restore" && purchaseWait == .restore)
     }
 
     private func openLegalPage(_ urlString: String) {
@@ -954,7 +1094,7 @@ struct OnboardingProPaywallView: View {
         case .ready:
             guard purchaseWait == nil else { return }
             buyLifetime()
-        case .unavailable:
+        case .unavailable, .noInternet:
             retryLifetimePrice()
         case .loading, .retrying:
             break
@@ -962,7 +1102,10 @@ struct OnboardingProPaywallView: View {
     }
 
     private func retryLifetimePrice() {
-        guard NetworkManager.sharedInstance.isConnectedToInternet() else { return }
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            paywallHost()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
+            return
+        }
         isRetryingPrice = true
         storeManager.retryLifetimePrice()
         if !storeManager.isLoading3 {
@@ -980,6 +1123,10 @@ struct OnboardingProPaywallView: View {
     }
 
     private func buyExit() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            paywallHost()?.view.makeToast("No internet connection", duration: 2.0, position: .top)
+            return
+        }
         let id = SUBSCRIPTIONID_ExitOffer.isEmpty ? SUBSCRIPTIONID_LifeTime : SUBSCRIPTIONID_ExitOffer
         beginPurchase(id, kind: .exit)
     }
@@ -1026,14 +1173,15 @@ struct OnboardingProPaywallView: View {
 }
 
 /// Notices when the App Store price sheet appears, then stops the paywall loader.
-private final class PriceSheetWatcher {
+/// Shared by Pro paywall (`BibleSubscriptionView`) so the loader clears when the sheet opens.
+final class PriceSheetWatcher {
     struct Chrome: Equatable {
         var windows: Set<ObjectIdentifier>
         var presented: Set<ObjectIdentifier>
     }
 
     private var timer: Timer?
-    private var token: NSObjectProtocol?
+    private var tokens: [NSObjectProtocol] = []
 
     static func currentChrome() -> Chrome {
         let windows = UIApplication.shared.connectedScenes
@@ -1050,34 +1198,51 @@ private final class PriceSheetWatcher {
         return Chrome(windows: Set(windows.map { ObjectIdentifier($0) }), presented: presented)
     }
 
+    /// StoreKit sheets often use a non-normal window level or a new window.
+    static func hasStoreKitOverlay(beyond before: Chrome) -> Bool {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .filter { !$0.isHidden }
+        for window in windows {
+            if window.windowLevel != .normal { return true }
+            if !before.windows.contains(ObjectIdentifier(window)) { return true }
+        }
+        return false
+    }
+
     func start(before: Chrome, onOpened: @escaping () -> Void) {
         stop()
-        if Self.currentChrome() != before {
+        if Self.currentChrome() != before || Self.hasStoreKitOverlay(beyond: before) {
             onOpened()
             return
         }
-        token = NotificationCenter.default.addObserver(
-            forName: UIWindow.didBecomeVisibleNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] note in
-            guard let window = note.object as? UIWindow else { return }
-            guard !before.windows.contains(ObjectIdentifier(window)) else { return }
+        let opened: () -> Void = { [weak self] in
             self?.stop()
             onOpened()
         }
+        for name in [UIWindow.didBecomeVisibleNotification, UIWindow.didBecomeKeyNotification] {
+            let token = NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { note in
+                guard let window = note.object as? UIWindow else { return }
+                let isNew = !before.windows.contains(ObjectIdentifier(window))
+                let isOverlay = window.windowLevel != .normal
+                guard isNew || isOverlay else { return }
+                opened()
+            }
+            tokens.append(token)
+        }
         var attempts = 0
-        timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] timer in
+        timer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] timer in
             attempts += 1
-            guard let self = self else {
+            guard self != nil else {
                 timer.invalidate()
                 return
             }
-            if Self.currentChrome() != before {
-                self.stop()
-                onOpened()
-            } else if attempts >= 40 {
-                self.stop()
+            if Self.currentChrome() != before || Self.hasStoreKitOverlay(beyond: before) {
+                opened()
+            } else if attempts >= 20 {
+                // ~3s: sheet is usually visible even if chrome detection missed it — clear the spinner.
+                opened()
             }
         }
     }
@@ -1085,10 +1250,10 @@ private final class PriceSheetWatcher {
     func stop() {
         timer?.invalidate()
         timer = nil
-        if let token = token {
+        for token in tokens {
             NotificationCenter.default.removeObserver(token)
-            self.token = nil
         }
+        tokens.removeAll()
     }
 }
 

@@ -94,6 +94,9 @@ class QuizAlertVC: UIViewController, QuizAlert {
         if self.chapterNo + 1 > self.Ch_Count {
             self.view.makeToast("You've completed this book!", duration: 2.0, position: .top)
             self.navigationController?.popViewController(animated: true)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                PaywallTriggerGate.shared.flush()
+            }
             return
         }
 
@@ -103,6 +106,9 @@ class QuizAlertVC: UIViewController, QuizAlert {
         }
 
         self.navigationController?.popViewController(animated: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            PaywallTriggerGate.shared.flush()
+        }
     }
 
     @IBAction func Yes_Action(_ sender: Any) {
@@ -119,6 +125,9 @@ class QuizAlertVC: UIViewController, QuizAlert {
         vc.ChapterString = chapterValue
         vc.ChapterCount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: book)
         self.navigationController?.pushViewController(vc, animated: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            PaywallTriggerGate.shared.flush()
+        }
     }
 
     func DismissVc(Close: Bool) {}
@@ -131,5 +140,8 @@ class QuizAlertVC: UIViewController, QuizAlert {
         }
 
         self.navigationController?.popViewController(animated: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            PaywallTriggerGate.shared.flush()
+        }
     }
 }

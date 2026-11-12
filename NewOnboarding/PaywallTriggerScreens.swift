@@ -9,6 +9,9 @@ import SwiftUI
 import UIKit
 import SafariServices
 import Combine
+import MessageUI
+import StoreKit
+import Toast_Swift
 
 enum PaywallTriggerReward {
     static var onReward: (() -> Void)?
@@ -35,11 +38,12 @@ enum PaywallTriggerScreen {
     case plans
     case feedback(String, Int)
     case feedbackForm
+    case feedbackThanks
     case streakRating
 
     var isFullPage: Bool {
         switch self {
-        case .book, .streak, .day30, .plans, .feedback, .feedbackForm, .streakRating:
+        case .book, .streak, .day30, .plans, .feedback, .feedbackForm, .feedbackThanks, .streakRating:
             return true
         default:
             return false
@@ -75,14 +79,25 @@ enum PaywallTriggerPresenter {
         return pricesReady(screen)
     }
 
-    static func show(trigger: String, from top: UIViewController, onClose: @escaping () -> Void) -> Bool {
+    /// `onPresented` reports whether the sheet actually appeared (a busy screen can refuse it).
+    static func show(trigger: String, from top: UIViewController, onClose: @escaping () -> Void, onPresented: ((Bool) -> Void)? = nil) -> Bool {
         guard let screen = PaywallTriggerScreen.from(trigger: trigger), pricesReady(screen) else { return false }
-        present(screen, from: top, onboarding: false, onClose: onClose)
+        present(screen, from: top, onboarding: false, onClose: onClose, onPresented: onPresented)
+        return true
+    }
+
+    /// Opens the main plans paywall directly, without the trigger rules. False if prices are not loaded yet.
+    @discardableResult
+    static func showMainPlans(from top: UIViewController) -> Bool {
+        guard pricesReady(.plans) else { return false }
+        present(.plans, from: top, onboarding: false, onClose: {})
         return true
     }
 
     static func showFeedback(book: String, chapters: Int, from top: UIViewController) {
-        present(.feedback(book, chapters), from: top, onboarding: false, onClose: {})
+        present(.feedback(book, chapters), from: top, onboarding: false, onClose: {
+            PaywallTriggerGate.shared.noteFeedbackFlowClosed()
+        })
     }
 
     static func showStreakRating(from top: UIViewController) {
@@ -103,7 +118,7 @@ enum PaywallTriggerPresenter {
             return !TriggerPrices.life.isEmpty && !TriggerPrices.year.isEmpty
         case .day30:
             return !TriggerPrices.life.isEmpty
-        case .adCard, .feedback, .feedbackForm, .streakRating:
+        case .adCard, .feedback, .feedbackForm, .feedbackThanks, .streakRating:
             return true
         }
     }
@@ -119,22 +134,57 @@ enum PaywallTriggerPresenter {
         }
     }
 
-    private static func present(_ screen: PaywallTriggerScreen, from top: UIViewController, onboarding: Bool, onClose: @escaping () -> Void) {
+    private static func present(_ screen: PaywallTriggerScreen, from top: UIViewController, onboarding: Bool, onClose: @escaping () -> Void, onPresented: ((Bool) -> Void)? = nil, retry: Bool = true) {
+        // An ad or another modal is still opening or closing — wait once, then present from the new top.
+        if top.isBeingPresented || top.isBeingDismissed || top.transitionCoordinator != nil || top.presentedViewController?.isBeingDismissed == true {
+            guard retry else {
+                onPresented?(false)
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                let next = OnboardingAuthManager.topViewController() ?? top
+                present(screen, from: next, onboarding: onboarding, onClose: onClose, onPresented: onPresented, retry: false)
+            }
+            return
+        }
         let box = TriggerHostBox()
         let root = PaywallTriggerRoot(screen: screen, onboarding: onboarding, onClose: onClose, dismissHost: {
             PaywallTriggerPresenter.dismiss(box.host)
         })
         let host = UIHostingController(rootView: root)
         box.host = host
-        host.view.backgroundColor = screen.isFullPage ? UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1) : .clear
-        if case .day30 = screen {
-            host.view.backgroundColor = UIColor(red: 0.03, green: 0.05, blue: 0.12, alpha: 1)
-        }
-        if case .plans = screen {
-            host.view.backgroundColor = UIColor(red: 0.03, green: 0.05, blue: 0.12, alpha: 1)
+        // Match screen chrome under the status bar (cream was showing as a white top strip).
+        let darkNavy = UIColor(red: 0.03, green: 0.05, blue: 0.12, alpha: 1)
+        let cream = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
+        switch screen {
+        case .plans, .day30:
+            host.view.backgroundColor = darkNavy
+        case .book, .streak, .feedback, .feedbackForm, .feedbackThanks, .streakRating:
+            host.view.backgroundColor = cream
+        default:
+            host.view.backgroundColor = .clear
         }
         host.modalPresentationStyle = screen.isFullPage ? .fullScreen : .overFullScreen
-        top.present(host, animated: true)
+        switch screen {
+        case .aiStudy, .chatFree, .chatCredits, .imageLimit, .chapters:
+            // Dim fades in place; TriggerSheetChrome slides the sheet up itself.
+            host.modalTransitionStyle = .crossDissolve
+        default:
+            break
+        }
+        var reported = false
+        let report: (Bool) -> Void = { shown in
+            guard !reported else { return }
+            reported = true
+            onPresented?(shown)
+        }
+        top.present(host, animated: true) {
+            report(host.presentingViewController != nil)
+        }
+        // UIKit may skip the completion when it refuses the present.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak host] in
+            report(host?.presentingViewController != nil)
+        }
     }
 }
 
@@ -165,12 +215,8 @@ private enum TriggerPrices {
     }
 
     static func pretty(_ raw: String) -> String {
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return "" }
-        let full = trimmed.cleanPrice()
-        guard !full.isEmpty else { return "" }
-        if full.hasSuffix(".00") { return String(full.dropLast(3)) }
-        return full
+        // Keep the exact StoreKit localized string (e.g. $14.99), no integer rounding.
+        raw.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     static func amount(_ text: String) -> Double? {
@@ -180,9 +226,14 @@ private enum TriggerPrices {
 
     static func perMonth(_ yearly: String) -> String {
         guard let value = amount(yearly), value > 0 else { return "" }
-        let month = Int((value / 12.0).rounded())
+        let month = value / 12.0
         let symbol = yearly.prefix { !$0.isNumber && $0 != "." && $0 != "," }
-        return "\(symbol)\(month) / month"
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        let number = formatter.string(from: NSNumber(value: month)) ?? String(format: "%.2f", month)
+        return "\(symbol)\(number) / month"
     }
 }
 
@@ -269,6 +320,9 @@ private struct PaywallTriggerRoot: View {
 
     var body: some View {
         ZStack {
+            // Fill under status bar so host never flashes a white/cream strip.
+            rootFillColor.ignoresSafeArea()
+
             if showExit {
                 TriggerExitOffer(model: model, onClose: finishOnboarding, onRestore: { model.restore() })
             } else if let followUp = followUp {
@@ -290,6 +344,7 @@ private struct PaywallTriggerRoot: View {
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
             }
         }
+        .ignoresSafeArea()
         .alert(model.store.alertTitle, isPresented: Binding(
             get: { model.store.showAlert },
             set: { model.store.showAlert = $0 }
@@ -312,6 +367,18 @@ private struct PaywallTriggerRoot: View {
                     PaywallTriggerGate.shared.playSystemRating()
                 }
             }
+        }
+    }
+
+    private var rootFillColor: Color {
+        if showExit { return Color(hex: "070E1E") }
+        switch screen {
+        case .plans, .day30:
+            return Color(hex: "070E1E")
+        case .book, .streak, .feedback, .feedbackForm, .feedbackThanks, .streakRating:
+            return Color(hex: "F7F3EA")
+        default:
+            return .clear
         }
     }
 
@@ -352,7 +419,7 @@ private struct PaywallTriggerRoot: View {
                 title: count > 0 ? "Reading without interruptions" : "Read without ads",
                 subtitle: count > 0
                     ? "You have read \(count) chapters. Pay once and keep reading ad-free."
-                    : "Pay once. No ads on any screen, forever.",
+                    : "Pay once. No ads, forever.",
                 model: model,
                 onClose: closeModal
             )
@@ -364,7 +431,7 @@ private struct PaywallTriggerRoot: View {
                 heading: "You finished \(name)",
                 detail: chapterLine(name),
                 cardTitle: "Read the next book without ads",
-                cardDetail: "Pay once. No ads on any screen, forever.",
+                cardDetail: "Pay once. No ads, forever.",
                 nextLine: nextBookLine(name),
                 onGo: { model.buy(SUBSCRIPTIONID_LifeTime) },
                 onNotNow: closeModal
@@ -372,7 +439,7 @@ private struct PaywallTriggerRoot: View {
         case .streak(let day):
             if day == 3 {
                 TriggerDay3Card(
-                    onGo: { model.buy(SUBSCRIPTIONID_LifeTime) },
+                    onGo: openMainPlans,
                     onNotNow: closeModal
                 )
             } else {
@@ -391,11 +458,50 @@ private struct PaywallTriggerRoot: View {
         case .plans:
             TriggerPlans(model: model, onClose: closePlans)
         case .feedback(let book, let chapters):
-            TriggerFeedbackCard(book: book, chapters: chapters, onGreat: closeModal, onBetter: { followUp = .feedbackForm })
+            TriggerFeedbackCard(
+                book: book,
+                chapters: chapters,
+                onGreat: handleFeedbackGreat,
+                onBetter: handleFeedbackBetter
+            )
         case .feedbackForm:
             TriggerFeedbackForm(onClose: closeModal)
+        case .feedbackThanks:
+            TriggerFeedbackThanks(onClose: closeModal)
         case .streakRating:
             TriggerStreakRating(onClose: closeModal)
+        }
+    }
+
+    private func handleFeedbackGreat() {
+        if PaywallTriggerGate.shared.shouldOfferRatingAfterFeedbackGreat() {
+            closeModal()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                PaywallTriggerGate.shared.playFeedbackGreatRating()
+            }
+        } else {
+            followUp = .feedbackThanks
+        }
+    }
+
+    /// "Could be better" opens the app's default Feedback screen.
+    private func handleFeedbackBetter() {
+        closeModal()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            guard let top = OnboardingAuthManager.topViewController() else { return }
+            SendMail.shared.FeedbackNavigation(presentViewcontroll: top)
+        }
+    }
+
+    /// Close this card, then open the main plans paywall in its place.
+    private func openMainPlans() {
+        closeModal()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            guard let top = OnboardingAuthManager.topViewController(),
+                  PaywallTriggerPresenter.showMainPlans(from: top) else {
+                OnboardingAuthManager.topViewController()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
+                return
+            }
         }
     }
 
@@ -634,7 +740,7 @@ private struct TriggerLifetimeSheet: View {
                 .font(.system(size: 26, weight: .heavy))
                 .foregroundColor(Color(hex: "12315C"))
                 .multilineTextAlignment(.center)
-            Text(subtitle.isEmpty ? "Pay once. No ads on any screen, forever." : subtitle)
+            Text(subtitle.isEmpty ? "Pay once. No ads, forever." : subtitle)
                 .font(.system(size: 15))
                 .foregroundColor(Color(hex: "66758C"))
                 .multilineTextAlignment(.center)
@@ -677,33 +783,96 @@ private struct TriggerLifetimeSheet: View {
 private struct TriggerSheetChrome<Content: View>: View {
     var onClose: () -> Void
     @ViewBuilder var content: () -> Content
+    @State private var dragOffset: CGFloat = 0
+    @State private var isDismissing = false
+    @State private var appeared = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.black.opacity(0.28)
+            Color.black.opacity(0.45 * dimOpacity)
                 .ignoresSafeArea()
-                .onTapGesture(perform: onClose)
+                .onTapGesture { dismissSheet() }
+
             VStack(spacing: 0) {
-                Button(action: onClose) {
+                // Large top handle hit area — swipe down from here to dismiss.
+                VStack(spacing: 0) {
                     Capsule()
                         .fill(Color(hex: "E1E6EF"))
                         .frame(width: 42, height: 5)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .contentShape(Rectangle())
                 }
-                .buttonStyle(PlainButtonStyle())
-                .padding(.top, 2)
-                ScrollView(showsIndicators: false) {
+                .frame(maxWidth: .infinity)
+                .frame(height: 28)
+                .contentShape(Rectangle())
+                .highPriorityGesture(sheetDismissDrag)
+
+                // Wrapped so padding applies once to the block, not to every child view.
+                VStack(spacing: 0) {
                     content()
-                        .padding(.top, 4)
-                        .padding(.horizontal, 12)
-                        .padding(.bottom, 24)
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, max(12, sheetBottomInset))
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity)
+            .background(
+                TopRoundedShape(radius: 28)
+                    .fill(Color.white)
+                    .ignoresSafeArea(edges: .bottom)
+            )
+            .offset(y: appeared ? max(0, dragOffset) : UIScreen.main.bounds.height)
+            // Body can also pull down; simultaneous so plan/CTA taps still work.
+            .simultaneousGesture(sheetDismissDrag)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.3)) {
+                appeared = true
+            }
+        }
+    }
+
+    private var sheetBottomInset: CGFloat {
+        let window = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+        return window?.safeAreaInsets.bottom ?? 0
+    }
+
+    private var dimOpacity: Double {
+        guard dragOffset > 0 else { return 1 }
+        return max(0.25, 1 - Double(dragOffset) / 420)
+    }
+
+    private var sheetDismissDrag: some Gesture {
+        DragGesture(minimumDistance: 6, coordinateSpace: .global)
+            .onChanged { value in
+                guard !isDismissing else { return }
+                // Downward only — ignore upward rubber-band.
+                dragOffset = max(0, value.translation.height)
+            }
+            .onEnded { value in
+                guard !isDismissing else { return }
+                let pulled = value.translation.height
+                let fling = value.predictedEndTranslation.height
+                if pulled > 90 || fling > 160 {
+                    dismissSheet()
+                } else {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                        dragOffset = 0
+                    }
                 }
             }
-            .background(Color.white)
-            .cornerRadius(28)
-            .frame(maxHeight: UIScreen.main.bounds.height * 0.78)
+    }
+
+    private func dismissSheet() {
+        guard !isDismissing else { return }
+        isDismissing = true
+        let travel = UIScreen.main.bounds.height
+        withAnimation(.easeIn(duration: 0.22)) {
+            dragOffset = travel
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+            onClose()
         }
     }
 }
@@ -889,7 +1058,7 @@ private struct TriggerAdSoftCard: View {
     }
 }
 
-/// HTML image 07. Soft card only: Go Ad-Free buys Lifetime here. No follow-up sheet.
+/// HTML image 07. Soft card only: Go Ad-Free opens the main plans paywall.
 private struct TriggerDay3Card: View {
     var onGo: () -> Void
     var onNotNow: () -> Void
@@ -1174,11 +1343,82 @@ private struct TriggerFeedbackForm: View {
     }
 
     private func send() {
+        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("Please enter your feedback", duration: 2.0, position: .top)
+            return
+        }
         UserDefaults.standard.set(topic, forKey: "PaywallTriggerFeedbackTopic")
-        UserDefaults.standard.set(message, forKey: "PaywallTriggerFeedbackNote")
-        OnboardingAuthManager.topViewController()?.view.makeToast("Thanks, we received your note.", duration: 2.0, position: .center)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            onClose()
+        UserDefaults.standard.set(trimmed, forKey: "PaywallTriggerFeedbackNote")
+        let subject = "App feedback · \(topic)"
+        let body = "Topic: \(topic)\n\n\(trimmed)\n"
+        TriggerFeedbackMail.send(subject: subject, body: body, onDone: onClose)
+    }
+}
+
+private struct TriggerFeedbackThanks: View {
+    var onClose: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color(hex: "F7F3EA").ignoresSafeArea()
+            VStack(spacing: 16) {
+                Spacer()
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 42))
+                    .foregroundColor(Color(hex: "C4493A"))
+                Text("Thanks for your feedback!")
+                    .font(.system(size: 26, weight: .heavy))
+                    .foregroundColor(Color(hex: "12315C"))
+                    .multilineTextAlignment(.center)
+                Text("Enjoy reading Bible")
+                    .font(.system(size: 16))
+                    .foregroundColor(Color(hex: "7A8494"))
+                    .multilineTextAlignment(.center)
+                Button(action: onClose) {
+                    Text("Continue")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Capsule().fill(Color(hex: "2456C7")))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.top, 12)
+                .padding(.horizontal, 22)
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+        }
+    }
+}
+
+/// Sends private feedback to support mail; falls back to the in-app Feedback web form.
+private enum TriggerFeedbackMail {
+    static func send(subject: String, body: String, onDone: @escaping () -> Void) {
+        // Dismiss the trigger host first so Mail / default form can present cleanly.
+        onDone()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            guard let top = OnboardingAuthManager.topViewController() else { return }
+            if MFMailComposeViewController.canSendMail() {
+                let mail = MFMailComposeViewController()
+                mail.mailComposeDelegate = SendMail.shared
+                mail.setToRecipients([FEEDBACKMAIL])
+                mail.setSubject(subject)
+                mail.setMessageBody(body, isHTML: false)
+                top.present(mail, animated: true)
+                return
+            }
+            let encode: (String) -> String = { $0.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "" }
+            if let url = URL(string: "mailto:\(FEEDBACKMAIL)?subject=\(encode(subject))&body=\(encode(body))") {
+                UIApplication.shared.open(url) { opened in
+                    if !opened {
+                        SendMail.shared.FeedbackNavigation(presentViewcontroll: top)
+                    }
+                }
+                return
+            }
+            SendMail.shared.FeedbackNavigation(presentViewcontroll: top)
         }
     }
 }
@@ -1250,80 +1490,125 @@ private struct TriggerPlans: View {
     @State private var plan = 0
 
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [Color(hex: "1B3A73"), Color(hex: "0B1A36"), Color(hex: "070E1E")], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text("VERSEDEEP")
-                                .font(.system(size: 11, weight: .heavy))
-                            Text("PREMIUM")
-                                .font(.system(size: 11, weight: .heavy))
+        GeometryReader { geo in
+            let topInset = max(geo.safeAreaInsets.top, 12)
+            let bottomInset = max(geo.safeAreaInsets.bottom, 10)
+            // Short iPhones (SE / 8 size) only; taller phones and iPad keep the values below.
+            let compact = geo.size.height < 750 && UIDevice.current.userInterfaceIdiom != .pad
+            let topBgHeight = geo.size.height * (compact ? 0.55 : 0.42) + topInset
+            let contentDown: CGFloat = 28
+            // iPad: CTA + fine print sit at the bottom of the screen instead of under the cards.
+            let isPad = UIDevice.current.userInterfaceIdiom == .pad
+
+            ZStack(alignment: .top) {
+                Color(hex: "0A1A2F")
+
+                // Photo + content share one ScrollView so bg moves with text/cards.
+                ScrollView(showsIndicators: false) {
+                    ZStack(alignment: .top) {
+                        Image("main_paywall_bg")
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geo.size.width, height: topBgHeight, alignment: .bottom)
+                            .clipped()
+                            .overlay(Color(hex: "0A1A2F").opacity(0.16))
+                            .overlay(
+                                LinearGradient(
+                                    colors: [
+                                        Color.clear,
+                                        Color(hex: "0A1A2F").opacity(0.35),
+                                        Color(hex: "0A1A2F")
+                                    ],
+                                    startPoint: .center,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .frame(maxWidth: .infinity, alignment: .top)
+
+                        VStack(spacing: 0) {
+                            // X scrolls with bg + content.
+                            HStack(alignment: .center) {
+                                Text("PREMIUM")
+                                    .font(.system(size: 11, weight: .heavy))
+                                    .tracking(1.6)
+                                    .foregroundColor(Color(hex: "F7D57C"))
+                                Spacer(minLength: 8)
+                                Button(action: onClose) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 32, height: 32)
+                                        .background(Circle().fill(Color.white.opacity(0.22)))
+                                        .contentShape(Circle())
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .accessibilityLabel("Close")
+                            }
+                            .padding(.top, compact ? topInset + 16 : topInset + 8 + contentDown + 28)
+
+                            Text("Know the Word Better.")
+                                .font(.system(size: 34, weight: .bold, design: .serif))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.top, 10)
+                            Text("Read Scripture. Explore its meaning.\nTest what you’ve learned.")
+                                .font(.system(size: 15))
+                                .foregroundColor(Color(hex: "B9C6DE"))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.top, 8)
+
+                            HStack(spacing: 0) {
+                                planIcon("book.fill", "Ad-free\nreading")
+                                planIcon("lightbulb.fill", "AI explanations\n& summaries")
+                                planIcon("list.bullet.rectangle", "Quizzes &\nmemory tools")
+                                planIcon("chart.bar.fill", "Track your\nprogress")
+                            }
+                            .padding(.top, compact ? 150 : max(56, geo.size.height * 0.08) + contentDown + 32)
+
+                            planCard(index: 0, title: "1 Year Premium", detail: "Ad-free + unlimited AI study", extra: TriggerPrices.perMonth(model.year), price: model.year, badge: "Best value")
+                                .padding(.top, compact ? 40 : max(40, geo.size.height * 0.06))
+                                .shadow(color: Color.black.opacity(0.15), radius: 6, y: 3)
+                            planCard(index: 1, title: "1 Month Premium", detail: "Ad-free + unlimited AI study", extra: "", price: model.month, badge: "")
+                                .padding(.top, 10)
+                            planCard(index: 2, title: "Lifetime Ad-Free", detail: "One payment · no AI", extra: "", price: model.life, badge: "")
+                                .padding(.top, 10)
+                            if isPad {
+                                Spacer(minLength: 0)
+                            }
+                            Button(action: buy) {
+                                Text(cta)
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(Color(hex: "1B2536"))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                                    .background(RoundedRectangle(cornerRadius: 16).fill(LinearGradient(colors: [Color(hex: "F7D57C"), Color(hex: "D9A23A")], startPoint: .leading, endPoint: .trailing)))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .disabled(ctaPrice.isEmpty || model.buying)
+                            .shadow(color: Color.black.opacity(0.18), radius: 6, y: 3)
+                            .padding(.top, 16)
+                            Text(plan == 2 ? "Purchase managed by Apple" : "Cancel anytime · Purchase managed by Apple")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(hex: "B9C6DE"))
+                                .padding(.top, 8)
+                            Text(finePrint)
+                                .font(.system(size: 11))
+                                .foregroundColor(Color(hex: "8FA0BF"))
+                                .multilineTextAlignment(.center)
+                                .padding(.top, 6)
+                            TriggerLegalRow(onRestore: { model.restore() })
+                                .padding(.top, 10)
+                                .padding(.bottom, bottomInset + 8)
                         }
-                        .foregroundColor(Color(hex: "F7D57C"))
-                        Spacer()
-                        Button(action: onClose) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.white.opacity(0.55))
-                                .frame(width: 28, height: 28)
-                                .background(Circle().fill(Color.white.opacity(0.12)))
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                        .padding(.horizontal, 22)
+                        .frame(minHeight: isPad ? geo.size.height : nil, alignment: .top)
                     }
-                    .padding(.top, 12)
-                    Text("Know the Word Better.")
-                        .font(.system(size: 34, weight: .bold, design: .serif))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 8)
-                    Text("Read Scripture. Explore its meaning.\nTest what you’ve learned.")
-                        .font(.system(size: 15))
-                        .foregroundColor(Color(hex: "B9C6DE"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 8)
-                    HStack(spacing: 0) {
-                        planIcon("book.fill", "Ad-free\nreading")
-                        planIcon("lightbulb.fill", "AI explanations\n& summaries")
-                        planIcon("list.bullet.rectangle", "Quizzes &\nmemory tools")
-                        planIcon("chart.bar.fill", "Track your\nprogress")
-                    }
-                    .padding(.top, 18)
-                    planCard(index: 0, title: "1 Year Premium", detail: "Ad-free + unlimited AI study", extra: TriggerPrices.perMonth(model.year), price: model.year, badge: "Best value")
-                        .padding(.top, 18)
-                    planCard(index: 1, title: "1 Month Premium", detail: "Ad-free + unlimited AI study", extra: "", price: model.month, badge: "")
-                        .padding(.top, 10)
-                    planCard(index: 2, title: "Lifetime Ad-Free", detail: "One payment · no AI", extra: "", price: model.life, badge: "")
-                        .padding(.top, 10)
-                    Button(action: buy) {
-                        Text(cta)
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(Color(hex: "1B2536"))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(RoundedRectangle(cornerRadius: 16).fill(LinearGradient(colors: [Color(hex: "F7D57C"), Color(hex: "D9A23A")], startPoint: .leading, endPoint: .trailing)))
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(ctaPrice.isEmpty || model.buying)
-                    .padding(.top, 16)
-                    Text(plan == 2 ? "Purchase managed by Apple" : "Cancel anytime · Purchase managed by Apple")
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "B9C6DE"))
-                        .padding(.top, 8)
-                    Text(finePrint)
-                        .font(.system(size: 11))
-                        .foregroundColor(Color(hex: "8FA0BF"))
-                        .multilineTextAlignment(.center)
-                        .padding(.top, 6)
-                    TriggerLegalRow(onRestore: { model.restore() })
-                        .padding(.top, 10)
-                        .padding(.bottom, 24)
                 }
-                .padding(.horizontal, 22)
             }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .clipped()
         }
+        .ignoresSafeArea()
     }
 
     private var ctaPrice: String {
@@ -1331,9 +1616,9 @@ private struct TriggerPlans: View {
     }
 
     private var cta: String {
-        if plan == 0 { return "Get 1 Year · \(model.year)" }
-        if plan == 1 { return "Get 1 Month · \(model.month)" }
-        return "Get Lifetime · \(model.life)"
+        if plan == 0 { return "Get Yearly Access" }
+        if plan == 1 { return "Start 3-Day Free Trial" }
+        return "Get Lifetime Access"
     }
 
     private var finePrint: String {
@@ -1421,7 +1706,6 @@ private struct TriggerDay30: View {
     var body: some View {
         ZStack {
             LinearGradient(colors: [Color(hex: "1B3A73"), Color(hex: "0B1A36"), Color(hex: "070E1E")], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     HStack {
@@ -1435,6 +1719,7 @@ private struct TriggerDay30: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
+                    .padding(.top, 8)
                     Image(systemName: "bookmark.fill")
                         .font(.system(size: 28))
                         .foregroundColor(Color(hex: "F7D57C"))
@@ -1507,6 +1792,7 @@ private struct TriggerDay30: View {
                 .padding(.horizontal, 22)
             }
         }
+        .ignoresSafeArea()
     }
 }
 
@@ -1517,140 +1803,191 @@ private struct TriggerExitOffer: View {
 
     private var salePrice: String { model.offer.isEmpty ? model.life : model.offer }
     private var showsOldPrice: Bool { !model.offer.isEmpty && model.life != model.offer && !model.life.isEmpty }
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
 
     var body: some View {
-        ZStack {
-            Color(hex: "070E1E").ignoresSafeArea()
-            Image("exit_offer_night")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
-            GeometryReader { geo in
+        GeometryReader { geo in
+            // iPad: keep content high + pin X to top-trailing. Phone layout unchanged.
+            let topPad = isPad
+                ? max(geo.safeAreaInsets.top, 16)
+                : max(geo.safeAreaInsets.top, closeTopInset)
+            let bottomPad = max(geo.safeAreaInsets.bottom, closeBottomInset)
+            let bgHeight = isPad
+                ? min(max(geo.size.height * 0.52, 420), 640)
+                : max(geo.size.height, 1)
+            let cardTop = isPad ? 28 : max(56, geo.size.height * 0.08)
+            let contentWidth = isPad ? min(geo.size.width, 560) : geo.size.width
+
+            ZStack(alignment: .top) {
+                Color(hex: "070E1E")
+
+                // Head + X + bg + card all scroll together on phone; on iPad X is fixed overlay.
                 ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
+                    ZStack(alignment: .top) {
+                        Image("exit_offer_night")
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geo.size.width, height: bgHeight, alignment: .top)
+                            .clipped()
+                            .frame(maxWidth: .infinity, alignment: .top)
+
+                        VStack(spacing: 0) {
+                            if isPad {
+                                // Room for the fixed top-trailing X only — no extra empty band.
+                                Color.clear
+                                    .frame(height: topPad + 36)
+                            } else {
+                                HStack {
+                                    Spacer()
+                                    exitCloseButton
+                                }
+                                .padding(.top, topPad)
+                                .padding(.trailing, -6)
+                            }
+
+                            Text("A ONE-TIME LIFETIME OPTION")
+                                .font(.system(size: 11, weight: .heavy))
+                                .kerning(1.1)
+                                .foregroundColor(Color(hex: "F7D57C"))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 7)
+                                .overlay(Capsule().stroke(Color(hex: "F7D57C"), lineWidth: 1))
+                                .padding(.top, isPad ? 0 : 10)
+
+                            VStack(spacing: 0) {
+                                Text("Read ad-free,")
+                                    .foregroundColor(.white)
+                                Text("for good")
+                                    .foregroundColor(Color(hex: "F7D57C"))
+                            }
+                            .font(.system(size: isPad ? 38 : 34, weight: .bold, design: .serif))
+                            .multilineTextAlignment(.center)
+                            .padding(.top, isPad ? 10 : 14)
+
+                            Text("Pay once. No renewals. Yours to keep.")
+                                .font(.system(size: 15))
+                                .foregroundColor(Color(hex: "B9C6DE"))
+                                .padding(.top, 10)
+
+                            HStack(alignment: .center, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Lifetime")
+                                        .font(.system(size: 22, weight: .bold))
+                                        .foregroundColor(Color(hex: "12315C"))
+                                    Text("Ad-free reading · no AI")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(Color(hex: "5E7194"))
+                                }
+                                Spacer(minLength: 8)
+                                VStack(alignment: .trailing, spacing: 1) {
+                                    if showsOldPrice {
+                                        Text(model.life)
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .strikethrough()
+                                            .foregroundColor(Color(hex: "8AA0C2"))
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.7)
+                                    }
+                                    Text(salePrice)
+                                        .font(.system(size: 32, weight: .heavy))
+                                        .foregroundColor(Color(hex: "C9862A"))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.6)
+                                    Text("Special price")
+                                        .font(.system(size: 13, weight: .bold))
+                                        .foregroundColor(Color(hex: "C9862A"))
+                                }
+                                .layoutPriority(1)
+                            }
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 16)
+                            .background(RoundedRectangle(cornerRadius: 18).fill(LinearGradient(colors: [Color.white, Color(hex: "F6EDD6")], startPoint: .top, endPoint: .bottom)))
+                            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color(hex: "E8B64C"), lineWidth: 1.5))
+                            // Referral gap under subtitle — card a bit lower (phone). Tighter on iPad.
+                            .padding(.top, cardTop)
+
+                            VStack(alignment: .leading, spacing: 12) {
+                                exitLine("One payment, no renewals")
+                                exitLine("No banners or interstitial ads")
+                                exitLine("Restore anytime with your Apple ID")
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 14)
+                            .padding(.leading, 8)
+
+                            Button(action: {
+                                guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+                                    OnboardingAuthManager.topViewController()?.view.makeToast("No internet connection", duration: 2.0, position: .top)
+                                    return
+                                }
+                                model.buy(SUBSCRIPTIONID_ExitOffer.isEmpty ? SUBSCRIPTIONID_LifeTime : SUBSCRIPTIONID_ExitOffer)
+                            }) {
+                                Text("Get Lifetime · \(salePrice)")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(Color(hex: "1B2536"))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                                    .background(RoundedRectangle(cornerRadius: 16).fill(LinearGradient(colors: [Color(hex: "F7D57C"), Color(hex: "D9A23A")], startPoint: .leading, endPoint: .trailing)))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .disabled(model.buying || salePrice.isEmpty)
+                            .shadow(color: Color(hex: "F7D57C").opacity(0.35), radius: 14, y: 6)
+                            .padding(.top, 16)
+
+                            Text("One-time purchase. Nothing renews. Ad-free only; does not include AI.")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(hex: "8FA0BF"))
+                                .multilineTextAlignment(.center)
+                                .padding(.top, 10)
+
+                            HStack(spacing: 6) {
+                                Button("Restore Purchases", action: onRestore)
+                                Text("·")
+                                Button("Terms") { legal(TermsURL) }
+                                Text("·")
+                                Button("Privacy") { legal(PrivacyURL) }
+                            }
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(hex: "B9C6DE"))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(.top, 12)
+                            .padding(.bottom, bottomPad + 8)
+                        }
+                        .padding(.horizontal, isPad ? 32 : 24)
+                        .frame(width: contentWidth, alignment: .top)
+                        .frame(maxWidth: .infinity, alignment: .top)
+                    }
+                }
+
+                if isPad {
                     HStack {
                         Spacer()
-                        Button(action: onClose) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: 34, height: 34)
-                                .background(Color.white.opacity(0.22))
-                                .clipShape(Circle())
-                                .contentShape(Circle())
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .accessibilityLabel("Close")
+                        exitCloseButton
                     }
-                    // Keep close under the status bar, but pull the stack up like the referral (less top blank).
-                    .padding(.top, closeTopInset + 8)
-                    .padding(.trailing, -6)
-                    Text("A ONE-TIME LIFETIME OPTION")
-                        .font(.system(size: 11, weight: .heavy))
-                        .kerning(1.1)
-                        .foregroundColor(Color(hex: "F7D57C"))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 7)
-                        .overlay(Capsule().stroke(Color(hex: "F7D57C"), lineWidth: 1))
-                        .padding(.top, 10)
-                    VStack(spacing: 0) {
-                        Text("Read ad-free,")
-                            .foregroundColor(.white)
-                        Text("for good")
-                            .foregroundColor(Color(hex: "F7D57C"))
-                    }
-                    .font(.system(size: 34, weight: .bold, design: .serif))
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 14)
-                    Text("Pay once. No renewals. Yours to keep.")
-                        .font(.system(size: 15))
-                        .foregroundColor(Color(hex: "B9C6DE"))
-                        .padding(.top, 10)
-                    Spacer(minLength: 16)
-                    HStack(alignment: .center, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Lifetime")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(Color(hex: "12315C"))
-                            Text("Ad-free reading · no AI")
-                                .font(.system(size: 13))
-                                .foregroundColor(Color(hex: "5E7194"))
-                        }
-                        Spacer(minLength: 8)
-                        VStack(alignment: .trailing, spacing: 1) {
-                            if showsOldPrice {
-                                Text(model.life)
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .strikethrough()
-                                    .foregroundColor(Color(hex: "8AA0C2"))
-                            }
-                            Text(salePrice)
-                                .font(.system(size: 32, weight: .heavy))
-                                .foregroundColor(Color(hex: "C9862A"))
-                            Text("Special price")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(Color(hex: "C9862A"))
-                        }
-                    }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 16)
-                    .background(RoundedRectangle(cornerRadius: 18).fill(LinearGradient(colors: [Color.white, Color(hex: "F6EDD6")], startPoint: .top, endPoint: .bottom)))
-                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color(hex: "E8B64C"), lineWidth: 1.5))
-                    VStack(alignment: .leading, spacing: 12) {
-                        exitLine("One payment, no renewals")
-                        exitLine("No banners or interstitial ads")
-                        exitLine("Restore anytime with your Apple ID")
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 18)
-                    .padding(.leading, 8)
-                    Button(action: { model.buy(SUBSCRIPTIONID_ExitOffer.isEmpty ? SUBSCRIPTIONID_LifeTime : SUBSCRIPTIONID_ExitOffer) }) {
-                        Text("Get Lifetime · \(salePrice)")
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(Color(hex: "1B2536"))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(RoundedRectangle(cornerRadius: 16).fill(LinearGradient(colors: [Color(hex: "F7D57C"), Color(hex: "D9A23A")], startPoint: .leading, endPoint: .trailing)))
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(model.buying || salePrice.isEmpty)
-                    .shadow(color: Color(hex: "F7D57C").opacity(0.35), radius: 14, y: 6)
-                    .padding(.top, 20)
-                    Text("One-time purchase. Nothing renews. Ad-free only; does not include AI.")
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "8FA0BF"))
-                        .multilineTextAlignment(.center)
-                        .padding(.top, 12)
-                    HStack(spacing: 6) {
-                        Button("No thanks", action: onClose)
-                        Text("·")
-                        Button("Restore Purchases", action: onRestore)
-                        Text("·")
-                        Button("Terms") { legal(TermsURL) }
-                        Text("·")
-                        Button("Privacy") { legal(PrivacyURL) }
-                    }
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(Color(hex: "B9C6DE"))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .buttonStyle(PlainButtonStyle())
-                    .padding(.top, 14)
-                    .padding(.bottom, closeBottomInset + 8)
+                    .padding(.top, topPad)
+                    .padding(.trailing, 20)
                 }
-                .padding(.horizontal, 24)
-                .frame(width: geo.size.width)
-                .frame(minHeight: geo.size.height)
-                }
-                .frame(width: geo.size.width, height: geo.size.height)
             }
-            .ignoresSafeArea()
+            .frame(width: geo.size.width, height: geo.size.height)
+            .clipped()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
-        .clipped()
+    }
+
+    private var exitCloseButton: some View {
+        Button(action: onClose) {
+            Image(systemName: "xmark")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white)
+                .frame(width: 34, height: 34)
+                .background(Color.white.opacity(0.22))
+                .clipShape(Circle())
+                .contentShape(Circle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        .accessibilityLabel("Close")
     }
 
     private var closeTopInset: CGFloat {

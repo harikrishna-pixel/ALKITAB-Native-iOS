@@ -73,9 +73,11 @@ class CustomPhotoAlbum {
         // BUG FIX 1 (DUPLICATE IMAGES): NEW CODE - Added completion handler to track save
         PHPhotoLibrary.shared().performChanges({
             let assetChangeRequest = PHAssetChangeRequest.creationRequestForAsset(from: image)
-            let assetPlaceholder = assetChangeRequest.placeholderForCreatedAsset
-            let albumChangeRequest = PHAssetCollectionChangeRequest(for: self.assetCollection)
-            albumChangeRequest!.addAssets([assetPlaceholder] as NSFastEnumeration)
+            guard let assetPlaceholder = assetChangeRequest.placeholderForCreatedAsset,
+                  let albumChangeRequest = PHAssetCollectionChangeRequest(for: self.assetCollection) else {
+                return
+            }
+            albumChangeRequest.addAssets([assetPlaceholder] as NSFastEnumeration)
         }, completionHandler: { success, error in
             if let error = error {
                 print("Error saving image: \(error.localizedDescription)")
@@ -168,58 +170,68 @@ class CustomPhotoAlbum {
         self.photoPHAsset.removeAll()
         self.photoPHAssetArray.removeAll()
         
-        var assetCollection = PHAssetCollection()
-        var albumFound = Bool()
-        var photoAssets = PHFetchResult<AnyObject>()
         let fetchOptions = PHFetchOptions()
-
         fetchOptions.predicate = NSPredicate(format: "title = %@", CustomPhotoAlbum.albumName)
-        let collection:PHFetchResult = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
+        let collection = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
 
-        if let firstObject = collection.firstObject {
-            //found the album
-            assetCollection = firstObject
-            albumFound = true
-        }
-        else { albumFound = false }
-        _ = collection.count
-        photoAssets = PHAsset.fetchAssets(in: assetCollection, options: nil) as! PHFetchResult<AnyObject>
+        // No album yet (first launch / save still creating it) — avoid force-cast on empty collection.
+        guard let assetCollection = collection.firstObject else { return }
+
+        let photoAssets = PHAsset.fetchAssets(in: assetCollection, options: nil)
         let imageManager = PHCachingImageManager()
-        photoAssets.enumerateObjects{(object: AnyObject!,
-            count: Int,
-            stop: UnsafeMutablePointer<ObjCBool>) in
+        var seenLocalIdentifiers = Set<String>()
+        var seenContentFingerprints = Set<Int>()
+        photoAssets.enumerateObjects { (asset, _, _) in
+            // Same asset must appear only once (Photos may call the handler more than once).
+            guard seenLocalIdentifiers.insert(asset.localIdentifier).inserted else { return }
 
-            if object is PHAsset{
-                let asset = object as! PHAsset
-                
+            let imageSize = CGSize(width: max(asset.pixelWidth, 1),
+                                   height: max(asset.pixelHeight, 1))
+
+            /* For faster performance, and maybe degraded image */
+            let options = PHImageRequestOptions()
+            options.deliveryMode = .highQualityFormat
+//                options.deliveryMode = .fastFormat
+            options.isSynchronous = true
+            options.isNetworkAccessAllowed = true
+            imageManager.requestImage(for: asset,
+                                      targetSize: imageSize,
+                                      contentMode: .aspectFit,
+                                      options: options,
+                                      resultHandler: { (image, info) -> Void in
+                // Photos can return nil (degraded cancel / iCloud / limited access) — never force-unwrap.
+                guard let image = image else { return }
+                // Skip intermediate/degraded callbacks so one asset does not append twice.
+                if let degraded = info?[PHImageResultIsDegradedKey] as? Bool, degraded {
+                    return
+                }
+                // Guard again in case a late callback races after a second fetch cleared arrays.
+                if self.photoPHAssetArray.contains(where: { $0.localIdentifier == asset.localIdentifier }) {
+                    return
+                }
+                // Collapse separately saved copies of the same wallpaper (prior double-save bugs).
+                let fingerprint = self.contentFingerprint(for: image)
+                guard seenContentFingerprints.insert(fingerprint).inserted else { return }
+
+                self.photo = image
                 self.photoPHAssetArray.append(asset)
                 self.photoPHAsset.append(asset)
-                                
-                let imageSize = CGSize(width: asset.pixelWidth,
-                                       height: asset.pixelHeight)
-                
-                /* For faster performance, and maybe degraded image */
-                let options = PHImageRequestOptions()
-                options.deliveryMode = .highQualityFormat
-//                options.deliveryMode = .fastFormat
-                options.isSynchronous = true
-                imageManager.requestImage(for: asset,
-                                                  targetSize: imageSize,
-                                                  contentMode: .aspectFit,
-                                                  options: options,
-                                                  resultHandler: {
-                                                    (image, info) -> Void in
-                                                                                                                                                    
-                                                    
-                                                    self.photo = image!
-                                                    /* The image is now available to us */
-                                                    self.addImgToArray(uploadImage: self.photo!)
-                })
-            }
+                self.addImgToArray(uploadImage: image)
+            })
         }
     }
     
-    
+    /// Tiny downscale hash so visually identical album copies are listed once.
+    private func contentFingerprint(for image: UIImage) -> Int {
+        let thumbSize = CGSize(width: 48, height: 48)
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: thumbSize, format: format)
+        let data = renderer.pngData { _ in
+            image.draw(in: CGRect(origin: .zero, size: thumbSize))
+        }
+        return data.hashValue
+    }
     
 
     func addImgToArray(uploadImage:UIImage)

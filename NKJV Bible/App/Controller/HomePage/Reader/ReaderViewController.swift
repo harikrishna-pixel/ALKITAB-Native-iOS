@@ -646,7 +646,6 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.LibrarySubImg!, colorVu: self.Themecolor!)
 //        ImageTint.sharedInstance.imageTintcolorMethod(img: self.MoreSubImg!, colorVu: self.Themecolor!)
         
-        ImageTint.sharedInstance.imageTintcolorMethod(img: self.AVRepeat!, colorVu: .white)
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.AVPrevious!, colorVu: .white)
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.AVNext!, colorVu: .white)
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.AVStop!, colorVu: .white)
@@ -656,16 +655,45 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.SpeakImg!, colorVu: Themecolor!)
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.AudioImg!, colorVu: Themecolor!)
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.MenuImg!, colorVu: Themecolor!)
-        
 
-        if UserDefaults.standard.string(forKey: "Shuffle") == "true" {
-            self.RepeatView.backgroundColor = .white
-            ImageTint.sharedInstance.imageTintcolorMethod(img: self.AVRepeat! , colorVu: UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor)
-        } else {
-            self.RepeatView.backgroundColor = UIColor.clear
-            ImageTint.sharedInstance.imageTintcolorMethod(img: self.AVRepeat! , colorVu: .white)
-        }
+        updateAudioRepeatHighlight()
         
+    }
+
+    private static let audioRepeatHighlightTag = 0xA711
+
+    /// Active repeat uses a compact highlight behind the icon — not the full control cell.
+    func updateAudioRepeatHighlight() {
+        let active = UserDefaults.standard.string(forKey: "Shuffle") == "true"
+        guard let host = RepeatView, let icon = AVRepeat else { return }
+        host.backgroundColor = .clear
+
+        let highlight: UIView
+        if let existing = host.viewWithTag(Self.audioRepeatHighlightTag) {
+            highlight = existing
+        } else {
+            let view = UIView()
+            view.tag = Self.audioRepeatHighlightTag
+            view.isUserInteractionEnabled = false
+            view.translatesAutoresizingMaskIntoConstraints = false
+            view.layer.cornerRadius = 5
+            view.clipsToBounds = true
+            host.insertSubview(view, belowSubview: icon)
+            NSLayoutConstraint.activate([
+                view.centerXAnchor.constraint(equalTo: icon.centerXAnchor),
+                view.centerYAnchor.constraint(equalTo: icon.centerYAnchor),
+                view.widthAnchor.constraint(equalToConstant: 26),
+                view.heightAnchor.constraint(equalToConstant: 26)
+            ])
+            highlight = view
+        }
+
+        highlight.isHidden = !active
+        highlight.backgroundColor = .white
+        let tint: UIColor = active
+            ? (UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor)
+            : .white
+        ImageTint.sharedInstance.imageTintcolorMethod(img: icon, colorVu: tint)
     }
     
     
@@ -1002,9 +1030,17 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         }
     }
 
-    /// Same bottom inset as the text-to-speech player: 10pt from the screen bottom. It does not follow the tab bar.
+    /// Places the audio player just above the bottom tab bar (avoids overlap with Home/Read/Library…).
+    /// PLayerConstrain: safeArea.bottom = player.bottom + constant → player.bottom = safeArea.bottom − constant.
     private func openPlayerBottomConstant() -> CGFloat {
-        return 10 - view.safeAreaInsets.bottom
+        let gap: CGFloat = 10
+        let tabBottomInset = BottomMenyConstrain.constant
+        // Tab bar tucked off-screen — sit near the physical bottom like before.
+        if tabBottomInset < 0 {
+            return gap - view.safeAreaInsets.bottom
+        }
+        let tabHeight = TabVu.bounds.height > 1 ? TabVu.bounds.height : 56
+        return tabBottomInset + tabHeight + gap - view.safeAreaInsets.bottom
     }
 
     /// True while the chapter audio player sheet is on screen (not the Speak/Audio FAB popup).
@@ -1285,7 +1321,9 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
             self.MenuVu.isHidden = false
         }
         
-        if UserDefaults.standard.integer(forKey: "RateUSoneTime") >= 1 && !UserDefaults.standard.bool(forKey: "rateViewed") {
+        if UserDefaults.standard.integer(forKey: "RateUSoneTime") >= 1,
+           !UserDefaults.standard.bool(forKey: "rateViewed"),
+           RateUsCall.shared.canShowAppleRatingPrompt() {
             if self.SelectedTab == "1" {
                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
                     SKStoreReviewController.requestReviewInCurrentScene()
@@ -1741,6 +1779,10 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
 
     private func openMoreRecentArrivals() {
         dismissMoreSheet()
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            view.makeToast("No internet connection", duration: 2.0, position: .top)
+            return
+        }
         hideBottomMenu(Status: false)
         if exploreBooksReturnTab == nil {
             exploreBooksReturnTab = SelectedTab
@@ -1902,8 +1944,10 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         }
         // Replace any leftover overlay so Continue always lands on a fresh explanation sheet.
         self.myView?.removeFromSuperview()
-        self.myView = UIView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height))
+        self.myView = UIView(frame: self.view.bounds)
+        self.myView?.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         self.view.addSubview(self.myView!)
+        self.view.bringSubviewToFront(self.myView!)
 
         let explanationView = VerseExplanationView(frame: self.myView!.bounds)
         explanationView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -1911,17 +1955,13 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         explanationView.verseReference = "\(BookName)-\(Pageindex-1):\(VersePosition)"
         explanationView.verseText = BookVerse[VersePosition - 1]
         explanationView.bibleVersion = APPNAME
-        explanationView.onDismiss = { [weak self] in
-            self?.CloseView()
-        }
+        explanationView.onDismiss = closeOnlyOverlay(self.myView!)
         self.myView!.addSubview(explanationView)
 
-        // Highlight the selected verse on the reading screen behind the sheet.
+        // Remember the verse for Read / follow-up, but do not scroll/highlight under the sheet
+        // (that caused jank while the explanation was opening).
         let readReference = "\(BookName) \(Pageindex-1):\(VersePosition)"
         UserDefaults.standard.set(readReference, forKey: "readdata")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            App_Protocol.delegateReaderSource?.navigateToSelectedVerse()
-        }
     }
 
     func ChapterSummaryNib(BookName: String, Pageindex: Int, BookVerse: Array<String>) {
@@ -1941,21 +1981,31 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
 
         // Replace any leftover overlay so Continue always lands on a fresh summary sheet.
         self.myView?.removeFromSuperview()
-        self.myView = UIView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height))
+        self.myView = UIView(frame: self.view.bounds)
+        self.myView?.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         self.view.addSubview(self.myView!)
+        self.view.bringSubviewToFront(self.myView!)
 
-        let numberedVerses = BookVerse.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
+        // Show the sheet immediately (loading). Build chapter text off the main thread so UI does not freeze.
         let explanationView = VerseExplanationView(frame: self.myView!.bounds)
         explanationView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         explanationView.displayMode = .chapterSummary
+        explanationView.deferInitialFetch = true
         explanationView.verseReference = "\(BookName)-\(Pageindex):1"
         explanationView.screenTitle = "\(BookName) \(Pageindex) Summary"
-        explanationView.verseText = numberedVerses
         explanationView.bibleVersion = APPNAME
-        explanationView.onDismiss = { [weak self] in
-            self?.CloseView()
-        }
+        explanationView.onDismiss = closeOnlyOverlay(self.myView!)
         self.myView!.addSubview(explanationView)
+
+        let verses = BookVerse
+        DispatchQueue.global(qos: .userInitiated).async {
+            let numberedVerses = OpenAIExplanationService.numberedChapterText(verses: verses)
+            DispatchQueue.main.async {
+                guard explanationView.superview != nil else { return }
+                explanationView.verseText = numberedVerses
+                explanationView.startDeferredFetch()
+            }
+        }
     }
 
     func ShowSavedExplanation(dataString: String) {
@@ -1976,6 +2026,8 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     func MenuNib(VersePosition: Int, BookName: String, Pageindex:Int, BookVerse:Array<String>, Bookmark:String, ColorCode:String, UnderlineStatus:String, note:String) {
         self.ClosePlayerPopup()
+        // A second verse tap must not leave the previous full-screen menu layer behind (it blocks every touch).
+        self.CloseMenu()
         
         self.MenuFrame = UIView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height))
         self.view.addSubview(self.MenuFrame!)
@@ -2054,6 +2106,16 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     func CloseView() {
         self.myView?.removeFromSuperview()
         self.myView = nil
+    }
+
+    /// Dismiss for one explanation / summary sheet: removes only its own overlay, never a newer sheet.
+    private func closeOnlyOverlay(_ overlay: UIView) -> () -> Void {
+        return { [weak self, weak overlay] in
+            overlay?.removeFromSuperview()
+            if let self = self, self.myView === overlay {
+                self.myView = nil
+            }
+        }
     }
     
     func CloseChapterView() {
@@ -2161,6 +2223,10 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         UIView.performWithoutAnimation {
             self.topBannerConstant.constant = Top
             self.BottomMenyConstrain.constant = bottom
+            // Keep open audio player stacked above the tab bar when chrome shows/hides.
+            if self.isAudioPlayerOpen {
+                self.PLayerConstrain.constant = self.openPlayerBottomConstant()
+            }
             self.VeresViewBottom.constant = self.verseContentBottom(resting: resting)
             self.MenuConstrain.constant = bottom >= 20 ? 20 : 0
             self.view.layoutIfNeeded()

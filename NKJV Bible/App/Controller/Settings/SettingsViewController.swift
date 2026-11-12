@@ -8,6 +8,7 @@
 import UIKit
 import StoreKit
 import SwiftUI
+import SafariServices
 
 class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, Setting {
 
@@ -269,15 +270,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
               self.view.makeToast("No internet connection", duration: 2.0, position: .top)
           }
       case (3, 5):
-          if NetworkManager.sharedInstance.isConnectedToInternet() {
-              if let url = URL(string: FAQ) {
-                  UIApplication.shared.open(url, options: [:], completionHandler: nil)
-              } else {
-                  self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
-              }
-          } else {
-              self.view.makeToast("No internet connection", duration: 2.0, position: .top)
-          }
+          openHelpFAQ()
       case (3, 6):
           PaywallTriggerGate.shared.requestUserStarted("settings")
       default:
@@ -287,6 +280,22 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     
     
+    /// Opens Help/FAQ in-app. Avoids UIApplication.open, which can fail silently on some iPhone/iPad setups.
+    private func openHelpFAQ() {
+        guard let url = URL(string: FAQ) else {
+            view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .center)
+            return
+        }
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            view.makeToast("No internet connection", duration: 2.0, position: .center)
+            return
+        }
+        let safari = SFSafariViewController(url: url)
+        safari.dismissButtonStyle = .close
+        safari.modalPresentationStyle = .pageSheet
+        present(safari, animated: true)
+    }
+
     func CallRate(Rate:String) {
         if Rate == "Feedback" {
             App_Protocol.delegateReader?.FeedbackNavigate()
@@ -382,6 +391,10 @@ extension SettingsViewController {
   
     
     @objc func BookCatagory() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
+            return
+        }
         let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "BookAdListViewController") as! BookAdListViewController
             self.navigationController?.pushViewController(vc, animated: true)
     }

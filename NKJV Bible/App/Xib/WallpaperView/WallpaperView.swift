@@ -228,7 +228,7 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
             self.WallpaperCell = self.WallPaperCollection.cellForItem(at: indexPath as IndexPath)  as? WallpaperCollectionViewCell
             let tapHintWasHidden = self.WallpaperCell?.TabTxt.isHidden ?? true
             self.WallpaperCell?.TabTxt.isHidden = true
-            self.saveImage = self.WallpaperCell!.Walpaperframe.asImage()
+            self.saveImage = self.portraitImage(from: self.WallpaperCell!)
             self.WallpaperCell?.TabTxt.isHidden = tapHintWasHidden
             
             let url = URL(fileURLWithPath: NSTemporaryDirectory())
@@ -246,15 +246,16 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
     
     @IBAction func SaveImage(_ sender: Any) {
          
+        // Save the card the user is looking at (centered page), not a stale index.
+        if let page = centeredWallpaperPage() { SelectedPath = page }
         let indexPath = IndexPath(row: SelectedPath, section: 0)
         self.WallpaperCell = self.WallPaperCollection.cellForItem(at: indexPath as IndexPath)  as? WallpaperCollectionViewCell
+        guard let wallpaperCell = self.WallpaperCell else { return }
         
 //        App_Protocol.delegateReader?.SliderCardPreview(Verese:(self.WallpaperCell?.Versetext.text)! , Book: (self.WallpaperCell?.Booktext.text)!)
         
-        let tapHintWasHidden = self.WallpaperCell?.TabTxt.isHidden ?? true
-        self.WallpaperCell?.TabTxt.isHidden = true
-        let saveImage = self.WallpaperCell!.Walpaperframe.asImage()
-        self.WallpaperCell?.TabTxt.isHidden = tapHintWasHidden
+        // Same artwork, text and layout as shown on screen (no rebuilt card).
+        let saveImage = onScreenImage(from: wallpaperCell)
         // First Save this app session only → interstitial, shown after the "saved" toast (never over the permission alert).
         NKJV_Bible.SaveImage.sharedInstance.onNextSaveSuccess = {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
@@ -293,6 +294,37 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
     
     
     
+    /// Exactly what is on screen: the visible card, without the "Tap on image" hint.
+    private func onScreenImage(from cell: WallpaperCollectionViewCell) -> UIImage {
+        let tapHintWasHidden = cell.TabTxt.isHidden
+        cell.TabTxt.isHidden = true
+        cell.layoutIfNeeded()
+        let image = cell.Walpaperframe.asImage()
+        cell.TabTxt.isHidden = tapHintWasHidden
+        return image
+    }
+
+    /// Save / Share always use a tall 9:16 image (like Today's Verse), even when the on-screen card is nearly square on small phones.
+    private func portraitImage(from cell: WallpaperCollectionViewCell) -> UIImage {
+        let width = cell.Walpaperframe.bounds.width
+        guard width > 0,
+              let copy = UINib(nibName: "WallpaperCollectionViewCell", bundle: nil)
+                .instantiate(withOwner: nil, options: nil).first as? WallpaperCollectionViewCell else {
+            return cell.Walpaperframe.asImage()
+        }
+        copy.frame = CGRect(x: 0, y: 0, width: width, height: (width * 16 / 9).rounded())
+        copy.Wallpaper.image = cell.Wallpaper.image
+        copy.Versetext.attributedText = cell.Versetext.attributedText
+        copy.Booktext.attributedText = cell.Booktext.attributedText
+        copy.WaterMarkVu.isHidden = cell.WaterMarkVu.isHidden
+        copy.WaterMark.isHidden = cell.WaterMark.isHidden
+        copy.applyVerseWatermarkName()
+        copy.showTapHint(false)
+        copy.setNeedsLayout()
+        copy.layoutIfNeeded()
+        return copy.Walpaperframe.asImage()
+    }
+
     func ConvertIntoImage() {
             
         let indexPath = IndexPath(row: SelectedPath, section: 0)
@@ -301,7 +333,7 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
             self.WallPaperCollection.scrollToItem(at: indexPath, at: UICollectionView.ScrollPosition.centeredHorizontally, animated: false)
             self.WallPaperCollection.isPagingEnabled = true
             self.WallpaperCell = self.WallPaperCollection.cellForItem(at: indexPath as IndexPath)  as? WallpaperCollectionViewCell
-            self.saveImage = self.WallpaperCell!.Walpaperframe.asImage()
+            self.saveImage = self.onScreenImage(from: self.WallpaperCell!)
             let status = PHPhotoLibrary.authorizationStatus()
             
             if status == PHAuthorizationStatus.authorized {
@@ -415,6 +447,10 @@ class WallpaperView: UIView, UIScrollViewDelegate, UICollectionViewDelegate, UIC
 //            self.WallpaperCell?.TabTxt.text = "Share the image"
             BGImageCount = BGImageCount+1
             self.WallpaperCell!.Wallpaper.image = UIImage(named: "S\(BGImageCount).jpg")
+            // Remember the picked artwork so a redraw / Save never falls back to the old one.
+            if indexPath.row < BGImage.count {
+                BGImage[indexPath.row] = BGImageCount
+            }
             App_Protocol.delegateReader?.CallWallpaperAds()
 
             

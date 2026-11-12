@@ -27,6 +27,8 @@ class ImageGalleryViewController: UIViewController, UICollectionViewDelegate, UI
     var Galleryimages:Array<UIImage> = []
     var status: PHAuthorizationStatus?
     let Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
+    /// Bumps on each LoadImage so overlapping loads ignore stale delayed fetches.
+    private var loadImageGeneration: Int = 0
     
     
     var ImageSliderView: ImageSlideVu?
@@ -66,16 +68,33 @@ class ImageGalleryViewController: UIViewController, UICollectionViewDelegate, UI
     
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
-          return UIEdgeInsets(top: 5, left: 0, bottom: 20, right: 5)
+          return UIEdgeInsets(top: 0, left: 0, bottom: 20, right: 0)
       }
+
+    // The cell already has a 10pt leading/top margin around the image, so zero spacing here
+    // gives an even 10pt gap between every image (rows and columns).
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
+        return 0
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
+        return 0
+    }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
 
-      if (UIDevice.current.userInterfaceIdiom == UIUserInterfaceIdiom.pad) {
-          return CGSize(width: (self.view.bounds.width/3)-10, height: (self.view.bounds.width/4.5)-10)
-      } else {
-          return CGSize(width: (self.view.bounds.width/2)-10, height: (self.view.bounds.width/1.7)-10)
-      }
+      return CGSize(width: thumbnailFrameWidth + 10, height: thumbnailFrameHeight + 10)
+    }
+
+    /// Every saved image shows in the same tall 9:16 frame, so square and tall images line up.
+    private var thumbnailFrameWidth: CGFloat {
+        let columns: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 3 : 2
+        // 10pt margin on the left and right edge, 10pt between images.
+        return floor((self.view.bounds.width - 10) / columns) - 10
+    }
+
+    private var thumbnailFrameHeight: CGFloat {
+        (thumbnailFrameWidth * 16 / 9).rounded()
     }
     
         func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -91,21 +110,17 @@ class ImageGalleryViewController: UIViewController, UICollectionViewDelegate, UI
             
             let cell = (self.ImageGalleryCollectionView.dequeueReusableCell(withReuseIdentifier: "ImageGalleryCell", for: indexPath) as! ImageGalleryCollectionViewCell)
             
-            if self.Galleryimages.count > 0  {
-                if (UIDevice.current.userInterfaceIdiom == UIUserInterfaceIdiom.pad) {
-                    cell.ImageFrameHeight.constant = (self.view.bounds.width/4.5)-10
-                    cell.ImageFramewidth.constant = (self.view.bounds.width/3)-20
-                } else {
-                    cell.ImageFrameHeight.constant = (self.view.bounds.width/1.7)-10
-                    cell.ImageFramewidth.constant = (self.view.bounds.width/2)-20
-                }
+            let albumImages = CustomPhotoAlbum.sharedInstance.images
+            if self.Galleryimages.count > 0, indexPath.row < albumImages.count {
+                cell.ImageFrameHeight.constant = thumbnailFrameHeight
+                cell.ImageFramewidth.constant = thumbnailFrameWidth
                 cell.ImageFrame.layer.masksToBounds = true
+                // Show the whole saved image (verse text is no longer cropped at the sides).
                 cell.ImageVu.contentMode = .scaleAspectFit
                 cell.ImageVu.clipsToBounds = true
                 cell.ImageVu.backgroundColor = .clear
-                cell.ImageFrame.backgroundColor = .clear
-                cell.ImageVu!.image = CustomPhotoAlbum.sharedInstance.images[indexPath.row]
-                cell.ImageFrame!.addSubview(cell.ImageVu!)
+                cell.ImageFrame.backgroundColor = UIColor(white: 0.1, alpha: 1)
+                cell.ImageVu.image = albumImages[indexPath.row]
             }
             
             
@@ -263,6 +278,10 @@ class ImageGalleryViewController: UIViewController, UICollectionViewDelegate, UI
         // save already completed. This creates the "first time shows many, second time shows correct" bug
         
         // BUG FIX 3 (DUPLICATE IMAGES): NEW CODE - Show loading state, then delay fetch
+        // Invalidate any in-flight delayed fetch (tab tap + viewDidAppear can both call LoadImage).
+        loadImageGeneration += 1
+        let generation = loadImageGeneration
+
         self.ImageGalleryCell?.isHidden = true
         self.WarningBtn.isHidden = true
         self.ImageGalleryCollectionView.isHidden = true
@@ -270,15 +289,21 @@ class ImageGalleryViewController: UIViewController, UICollectionViewDelegate, UI
         self.WarningLbl.isHidden = false
         
         CustomPhotoAlbum.sharedInstance.images.removeAll()
+        self.Galleryimages.removeAll()
         
         // Add delay to ensure any pending save operations complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+            guard generation == self.loadImageGeneration else { return }
             CustomPhotoAlbum.sharedInstance.fetchCustomAlbumPhotos()
+            guard generation == self.loadImageGeneration else { return }
              
             if CustomPhotoAlbum.sharedInstance.images.count <= 0 {
+                self.Galleryimages.removeAll()
                 self.ImageGalleryCollectionView.isHidden = true
                 self.WarningLbl.text = "No Image found"
                 self.WarningLbl.isHidden = false
+                self.ReloadCollectionVu()
             } else {
                 self.Galleryimages = CustomPhotoAlbum.sharedInstance.images
                 self.ImageGalleryCollectionView.isHidden = false

@@ -68,31 +68,42 @@ class BookAdListViewController: UIViewController {
     
     
     func ApiCall(Apiid:String) {
-        let parameters:Dictionary<String, AnyObject> = ["book_cat_id": Apiid as AnyObject]
-        
-        self.AllMoreLink = CoreDataModel.sharedInstance.GetMoreBookShare(entity: CDMoreBookApi)
-        
-        self.bookThumbURL.removeAll()
-        self.book_age.removeAll()
-        self.book_id.removeAll()
-        self.book_name.removeAll()
-        self.book_published_by.removeAll()
-        self.book_url.removeAll()
-        self.storeTitle.removeAll()
-        
+        loadBooksFromStore()
+        BookCatagory?.reloadData()
 
-        for item in self.AllMoreLink {
-            let itemSeperate = item.components(separatedBy: "####")
-            self.bookThumbURL.append(itemSeperate[0])
-            self.book_age.append(itemSeperate[1])
-            self.book_id.append(itemSeperate[2])
-            self.book_name.append(itemSeperate[3])
-            self.book_published_by.append(itemSeperate[4])
-            self.book_url.append(itemSeperate[5])
-            self.storeTitle.append(itemSeperate[6])
-            
+        // Screen only reads Core Data; if empty, fetch once and reload.
+        guard AllMoreLink.isEmpty,
+              NetworkManager.sharedInstance.isConnectedToInternet() else { return }
+        BookApi.shared.GetBookCatagory { [weak self] in
+            DispatchQueue.main.async {
+                self?.loadBooksFromStore()
+                self?.BookCatagory?.reloadData()
+            }
         }
-        
+    }
+
+    private func loadBooksFromStore() {
+        AllMoreLink = CoreDataModel.sharedInstance.GetMoreBookShare(entity: CDMoreBookApi)
+
+        bookThumbURL.removeAll()
+        book_age.removeAll()
+        book_id.removeAll()
+        book_name.removeAll()
+        book_published_by.removeAll()
+        book_url.removeAll()
+        storeTitle.removeAll()
+
+        for item in AllMoreLink {
+            let itemSeperate = item.components(separatedBy: "####")
+            guard itemSeperate.count > 6 else { continue }
+            bookThumbURL.append(itemSeperate[0])
+            book_age.append(itemSeperate[1])
+            book_id.append(itemSeperate[2])
+            book_name.append(itemSeperate[3])
+            book_published_by.append(itemSeperate[4])
+            book_url.append(itemSeperate[5])
+            storeTitle.append(itemSeperate[6])
+        }
     }
     
     
@@ -159,7 +170,7 @@ extension BookAdListViewController: UICollectionViewDelegate, UICollectionViewDa
 
 
        func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-           return self.AllMoreLink.count
+           return self.book_name.count
        }
        
 

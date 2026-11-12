@@ -51,7 +51,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         
         
-        if UserDefaults.standard.integer(forKey: "RateUSoneTime") == 1 && !UserDefaults.standard.bool(forKey: "rateViewed") {
+        if UserDefaults.standard.integer(forKey: "RateUSoneTime") == 1,
+           !UserDefaults.standard.bool(forKey: "rateViewed"),
+           RateUsCall.shared.canShowAppleRatingPrompt() {
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
                 SKStoreReviewController.requestReviewInCurrentScene()
                 UserDefaults.standard.setValue(true, forKey: "rateViewed")

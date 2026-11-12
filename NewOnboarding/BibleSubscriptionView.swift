@@ -23,6 +23,7 @@ struct BibleSubscriptionView: View {
     @State private var exitOfferTimeRemaining = 600 // 10 minutes in seconds
     @State private var exitOfferTimerTask: Task<Void, Never>?
     @State private var didSkipMissingPrices = false
+    @State private var priceSheetWatcher = PriceSheetWatcher()
     // FIXED: Parameters for navigation behavior
     var isPresentedFromOnboarding: Bool = true
     var dismissHandler: (() -> Void)?  // ADDED: For UIKit dismiss
@@ -120,10 +121,10 @@ struct BibleSubscriptionView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
-            // Apple purchase sheet is on screen — hide the paywall loader.
+            // Backup: Apple purchase sheet is on screen — hide the paywall loader.
             // Restore keeps its loader until the receipt check finishes.
             if showLoader && !isRestoring {
-                showLoader = false
+                clearPurchaseLoading()
             }
         }
         .onChange(of: storeManager.isLoading2) { _ in skipPaywallIfMissingPrices() }
@@ -133,6 +134,7 @@ struct BibleSubscriptionView: View {
         .onChange(of: storeManager.price2) { _ in skipPaywallIfMissingPrices() }
         .onChange(of: storeManager.price3) { _ in skipPaywallIfMissingPrices() }
         .onDisappear {
+            priceSheetWatcher.stop()
             exitOfferTimerTask?.cancel()
             exitOfferTimerTask = nil
             PaywallProcessHUD.hide()
@@ -161,6 +163,7 @@ struct BibleSubscriptionView: View {
                         topSafeInset: topSafeInset,
                         geoSize: geo.size,
                         bottomInset: geo.safeAreaInsets.bottom,
+                        isRestoring: isRestoring,
                         onPurchase: { handlePurchaseAction() },
                         onContinueFree: { handleCloseAction() },
                         onRestore: {
@@ -228,17 +231,17 @@ struct BibleSubscriptionView: View {
     // MARK: - Paywall display helpers (UI only)
     private var monthlyPriceDisplay: String {
         let p = storeManager.price1.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag1") ?? "") : storeManager.price1
-        return p.isEmpty ? "—" : "\(p.cleanPrice()) / month"
+        return p.isEmpty ? "—" : "\(p) / month"
     }
     
     private var yearlyPriceDisplay: String {
         let p = storeManager.price2.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag2") ?? "") : storeManager.price2
-        return p.isEmpty ? "—" : "\(p.cleanPrice()) / year"
+        return p.isEmpty ? "—" : "\(p) / year"
     }
     
     private var lifetimePriceDisplay: String {
         let p = storeManager.price3.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag3") ?? "") : storeManager.price3
-        return p.isEmpty ? "—" : p.cleanPrice()
+        return p.isEmpty ? "—" : p
     }
     
     private var yearlyPerMonthLine: String {
@@ -252,9 +255,14 @@ struct BibleSubscriptionView: View {
         let m = Double(monthly.strippedtext.replacingOccurrences(of: ",", with: "")) ?? 0
         let y = Double(yearly.strippedtext.replacingOccurrences(of: ",", with: "")) ?? 0
         guard m > 0, y > 0, (m * 12) > y else { return "" }
-        let save = Int(((m * 12) - y).rounded())
-        let symbol = yearly.cleanPrice().prefix { !$0.isNumber && $0 != "." && $0 != "," }
-        return "Save \(symbol)\(save)"
+        let save = (m * 12) - y
+        let symbol = yearly.prefix { !$0.isNumber && $0 != "." && $0 != "," }
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        let number = formatter.string(from: NSNumber(value: save)) ?? String(format: "%.2f", save)
+        return "Save \(symbol)\(number)"
     }
     
     // MARK: - Setup StoreManager
@@ -262,12 +270,12 @@ struct BibleSubscriptionView: View {
         storeManager.setupProducts()
         
         storeManager.onPurchaseSuccess = { [self] in
-            showLoader = false
+            clearPurchaseLoading()
             exitOfferTimerTask?.cancel()
             exitOfferTimerTask = nil
             showExitOffer = false
             clearExitOfferData()
-            showPurchaseToast()
+            // Toast is shown by StoreManager on every successful purchase.
             PaywallProcessHUD.didClosePaywall = false
             // iPad needs longer for the App Store sheet to leave before the paywall closes.
             let delay: TimeInterval = UIDevice.current.userInterfaceIdiom == .pad ? 2.0 : 1.0
@@ -277,7 +285,7 @@ struct BibleSubscriptionView: View {
         }
         
         storeManager.onPurchaseFailure = { [self] error in
-            showLoader = false
+            clearPurchaseLoading()
         }
         
         storeManager.onRestoreSuccess = { [self] in
@@ -381,6 +389,8 @@ struct BibleSubscriptionView: View {
 
     private func beginSelectedPurchase() {
         showLoader = true
+        // Same as onboarding: clear loader as soon as Apple's purchase sheet appears.
+        let before = PriceSheetWatcher.currentChrome()
         if planSelection.plan == .monthly {
             storeManager.purchaseProduct(with: SUBSCRIPTIONID_Six_month)
         } else if planSelection.plan == .yearly {
@@ -388,6 +398,17 @@ struct BibleSubscriptionView: View {
         } else if planSelection.plan == .lifetime {
             storeManager.purchaseProduct(with: SUBSCRIPTIONID_LifeTime)
         }
+        priceSheetWatcher.start(before: before) { [self] in
+            clearPurchaseLoading()
+        }
+    }
+
+    /// Hides purchase loader when the StoreKit sheet is up — does not affect Restore.
+    private func clearPurchaseLoading() {
+        guard !isRestoring else { return }
+        priceSheetWatcher.stop()
+        showLoader = false
+        storeManager.isLoading = false
     }
 
     /// Last plan saved on this phone. Lifetime, 1 Year, then 1 Month.
@@ -659,16 +680,6 @@ struct BibleSubscriptionView: View {
         }
     }
 
-
-    private func showPurchaseToast() {
-        let windows = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-        let window = OnboardingAuthManager.topViewController()?.view.window
-            ?? windows.first(where: { $0.isKeyWindow })
-            ?? windows.first
-        window?.makeToast("Purchased Successfully", duration: 2.0, position: .top)
-    }
 
     /// Closes the paywall after a successful purchase or restore.
     /// Onboarding opens Home. A paywall opened from Reading returns to that Reading screen.
@@ -967,6 +978,8 @@ private struct PaywallScrollStackView: View {
     let topSafeInset: CGFloat
     let geoSize: CGSize
     let bottomInset: CGFloat
+    /// Only true during Restore — regular purchase must not disable Restore.
+    let isRestoring: Bool
     let onPurchase: () -> Void
     let onContinueFree: () -> Void
     let onRestore: () -> Void
@@ -1128,7 +1141,8 @@ private struct PaywallScrollStackView: View {
             Button(action: onRestore) {
                 Text("Restore Purchase")
             }
-            .disabled(storeManager.isLoading)
+            // Block double-tap only while Restore is running — not during a regular purchase.
+            .disabled(isRestoring)
         }
         .font(.system(size: isPad ? 13 : 12, weight: .medium))
         .foregroundColor(Color.white.opacity(0.7))
@@ -1227,15 +1241,109 @@ private struct PaywallPlanAndCTASection: View {
             return "One-time purchase • Lifetime access"
         case .yearly:
             let yearly = storeManager.price2.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag2") ?? "") : storeManager.price2
-            return "Then \(yearly.isEmpty ? "—" : yearly.cleanPrice())/year. Auto-renews unless cancelled."
+            return "Then \(yearly.isEmpty ? "—" : yearly)/year. Auto-renews unless cancelled."
         case .monthly:
             let monthly = storeManager.price1.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag1") ?? "") : storeManager.price1
-            return "Then \(monthly.isEmpty ? "—" : monthly.cleanPrice())/month. Auto-renews unless cancelled."
+            return "Then \(monthly.isEmpty ? "—" : monthly)/month. Auto-renews unless cancelled."
         }
+    }
+
+    // MARK: - Price states (loading / no internet / unavailable / retrying)
+    private enum PricePhase { case ready, loading, retrying, noInternet, unavailable }
+    @State private var isRetryingPrices = false
+    @State private var priceGraceExpired = false
+
+    private var hasAnyPrice: Bool {
+        let p1 = storeManager.price1.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag1") ?? "") : storeManager.price1
+        let p2 = storeManager.price2.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag2") ?? "") : storeManager.price2
+        let p3 = storeManager.price3.isEmpty ? (UserDefaults.standard.string(forKey: "PriceTag3") ?? "") : storeManager.price3
+        return !p1.isEmpty || !p2.isEmpty || !p3.isEmpty
+    }
+
+    private var isFetchingPrices: Bool {
+        storeManager.isLoading1 || storeManager.isLoading2 || storeManager.isLoading3
+    }
+
+    private var pricePhase: PricePhase {
+        if hasAnyPrice { return .ready }
+        let online = NetworkManager.sharedInstance.isConnectedToInternet()
+        if isRetryingPrices { return isFetchingPrices ? .retrying : (online ? .unavailable : .noInternet) }
+        if isFetchingPrices { return .loading }
+        if !online { return .noInternet }
+        if storeManager.hasProductLoadError || priceGraceExpired { return .unavailable }
+        return .loading
+    }
+
+    private func retryPrices() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
+            return
+        }
+        isRetryingPrices = true
+        storeManager.retryAllPrices()
+    }
+
+    private var priceStatusCard: some View {
+        VStack(spacing: 8) {
+            switch pricePhase {
+            case .loading, .retrying:
+                ActivityIndicator(isAnimating: .constant(true), style: .medium)
+                    .frame(height: 36)
+                Text(pricePhase == .retrying
+                     ? OnboardingLocale.text(id: "Mencoba lagi...", en: "Retrying...")
+                     : OnboardingLocale.text(id: "Mengambil harga...", en: "Getting your price..."))
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(Color(hex: "1A1A1A"))
+                Text(pricePhase == .retrying
+                     ? OnboardingLocale.text(id: "Mengambil harga lagi...", en: "Getting your price again...")
+                     : OnboardingLocale.text(id: "Mohon tunggu sebentar", en: "Please wait a moment"))
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "8B95A7"))
+            case .noInternet, .unavailable, .ready:
+                let offline = pricePhase == .noInternet
+                Image(systemName: offline ? "wifi.slash" : "exclamationmark.circle")
+                    .font(.system(size: 26, weight: .medium))
+                    .foregroundColor(offline ? Color(hex: "607089") : Color(hex: "E5483B"))
+                Text(offline
+                     ? OnboardingLocale.text(id: "Tidak Ada Koneksi Internet", en: "No Internet Connection")
+                     : OnboardingLocale.text(id: "Harga tidak tersedia", en: "Price unavailable"))
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(Color(hex: "1A1A1A"))
+                Text(offline
+                     ? OnboardingLocale.text(id: "Periksa koneksi internetmu dan coba lagi.", en: "Please check your internet connection and try again.")
+                     : OnboardingLocale.text(id: "Kami tidak bisa memuat harga pembelian. Ini mungkin masalah sementara. Silakan coba lagi.", en: "We couldn't load the purchase price. This may be a temporary issue. Please try again."))
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "8B95A7"))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 12)
+                Button(action: retryPrices) {
+                    HStack(spacing: 8) {
+                        Text(OnboardingLocale.text(id: "Coba Lagi", en: "Try Again"))
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 15, weight: .bold))
+                    }
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Capsule().fill(Color(hex: "2F6BFF")))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 18)
+        .background(RoundedRectangle(cornerRadius: 18).fill(Color.white))
+        .padding(.horizontal, isPad ? 8 : 12)
+        .padding(.top, isPad ? 4 : 2)
+        .padding(.bottom, isPad ? 8 : 10)
     }
 
     var body: some View {
         VStack(spacing: 0) {
+            if pricePhase == .ready {
             HStack(alignment: .top, spacing: isPad ? 14 : 8) {
                 PaywallPlanCardView(
                     style: .monthly,
@@ -1270,7 +1378,24 @@ private struct PaywallPlanAndCTASection: View {
             .padding(.horizontal, isPad ? 8 : 12)
             .padding(.top, isPad ? 4 : 2)
             .padding(.bottom, isPad ? 8 : 10)
+            } else {
+                priceStatusCard
+            }
 
+            if pricePhase == .loading || pricePhase == .retrying {
+                // Same height as the purchase button, disabled until a price arrives.
+                Text(OnboardingLocale.text(id: "Memuat harga...", en: "Loading price..."))
+                    .font(.system(size: isPad ? 18 : 17, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: isPad ? 56 : (isSmallDevice ? 48 : 52))
+                    .background(Color(hex: "2F6BFF").opacity(0.45))
+                    .cornerRadius(16)
+                    .padding(.horizontal, isPad ? 8 : 18)
+                    .padding(.bottom, isPad ? 12 : 8)
+            }
+
+            if pricePhase == .ready {
             Button(action: onPurchase) {
                 HStack(spacing: 8) {
                     Text(ctaTitle)
@@ -1293,6 +1418,11 @@ private struct PaywallPlanAndCTASection: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
                 .padding(.bottom, isPad ? 10 : 8)
+            }
+        }
+        .onAppear {
+            // Safety: never spin forever if the price request never starts or never answers.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 12) { priceGraceExpired = true }
         }
     }
 }
@@ -1439,11 +1569,11 @@ struct YearlyPlanCard: View {
         return !offerValue.isEmpty
     }
 
-    /// Prefer live price; fall back to last cached StoreKit price for offline UI.
+    /// Prefer live StoreKit price; fall back to last cached price for offline UI. No rounding.
     private var displayPriceText: String {
-        if !price.isEmpty { return price.cleanPrice() }
+        if !price.isEmpty { return price }
         if let cached = UserDefaults.standard.string(forKey: "PriceTag2"), !cached.isEmpty {
-            return cached.cleanPrice()
+            return cached
         }
         return ""
     }
@@ -1474,17 +1604,23 @@ struct YearlyPlanCard: View {
             }
             
             // Calculate original price: if discounted price = original * (100 - discount) / 100
-            // Then original = discounted * 100 / (100 - discount)
-            let originalValue = Int((numericValue / (100 - discount)) * 100)
+            // Then original = discounted * 100 / (100 - discount). Keep cents — no Int rounding.
+            let originalValue = (numericValue / (100 - discount)) * 100
             
             // Extract currency symbol by removing all digits, commas, dots, and spaces
             let symbol = price.replacingOccurrences(of: "[0-9,.]", with: "", options: .regularExpression).trimmingCharacters(in: .whitespaces)
             
-            print("💰 [YearlyPlanCard] Price calculation: price=\(price), discount=\(discount)%, numeric=\(numericValue), original=\(originalValue)")
-            print("💰 [YearlyPlanCard] Extracted symbol: '\(symbol)'")
-            print("💰 [YearlyPlanCard] Strikeout price result: '\(symbol)\(originalValue)'")
+            let formatter = NumberFormatter()
+            formatter.numberStyle = .decimal
+            formatter.minimumFractionDigits = 2
+            formatter.maximumFractionDigits = 2
+            let number = formatter.string(from: NSNumber(value: originalValue)) ?? String(format: "%.2f", originalValue)
             
-            return "\(symbol)\(originalValue)"
+            print("💰 [YearlyPlanCard] Price calculation: price=\(price), discount=\(discount)%, numeric=\(numericValue), original=\(number)")
+            print("💰 [YearlyPlanCard] Extracted symbol: '\(symbol)'")
+            print("💰 [YearlyPlanCard] Strikeout price result: '\(symbol)\(number)'")
+            
+            return "\(symbol)\(number)"
         }
         
         // Fallback: If no offer but originalPrice is provided, use it (remove decimals if present)
@@ -1527,7 +1663,7 @@ struct YearlyPlanCard: View {
                         VStack(alignment: .trailing, spacing: 2) {
                             // Show strikeout original price if offer exists (before current price)
                             if shouldShowOffer && !strikeoutPrice.isEmpty {
-                                Text(strikeoutPrice.cleanPrice())
+                                Text(strikeoutPrice)
                                     .font(.system(size: 15, weight: .medium))
                                     .foregroundColor(Color(red: 0.6, green: 0.6, blue: 0.6))
                                     .strikethrough(true, color: Color(red: 0.6, green: 0.6, blue: 0.6))
@@ -1641,11 +1777,11 @@ struct LifetimePlanCard: View {
     let showOffer: Bool
     let action: () -> Void
 
-    /// Prefer live price; fall back to last cached StoreKit price for offline UI.
+    /// Prefer live StoreKit price; fall back to last cached price for offline UI. No rounding.
     private var displayPriceText: String {
-        if !price.isEmpty { return price.cleanPrice() }
+        if !price.isEmpty { return price }
         if let cached = UserDefaults.standard.string(forKey: "PriceTag3"), !cached.isEmpty {
-            return cached.cleanPrice()
+            return cached
         }
         return ""
     }
@@ -1799,11 +1935,11 @@ struct ExitOfferView: View {
                         Text("SPECIAL OFFER")
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(OnboardingTheme.gold)
-                        Text("\(discountedPrice.cleanPrice()) / year")
+                        Text("\(discountedPrice) / year")
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.white)
                         if !originalPrice.isEmpty {
-                            Text(originalPrice.cleanPrice())
+                            Text(originalPrice)
                                 .font(.system(size: 14))
                                 .foregroundColor(.white.opacity(0.45))
                                 .strikethrough()
@@ -2009,6 +2145,8 @@ final class PaywallTriggerGate {
     private var skipDay30Flush = false
     private var didDeferDay30 = false
     private var suppressDay3ThisSession = false
+    private var day3Tries = 0
+    private let day3PendingDayKey = "PaywallTriggerDay3PendingDay"
     private var imageSheetTries = 0
     private var imageSheetOpening = false
     private var feedbackTries = 0
@@ -2028,19 +2166,35 @@ final class PaywallTriggerGate {
         return Date().timeIntervalSince(last) < 30 * 60
     }
 
-    func requestUserStarted(_ name: String) {
-        guard isEnabled else { return }
-        guard !isEntitled else { return }
-        guard !isBusy else { return }
-        if name != "settings", blockedAfterRating() { return }
+    /// Explanation / summary limit sheet. Shown on every tap (no cooldown or rating block). `onClosed` runs when it closes.
+    /// Returns false when nothing will open (paid users, gate off).
+    @discardableResult
+    func requestAILimitSheet(onClosed: @escaping () -> Void) -> Bool {
+        guard isEnabled, !isEntitled else { return false }
+        guard NetworkManager.sharedInstance.isConnectedToInternet(),
+              PaywallTriggerPresenter.canPresent("aiExplain") else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
+            return true
+        }
+        presentCurrentPaywall(countsAsPopup: false, trigger: "aiExplain", onClose: onClosed)
+        return true
+    }
+
+    /// Returns false when nothing will open, so the caller can show another response instead of doing nothing.
+    @discardableResult
+    func requestUserStarted(_ name: String) -> Bool {
+        guard isEnabled else { return false }
+        guard !isEntitled else { return false }
+        guard !isBusy else { return false }
+        if name != "settings", blockedAfterRating() { return false }
         let chatCanRepeat = name == "chatLimit" || name == "chatCredits"
-        if name != "settings", !chatCanRepeat, isUserStartedCoolingDown(name) { return }
+        if name != "settings", !chatCanRepeat, isUserStartedCoolingDown(name) { return false }
         guard PaywallTriggerPresenter.canPresent(name) else {
             OnboardingAuthManager.topViewController()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
-            return
+            return true
         }
-        userCooldown[name] = Date()
         presentCurrentPaywall(countsAsPopup: false, trigger: name)
+        return true
     }
 
     func noteChapterMarked(book: String, marked: [String]) {
@@ -2083,7 +2237,8 @@ final class PaywallTriggerGate {
         defaults.set(chapters, forKey: "PaywallTriggerFeedbackChapters")
     }
 
-    /// HTML: after the first finished book, then at most every 60 days. Great closes. Could be better opens the form. Great does not ask for a rating.
+    /// After the first finished book, then at most every 60 days.
+    /// Great → rating (if last rating ≥ 60 days ago) or thanks. Could be better → private form + support mail.
     private func presentPendingFeedback() {
         guard isEnabled else { return }
         guard UserDefaults.standard.bool(forKey: "PaywallTriggerFeedbackPending") || pendingFeedback else { return }
@@ -2096,8 +2251,8 @@ final class PaywallTriggerGate {
         guard !feedbackOpening else { return }
         guard !isBusy else {
             feedbackTries += 1
-            guard feedbackTries <= 6 else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            guard feedbackTries <= 20 else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
                 self?.presentPendingFeedback()
             }
             return
@@ -2109,13 +2264,51 @@ final class PaywallTriggerGate {
             guard let self = self else { return }
             self.feedbackOpening = false
             guard let top = OnboardingAuthManager.topViewController() else { return }
-            if top.presentedViewController != nil { return }
+            if top.presentedViewController != nil {
+                self.feedbackTries += 1
+                guard self.feedbackTries <= 20 else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
+                    self?.presentPendingFeedback()
+                }
+                return
+            }
             PaywallTriggerPresenter.showFeedback(book: book, chapters: chapters, from: top)
             UserDefaults.standard.set(false, forKey: "PaywallTriggerFeedbackPending")
             UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: self.feedbackAtKey)
             self.pendingFeedback = false
             self.feedbackTries = 0
             self.shownThisSession = true
+        }
+    }
+
+    /// Great on the finished-book card: rating again only if last ask was ≥ 60 days ago (or never).
+    func shouldOfferRatingAfterFeedbackGreat() -> Bool {
+        let last = UserDefaults.standard.double(forKey: lastRatingKey)
+        if last == 0 { return true }
+        return Date().timeIntervalSince1970 - last >= 60 * 24 * 60 * 60
+    }
+
+    func playFeedbackGreatRating() {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        UserDefaults.standard.set(version, forKey: ratingVersionKey)
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: lastRatingKey)
+        shownThisSession = true
+        if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+            SKStoreReviewController.requestReview(in: scene)
+        }
+    }
+
+    /// Mark-as-Read quiz was deferred while the feedback card was showing.
+    func noteMarkAsReadQuizDeferred() {
+        UserDefaults.standard.set(true, forKey: "PaywallTriggerQuizAfterFeedback")
+    }
+
+    func noteFeedbackFlowClosed() {
+        flush()
+        guard UserDefaults.standard.bool(forKey: "PaywallTriggerQuizAfterFeedback") else { return }
+        UserDefaults.standard.set(false, forKey: "PaywallTriggerQuizAfterFeedback")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            App_Protocol.delegateReader?.MarkAsReadPopup()
         }
     }
 
@@ -2203,7 +2396,15 @@ final class PaywallTriggerGate {
     func noteStreakDay(_ day: Int) {
         guard isEnabled else { return }
         guard day == 3 || day == 7 || day == 30 else { return }
-        if day == 3 { return }
+        if day == 3 {
+            // Remember the day-3 card even if the celebration was closed another way; it shows on a later day.
+            let defaults = UserDefaults.standard
+            if !hasShown("streak.3"), !defaults.bool(forKey: "PaywallTriggerDay3Pending") {
+                defaults.set(true, forKey: "PaywallTriggerDay3Pending")
+                defaults.set(today, forKey: day3PendingDayKey)
+            }
+            return
+        }
         if day == 30 {
             UserDefaults.standard.set(true, forKey: "PaywallTriggerDay30Pending")
             if !didDeferDay30 {
@@ -2240,7 +2441,9 @@ final class PaywallTriggerGate {
                 showMilestone("streak.7")
             }
         case 3:
+            guard !hasShown("streak.3") else { return }
             UserDefaults.standard.set(true, forKey: "PaywallTriggerDay3Pending")
+            UserDefaults.standard.set(today, forKey: day3PendingDayKey)
             suppressDay3ThisSession = true
         default:
             break
@@ -2251,18 +2454,45 @@ final class PaywallTriggerGate {
         requestRatingIfEligible()
     }
 
+    /// Day-3 card waits for a later day than the one the streak reached 3.
+    private var day3CardIsDue: Bool {
+        let defaults = UserDefaults.standard
+        guard !suppressDay3ThisSession,
+              defaults.bool(forKey: "PaywallTriggerDay3Pending"),
+              !hasShown("streak.3") else { return false }
+        return defaults.string(forKey: day3PendingDayKey) != today
+    }
+
+    /// App open can be busy (other screen, prices loading). Try the day-3 card a few more times.
+    private func retryDay3Card() {
+        guard day3Tries < 10 else { return }
+        day3Tries += 1
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard let self = self, self.day3CardIsDue,
+                  !self.openingMilestones.contains("streak.3") else { return }
+            self.showMilestone("streak.3")
+            if self.hasShown("streak.3") {
+                UserDefaults.standard.set(false, forKey: "PaywallTriggerDay3Pending")
+                return
+            }
+            if self.openingMilestones.contains("streak.3") { return }
+            self.retryDay3Card()
+        }
+    }
+
     func flush() {
         guard isEnabled else { return }
         if UserDefaults.standard.bool(forKey: "PaywallTriggerImageSheetPending") {
             imageSheetTries = 0
             presentImageLimitSheet()
         }
-        if !suppressDay3ThisSession, UserDefaults.standard.bool(forKey: "PaywallTriggerDay3Pending") {
+        if day3CardIsDue {
             showMilestone("streak.3")
             if hasShown("streak.3") {
                 UserDefaults.standard.set(false, forKey: "PaywallTriggerDay3Pending")
             }
             if hasShown("streak.3") || openingMilestones.contains("streak.3") { return }
+            retryDay3Card()
         }
         let adAt = UserDefaults.standard.double(forKey: "PaywallTriggerAd3At")
         if UserDefaults.standard.string(forKey: adDayKey) != today {
@@ -2375,7 +2605,7 @@ final class PaywallTriggerGate {
         return true
     }
 
-    private func presentCurrentPaywall(countsAsPopup: Bool, milestone: String? = nil, trigger: String) {
+    private func presentCurrentPaywall(countsAsPopup: Bool, milestone: String? = nil, trigger: String, onClose: @escaping () -> Void = {}) {
         DispatchQueue.main.async {
             guard let top = OnboardingAuthManager.topViewController() else {
                 self.releaseMilestone(milestone)
@@ -2386,7 +2616,16 @@ final class PaywallTriggerGate {
                 return
             }
             let name = trigger
-            guard PaywallTriggerPresenter.show(trigger: name, from: top, onClose: {}) else {
+            let userStarted = !countsAsPopup && milestone == nil
+            guard PaywallTriggerPresenter.show(trigger: name, from: top, onClose: onClose, onPresented: { shown in
+                guard userStarted else { return }
+                // Start the cooldown only once the sheet is really on screen, so a refused present can be retried.
+                if shown {
+                    self.userCooldown[name] = Date()
+                } else {
+                    OnboardingAuthManager.topViewController()?.view.makeToast("Please try again", duration: 2.0, position: .top)
+                }
+            }) else {
                 self.releaseMilestone(milestone)
                 return
             }

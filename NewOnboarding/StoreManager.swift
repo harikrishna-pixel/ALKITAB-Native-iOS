@@ -56,6 +56,7 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     
     private var purchaseTimeoutWorkItem: DispatchWorkItem?
     private var restoreTimeoutWorkItem: DispatchWorkItem?
+    private var priceFetchTimeoutWorkItem: DispatchWorkItem?
     private var isProcessingTransaction = false
     private var hasRestoredTransactions = false
     private var didFinishRestoreUI = false
@@ -128,6 +129,7 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     deinit {
         purchaseTimeoutWorkItem?.cancel()
         restoreTimeoutWorkItem?.cancel()
+        priceFetchTimeoutWorkItem?.cancel()
     }
     
     // MARK: - Setup Methods
@@ -251,6 +253,7 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
                 productIDIndex = 0
                 hasProductLoadError = false
                 callAPI(index: 0)
+                schedulePriceFetchTimeout()
                 enableButtons(false)
                 
                 // Also fetch exit offer product
@@ -361,6 +364,49 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         productIDIndex = 2
         hasProductLoadError = false
         callAPI(index: 2)
+        schedulePriceFetchTimeout()
+    }
+
+    /// Fetches the exit-offer price again (exit offer "Try Again").
+    func retryExitOfferPrice() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else { return }
+        fetchExitOfferProduct()
+    }
+
+    /// Fetches every plan price again (Pro paywall "Try Again").
+    func retryAllPrices() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            isLoading1 = false
+            isLoading2 = false
+            isLoading3 = false
+            if price1.isEmpty && price2.isEmpty && price3.isEmpty {
+                hasProductLoadError = true
+                productLoadErrorMessage = "No internet connection. Please check your connection and try again."
+            }
+            return
+        }
+        productIDIndex = 0
+        hasProductLoadError = false
+        callAPI(index: 0)
+        schedulePriceFetchTimeout()
+    }
+
+    /// If Apple never answers, stop the price spinners after 10 seconds so the paywall can show "Price unavailable".
+    private func schedulePriceFetchTimeout() {
+        priceFetchTimeoutWorkItem?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            guard self.isLoading1 || self.isLoading2 || self.isLoading3 else { return }
+            print("⏱️ [StoreManager] Price fetch timed out")
+            self.isLoading1 = false
+            self.isLoading2 = false
+            self.isLoading3 = false
+            if self.price1.isEmpty && self.price2.isEmpty && self.price3.isEmpty {
+                self.hasProductLoadError = true
+            }
+        }
+        priceFetchTimeoutWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: work)
     }
 
     func callAPI(index: Int) {
@@ -1084,19 +1130,18 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         PaymentHistory.sharedInstance.Getpayment {
             DispatchQueue.main.async {
                 if PaymentHistory.sharedInstance.hasActivePurchase() {
-                    let endDate = CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI)
                     App_Protocol.delegateReader?.paymentStatus()
                     App_Protocol.DelegateSlideCard?.paymentStatus()
                     ImageAppProtocol.ImageTxtEditDelegate?.CheckPay()
-                    self.finishRestore(success: true, message: "Restored successfully! Valid till \(endDate)")
+                    self.finishRestore(success: true, message: "Restored successfully")
                 } else if allowRefresh {
                     self.refreshReceiptForRestore()
                 } else if LegacyPaidAppService.shared.isLegacyPaidAppUser {
-                    self.finishRestore(success: true, message: "Original app purchase restored")
+                    self.finishRestore(success: true, message: "Restored successfully")
                 } else if self.awaitLegacyPaidDownload && !self.legacyPaidDownloadResolved {
                     self.iapRestoreFoundNothing = true
                 } else {
-                    self.finishRestore(success: false, message: "No active plan is found")
+                    self.finishRestore(success: false, message: "No active plans found.")
                 }
             }
         }
@@ -1111,13 +1156,16 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
             self.isLoading = false
             self.restoreSucceeded = success
             self.restoreEvent += 1
-            if let message = message, !message.isEmpty {
-                self.showRestoreToast(message)
-            }
+            // Clear loader UI first so the toast is not covered.
             if success {
                 self.onRestoreSuccess?()
             } else {
                 self.onRestoreFailed?()
+            }
+            if let message = message, !message.isEmpty {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    self.showRestoreToast(message)
+                }
             }
         }
     }
@@ -1150,11 +1198,11 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
                     App_Protocol.delegateReader?.paymentStatus()
                     App_Protocol.DelegateSlideCard?.paymentStatus()
                     ImageAppProtocol.ImageTxtEditDelegate?.CheckPay()
-                    self.finishRestore(success: true, message: "Original app purchase restored")
+                    self.finishRestore(success: true, message: "Restored successfully")
                     return
                 }
                 if self.iapRestoreFoundNothing {
-                    self.finishRestore(success: false, message: "No active plan is found")
+                    self.finishRestore(success: false, message: "No active plans found.")
                 }
             }
         }
@@ -1193,12 +1241,25 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
                 App_Protocol.delegateReader?.paymentStatus()
                 App_Protocol.DelegateSlideCard?.paymentStatus()
                 ImageAppProtocol.ImageTxtEditDelegate?.CheckPay()
+                // Same toast as Pro paywall — show on every successful purchase path.
+                self.showPurchaseToast()
+                self.onPurchaseSuccess?()
             }
-            self.onPurchaseSuccess?()
         })
     }
     
     // MARK: - Helper Methods
+
+    /// Matches BibleSubscriptionView Pro paywall success toast.
+    private func showPurchaseToast() {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+        let window = OnboardingAuthManager.topViewController()?.view.window
+            ?? windows.first(where: { $0.isKeyWindow })
+            ?? windows.first
+        window?.makeToast("Purchased Successfully", duration: 2.0, position: .top)
+    }
     
     private func calculateOriginalPrices() {
         if offer_enabled == "1" {
@@ -1235,15 +1296,21 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
         }
         
         // Calculate original price: if discounted price = original * (100 - discount) / 100
-        // Then original = discounted * 100 / (100 - discount)
-        let originalValue = Int((numericValue / (100 - discount)) * 100)
+        // Then original = discounted * 100 / (100 - discount). Keep cents — no Int rounding.
+        let originalValue = (numericValue / (100 - discount)) * 100
         
         // Extract currency symbol by removing the numeric part
         let symbol = price.replacingOccurrences(of: price.strippedtext, with: "").trimmingCharacters(in: .whitespaces)
         
-        print("💰 [StoreManager] Price calculation: price=\(price), discount=\(discount)%, numeric=\(numericValue), original=\(originalValue)")
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        let number = formatter.string(from: NSNumber(value: originalValue)) ?? String(format: "%.2f", originalValue)
         
-        return "\(symbol)\(originalValue).00"
+        print("💰 [StoreManager] Price calculation: price=\(price), discount=\(discount)%, numeric=\(numericValue), original=\(number)")
+        
+        return "\(symbol)\(number)"
     }
     
     private func updateLoadingState(for index: Int, isLoading: Bool) {

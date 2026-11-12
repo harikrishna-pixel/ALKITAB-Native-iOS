@@ -54,7 +54,7 @@ enum OnboardingNotificationScheduler {
                 }
                 // Permission allowed in onboarding → every Settings time stays on.
                 enableAllSettingsTimes()
-                defaults.set("07:00", forKey: "Shift 1")
+                defaults.set("08:00", forKey: "Shift 1")
                 defaults.set(true, forKey: PrefKey.settingsTimesApplied)
                 UIApplication.shared.registerForRemoteNotifications()
                 if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
@@ -76,7 +76,7 @@ enum OnboardingNotificationScheduler {
         defaults.set(true, forKey: "Shift3ON")
         defaults.set(true, forKey: "Shift4ON")
         defaults.set(4, forKey: "PerDay")
-        if defaults.string(forKey: "Shift 1") == nil { defaults.set("07:00", forKey: "Shift 1") }
+        if defaults.string(forKey: "Shift 1") == nil { defaults.set("08:00", forKey: "Shift 1") }
         if defaults.string(forKey: "Shift 2") == nil { defaults.set("16:00", forKey: "Shift 2") }
         if defaults.string(forKey: "Shift 3") == nil { defaults.set("20:00", forKey: "Shift 3") }
         if defaults.string(forKey: "Shift 4") == nil { defaults.set("14:00", forKey: "Shift 4") }
@@ -198,7 +198,7 @@ enum OnboardingNotificationScheduler {
         UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
     }
 
-    /// Daily verse 7:00 AM is Morning. Evening nudge 8:00 PM is Night.
+    /// Daily verse 8:00 AM is Morning. Evening nudge 8:00 PM is Night.
     /// A reminder left off only turns that Settings switch off. Permission is asked when one is on.
     static func applyChosenReminders(morning: Bool, evening: Bool, completion: (() -> Void)? = nil) {
         let defaults = UserDefaults.standard
@@ -209,9 +209,9 @@ enum OnboardingNotificationScheduler {
         defaults.set(false, forKey: PrefKey.prayer)
         let summary: String
         if morning && evening {
-            summary = "Reminders: Daily verse · 7:00 AM + Evening nudge · 8:00 PM"
+            summary = "Reminders: Daily verse · 8:00 AM + Evening nudge · 8:00 PM"
         } else if morning {
-            summary = "Reminders: Daily verse · 7:00 AM"
+            summary = "Reminders: Daily verse · 8:00 AM"
         } else if evening {
             summary = "Reminders: Evening nudge · 8:00 PM"
         } else {
@@ -220,7 +220,7 @@ enum OnboardingNotificationScheduler {
         defaults.set(summary, forKey: OnboardingTheme.reminderSummaryKey)
         defaults.set(morning, forKey: "Shift1ON")
         defaults.set(evening, forKey: "Shift3ON")
-        if morning { defaults.set("07:00", forKey: "Shift 1") }
+        if morning { defaults.set("08:00", forKey: "Shift 1") }
         if evening { defaults.set("20:00", forKey: "Shift 3") }
         let enabledCount = ["Shift1ON", "Shift2ON", "Shift3ON", "Shift4ON"].filter { defaults.bool(forKey: $0) }.count
         defaults.set(enabledCount, forKey: "PerDay")

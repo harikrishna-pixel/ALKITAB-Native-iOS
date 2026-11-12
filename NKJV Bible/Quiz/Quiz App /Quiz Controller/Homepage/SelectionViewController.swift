@@ -144,16 +144,18 @@ class SelectionViewController: UIViewController, QuizSelect {
 
     
     override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        hideUnusedBackButton()
         self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
         
         
         if !refresh {
-            
-            if UserDefaults.standard.string(forKey: "LastSelectedBook") ?? "" != "" && self.BookString == ""{
-                self.BookTxt.text = UserDefaults.standard.string(forKey: "LastSelectedBook") ?? ""
+            // Prefer last played book/chapter so returning from a round does not show a stale prior pick.
+            let lastBook = UserDefaults.standard.string(forKey: "LastSelectedBook") ?? ""
+            if !lastBook.isEmpty {
+                self.BookTxt.text = lastBook
                 self.ChapterTxt.text = UserDefaults.standard.string(forKey: "LastSelectedChapter") ?? ""
-                self.ChapterCount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: UserDefaults.standard.string(forKey: "LastSelectedBook")!)
-                
+                self.ChapterCount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: lastBook)
             } else {
                 self.BookTxt.text = (self.BookString == "" ? "Book":self.BookString)
                 self.ChapterTxt.text = (self.ChapterString == "" ? "Chapter":self.ChapterString)
@@ -334,8 +336,10 @@ class SelectionViewController: UIViewController, QuizSelect {
 
     private var isPushedForQuizPlay: Bool {
         if markAsReadDestination != nil { return true }
-        guard let navigationController = navigationController else { return false }
-        return navigationController.topViewController === self && navigationController.viewControllers.count > 1
+        // Pushed screens keep Back; the Quiz tab is embedded in Reader and is not in the stack.
+        guard let stack = navigationController?.viewControllers,
+              let index = stack.firstIndex(where: { $0 === self }) else { return false }
+        return index > 0
     }
 
     @IBAction func Back(_ sender: Any) {

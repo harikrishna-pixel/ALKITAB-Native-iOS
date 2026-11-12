@@ -604,24 +604,8 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
                 AdmobManager.shared.IronSource_Interstitial_ShowAds(vw: (UIApplication.shared.keyWindow?.rootViewController)!)
             }
             
-            if var viewControllers = self.navigationController?.viewControllers
-            {
-                for controller in viewControllers
-                {
-                    if controller is SelectionViewController {
-                        self.SelectedVc = true
-                    }
-                }
-            }
-            
             DispatchQueue.main.async {
-                if self.navigationController?.viewControllers.contains(where: { $0 is QuizOrChallengeChooserViewController }) == true {
-                    self.navigationController?.popToViewController(ofClass: QuizOrChallengeChooserViewController.self)
-                } else if self.SelectedVc {
-                    self.navigationController?.popToViewController(ofClass: SelectionViewController.self)
-                } else {
-                    self.navigationController?.popToViewController(ofClass: ReaderViewController.self)
-                }
+                self.navigationController?.popToQuizHubIfPresent(fallback: SelectionViewController.self)
             }
   
             

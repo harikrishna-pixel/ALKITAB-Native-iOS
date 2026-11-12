@@ -24,6 +24,9 @@ class AdmobManager : NSObject {
     private var pendingRewardedShow = false
     private var pendingRewardedPollTimer: Timer?
     private var pendingRewardedAttempts = 0
+    /// Avoid back-to-back interstitials (e.g. verse action then Mark as Read).
+    private var lastInterstitialShownAt: TimeInterval = 0
+    private let interstitialMinInterval: TimeInterval = 120
 
      
 }
@@ -48,10 +51,15 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
     
     func IronSource_Interstitial_ShowAds(vw : UIViewController, waitForLoadIfNeeded: Bool = false) {
         if ADS_DISABLED_FOR_TESTING { return }
+        guard canShowInterstitialNow() else {
+            pendingInterstitialShow = false
+            return
+        }
         vc = vw
         if IronSource.hasInterstitial() {
             pendingInterstitialShow = false
             DispatchQueue.main.async {
+                self.markInterstitialShown()
                 PlaybackAdHold.pause()
                 IronSource.showInterstitial(with: vw)
             }
@@ -64,12 +72,26 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
             IronSource_Interstitial_AdLoad()
         }
     }
+
+    private func canShowInterstitialNow() -> Bool {
+        guard lastInterstitialShownAt > 0 else { return true }
+        return Date().timeIntervalSince1970 - lastInterstitialShownAt >= interstitialMinInterval
+    }
+
+    private func markInterstitialShown() {
+        lastInterstitialShownAt = Date().timeIntervalSince1970
+    }
     
     func didLoad(with adInfo: ISAdInfo!) {
         print("interstitial Did Load ")
         guard pendingInterstitialShow, let host = vc, IronSource.hasInterstitial() else { return }
+        guard canShowInterstitialNow() else {
+            pendingInterstitialShow = false
+            return
+        }
         pendingInterstitialShow = false
         DispatchQueue.main.async {
+            self.markInterstitialShown()
             PlaybackAdHold.pause()
             IronSource.showInterstitial(with: host)
         }

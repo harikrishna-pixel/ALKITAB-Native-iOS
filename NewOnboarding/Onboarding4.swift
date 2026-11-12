@@ -14,18 +14,36 @@ struct Onboarding4: View {
     @State private var navigateForward = false
     /// Verse text loaded once when Explain is tapped, so typing does not re-read the Bible.
     @State private var revealedVerse = ""
+    /// Only the first outcome (AI reply or 3s timeout) is shown; the other is ignored.
+    @State private var explainSettled = false
+    private static let aiTimeout: TimeInterval = 3
 
-    /// Hardcoded English fallback when AI is unavailable.
+    /// Hardcoded English fallback when AI is unavailable (medium-length referral wording).
     private static let contextTitle = "In context"
     private static let contextText =
-        "Paul wrote this from a prison cell. He isn't promising a life without hardship — he's saying that through Christ he has strength for every situation he faces."
+        "Paul wrote this from prison. He isn't saying you can do anything you want — he's saying Christ's strength is enough for every situation he faces."
     private static let todayTitle = "What it means today"
     private static let todayText =
-        "The promise isn't that hard things stop coming. It's that you are given the strength you need to meet them — one day at a time — from Christ."
+        "Hard days still come. The promise is that Christ gives the strength you need to meet them."
 
     private static func quoteLine(_ verse: String) -> String {
         let text = verse.isEmpty ? OnboardingBibleVerse.text : verse
         return "\"\(text)\"\n— verse 13"
+    }
+
+    /// Keep explanation body medium-length for the onboarding card.
+    private static func mediumBody(_ text: String?) -> String? {
+        guard let raw = text?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else { return nil }
+        if raw.count <= 180 { return raw }
+        let limit = 180
+        let prefix = String(raw.prefix(limit))
+        if let period = prefix.lastIndex(of: ".") {
+            return String(prefix[...period])
+        }
+        if let space = prefix.lastIndex(of: " ") {
+            return String(prefix[..<space]) + "…"
+        }
+        return prefix + "…"
     }
 
     var body: some View {
@@ -116,6 +134,7 @@ struct Onboarding4: View {
             }
         }
         .navigationBarHidden(true)
+        .onAppear(perform: prefetchExplanation)
         .animation(.easeOut(duration: 0.42), value: explainRevealed)
         .animation(.easeOut(duration: 0.35), value: explanationReady)
     }
@@ -203,13 +222,11 @@ struct Onboarding4: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(17)
-                } else if let ai = aiExplanation, !ai.isEmpty {
-                    OnboardingExplainAITyping(text: ai)
-                        .padding(17)
                 } else {
+                    // Always use structured box: In context + yellow quote + today (referral layout).
                     OnboardingExplainTyping(
                         contextTitle: Self.contextTitle,
-                        contextText: Self.contextText,
+                        contextText: Self.mediumBody(aiExplanation) ?? Self.contextText,
                         quoteText: Self.quoteLine(revealedVerse),
                         todayTitle: Self.todayTitle,
                         todayText: Self.todayText
@@ -256,6 +273,28 @@ struct Onboarding4: View {
         )
     }
 
+    /// Ask the AI while the user reads the verse. The reply is cached, so Explain shows it at once.
+    private func prefetchExplanation() {
+        let languageCode = UserDefaults.standard.string(forKey: "language_code") ?? language_code
+        OpenAIExplanationService.shared.fetchExplanation(
+            verseReference: OnboardingBibleVerse.reference,
+            verseText: OnboardingBibleVerse.text,
+            bibleVersion: APPNAME,
+            responseLanguageCode: languageCode
+        ) { result in
+            DispatchQueue.main.async {
+                // Explain was tapped and is still waiting — use this reply.
+                guard explainRevealed, !explainSettled, case .success(let text) = result else { return }
+                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return }
+                explainSettled = true
+                isLoadingExplanation = false
+                aiExplanation = trimmed
+                explanationReady = true
+            }
+        }
+    }
+
     private func startExplain() {
         guard !explainRevealed else { return }
         if revealedVerse.isEmpty {
@@ -265,18 +304,21 @@ struct Onboarding4: View {
         explanationReady = false
         isLoadingExplanation = true
         aiExplanation = nil
+        explainSettled = false
 
         let reference = OnboardingBibleVerse.reference
         let verseText = revealedVerse.isEmpty ? OnboardingBibleVerse.text : revealedVerse
         let languageCode = UserDefaults.standard.string(forKey: "language_code") ?? language_code
 
-        OpenAIExplanationService.shared.fetchExplanation(
+        let task = OpenAIExplanationService.shared.fetchExplanation(
             verseReference: reference,
             verseText: verseText,
             bibleVersion: APPNAME,
             responseLanguageCode: languageCode
         ) { result in
             DispatchQueue.main.async {
+                guard !explainSettled else { return }
+                explainSettled = true
                 isLoadingExplanation = false
                 switch result {
                 case .success(let text):
@@ -287,6 +329,16 @@ struct Onboarding4: View {
                 }
                 explanationReady = true
             }
+        }
+
+        // No AI reply within 3s → show the hardcoded English explanation.
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.aiTimeout) {
+            guard !explainSettled else { return }
+            explainSettled = true
+            task?.cancel()
+            isLoadingExplanation = false
+            aiExplanation = nil
+            explanationReady = true
         }
     }
 
@@ -365,7 +417,7 @@ private struct OnboardingExplainTyping: View {
             sectionBlock(title: contextTitle, body: contextText, offset: 0)
 
             typedText(quoteText, visible: typedPart(quoteText, offset: contextText.count), italic: true)
-                .font(.system(size: 15.5, weight: .regular, design: .serif))
+                .font(.system(size: 17, weight: .regular, design: .serif))
                 .foregroundColor(Color(hex: "6B4B10"))
                 .padding(13)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -397,11 +449,11 @@ private struct OnboardingExplainTyping: View {
     private func sectionBlock(title: String, body: String, offset: Int) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title.uppercased())
-                .font(.system(size: 10, weight: .black))
+                .font(.system(size: 11, weight: .black))
                 .tracking(1.4)
                 .foregroundColor(Color(hex: "93A3BC"))
             typedText(body, visible: typedPart(body, offset: offset))
-                .font(.system(size: 14.5))
+                .font(.system(size: 16))
                 .foregroundColor(Color(hex: "31435F"))
                 .lineSpacing(5)
         }
@@ -424,11 +476,12 @@ private struct OnboardingExplainTyping: View {
     private func startTyping() {
         guard !clock.started else { return }
         clock.started = true
-        let timer = Timer(timeInterval: 0.02, repeats: true) { timer in
+        // Slightly faster type-on for Get Explanation.
+        let timer = Timer(timeInterval: 0.012, repeats: true) { timer in
             var transaction = Transaction()
             transaction.disablesAnimations = true
             withTransaction(transaction) {
-                typedCount = min(typedCount + 2, total)
+                typedCount = min(typedCount + 4, total)
             }
             if typedCount >= total {
                 timer.invalidate()

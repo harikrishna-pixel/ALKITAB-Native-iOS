@@ -194,20 +194,20 @@ class NewPaymentViewController: UIViewController, SKPaymentTransactionObserver, 
                                  
                 var Symbol: String = ""
                 if self.Price1 != "" && sub_identifier_six_month_value != "" {
-                    let R1:Int = self.StrikeCalculation(Value: Float(self.Price1.strippedtext) ?? 0.0, percentage: Float(sub_identifier_six_month_value) ?? 0.0) //Float(self.Price1.strippedtext)!*2
+                    let R1 = self.StrikeCalculation(Value: Float(self.Price1.strippedtext) ?? 0.0, percentage: Float(sub_identifier_six_month_value) ?? 0.0)
                     
                     Symbol = self.Price1.replacingOccurrences(of: self.Price1.strippedtext, with: "")
                     
-                    let attributeString: NSMutableAttributedString = NSMutableAttributedString(string: "\(Symbol)\(R1).00")
+                    let attributeString: NSMutableAttributedString = NSMutableAttributedString(string: "\(Symbol)\(String(format: "%.2f", R1))")
                         attributeString.addAttribute(NSAttributedString.Key.strikethroughStyle, value: 2, range: NSRange(location: 0, length: attributeString.length))
                     
                     self.RealsixMonthPrice.attributedText = attributeString
                     
                 }
                 if self.Price2 != "" && sub_identifier_oneyear_value != "" {
-                    let R1:Int = self.StrikeCalculation(Value: Float(self.Price2.strippedtext) ?? 0.0, percentage: Float(sub_identifier_oneyear_value) ?? 0.0)
+                    let R1 = self.StrikeCalculation(Value: Float(self.Price2.strippedtext) ?? 0.0, percentage: Float(sub_identifier_oneyear_value) ?? 0.0)
                     
-                    let attributeString: NSMutableAttributedString = NSMutableAttributedString(string: "\(Symbol)\(R1).00")
+                    let attributeString: NSMutableAttributedString = NSMutableAttributedString(string: "\(Symbol)\(String(format: "%.2f", R1))")
                         attributeString.addAttribute(NSAttributedString.Key.strikethroughStyle, value: 2, range: NSRange(location: 0, length: attributeString.length))
                     
                     self.RealOneyearPrice.attributedText = attributeString
@@ -215,9 +215,9 @@ class NewPaymentViewController: UIViewController, SKPaymentTransactionObserver, 
                 
                 
                 if self.Price3 != "" && sub_identifier_lifetime_value != "" {
-                    let R1:Int = self.StrikeCalculation(Value: Float(self.Price3.strippedtext) ?? 0.0, percentage: Float(sub_identifier_lifetime_value) ?? 0.0)
+                    let R1 = self.StrikeCalculation(Value: Float(self.Price3.strippedtext) ?? 0.0, percentage: Float(sub_identifier_lifetime_value) ?? 0.0)
                      
-                    let attributeString: NSMutableAttributedString = NSMutableAttributedString(string: "\(Symbol)\(R1).00")
+                    let attributeString: NSMutableAttributedString = NSMutableAttributedString(string: "\(Symbol)\(String(format: "%.2f", R1))")
                         attributeString.addAttribute(NSAttributedString.Key.strikethroughStyle, value: 2, range: NSRange(location: 0, length: attributeString.length))
                     
                     self.RealLifetimePrice.attributedText = attributeString
@@ -601,8 +601,8 @@ extension NewPaymentViewController {
     
 
     
-    func StrikeCalculation(Value:Float, percentage:Float) -> Int {
-        return Int((Value/(100-percentage))*100)
+    func StrikeCalculation(Value:Float, percentage:Float) -> Float {
+        return (Value/(100-percentage))*100
     }
     
     

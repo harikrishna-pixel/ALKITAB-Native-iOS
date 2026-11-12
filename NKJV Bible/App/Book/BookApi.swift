@@ -13,13 +13,18 @@ class BookApi: NSObject {
     
     var BookDictionary: Array<Dictionary<String, AnyObject>> = []
     
-    func GetBookCatagory() {
-        
-        if UserDefaults.standard.integer(forKey: "book_ads_app_id") > 0 {
-            let parameters:Dictionary<String, AnyObject> = ["book_app_id": UserDefaults.standard.integer(forKey: "book_ads_app_id") as AnyObject]
+    func GetBookCatagory(completion: (() -> Void)? = nil) {
+        let appId = resolvedBookAdsAppId()
+        guard appId > 0 else {
+            completion?()
+            return
+        }
+        let parameters: Dictionary<String, AnyObject> = ["book_app_id": appId as AnyObject]
             
-            
-            if NetworkManager.sharedInstance.isConnectedToInternet() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            completion?()
+            return
+        }
                 NetworkManager.sharedInstance.ImageFromGallery(urlString: "https://saveigm.com/bookads/admin/api/book/book_cat_list_by_app", params: parameters, completion: {(resultDictionary, error) -> () in
                     
                     // OLD CODE - CRASHED IF data WAS NIL OR NOT AN ARRAY:
@@ -33,36 +38,29 @@ class BookApi: NSObject {
                     if let Result:Dictionary<String, AnyObject> = resultDictionary,
                        let BookApiDictionary = Result["data"] as? Array<Dictionary<String, AnyObject>>,
                        !BookApiDictionary.isEmpty {
-                        // Safely extract category IDs - skip invalid ones
-                        let categoryId:[String] = BookApiDictionary.compactMap({$0["categoryId"] as? String})
+                        // String or number category IDs from the API.
+                        let categoryId: [String] = BookApiDictionary.compactMap { self.stringValue(from: $0["categoryId"]) }
                         if !categoryId.isEmpty {
-                            self.GetBooksLink(book_cat_id_List: categoryId)
+                            self.GetBooksLink(book_cat_id_List: categoryId, completion: completion)
                         } else {
                             print("⚠️ [BookApi] No valid category IDs found in response")
+                            completion?()
                         }
                     } else {
                         print("⚠️ [BookApi] Failed to get book categories or empty response: \(error?.localizedDescription ?? "Invalid response format")")
+                        completion?()
                     }
                 })
-            }
-        }
     }
     
     
-    func GetBooksLink(book_cat_id_List:[String]) {
-        
-        DispatchQueue.main.async {
-            self.BookDictionary.removeAll()
-            CoreDataModel.sharedInstance.deleteAllData(CDMoreBookApi)
-            self.DeleteAllImages(Folder: "BookImageS")
-        }
+    func GetBooksLink(book_cat_id_List:[String], completion: (() -> Void)? = nil) {
+        // Clear in-memory list only. Core Data is replaced after a valid save.
+        BookDictionary.removeAll()
         
         // NEW CODE - Handle empty category list
         guard !book_cat_id_List.isEmpty else {
-            // No categories, call SaveAllData with empty array
-            self.SaveAllData(BookDictionary: [], completion: {bookThumbURL,_  in
-                self.SaveimageInDirectory(bookThumbURL: bookThumbURL, Folder: "BookImageS")
-            })
+            completion?()
             return
         }
         
@@ -126,6 +124,7 @@ class BookApi: NSObject {
                     // All requests done, save data (even if some failed or returned empty)
                     self.SaveAllData(BookDictionary: self.BookDictionary, completion: {bookThumbURL,_  in
                         self.SaveimageInDirectory(bookThumbURL: bookThumbURL, Folder: "BookImageS")
+                        completion?()
                     })
                 } else if LoopPosition < book_cat_id_List.count {
                     // Continue with next category
@@ -133,6 +132,49 @@ class BookApi: NSObject {
                 }
             })
         }
+    }
+
+    /// book_ads_app_id may be stored as Int or String from getAppInfo.
+    private func resolvedBookAdsAppId() -> Int {
+        let defaults = UserDefaults.standard
+        let asInt = defaults.integer(forKey: "book_ads_app_id")
+        if asInt > 0 { return asInt }
+        if let text = defaults.string(forKey: "book_ads_app_id"), let value = Int(text), value > 0 {
+            defaults.set(value, forKey: "book_ads_app_id")
+            return value
+        }
+        let fallback = FallbackAppConfigConstants.bookAdsAppId
+        if fallback > 0 {
+            defaults.set(fallback, forKey: "book_ads_app_id")
+        }
+        return fallback
+    }
+
+    private func stringValue(from value: Any?) -> String? {
+        if let text = value as? String {
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+        if let number = value as? NSNumber {
+            return number.stringValue
+        }
+        if let intValue = value as? Int {
+            return String(intValue)
+        }
+        return nil
+    }
+
+    private func int16Value(from value: Any?) -> Int16? {
+        if let text = value as? String, let parsed = Int16(text) {
+            return parsed
+        }
+        if let number = value as? NSNumber {
+            return number.int16Value
+        }
+        if let intValue = value as? Int {
+            return Int16(intValue)
+        }
+        return nil
     }
     
         
@@ -148,74 +190,59 @@ class BookApi: NSObject {
                 return
             }
             let managedContext = appdelegate.persistentContainer.viewContext
-            
-            DispatchQueue.main.async {
-                CoreDataModel.sharedInstance.deleteAllData(CDMoreBookApi)
-                self.DeleteAllImages(Folder: "BookImageS")
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+1.0) {
-                // OLD CODE - CRASHED ON MISSING FIELDS:
-                // for item in BookDictionary {
-                //     let imagePath = (item["bookThumbURL"] as! String).components(separatedBy: "/")  // CRASHED IF bookThumbURL WAS NIL
-                //     CoreDataModel.sharedInstance.MoreBookShare(CDMoreBookApi,
-                //                                                appdelegate: appdelegate,
-                //                                                managedContext: managedContext,
-                //                                                bookThumbURL: imagePath[imagePath.count-1],
-                //                                                book_age: Int16(item["book_age"] as! String)!,  // CRASHED IF book_age WAS NIL/INVALID
-                //                                                book_description: item["book_description"] as! String,  // CRASHED IF NIL
-                //                                                book_id: Int16(item["book_id"] as! String)!,  // CRASHED IF book_id WAS NIL/INVALID
-                //                                                book_name: item["book_name"] as! String,
-                //                                                book_published_by: item["book_published_by"] as! String,
-                //                                                book_url: item["book_url"] as? String,
-                //                                                storeTitle: item["storeTitle"] as? String)
-                // }
-                // completion(BookDictionary.map({$0["bookThumbURL"] as! String}), nil)  // CRASHED IF ANY ITEM MISSING bookThumbURL
-                
-                // NEW CODE - SAFELY VALIDATES ALL FIELDS BEFORE PROCESSING:
-                var validBookThumbURLs: [String] = []
-                
-                for item in BookDictionary {
-                    // Safely unwrap all required fields - skip items with missing data
-                    guard let bookThumbURL = item["bookThumbURL"] as? String,
-                          !bookThumbURL.isEmpty,
-                          let bookAgeString = item["book_age"] as? String,
-                          let bookAge = Int16(bookAgeString),
-                          let bookDescription = item["book_description"] as? String,
-                          let bookIdString = item["book_id"] as? String,
-                          let bookId = Int16(bookIdString),
-                          let bookName = item["book_name"] as? String,
-                          let bookPublishedBy = item["book_published_by"] as? String,
-                          let bookUrl = item["book_url"] as? String,
-                          let storeTitle = item["storeTitle"] as? String else {
-                        // Skip items with missing required fields instead of crashing
-                        print("⚠️ [BookApi] Skipping book item due to missing/invalid required fields: \(item)")
-                        continue
-                    }
-                    
-                    let imagePath = bookThumbURL.components(separatedBy: "/")
-                    guard !imagePath.isEmpty else {
-                        print("⚠️ [BookApi] Invalid image path for book: \(bookName)")
-                        continue
-                    }
-                    
-                    CoreDataModel.sharedInstance.MoreBookShare(CDMoreBookApi,
-                                                               appdelegate: appdelegate,
-                                                               managedContext: managedContext,
-                                                               bookThumbURL: imagePath[imagePath.count-1],
-                                                               book_age: bookAge,
-                                                               book_description: bookDescription,
-                                                               book_id: bookId,
-                                                               book_name: bookName,
-                                                               book_published_by: bookPublishedBy,
-                                                               book_url: bookUrl,
-                                                               storeTitle: storeTitle)
-                    
-                    validBookThumbURLs.append(bookThumbURL)
+
+            // Parse first — only wipe/replace when at least one book is valid.
+            var parsed: [(thumbURL: String, fileName: String, age: Int16, description: String, id: Int16, name: String, publishedBy: String, url: String, storeTitle: String)] = []
+            for item in BookDictionary {
+                guard let bookThumbURL = self.stringValue(from: item["bookThumbURL"]),
+                      let bookAge = self.int16Value(from: item["book_age"]),
+                      let bookId = self.int16Value(from: item["book_id"]),
+                      let bookName = self.stringValue(from: item["book_name"]) else {
+                    print("⚠️ [BookApi] Skipping book item due to missing/invalid required fields: \(item)")
+                    continue
                 }
-                
-                completion(validBookThumbURLs, nil)
+                let imagePath = bookThumbURL.components(separatedBy: "/")
+                guard let fileName = imagePath.last, !fileName.isEmpty else {
+                    print("⚠️ [BookApi] Invalid image path for book: \(bookName)")
+                    continue
+                }
+                parsed.append((
+                    thumbURL: bookThumbURL,
+                    fileName: fileName,
+                    age: bookAge,
+                    description: self.stringValue(from: item["book_description"]) ?? "",
+                    id: bookId,
+                    name: bookName,
+                    publishedBy: self.stringValue(from: item["book_published_by"]) ?? "",
+                    url: self.stringValue(from: item["book_url"]) ?? "",
+                    storeTitle: self.stringValue(from: item["storeTitle"]) ?? ""
+                ))
             }
+
+            guard !parsed.isEmpty else {
+                completion([], nil)
+                return
+            }
+
+            CoreDataModel.sharedInstance.deleteAllData(CDMoreBookApi)
+            self.DeleteAllImages(Folder: "BookImageS")
+
+            var validBookThumbURLs: [String] = []
+            for book in parsed {
+                CoreDataModel.sharedInstance.MoreBookShare(CDMoreBookApi,
+                                                           appdelegate: appdelegate,
+                                                           managedContext: managedContext,
+                                                           bookThumbURL: book.fileName,
+                                                           book_age: book.age,
+                                                           book_description: book.description,
+                                                           book_id: book.id,
+                                                           book_name: book.name,
+                                                           book_published_by: book.publishedBy,
+                                                           book_url: book.url,
+                                                           storeTitle: book.storeTitle)
+                validBookThumbURLs.append(book.thumbURL)
+            }
+            completion(validBookThumbURLs, nil)
         }
     
     }
@@ -226,6 +253,12 @@ class BookApi: NSObject {
     
     
     func SaveimageInDirectory(bookThumbURL:[String], Folder:String) {
+        guard !bookThumbURL.isEmpty else {
+            self.GetMorApp(completion: {AppImgUrl,_ in
+                self.SaveMorAppimageInDirectory(bookThumbURL: AppImgUrl, Folder: "AppimageS")
+            })
+            return
+        }
         var LoopPosition = 0
                 
         DownloadImage(ImagePosition: LoopPosition)

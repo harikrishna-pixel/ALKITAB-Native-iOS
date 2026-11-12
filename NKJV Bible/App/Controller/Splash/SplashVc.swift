@@ -61,6 +61,8 @@ class SplashVc: UIViewController, SplashDelegate {
             UserDefaults.standard.set(Date().string(format: "dd-MM-yyyy"), forKey: "TodayDate")
             UserDefaults.standard.set(PrimaryColor.withAlphaComponent(1.0), forKey: "AppThemeColor")
             UserDefaults.standard.setValue(Date().dayAfter.string(format: "dd-MM-yyyy"), forKey: "RateUS")
+            // Same book ads preload as returning users (Explore Books reads Core Data only).
+            BookApi.shared.GetBookCatagory()
             self.defaultAppSelection()
             
         } else {

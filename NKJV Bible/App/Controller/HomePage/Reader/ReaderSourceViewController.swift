@@ -112,33 +112,6 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
         App_Protocol.delegateReader?.PageConfig()
         App_Protocol.delegatePageController?.ReloadAllData(index: Pageindex) 
         self.reloadCollectionView(collectionView: self.BibleCollectionView)
-        scheduleExplanationReminder()
-    }
-
-    /// "Your free explanation is waiting" card on the reading tab, at most once a day.
-    private func scheduleExplanationReminder() {
-        guard usesOldOnboarding else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
-            guard let self = self,
-                  self.view.window != nil,
-                  !self.AudioBibleList.isEmpty,
-                  let reader = App_Protocol.delegateReader as? ReaderViewController,
-                  reader.SelectedTab == "1",
-                  reader.MenuFrame == nil,
-                  reader.myView == nil,
-                  reader.presentedViewController == nil,
-                  reader.navigationController?.topViewController === reader else { return }
-            let book = self.Book
-            let page = self.Pageindex
-            let verses = self.AudioBibleList
-            AIFeatureReminder.showIfNeeded(in: reader.view, below: reader.Navigateframe, reference: "\(book) \(page):1") {
-                AIUsageLimiter.shared.requestAccess(.explanation) {
-                    DispatchQueue.main.async {
-                        App_Protocol.delegateReader?.ExplanationNib(VersePosition: 1, BookName: book, Pageindex: page + 1, BookVerse: verses)
-                    }
-                }
-            }
-        }
     }
     
     
@@ -328,7 +301,16 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
         // BUG FIX (DOUBLE POPUP): NEW CODE - Call popup only once after updating data
         if self.MarkAsReadArray.contains("\(Book)-\(self.Pageindex)") {
             PaywallTriggerGate.shared.noteChapterMarked(book: Book, marked: self.MarkAsReadArray)
-            App_Protocol.delegateReader?.MarkAsReadPopup()
+            // Finished-book feedback takes priority; defer Mark-as-Read quiz if feedback is pending/showing.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                let pendingFeedback = UserDefaults.standard.bool(forKey: "PaywallTriggerFeedbackPending")
+                let top = OnboardingAuthManager.topViewController()
+                if pendingFeedback || top?.presentedViewController != nil {
+                    PaywallTriggerGate.shared.noteMarkAsReadQuizDeferred()
+                    return
+                }
+                App_Protocol.delegateReader?.MarkAsReadPopup()
+            }
         }
         
         if UserDefaults.standard.string(forKey: "AdTime") ?? "" == "" {
@@ -385,11 +367,14 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
                 prompt.modalPresentationStyle = .overFullScreen
                 prompt.modalTransitionStyle = .crossDissolve
                 prompt.onDecline = {
+                    RateUsCall.shared.markCustomRatingPromptDismissed()
                     UserDefaults.standard.setValue(true, forKey: "RateUSoneTime")
                 }
                 prompt.onRate = {
+                    RateUsCall.shared.markCustomRatingPromptDismissed()
                     SKStoreReviewController.requestReviewInCurrentScene()
                     UserDefaults.standard.setValue(true, forKey: "RateUSoneTime")
+                    UserDefaults.standard.setValue(true, forKey: "rateViewed")
                 }
                 self.present(prompt, animated: true, completion: nil)
             }

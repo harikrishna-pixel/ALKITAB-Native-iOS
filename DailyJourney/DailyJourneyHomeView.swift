@@ -92,26 +92,8 @@ struct DailyJourneyHomeView: View {
             VStack(alignment: .leading, spacing: 18) {
                 header
 
-                if PaywallTriggerGate.shared.showsSettingsPremiumRow {
-                    Button(action: { PaywallTriggerGate.shared.requestUserStarted("settings") }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "star.fill")
-                                .foregroundColor(Color(hex: "C8963E"))
-                            Text("Go Premium")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(Color(hex: "12315C"))
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(Color(hex: "8B95A7"))
-                        }
-                        .padding(16)
-                        .background(RoundedRectangle(cornerRadius: 16).fill(Color(hex: "EEF3FB")))
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-
-                if store.allStepsComplete {
+                // Hide until the first full-day streak is earned.
+                if store.streakCount >= 1 {
                     streakSummaryCard
                 }
 
@@ -209,22 +191,24 @@ struct DailyJourneyHomeView: View {
                     .foregroundColor(Color.black.opacity(0.5))
             }
             Spacer()
-            Button(action: { showStreak = true }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(hex: "FF9F0A"))
-                    Text("\(max(store.streakCount, 0))")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.black)
+            if store.streakCount >= 1 {
+                Button(action: { showStreak = true }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color(hex: "FF9F0A"))
+                        Text("\(store.streakCount)")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.black)
+                    }
+                    .padding(.horizontal, 10)
+                    .frame(height: 36)
+                    .background(Color.white)
+                    .clipShape(Capsule())
+                    .shadow(color: Color.black.opacity(0.06), radius: 4, y: 1)
                 }
-                .padding(.horizontal, 10)
-                .frame(height: 36)
-                .background(Color.white)
-                .clipShape(Capsule())
-                .shadow(color: Color.black.opacity(0.06), radius: 4, y: 1)
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
         }
     }
 
@@ -235,7 +219,7 @@ struct DailyJourneyHomeView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "flame.fill")
                             .foregroundColor(Color(hex: "FF9F0A"))
-                        Text("\(max(store.streakCount, 1)) Day Streak")
+                        Text("\(store.streakCount) Day Streak")
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
                     }
@@ -261,7 +245,7 @@ struct DailyJourneyHomeView: View {
 
                 Button(action: { showStreak = true }) {
                     VStack(spacing: 2) {
-                        Text("\(max(store.streakCount, 1))")
+                        Text("\(store.streakCount)")
                             .font(.system(size: 36, weight: .bold))
                             .foregroundColor(.white)
                         Text("Days")
@@ -483,6 +467,8 @@ struct DailyJourneyHomeView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 14)
+            // iPad: Spacer/white area is not tappable unless the full row is a hit shape.
+            .modifier(PadJourneyRowHitShape())
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -592,6 +578,17 @@ struct DailyJourneyHomeView: View {
         onOpenVerseFullscreen(verse, showsCTA) { updated in
             verse = updated
             isVerseImageSaved = false
+        }
+    }
+}
+
+/// iPad-only: expands Today's Journey row hit area across the full white space.
+private struct PadJourneyRowHitShape: ViewModifier {
+    func body(content: Content) -> some View {
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            content.contentShape(Rectangle())
+        } else {
+            content
         }
     }
 }

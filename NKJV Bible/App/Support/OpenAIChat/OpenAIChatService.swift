@@ -37,10 +37,12 @@ final class OpenAIChatService {
         self.session = session
     }
 
-    func send(input: String, completion: @escaping (Result<String, OpenAIChatError>) -> Void) {
+    /// Starts the chat request. Returns the task so callers can cancel (e.g. when a sheet is dismissed).
+    @discardableResult
+    func send(input: String, completion: @escaping (Result<String, OpenAIChatError>) -> Void) -> URLSessionTask? {
         guard let url = URL(string: endpoint) else {
             completion(.failure(.invalidURL))
-            return
+            return nil
         }
 
         var request = URLRequest(url: url)
@@ -49,8 +51,12 @@ final class OpenAIChatService {
         request.timeoutInterval = 60
         request.httpBody = try? JSONSerialization.data(withJSONObject: ["input": input])
 
-        session.dataTask(with: request) { data, response, error in
+        let task = session.dataTask(with: request) { data, response, error in
             if let error = error {
+                let ns = error as NSError
+                if ns.domain == NSURLErrorDomain && ns.code == NSURLErrorCancelled {
+                    return
+                }
                 DispatchQueue.main.async {
                     completion(.failure(.networkError(error)))
                 }
@@ -84,7 +90,9 @@ final class OpenAIChatService {
             DispatchQueue.main.async {
                 completion(.success(Self.stripMarkdownMarkers(from: text)))
             }
-        }.resume()
+        }
+        task.resume()
+        return task
     }
 
     private static func parseOutputText(from data: Data) -> String? {

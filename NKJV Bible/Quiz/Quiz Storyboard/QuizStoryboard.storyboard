@@ -4316,7 +4316,7 @@
                                                                 <constraint firstAttribute="width" constant="75" id="sV9-4s-1t3"/>
                                                             </constraints>
                                                             <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                                                            <state key="normal" title="Scratch"/>
+                                                            <state key="normal" title="Open"/>
                                                         </button>
                                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Gift Card " textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="Qx7-V1-Zg5">
                                                             <rect key="frame" x="132" y="28.666666666666664" width="136" height="23"/>

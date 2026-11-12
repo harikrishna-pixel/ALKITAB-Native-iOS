@@ -201,19 +201,25 @@ class QuizAnswersVC: UIViewController {
     }
     
     @IBAction func Back_to_menu(_ sender: Any) {
-        let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "SelectionViewController") as! SelectionViewController
-        self.navigationController?.pushViewController(vc, animated: true)
+        // Pop to quiz home — never push another Selection (that stacked prior book/chapter screens).
+        navigationController?.popToQuizHubIfPresent(fallback: SelectionViewController.self)
     }
     
     @IBAction func PlayAgain(_ sender: Any) {
         DispatchQueue.main.async {
-            
+            guard let nav = self.navigationController else { return }
+            let level = UserDefaults.standard.string(forKey: "Qlevel") ?? "Easy"
+            let book = UserDefaults.standard.string(forKey: "Qbook") ?? DefaultBookName
+            let chapter = Int(UserDefaults.standard.string(forKey: "Qchapter") ?? "1") ?? 1
+
+            // Clear score/answers off the stack before starting another round.
+            nav.popToQuizHubIfPresent(fallback: SelectionViewController.self, animated: false)
+
             let vc = kStoryboardQuizIphone.instantiateViewController(withIdentifier: "QuizMainPageVC") as! QuizMainPageVC
-            vc.level = UserDefaults.standard.string(forKey: "Qlevel")!
-            vc.BookName = UserDefaults.standard.string(forKey: "Qbook")!
-            vc.Chapter = Int(UserDefaults.standard.string(forKey: "Qchapter")!)!
-            self.navigationController?.pushViewController(vc, animated: true)
-            
+            vc.level = level
+            vc.BookName = book
+            vc.Chapter = chapter
+            nav.pushViewController(vc, animated: true)
         }
     }
     

@@ -29,6 +29,9 @@ class NotificationListVC: UIViewController, UITableViewDelegate, UITableViewData
 
         self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
+        SettingsTable.backgroundColor = UIColor(red: 0.95, green: 0.96, blue: 0.98, alpha: 1)
+        SettingsTable.separatorStyle = .none
+        view.backgroundColor = SettingsTable.backgroundColor
 
         OnboardingNotificationScheduler.enableAllSettingsTimesIfAuthorized {
             self.SettingsTable.reloadData()
@@ -50,7 +53,17 @@ extension NotificationListVC {
     
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 44
+        return 58
+    }
+
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return section == 0 ? 8 : 4
+    }
+
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let spacer = UIView()
+        spacer.backgroundColor = .clear
+        return spacer
     }
     
     func numberOfSections(in tableView: UITableView) -> Int {
@@ -73,6 +86,12 @@ extension NotificationListVC {
             self.NotificationCell!.NotifiMorningTime.text =  ChangeDate(dateStr: dateStr)
             self.NotificationCell!.Shift1Switch.isOn = UserDefaults.standard.bool(forKey: "Shift1ON")
             self.NotificationCell!.Shift1Switch.addTarget(self, action: #selector(Shift1_Value), for: .valueChanged)
+            self.NotificationCell!.applyReferralChrome(
+                title: "Morning",
+                symbolName: "sun.max.fill",
+                timeLabel: self.NotificationCell!.NotifiMorningTime,
+                toggle: self.NotificationCell!.Shift1Switch
+            )
             
             
             return self.NotificationCell!
@@ -85,6 +104,12 @@ extension NotificationListVC {
             
             self.NotificationCell!.Shift2Switch.isOn = UserDefaults.standard.bool(forKey: "Shift2ON")
             self.NotificationCell!.Shift2Switch.addTarget(self, action: #selector(Shift2_Value), for: .valueChanged)
+            self.NotificationCell!.applyReferralChrome(
+                title: "Evening",
+                symbolName: "sun.horizon.fill",
+                timeLabel: self.NotificationCell!.NotifiEveningTime,
+                toggle: self.NotificationCell!.Shift2Switch
+            )
 
             return self.NotificationCell!
             
@@ -96,6 +121,12 @@ extension NotificationListVC {
             
             self.NotificationCell!.Shift3Switch.isOn = UserDefaults.standard.bool(forKey: "Shift3ON")
             self.NotificationCell!.Shift3Switch.addTarget(self, action: #selector(Shift3_Value), for: .valueChanged)
+            self.NotificationCell!.applyReferralChrome(
+                title: "Night",
+                symbolName: "moon.fill",
+                timeLabel: self.NotificationCell!.NotifiNightTime,
+                toggle: self.NotificationCell!.Shift3Switch
+            )
             
             
             return self.NotificationCell!
@@ -108,6 +139,12 @@ extension NotificationListVC {
             
             self.NotificationCell!.Shift4Switch.isOn = UserDefaults.standard.bool(forKey: "Shift4ON")
             self.NotificationCell!.Shift4Switch.addTarget(self, action: #selector(Shift4_Value), for: .valueChanged)
+            self.NotificationCell!.applyReferralChrome(
+                title: "Quiz Time",
+                symbolName: "doc.text.fill",
+                timeLabel: self.NotificationCell!.NotifiQuizTime,
+                toggle: self.NotificationCell!.Shift4Switch
+            )
             
             
             return self.NotificationCell!

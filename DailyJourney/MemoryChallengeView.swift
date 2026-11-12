@@ -22,6 +22,8 @@ struct MemoryChallengeView: View {
     @State private var feedback: String?
     @State private var isCorrect = false
     @State private var isReviewMode = false
+    /// After Check Answer with mistakes: paint wrong fills red and correct words green.
+    @State private var showAnswerColors = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -158,11 +160,13 @@ struct MemoryChallengeView: View {
             filled: filled,
             selectedBlank: selectedBlank,
             isReviewMode: isReviewMode,
+            showAnswerColors: showAnswerColors,
             onTapBlank: { index in
                 if selectedBlank == index, filled[index] != nil {
                     filled[index] = nil
                     feedback = nil
                     isCorrect = false
+                    showAnswerColors = false
                 } else {
                     selectedBlank = index
                 }
@@ -230,6 +234,7 @@ struct MemoryChallengeView: View {
         feedback = nil
         isCorrect = false
         isReviewMode = false
+        showAnswerColors = false
     }
 
     private func selectWord(_ word: String) {
@@ -239,6 +244,7 @@ struct MemoryChallengeView: View {
         selectedBlank = blankIndices.first(where: { filled[$0] == nil })
         feedback = nil
         isCorrect = false
+        showAnswerColors = false
     }
 
     private func checkAnswer() {
@@ -258,6 +264,7 @@ struct MemoryChallengeView: View {
 
         if ok {
             isCorrect = true
+            showAnswerColors = false
             feedback = "Correct! Great memory."
             let mapped = Dictionary(uniqueKeysWithValues: filled.map { (String($0.key), $0.value) })
             let state = MemoryChallengeSavedState(
@@ -272,6 +279,7 @@ struct MemoryChallengeView: View {
             continueJourney()
         } else {
             isCorrect = false
+            showAnswerColors = true
             feedback = "Not quite — try again."
         }
     }
@@ -290,6 +298,7 @@ struct MemoryChallengeView: View {
         selectedBlank = blankIndices.first
         feedback = nil
         isCorrect = false
+        showAnswerColors = false
     }
 
     private func revealHint() {
@@ -385,6 +394,7 @@ private struct MemoryVerseFlowView: View {
     let filled: [Int: String]
     let selectedBlank: Int?
     let isReviewMode: Bool
+    var showAnswerColors: Bool = false
     let onTapBlank: (Int) -> Void
 
     var body: some View {
@@ -411,10 +421,7 @@ private struct MemoryVerseFlowView: View {
                 Button(action: {
                     if !isReviewMode { onTapBlank(index) }
                 }) {
-                    Text(filled[index] ?? "______")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(filled[index] == nil ? Color.black.opacity(0.35) : DailyJourneyTheme.color)
-                        .underline(color: selectedBlank == index ? DailyJourneyTheme.color : Color.black.opacity(0.2))
+                    blankLabel(index: index, token: token)
                 }
                 .buttonStyle(PlainButtonStyle())
                 .disabled(isReviewMode)
@@ -424,6 +431,38 @@ private struct MemoryVerseFlowView: View {
                     .foregroundColor(.black)
             }
         }
+    }
+
+    @ViewBuilder
+    private func blankLabel(index: Int, token: String) -> some View {
+        let user = filled[index]
+        let correctWord = stripPunctuation(token)
+        let isBlankCorrect = user.map {
+            stripPunctuation($0).caseInsensitiveCompare(correctWord) == .orderedSame
+        } ?? false
+
+        if showAnswerColors, let user = user {
+            if isBlankCorrect {
+                Text(user)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "1B7A3D"))
+                    .underline(color: Color(hex: "1B7A3D").opacity(0.35))
+            } else {
+                Text(user)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "D70015"))
+                    .underline(color: Color(hex: "D70015").opacity(0.35))
+            }
+        } else {
+            Text(user ?? "______")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(user == nil ? Color.black.opacity(0.35) : DailyJourneyTheme.color)
+                .underline(color: selectedBlank == index ? DailyJourneyTheme.color : Color.black.opacity(0.2))
+        }
+    }
+
+    private func stripPunctuation(_ value: String) -> String {
+        value.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
     }
 }
 

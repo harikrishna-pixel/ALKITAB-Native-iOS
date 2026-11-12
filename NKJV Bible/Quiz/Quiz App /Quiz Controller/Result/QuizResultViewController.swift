@@ -152,8 +152,15 @@ extension UINavigationController {
   func popToQuizHubIfPresent(fallback: AnyClass, animated: Bool = true) {
     if viewControllers.contains(where: { $0 is QuizOrChallengeChooserViewController }) {
       popToViewController(ofClass: QuizOrChallengeChooserViewController.self, animated: animated)
-    } else {
-      popToViewController(ofClass: fallback, animated: animated)
+    } else if viewControllers.contains(where: { $0 is ReaderViewController }) {
+      // Bottom-menu Quiz is embedded in Reader. Prefer Reader over any pushed Selection
+      // so "Back to Menu" does not leave stacked book/chapter screens behind.
+      popToViewController(ofClass: ReaderViewController.self, animated: animated)
+    } else if let hub = viewControllers.first(where: { $0.isKind(of: fallback) }) {
+      // Root quiz selection only — never a later duplicate pushed as "menu".
+      popToViewController(hub, animated: animated)
+    } else if viewControllers.count > 1 {
+      popViewController(animated: animated)
     }
   }
 }

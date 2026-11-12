@@ -6,12 +6,15 @@
 //
 
 import UIKit
+import Toast_Swift
 
 @available(iOS 13.4, *)
 class PageSwipeVc: UIPageViewController, UIPageViewControllerDataSource, UIPageViewControllerDelegate, PageControllerDelegate {
 
     
     var identifiers: NSArray = ["FirstNavigationController", "SecondNavigationController"]
+    private var lastEndOfBookToastAt: TimeInterval = 0
+
     override func viewDidLoad() {
 
         self.dataSource = self
@@ -112,6 +115,9 @@ class PageSwipeVc: UIPageViewController, UIPageViewControllerDataSource, UIPageV
         let newIndex = UserDefaults.standard.integer(forKey: "BookChapter") + 1
 
         if newIndex < 1 || newIndex > Ch_Count {
+            if newIndex > Ch_Count {
+                showEndOfBookToastIfNeeded()
+            }
             return nil
         } else {
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.57) {
@@ -120,6 +126,22 @@ class PageSwipeVc: UIPageViewController, UIPageViewControllerDataSource, UIPageV
             return getPageFor(index: newIndex)
         }
        
+    }
+
+    private func showEndOfBookToastIfNeeded() {
+        let now = Date().timeIntervalSince1970
+        guard now - lastEndOfBookToastAt > 1.5 else { return }
+        lastEndOfBookToastAt = now
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            let host: UIView
+            if let readerView = (App_Protocol.delegateReader as? UIViewController)?.view {
+                host = readerView
+            } else {
+                host = self.view
+            }
+            host.makeToast("You’ve reached the end of the Book", duration: 2.0, position: .top)
+        }
     }
     
     

@@ -95,11 +95,13 @@ final class AIUsageLimiter {
     }
 
     private static let lockBadgeTag = 0x10C4
+    /// Lock icons are hidden on every AI button; the tap still opens the limit flow.
+    private static let showsLockBadges = false
 
     /// Shows a small lock icon at the trailing edge of `button` while `feature` has no free uses left.
     func applyLockBadge(to button: UIButton?, feature: AIUsageFeature, tint: UIColor? = nil) {
         guard let button = button else { return }
-        let locked = isLocked(feature)
+        let locked = Self.showsLockBadges && isLocked(feature)
         alignLockTitle(on: button, locked: locked)
         if let existing = button.viewWithTag(Self.lockBadgeTag) {
             existing.isHidden = !locked
@@ -193,46 +195,69 @@ final class AIUsageLimiter {
 
     /// The trigger sheet stays closed for 30 minutes. Offer credits, or say the free use is gone.
     private func offerCreditsOrToast(_ feature: AIUsageFeature, cost: Int, onGranted: @escaping () -> Void) {
-        let kind = feature == .chapterSummary ? "chapter summary" : "explanation"
+        let kind: String
+        switch feature {
+        case .chapterSummary: kind = "chapter summary"
+        case .aiChat: kind = "AI chat"
+        default: kind = "explanation"
+        }
         guard ChallengeWallet.coins >= cost else {
             OnboardingAuthManager.topViewController()?.view.makeToast("You've used today's free \(kind).", duration: 2.0, position: .top)
             return
         }
-        guard let presenter = OnboardingAuthManager.topViewController() else { return }
-        if presenter.presentedViewController != nil { return }
-        let alert = UIAlertController(
+        AICreditsOffer.present(
             title: "Use \(cost) credits?",
             message: "Today's free \(kind) is used. You have \(ChallengeWallet.coins) credits.",
-            preferredStyle: .alert
+            creditsTitle: "Use \(cost) Credits",
+            showUnlimited: !PaymentHistory.sharedInstance.hasActivePurchase(),
+            onUnlimited: { [weak self] in
+                // Chat, explanation, and summary all open the main plans paywall (no "Please try again later").
+                self?.presentPlansPaywall()
+            },
+            onUseCredits: { [weak self] in
+                self?.pending[feature] = .credits(cost)
+                onGranted()
+            }
         )
-        alert.addAction(UIAlertAction(title: "Use \(cost) Credits", style: .default) { [weak self] _ in
-            self?.pending[feature] = .credits(cost)
-            onGranted()
-        })
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        presenter.present(alert, animated: true)
     }
 
     private func presentLimitReachedAlert(_ feature: AIUsageFeature, cost: Int, from host: UIViewController?, onGranted: @escaping () -> Void) {
         if PaywallTriggerGate.shared.isEnabled && feature != .quiz {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
                 guard let self = self else { return }
                 App_Protocol.delegateReader?.CloseMenu()
-                if feature == .aiChat && self.chatUpsellShown && ChallengeWallet.coins >= cost {
-                    self.pending[feature] = .credits(cost)
+                // After free chats are used, always show the chat paywall again.
+                // Do not auto-grant on dismiss (even if credits are available).
+                // A plan bought moments ago may now count as unlimited — open the feature.
+                if self.hasUnlimitedPlan {
+                    self.pending[feature] = .unlimited
                     onGranted()
                     return
                 }
                 if feature == .aiChat {
                     let name = ChallengeWallet.coins <= 0 ? "chatCredits" : "chatLimit"
-                    PaywallTriggerGate.shared.requestUserStarted(name)
+                    if !PaywallTriggerGate.shared.requestUserStarted(name) {
+                        self.offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
+                    }
                     return
                 }
-                if PaywallTriggerGate.shared.isUserStartedCoolingDown("aiExplain") {
+                // Explanation / summary: the trigger sheet shows on every tap. Closing it offers credits, or the toast.
+                let shown = PaywallTriggerGate.shared.requestAILimitSheet(onClosed: { [weak self] in
+                    guard let self = self else { return }
+                    // Let the sheet finish closing before the credits card or toast.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                        if self.hasUnlimitedPlan {
+                            self.pending[feature] = .unlimited
+                            onGranted()
+                            return
+                        }
+                        self.offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
+                    }
+                })
+                // Purchased users (e.g. Lifetime, no AI) never get the sheet — never leave the tap with no response.
+                if !shown {
                     self.offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
-                    return
                 }
-                PaywallTriggerGate.shared.requestUserStarted("aiExplain")
             }
             return
         }
@@ -268,12 +293,29 @@ final class AIUsageLimiter {
         presenter.present(alert, animated: true)
     }
 
-    private func presentPaywall() {
+    func presentPaywall() {
         if PaywallTriggerGate.shared.isEnabled {
             let name = "aiLimit"
             PaywallTriggerGate.shared.requestUserStarted(name)
             return
         }
+        presentMainPaywall()
+    }
+
+    /// Opens the current plans paywall ("Know the Word Better.") directly, skipping the trigger rules.
+    func presentPlansPaywall() {
+        DispatchQueue.main.async {
+            guard let top = OnboardingAuthManager.topViewController() else { return }
+            guard NetworkManager.sharedInstance.isConnectedToInternet(),
+                  PaywallTriggerPresenter.showMainPlans(from: top) else {
+                top.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
+                return
+            }
+        }
+    }
+
+    /// Opens the main subscription screen directly, skipping the trigger sheets.
+    func presentMainPaywall() {
         DispatchQueue.main.async {
             guard let top = OnboardingAuthManager.topViewController() else { return }
             guard NetworkManager.sharedInstance.isConnectedToInternet() else {

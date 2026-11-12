@@ -263,13 +263,10 @@ extension ReaderViewController: AVplayerProtocol {
     @IBAction func AVRepeat(_ sender: Any) {
         if UserDefaults.standard.string(forKey: "Shuffle") == "true" {
             UserDefaults.standard.set("false", forKey: "Shuffle")
-            self.RepeatView.backgroundColor = UIColor.clear
-            ImageTint.sharedInstance.imageTintcolorMethod(img: self.AVRepeat! , colorVu: .white)
         } else {
             UserDefaults.standard.set("true", forKey: "Shuffle")
-            self.RepeatView.backgroundColor = .white
-            ImageTint.sharedInstance.imageTintcolorMethod(img: self.AVRepeat! , colorVu: UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor)
         }
+        updateAudioRepeatHighlight()
     }
     
     

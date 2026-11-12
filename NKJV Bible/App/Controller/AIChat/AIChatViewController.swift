@@ -43,7 +43,6 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     private let inputTextView = UITextView()
     private let placeholderLabel = UILabel()
     private let freeCountLabel = UILabel()
-    private let freeCountBar = AIUsageBarView()
     private let sendButton = UIButton(type: .custom)
 
     private var bannerHeightConstraint: NSLayoutConstraint?
@@ -108,37 +107,36 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
 
     private func refreshSendLock() {
         let sendConfig = UIImage.SymbolConfiguration(pointSize: 36, weight: .semibold)
-        let symbol = AIUsageLimiter.shared.isLocked(.aiChat) ? "lock.circle.fill" : "arrow.up.circle.fill"
-        sendButton.setImage(UIImage(systemName: symbol, withConfiguration: sendConfig), for: .normal)
+        sendButton.setImage(UIImage(systemName: "arrow.up.circle.fill", withConfiguration: sendConfig), for: .normal)
         refreshFreeCount()
     }
 
     private func refreshFreeCount() {
+        // Paid users: no line under the composer (iPhone and iPad).
         if AIUsageLimiter.shared.hasUnlimitedPlan {
-            let green = UIColor(red: 0.11, green: 0.48, blue: 0.24, alpha: 1)
-            let line = NSMutableAttributedString()
-            if let crown = UIImage(systemName: "crown.fill")?.withTintColor(green, renderingMode: .alwaysOriginal) {
-                let attachment = NSTextAttachment()
-                attachment.image = crown
-                attachment.bounds = CGRect(x: 0, y: -2, width: 15, height: 12)
-                line.append(NSAttributedString(attachment: attachment))
-                line.append(NSAttributedString(string: " "))
-            }
-            line.append(NSAttributedString(string: "Unlimited AI messages with Premium", attributes: [
-                .foregroundColor: green,
-                .font: UIFont.systemFont(ofSize: 12, weight: .semibold)
-            ]))
-            freeCountLabel.attributedText = line
-            freeCountBar.fillColor = green
-            freeCountBar.fraction = 1
+            freeCountLabel.attributedText = nil
             return
         }
-        freeCountLabel.attributedText = nil
-        freeCountLabel.font = UIFont.systemFont(ofSize: 12)
-        freeCountLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.55) : UIColor(white: 0.45, alpha: 1)
-        freeCountLabel.text = AIUsageLimiter.shared.remainingText(.aiChat)
-        freeCountBar.fillColor = isNight ? .white : themeColor
-        freeCountBar.fraction = AIUsageLimiter.shared.remainingFraction(.aiChat)
+        let left = AIUsageLimiter.shared.freeUsesLeft(.aiChat)
+        let noun = left > 1 ? "messages" : "message"
+        let grey = isNight ? UIColor.white.withAlphaComponent(0.55) : UIColor(white: 0.45, alpha: 1)
+        let link = isNight ? UIColor.white : themeColor
+        let line = NSMutableAttributedString(string: "\(left) \(noun) available today. ", attributes: [
+            .foregroundColor: grey,
+            .font: UIFont.systemFont(ofSize: 13)
+        ])
+        line.append(NSAttributedString(string: "Unlimited chat", attributes: [
+            .foregroundColor: link,
+            .font: UIFont.systemFont(ofSize: 13),
+            .underlineStyle: NSUnderlineStyle.single.rawValue
+        ]))
+        freeCountLabel.attributedText = line
+    }
+
+    @objc private func freeCountTapped() {
+        guard !AIUsageLimiter.shared.hasUnlimitedPlan else { return }
+        view.endEditing(true)
+        AIUsageLimiter.shared.presentPlansPaywall()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -185,6 +183,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         tableView.estimatedRowHeight = 88
         tableView.rowHeight = UITableView.automaticDimension
         tableView.register(AIChatBubbleCell.self, forCellReuseIdentifier: AIChatBubbleCell.reuseId)
+        tableView.register(AIChatWaitingCell.self, forCellReuseIdentifier: AIChatWaitingCell.reuseId)
         view.addSubview(tableView)
 
         suggestionContainer.translatesAutoresizingMaskIntoConstraints = false
@@ -225,10 +224,10 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         freeCountLabel.translatesAutoresizingMaskIntoConstraints = false
         freeCountLabel.font = UIFont.systemFont(ofSize: 12)
         freeCountLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.55) : UIColor(white: 0.45, alpha: 1)
+        freeCountLabel.textAlignment = .center
+        freeCountLabel.isUserInteractionEnabled = true
+        freeCountLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(freeCountTapped)))
         composerContainer.addSubview(freeCountLabel)
-
-        freeCountBar.translatesAutoresizingMaskIntoConstraints = false
-        composerContainer.addSubview(freeCountBar)
 
         sendButton.translatesAutoresizingMaskIntoConstraints = false
         let sendConfig = UIImage.SymbolConfiguration(pointSize: 36, weight: .semibold)
@@ -287,15 +286,10 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             inputTextView.trailingAnchor.constraint(equalTo: sendButton.leadingAnchor, constant: -8),
             inputHeightConstraint!,
 
-            freeCountLabel.topAnchor.constraint(equalTo: inputTextView.bottomAnchor, constant: 4),
-            freeCountLabel.leadingAnchor.constraint(equalTo: inputTextView.leadingAnchor, constant: 16),
-            freeCountLabel.trailingAnchor.constraint(equalTo: inputTextView.trailingAnchor),
-
-            freeCountBar.topAnchor.constraint(equalTo: freeCountLabel.bottomAnchor, constant: 4),
-            freeCountBar.leadingAnchor.constraint(equalTo: freeCountLabel.leadingAnchor),
-            freeCountBar.widthAnchor.constraint(equalTo: freeCountLabel.widthAnchor, multiplier: 0.6),
-            freeCountBar.heightAnchor.constraint(equalToConstant: 3),
-            freeCountBar.bottomAnchor.constraint(equalTo: composerContainer.safeAreaLayoutGuide.bottomAnchor, constant: -6),
+            freeCountLabel.topAnchor.constraint(equalTo: inputTextView.bottomAnchor, constant: 6),
+            freeCountLabel.leadingAnchor.constraint(equalTo: composerContainer.leadingAnchor, constant: 16),
+            freeCountLabel.trailingAnchor.constraint(equalTo: composerContainer.trailingAnchor, constant: -16),
+            freeCountLabel.bottomAnchor.constraint(equalTo: composerContainer.safeAreaLayoutGuide.bottomAnchor, constant: -6),
 
             placeholderLabel.topAnchor.constraint(equalTo: inputTextView.topAnchor, constant: 10),
             placeholderLabel.leadingAnchor.constraint(equalTo: inputTextView.leadingAnchor, constant: 16),
@@ -415,9 +409,8 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         return button
     }
 
-    private var pinsVerseQuestionsUnderCard: Bool {
-        launchContext?.isChapterSummary == false && messages.isEmpty
-    }
+    /// Always false: Keep Ask (Explanation / Summary) suggestion rows above the composer, like Bible Companion.
+    private var pinsVerseQuestionsUnderCard: Bool { false }
 
     private func refreshFollowUpSuggestions() {
         // Keep suggestion height unchanged while waiting for a reply to avoid layout jump.
@@ -792,80 +785,137 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         if let context = launchContext {
             return contextSuggestions(for: context)
         }
-        let pool = [
-            "Explain John 3:16",
-            "What is grace?",
-            "Help me study Psalms",
-            "How can I grow in faith?",
-            "What does Romans 8:28 mean?",
-            "Suggest a verse for anxiety"
-        ]
+        let pool = usesIndonesian
+            ? [
+                "Jelaskan Yohanes 3:16",
+                "Apa itu kasih karunia?",
+                "Bantu saya mempelajari Mazmur",
+                "Bagaimana saya bisa bertumbuh dalam iman?",
+                "Apa arti Roma 8:28?",
+                "Sarankan ayat untuk kecemasan"
+            ]
+            : [
+                "Explain John 3:16",
+                "What is grace?",
+                "Help me study Psalms",
+                "How can I grow in faith?",
+                "What does Romans 8:28 mean?",
+                "Suggest a verse for anxiety"
+            ]
         return Array(pool.shuffled().prefix(3))
     }
 
     private func makeFollowUpSuggestions(userText: String, assistantText: String) -> [String] {
         let combined = userText + "\n" + assistantText
         let lowered = combined.lowercased()
+        let id = usesIndonesian
         var pool: [String] = []
 
         if let verse = firstVerseReference(in: combined) {
-            pool.append(contentsOf: [
-                "Explain \(verse) in simple words",
-                "What is the main message of \(verse)?",
-                "Show verses related to \(verse)",
-                "How does \(verse) apply to daily life?",
-                "Who is speaking in \(verse)?"
-            ])
+            pool.append(contentsOf: id
+                ? [
+                    "Jelaskan \(verse) dengan kata-kata sederhana",
+                    "Apa pesan utama dari \(verse)?",
+                    "Tunjukkan ayat-ayat terkait \(verse)",
+                    "Bagaimana \(verse) diterapkan dalam kehidupan sehari-hari?",
+                    "Siapa yang berbicara dalam \(verse)?"
+                ]
+                : [
+                    "Explain \(verse) in simple words",
+                    "What is the main message of \(verse)?",
+                    "Show verses related to \(verse)",
+                    "How does \(verse) apply to daily life?",
+                    "Who is speaking in \(verse)?"
+                ])
         }
 
         if lowered.contains("grace") || lowered.contains("kasih karunia") {
-            pool.append(contentsOf: [
-                "Where else is grace taught?",
-                "How is grace different from mercy?",
-                "Give a short prayer about grace"
-            ])
+            pool.append(contentsOf: id
+                ? [
+                    "Di mana lagi kasih karunia diajarkan?",
+                    "Apa bedanya kasih karunia dan belas kasihan?",
+                    "Berikan doa singkat tentang kasih karunia"
+                ]
+                : [
+                    "Where else is grace taught?",
+                    "How is grace different from mercy?",
+                    "Give a short prayer about grace"
+                ])
         }
 
         if lowered.contains("psalm") || lowered.contains("mazmur") {
-            pool.append(contentsOf: [
-                "Help me study Psalm 23",
-                "What makes Psalms special?",
-                "Suggest a comforting Psalm"
-            ])
+            pool.append(contentsOf: id
+                ? [
+                    "Bantu saya mempelajari Mazmur 23",
+                    "Apa yang membuat Mazmur istimewa?",
+                    "Sarankan Mazmur yang menghibur"
+                ]
+                : [
+                    "Help me study Psalm 23",
+                    "What makes Psalms special?",
+                    "Suggest a comforting Psalm"
+                ])
         }
 
         if lowered.contains("pray") || lowered.contains("prayer") || lowered.contains("doa") {
-            pool.append(contentsOf: [
-                "Write a short prayer from this",
-                "How should I pray about this?",
-                "Give me a prayer for today"
-            ])
+            pool.append(contentsOf: id
+                ? [
+                    "Tuliskan doa singkat dari ini",
+                    "Bagaimana saya berdoa tentang ini?",
+                    "Berikan doa untuk hari ini"
+                ]
+                : [
+                    "Write a short prayer from this",
+                    "How should I pray about this?",
+                    "Give me a prayer for today"
+                ])
         }
 
         if lowered.contains("faith") || lowered.contains("iman") {
-            pool.append(contentsOf: [
-                "How can I strengthen my faith?",
-                "Show verses about trusting God",
-                "What does faith look like in practice?"
-            ])
+            pool.append(contentsOf: id
+                ? [
+                    "Bagaimana saya memperkuat iman saya?",
+                    "Tunjukkan ayat tentang percaya kepada Tuhan",
+                    "Seperti apa iman dalam praktik sehari-hari?"
+                ]
+                : [
+                    "How can I strengthen my faith?",
+                    "Show verses about trusting God",
+                    "What does faith look like in practice?"
+                ])
         }
 
         if lowered.contains("love") || lowered.contains("kasih") {
-            pool.append(contentsOf: [
-                "Where does the Bible define love?",
-                "How can I love others better?",
-                "Show verses about God's love"
-            ])
+            pool.append(contentsOf: id
+                ? [
+                    "Di mana Alkitab mendefinisikan kasih?",
+                    "Bagaimana saya bisa lebih mengasihi orang lain?",
+                    "Tunjukkan ayat tentang kasih Tuhan"
+                ]
+                : [
+                    "Where does the Bible define love?",
+                    "How can I love others better?",
+                    "Show verses about God's love"
+                ])
         }
 
-        pool.append(contentsOf: [
-            "Put this in simpler words",
-            "Give related Bible verses",
-            "How can I apply this today?",
-            "What is the key takeaway here?",
-            "Compare this with another passage",
-            "Help me memorize the main idea"
-        ])
+        pool.append(contentsOf: id
+            ? [
+                "Sampaikan ini dengan kata-kata yang lebih sederhana",
+                "Berikan ayat Alkitab yang terkait",
+                "Bagaimana saya dapat menerapkannya hari ini?",
+                "Apa poin utamanya di sini?",
+                "Bandingkan ini dengan bagian lain",
+                "Bantu saya mengingat gagasan utamanya"
+            ]
+            : [
+                "Put this in simpler words",
+                "Give related Bible verses",
+                "How can I apply this today?",
+                "What is the key takeaway here?",
+                "Compare this with another passage",
+                "Help me memorize the main idea"
+            ])
 
         var unique: [String] = []
         for chip in pool.shuffled() {
@@ -878,9 +928,9 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     private func firstVerseReference(in text: String) -> String? {
-        // Strip common prompt verbs so "Explain John 3:16" does not become the verse string.
+        // Strip common prompt verbs so "Explain John 3:16" / "Jelaskan Yohanes 3:16" does not become the verse string.
         let cleaned = text.replacingOccurrences(
-            of: #"(?i)\b(explain|show|help|tell|give|about|study)\b"#,
+            of: #"(?i)\b(explain|show|help|tell|give|about|study|jelaskan|tunjukkan|bantu|beri|tentang|pelajari|apa|arti)\b"#,
             with: " ",
             options: .regularExpression
         )
@@ -1046,10 +1096,16 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return messages.count
+        return messages.count + (isSending ? 1 : 0)
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        if indexPath.row >= messages.count {
+            let cell = tableView.dequeueReusableCell(withIdentifier: AIChatWaitingCell.reuseId, for: indexPath) as! AIChatWaitingCell
+            cell.configure(isNight: isNight)
+            return cell
+        }
+
         let cell = tableView.dequeueReusableCell(withIdentifier: AIChatBubbleCell.reuseId, for: indexPath) as! AIChatBubbleCell
         cell.configure(message: messages[indexPath.row], isNight: isNight, themeColor: themeColor)
         cell.onCopy = { [weak self] text in
@@ -1071,6 +1127,53 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             self.present(activityVC, animated: true, completion: nil)
         }
         return cell
+    }
+}
+
+/// Left assistant-style bubble while a reply loads (replaces "Typing..." and the composer status line).
+private final class AIChatWaitingCell: UITableViewCell {
+    static let reuseId = "AIChatWaitingCell"
+
+    private let bubbleView = UIView()
+    private let label = UILabel()
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        selectionStyle = .none
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+
+        bubbleView.translatesAutoresizingMaskIntoConstraints = false
+        bubbleView.layer.cornerRadius = 18
+        bubbleView.layer.maskedCorners = [.layerMaxXMinYCorner, .layerMaxXMaxYCorner, .layerMinXMinYCorner]
+        contentView.addSubview(bubbleView)
+
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "Searching the Scriptures for you..."
+        label.font = UIFont.systemFont(ofSize: 15)
+        label.numberOfLines = 0
+        bubbleView.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            bubbleView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            bubbleView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 6),
+            bubbleView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
+            bubbleView.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -48),
+
+            label.topAnchor.constraint(equalTo: bubbleView.topAnchor, constant: 12),
+            label.leadingAnchor.constraint(equalTo: bubbleView.leadingAnchor, constant: 14),
+            label.trailingAnchor.constraint(equalTo: bubbleView.trailingAnchor, constant: -14),
+            label.bottomAnchor.constraint(equalTo: bubbleView.bottomAnchor, constant: -12)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func configure(isNight: Bool) {
+        bubbleView.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.1) : UIColor(white: 0.94, alpha: 1)
+        label.textColor = isNight ? UIColor.white.withAlphaComponent(0.75) : UIColor(white: 0.35, alpha: 1)
     }
 }
 

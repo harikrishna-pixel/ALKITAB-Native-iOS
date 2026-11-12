@@ -111,11 +111,29 @@ class SaveNotes: UIView, UITextViewDelegate {
                 }
                 
                 App_Protocol.delegateReaderSource?.ReloadBibleData(ChapterNo:UserDefaults.standard.integer(forKey: "BookChapter"))
+                self.noteExplanationReminderIfNeeded()
                 
 //                App_Protocol.delegateReader?.AlertFrame(AlertNote: "Note Saved!!",Vers:self.VerseStr,Title:"\(self.Bookname)-\(self.ChapterNo)")
             }
         }
         RateUsCall.shared.ClickCount()
+    }
+
+    private func noteExplanationReminderIfNeeded() {
+        // ChapterNo is stored as "chapterIndex:verse" (0-based chapter).
+        let parts = ChapterNo.split(separator: ":")
+        guard parts.count == 2,
+              let chapterIndex = Int(parts[0]),
+              let verse = Int(parts[1]),
+              let source = App_Protocol.delegateReaderSource else { return }
+        let verses = source.GetTSData().AudioBibleList
+        guard !verses.isEmpty else { return }
+        AIFeatureReminder.noteVerseAction(
+            book: Bookname,
+            chapter: chapterIndex + 1,
+            verse: verse,
+            verses: verses
+        )
     }
    
     

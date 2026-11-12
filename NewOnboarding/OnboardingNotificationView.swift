@@ -42,7 +42,7 @@ struct OnboardingNotificationView: View {
                             VStack(spacing: 0) {
                                 OnboardingToggleRow(
                                     title: "Your daily verse",
-                                    detail: "7:00 AM",
+                                    detail: "8:00 AM",
                                     isOn: $dailyVerseOn
                                 )
                                 OnboardingToggleRow(

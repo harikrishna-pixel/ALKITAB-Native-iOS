@@ -68,8 +68,8 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     private static var getExplanationExtraHeight: CGFloat {
         getExplanationTopInset + getExplanationButtonHeight + getExplanationBookNameGap
     }
-    private static let explanationRemainingGap: CGFloat = 5
-    private static let explanationRemainingHeight: CGFloat = 21
+    private static let explanationRemainingGap: CGFloat = 8
+    private static let explanationRemainingHeight: CGFloat = 36
     private var explanationRemainingView: AIRemainingLineView?
     private var explanationRemainingTop: NSLayoutConstraint?
     private var explanationRemainingHeightConstraint: NSLayoutConstraint?
@@ -236,7 +236,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         ])
         AIUsageLimiter.shared.applyLockBadge(to: button, feature: .explanation, tint: .white)
 
-        let remaining = AIRemainingLineView(feature: .explanation, fontSize: 12)
+        let remaining = AIRemainingLineView(feature: .explanation, fontSize: 13, barHeight: 4, style: .toast)
         remaining.translatesAutoresizingMaskIntoConstraints = false
         MainView.addSubview(remaining)
         explanationRemainingView = remaining
@@ -398,7 +398,9 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         let shows = !AIUsageLimiter.shared.hasUnlimitedPlan
         explanationRemainingTop?.constant = shows ? Self.explanationRemainingGap : 0
         explanationRemainingHeightConstraint?.constant = shows ? Self.explanationRemainingHeight : 0
-        remaining.refresh(tint: Themecolor ?? PrimaryColor, textColor: UIColor(white: 0.45, alpha: 1))
+        let tint = Themecolor ?? PrimaryColor
+        // Match toast mock: bolt + copy + bar all use the theme blue.
+        remaining.refresh(tint: tint, textColor: tint)
     }
 
     private func repositionBookNameBelowGetExplanationButton(_ button: UIView, gap: CGFloat) {
@@ -501,6 +503,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
                 // (No toast message here before)
                 // BUG FIX 2: NEW CODE - Added toast message to confirm highlight save
                 UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Highlight Saved Successfully!!", duration: 2.0, position: .top)
+                self.noteExplanationReminderIfNeeded()
             }
             
 //        }
@@ -566,6 +569,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
 
             self.BookmarkImg.image = UIImage(named: "FBookmark")
             ImageTint.sharedInstance.imageTintcolorMethod(img: self.BookmarkImg, colorVu: self.Themecolor!)
+            self.noteExplanationReminderIfNeeded()
         }
         
         App_Protocol.delegateReaderSource?.ReloadBibleData(ChapterNo:UserDefaults.standard.integer(forKey: "BookChapter"))
@@ -587,14 +591,24 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
             UnderlineStatus = "true"
             self.UnderlineImg.image = UIImage(named: "FUnderline")
             ImageTint.sharedInstance.imageTintcolorMethod(img: self.UnderlineImg, colorVu: self.Themecolor!)
+            self.noteExplanationReminderIfNeeded()
         } else {
             UnderlineStatus = "false"
             self.UnderlineImg.image = UIImage(named: "UUnderline")
             ImageTint.sharedInstance.imageTintcolorMethod(img: self.UnderlineImg, colorVu: UIColor.gray)
         }
         
-        ImageTint.sharedInstance.imageTintcolorMethod(img: self.UnderlineImg, colorVu: self.Themecolor!)
         App_Protocol.delegateReaderSource?.ReloadBibleData(ChapterNo:UserDefaults.standard.integer(forKey: "BookChapter"))
+    }
+
+    private func noteExplanationReminderIfNeeded() {
+        guard let verses = BookVerse else { return }
+        AIFeatureReminder.noteVerseAction(
+            book: BookName,
+            chapter: Pageindex,
+            verse: VersePosition,
+            verses: verses
+        )
     }
     
     

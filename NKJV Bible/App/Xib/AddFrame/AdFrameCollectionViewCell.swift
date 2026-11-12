@@ -42,13 +42,50 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
         }
     }
     
+    /// Same height as the xib (88). Buttons sit inside it; only the width must follow the list.
+    private static let rowHeight: CGFloat = 88
+
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
-        // Keep the size the list already used. Changing it animates Mark as Read and Get Summary.
+        // Always the full list width. After Mark as Read reloads this cell, the list can fall back to
+        // its tiny estimated size (~50pt); the buttons then shrink to a sliver ("M"). Never trust that size.
+        let width = fullRowWidth(fallback: layoutAttributes.size.width)
+        layoutAttributes.size = CGSize(width: width, height: Self.rowHeight)
         return layoutAttributes
+    }
+
+    private func fullRowWidth(fallback: CGFloat) -> CGFloat {
+        var list: UICollectionView?
+        var view: UIView? = superview
+        while let current = view {
+            if let collection = current as? UICollectionView {
+                list = collection
+                break
+            }
+            view = current.superview
+        }
+        if let list = list {
+            let inset = list.adjustedContentInset
+            let width = list.bounds.width - inset.left - inset.right
+            if width > 100 { return width }
+        }
+        // Not attached yet: use a usable earlier width, else the screen.
+        if fallback > 100 { return fallback }
+        return UIScreen.main.bounds.width
     }
     
     override func layoutSubviews() {
         super.layoutSubviews()
+        // Safety net: if the list ever hands this cell a collapsed frame, ask it to re-measure.
+        if bounds.width > 0, bounds.width < 100, superview != nil {
+            var view: UIView? = superview
+            while let current = view {
+                if let collection = current as? UICollectionView {
+                    DispatchQueue.main.async { collection.collectionViewLayout.invalidateLayout() }
+                    break
+                }
+                view = current.superview
+            }
+        }
         let summarySize = SummaryButton?.bounds.size ?? .zero
         let markSize = MarkAsReadBtn?.bounds.size ?? .zero
         guard summarySize != lastSummarySize || markSize != lastMarkSize else { return }
