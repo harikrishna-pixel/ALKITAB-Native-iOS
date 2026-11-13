@@ -137,8 +137,9 @@ class PaymentHistory: NSObject {
     
     
     
-    func Getpayment(completion:@escaping () -> ()) {
-        verifyReceipt(url: API_VERIFY_RECEIPT, allowEnvironmentRetry: true, completion: completion)
+    /// `clearWhenNoPlan` is used by Restore only: if Apple's verified receipt has no active-able purchase, the plan saved on this phone is removed.
+    func Getpayment(clearWhenNoPlan: Bool = false, completion:@escaping () -> ()) {
+        verifyReceipt(url: API_VERIFY_RECEIPT, allowEnvironmentRetry: true, clearWhenNoPlan: clearWhenNoPlan, completion: completion)
     }
 
     /// Reads the latest plan from the receipt and does not save it.
@@ -173,18 +174,18 @@ class PaymentHistory: NSObject {
         })
     }
 
-    private func verifyReceipt(url: String, allowEnvironmentRetry: Bool, completion: @escaping () -> ()) {
+    private func verifyReceipt(url: String, allowEnvironmentRetry: Bool, clearWhenNoPlan: Bool = false, completion: @escaping () -> ()) {
         NetworkManager.sharedInstance.GetPay_History(url: url, completion: { (resultDictionary, error) -> () in
             let status = self.receiptStatus(resultDictionary)
             if allowEnvironmentRetry, status == 21007 || status == 21008 {
                 let otherURL = status == 21007
                     ? "https://sandbox.itunes.apple.com/verifyReceipt"
                     : "https://buy.itunes.apple.com/verifyReceipt"
-                self.verifyReceipt(url: otherURL, allowEnvironmentRetry: false, completion: completion)
+                self.verifyReceipt(url: otherURL, allowEnvironmentRetry: false, clearWhenNoPlan: clearWhenNoPlan, completion: completion)
                 return
             }
             if let resultDictionary = resultDictionary, status == 0 {
-                self.applyVerifiedReceipt(resultDictionary)
+                self.applyVerifiedReceipt(resultDictionary, clearWhenNoPlan: clearWhenNoPlan)
             }
             let bought = self.fallbackProductId
             let saved = UserDefaults.standard.string(forKey: "PaymentId") ?? ""
@@ -211,7 +212,7 @@ class PaymentHistory: NSObject {
     }
 
     /// Saves the latest purchase. An older lifetime purchase does not replace a newer plan.
-    private func applyVerifiedReceipt(_ result: Dictionary<String, AnyObject>) {
+    private func applyVerifiedReceipt(_ result: Dictionary<String, AnyObject>, clearWhenNoPlan: Bool = false) {
         var latest: (purchase: Date, end: Date, productId: String, transactionId: String, lifetime: Bool)?
         var hasLifetime = false
         for item in receiptEntries(from: result) {
@@ -224,7 +225,16 @@ class PaymentHistory: NSObject {
             }
         }
         UserDefaults.standard.set(hasLifetime, forKey: "HasLifetimePurchase")
-        guard let best = latest else { return }
+        guard let best = latest else {
+            // Restore: Apple's receipt has no valid purchase (refunded, revoked, other Apple ID). Do not keep trusting the old saved plan.
+            if clearWhenNoPlan {
+                UserDefaults.standard.removeObject(forKey: "SubscriptionExpiryGMT")
+                UserDefaults.standard.setValue("", forKey: "PaymentId")
+                CoreDataModel.sharedInstance.deleteAllData(CDPaymentdateAPI)
+                self.Enddate = ""
+            }
+            return
+        }
         self.product_id = best.productId
         self.TransactionId = best.transactionId
         self.StartDate = ""

@@ -128,14 +128,7 @@ enum OnboardingNotificationScheduler {
         DailyJourneyStore.shared.reload()
 
         if journeyEnabled {
-            scheduleNextFire(
-                id: RequestID.journey,
-                hour: 20,
-                minute: 0,
-                title: "Journey reminder",
-                body: "Finish today’s Journey when you have a moment.",
-                skipIf: { DailyJourneyStore.shared.allStepsComplete }
-            )
+            scheduleEveningJourney()
         }
 
         if memoryEnabled {
@@ -158,6 +151,85 @@ enum OnboardingNotificationScheduler {
                 body: "See how others are praying — and share yours.",
                 skipIf: { false }
             )
+        }
+    }
+
+    // MARK: - 8 PM: streak text or Verse of the Day
+
+    private static let eveningVerseKey = "OnboardingNotif.eveningVerseOriginal"
+    private static let eveningVerseTitle = "Verse Of The Day"
+    private static let eveningStreakTitle = "Don’t lose your streak"
+    private static let eveningStreakBody = "Finish today’s Journey to keep your daily streak going."
+
+    private static func dayKey(_ components: DateComponents) -> String {
+        "\(components.year ?? 0)-\(components.month ?? 0)-\(components.day ?? 0)"
+    }
+
+    /// One notification at 8 PM:
+    /// - today's Journey / streak not finished → streak reminder text,
+    /// - finished → the usual Verse of the Day.
+    /// The 8 PM verse notifications already scheduled for the next days are rewritten in place,
+    /// so there is never a second notification at the same time.
+    private static func scheduleEveningJourney() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            guard journeyEnabled else { return }
+            DailyJourneyStore.shared.reload()
+            let journeyDone = DailyJourneyStore.shared.allStepsComplete
+            let todayKey = dayKey(Calendar.current.dateComponents([.year, .month, .day], from: Date()))
+            let center = UNUserNotificationCenter.current()
+
+            center.getPendingNotificationRequests { requests in
+                var covered = Set<String>()
+                var originals = UserDefaults.standard.dictionary(forKey: eveningVerseKey) as? [String: [String]] ?? [:]
+                let pendingIDs = Set(requests.map { $0.identifier })
+
+                for request in requests {
+                    // The Night (Shift 3) verse notification at 8:00 PM.
+                    guard request.identifier.hasPrefix("LastNotificationTime3_"),
+                          let trigger = request.trigger as? UNCalendarNotificationTrigger,
+                          trigger.dateComponents.hour == 20,
+                          trigger.dateComponents.minute == 0 else { continue }
+
+                    let key = dayKey(trigger.dateComponents)
+                    covered.insert(key)
+                    if request.content.title == eveningVerseTitle {
+                        originals[request.identifier] = [request.content.title, request.content.body]
+                    }
+
+                    guard let content = request.content.mutableCopy() as? UNMutableNotificationContent else { continue }
+                    if key == todayKey && journeyDone {
+                        guard let original = originals[request.identifier], original.count == 2 else { continue }
+                        content.title = original[0]
+                        content.body = original[1]
+                    } else {
+                        content.title = eveningStreakTitle
+                        content.body = eveningStreakBody
+                    }
+                    guard content.title != request.content.title || content.body != request.content.body else { continue }
+                    center.add(UNNotificationRequest(identifier: request.identifier, content: content, trigger: trigger), withCompletionHandler: nil)
+                }
+                UserDefaults.standard.set(originals.filter { pendingIDs.contains($0.key) }, forKey: eveningVerseKey)
+
+                // No 8 PM verse notification on that day (Night time off or moved): keep the stand-alone reminder.
+                var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+                components.hour = 20
+                components.minute = 0
+                components.second = 0
+                guard var fireDate = Calendar.current.date(from: components) else { return }
+                if fireDate <= Date() || journeyDone {
+                    fireDate = Calendar.current.date(byAdding: .day, value: 1, to: fireDate) ?? fireDate
+                }
+                let fireKey = dayKey(Calendar.current.dateComponents([.year, .month, .day], from: fireDate))
+                guard !covered.contains(fireKey) else { return }
+                scheduleNextFire(
+                    id: RequestID.journey,
+                    hour: 20,
+                    minute: 0,
+                    title: eveningStreakTitle,
+                    body: eveningStreakBody,
+                    skipIf: { journeyDone }
+                )
+            }
         }
     }
 

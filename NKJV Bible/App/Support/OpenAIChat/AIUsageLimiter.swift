@@ -63,6 +63,8 @@ final class AIUsageLimiter {
         chatUpsellShown = true
     }
 
+    private static let limitUsesCreditsCardOrToast = true
+
     static let chatCreditsAdded = Notification.Name("AIUsageChatCreditsAdded")
 
     func noteChatCreditsAdded(_ amount: Int) {
@@ -234,6 +236,12 @@ final class AIUsageLimiter {
                     onGranted()
                     return
                 }
+                // Limit over (Chat, Get Explanation, Get Summary): enough credits shows the "Use 20 credits?" card,
+                // otherwise a toast. No paywall sheet in between. Set to false to bring the old trigger sheets back.
+                if Self.limitUsesCreditsCardOrToast {
+                    self.offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
+                    return
+                }
                 if feature == .aiChat {
                     let name = ChallengeWallet.coins <= 0 ? "chatCredits" : "chatLimit"
                     if !PaywallTriggerGate.shared.requestUserStarted(name) {
@@ -251,7 +259,7 @@ final class AIUsageLimiter {
                             onGranted()
                             return
                         }
-                        self.offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
+                        OnboardingAuthManager.topViewController()?.view.makeToast(PaywallTriggerGate.aiInsightsToast, duration: 2.0, position: .top)
                     }
                 })
                 // Purchased users (e.g. Lifetime, no AI) never get the sheet — never leave the tap with no response.

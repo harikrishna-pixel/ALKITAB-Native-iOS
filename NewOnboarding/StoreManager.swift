@@ -1127,7 +1127,7 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     /// Reads the App Store receipt after reinstall. Refreshes it once if the saved plan is not active yet.
     private func restoreFromAppleReceipt(allowRefresh: Bool) {
         guard userRequestedRestore else { return }
-        PaymentHistory.sharedInstance.Getpayment {
+        PaymentHistory.sharedInstance.Getpayment(clearWhenNoPlan: true) {
             DispatchQueue.main.async {
                 if PaymentHistory.sharedInstance.hasActivePurchase() {
                     App_Protocol.delegateReader?.paymentStatus()

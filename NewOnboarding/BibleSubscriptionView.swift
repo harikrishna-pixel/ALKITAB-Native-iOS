@@ -384,7 +384,8 @@ struct BibleSubscriptionView: View {
         isRestoring = true
         PaywallProcessHUD.didClosePaywall = false
         PaywallProcessHUD.show()
-        storeManager.restorePurchases()
+        // Also checks the legacy paid-download status, same as the onboarding paywall.
+        storeManager.restorePurchases(includeLegacyPaidDownload: true)
     }
 
     private func beginSelectedPurchase() {
@@ -1184,8 +1185,9 @@ struct PaywallFeatureTile: View {
                 .font(.system(size: isPad ? 13 : 10, weight: .semibold))
                 .foregroundColor(.white)
                 .multilineTextAlignment(.center)
-                .lineLimit(2)
+                .lineLimit(nil)
                 .minimumScaleFactor(0.75)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
         .frame(minHeight: isPad ? 96 : 78)
@@ -1482,8 +1484,9 @@ struct PaywallPlanCardView: View {
                         Text(secondaryLine)
                             .font(.system(size: isPad ? 13 : 11, weight: style == .yearly ? .bold : .semibold))
                             .foregroundColor(style == .yearly ? Color(hex: "E53935") : accent)
-                            .lineLimit(2)
+                            .lineLimit(nil)
                             .minimumScaleFactor(0.7)
+                            .fixedSize(horizontal: false, vertical: true)
                             .multilineTextAlignment(.center)
                     }
 
@@ -1491,8 +1494,9 @@ struct PaywallPlanCardView: View {
                         Text(tertiaryLine)
                             .font(.system(size: isPad ? 11 : 9, weight: .medium))
                             .foregroundColor(Color(hex: "6B6B6B"))
-                            .lineLimit(3)
+                            .lineLimit(nil)
                             .minimumScaleFactor(0.7)
+                            .fixedSize(horizontal: false, vertical: true)
                             .multilineTextAlignment(.center)
                     }
                 }
@@ -2171,13 +2175,42 @@ final class PaywallTriggerGate {
     @discardableResult
     func requestAILimitSheet(onClosed: @escaping () -> Void) -> Bool {
         guard isEnabled, !isEntitled else { return false }
+        noteAIActiveDay()
+        // The sheet shows once, then again after 7 more active days. In between, a tap shows only the toast.
+        guard aiLimitSheetIsDue else {
+            OnboardingAuthManager.topViewController()?.view.makeToast(Self.aiInsightsToast, duration: 2.0, position: .top)
+            return true
+        }
         guard NetworkManager.sharedInstance.isConnectedToInternet(),
               PaywallTriggerPresenter.canPresent("aiExplain") else {
             OnboardingAuthManager.topViewController()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
             return true
         }
+        UserDefaults.standard.set(aiActiveDays.count, forKey: aiSheetShownAtCountKey)
         presentCurrentPaywall(countsAsPopup: false, trigger: "aiExplain", onClose: onClosed)
         return true
+    }
+
+    static let aiInsightsToast = "Unlock unlimited Bible insights with Premium!"
+    private let aiActiveDaysKey = "PaywallTriggerAIActiveDays"
+    private let aiSheetShownAtCountKey = "PaywallTriggerAISheetShownAtCount"
+
+    private var aiActiveDays: [String] {
+        UserDefaults.standard.stringArray(forKey: aiActiveDaysKey) ?? []
+    }
+
+    /// Counts each calendar day the app was used (reader opened or a limit tap).
+    private func noteAIActiveDay() {
+        var days = aiActiveDays
+        guard !days.contains(today) else { return }
+        days.append(today)
+        UserDefaults.standard.set(days, forKey: aiActiveDaysKey)
+    }
+
+    private var aiLimitSheetIsDue: Bool {
+        guard UserDefaults.standard.object(forKey: aiSheetShownAtCountKey) != nil else { return true }
+        let shownAt = UserDefaults.standard.integer(forKey: aiSheetShownAtCountKey)
+        return aiActiveDays.count - shownAt >= 7
     }
 
     /// Returns false when nothing will open, so the caller can show another response instead of doing nothing.
@@ -2482,6 +2515,7 @@ final class PaywallTriggerGate {
 
     func flush() {
         guard isEnabled else { return }
+        noteAIActiveDay()
         if UserDefaults.standard.bool(forKey: "PaywallTriggerImageSheetPending") {
             imageSheetTries = 0
             presentImageLimitSheet()

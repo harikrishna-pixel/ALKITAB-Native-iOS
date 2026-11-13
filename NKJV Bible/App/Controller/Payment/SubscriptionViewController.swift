@@ -255,6 +255,7 @@ extension SubscriptionViewController {
                         self.SetPaymentDAte()
                         self.transId = trans.transactionIdentifier!
                         UserDefaults.standard.set(true, forKey: "isPurchased")
+                        RestoreClass.shared.showPurchasedToast()
                     }
                 case .failed:
                     SKPaymentQueue.default().finishTransaction(transaction as! SKPaymentTransaction)

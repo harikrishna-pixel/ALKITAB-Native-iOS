@@ -26,7 +26,7 @@ extension AIUsageLimiter {
             // Toast copy under Get Explanation (e.g. "1 free explanation available").
             return left == 1 ? "1 free explanation available" : "\(left) free explanations available"
         case .chapterSummary:
-            return compact ? "\(left) of \(limit) free summary left today" : "\(left) of \(limit) free chapter summary remaining today"
+            return compact ? "\(left) free summary left today" : "\(left) of \(limit) free chapter summary remaining today"
         case .quiz:
             return "\(left) of \(limit) free quiz generation remaining today"
         }
@@ -128,6 +128,9 @@ final class AIRemainingLineView: UIView {
             titleRow.addArrangedSubview(boltView)
             titleRow.addArrangedSubview(label)
             addSubview(titleRow)
+            // Get Explanation toast: text only — no bolt icon and no bar under it.
+            boltView.isHidden = true
+            bar.isHidden = true
 
             NSLayoutConstraint.activate([
                 titleRow.topAnchor.constraint(equalTo: topAnchor),
@@ -135,14 +138,17 @@ final class AIRemainingLineView: UIView {
                 titleRow.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor),
                 titleRow.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
 
-                bar.topAnchor.constraint(equalTo: titleRow.bottomAnchor, constant: 6),
+                // The bar is hidden in this style, so it takes no space (keeps the toast compact).
+                bar.topAnchor.constraint(equalTo: titleRow.bottomAnchor),
                 bar.leadingAnchor.constraint(equalTo: leadingAnchor),
                 bar.trailingAnchor.constraint(equalTo: trailingAnchor),
-                bar.heightAnchor.constraint(equalToConstant: resolvedBarHeight),
+                bar.heightAnchor.constraint(equalToConstant: 0),
                 bar.bottomAnchor.constraint(equalTo: bottomAnchor)
             ])
         } else {
             addSubview(label)
+            // Get Summary line: text only — no bar under it.
+            if feature == .chapterSummary { bar.isHidden = true }
             NSLayoutConstraint.activate([
                 label.topAnchor.constraint(equalTo: topAnchor),
                 label.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -773,6 +779,8 @@ enum AIFeatureReminder {
     /// First BM / HL / Underline / Notes save of the day can show the card.
     private static let actionThreshold = 1
     private static weak var card: UIView?
+    /// The "Your free explanation is waiting" card is not needed. Set to true to bring it back.
+    private static let isBannerEnabled = false
 
     /// Call after the user bookmarks, highlights, underlines, or saves a note on a verse.
     static func noteVerseAction(book: String, chapter: Int, verse: Int, verses: [String]) {
@@ -812,6 +820,7 @@ enum AIFeatureReminder {
 
     /// `host` is the reading screen's view, so the verse menu and explanation sheet open above the card.
     static func showIfNeeded(in host: UIView, below sibling: UIView? = nil, reference: String, onTry: @escaping () -> Void) {
+        guard isBannerEnabled else { return }
         let limiter = AIUsageLimiter.shared
         let today = Date().string(format: "dd-MM-yyyy")
         guard card == nil,

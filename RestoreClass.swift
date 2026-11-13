@@ -23,8 +23,17 @@ static let shared = RestoreClass()
         PaymentHistory.sharedInstance.fallbackProductId = productID
         PaymentHistory.sharedInstance.fallbackTransactionId = transId
         guard showToast else { return }
+        showPurchasedToast()
+    }
+
+    /// Shown on the window, so it stays visible when the paywall closes or the next screen opens.
+    func showPurchasedToast() {
         DispatchQueue.main.async {
-            self.SourceVC?.view.makeToast("Purchased Successfully", duration: 2.0, position: .top)
+            let windows = UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .flatMap { $0.windows }
+            let window = windows.first(where: { $0.isKeyWindow }) ?? windows.first
+            window?.makeToast("Purchased Successfully", duration: 2.0, position: .top)
         }
     }
     

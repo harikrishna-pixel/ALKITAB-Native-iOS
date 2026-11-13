@@ -13,6 +13,8 @@ final class ReaderMoreSheet: UIView {
     var onCompanion: (() -> Void)?
     var onRecentArrivals: (() -> Void)?
     var onSettings: (() -> Void)?
+    /// Called when the user closes the sheet without choosing a row (tap outside or swipe down).
+    var onDismissedByUser: (() -> Void)?
 
     private weak var tabView: UIView?
     private let dimView = UIView()
@@ -48,7 +50,9 @@ final class ReaderMoreSheet: UIView {
     func dismissSheet() {
         guard superview != nil, !isClosing else { return }
         isClosing = true
-        UIView.animate(withDuration: 0.22, animations: {
+        isUserInteractionEnabled = false
+        // Start from where the sheet is now, so a quick tap during the open animation does not jump.
+        UIView.animate(withDuration: 0.22, delay: 0, options: [.beginFromCurrentState, .curveEaseIn], animations: {
             self.sheetView.transform = CGAffineTransform(translationX: 0, y: self.sheetView.bounds.height + 20)
             self.dimView.alpha = 0
         }, completion: { _ in
@@ -58,6 +62,8 @@ final class ReaderMoreSheet: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        // While closing, leave the sheet alone so layout cannot fight the slide-down.
+        guard !isClosing else { return }
         guard let tab = tabView, let parent = superview else { return }
         frame = parent.bounds
         let tabFrame = tab.convert(tab.bounds, to: self)
@@ -195,7 +201,9 @@ final class ReaderMoreSheet: UIView {
     }
 
     @objc private func dimTapped() {
+        guard !isClosing else { return }
         dismissSheet()
+        onDismissedByUser?()
     }
 
     @objc private func profileTapped() {
@@ -221,7 +229,9 @@ final class ReaderMoreSheet: UIView {
             sheetView.transform = CGAffineTransform(translationX: 0, y: max(0, translation))
         case .ended, .cancelled:
             if translation > 70 {
+                guard !isClosing else { return }
                 dismissSheet()
+                onDismissedByUser?()
             } else {
                 UIView.animate(withDuration: 0.2) {
                     self.sheetView.transform = .identity

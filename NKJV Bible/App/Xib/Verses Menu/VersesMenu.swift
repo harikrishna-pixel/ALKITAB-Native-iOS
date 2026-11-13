@@ -68,8 +68,8 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     private static var getExplanationExtraHeight: CGFloat {
         getExplanationTopInset + getExplanationButtonHeight + getExplanationBookNameGap
     }
-    private static let explanationRemainingGap: CGFloat = 8
-    private static let explanationRemainingHeight: CGFloat = 36
+    private static let explanationRemainingGap: CGFloat = 5
+    private static let explanationRemainingHeight: CGFloat = 20
     private var explanationRemainingView: AIRemainingLineView?
     private var explanationRemainingTop: NSLayoutConstraint?
     private var explanationRemainingHeightConstraint: NSLayoutConstraint?

@@ -510,6 +510,7 @@ struct OnboardingBridgeView: View {
 
 struct OnboardingProPaywallView: View {
     @StateObject private var storeManager = StoreManager()
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
     @State private var showExit = false
     @State private var exitAlreadyShown = false
     private enum PurchaseWait { case lifetime, exit, restore }
@@ -620,6 +621,7 @@ struct OnboardingProPaywallView: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
+                GeometryReader { geo in
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
                         HStack {
@@ -635,14 +637,16 @@ struct OnboardingProPaywallView: View {
                         }
                         .padding(.top, 8)
 
+                        if isPad { Spacer(minLength: 8) }
+
                         Image("onboard_paywall_bible")
                             .resizable()
                             .scaledToFit()
-                            .frame(height: 86)
+                            .frame(height: isPad ? 130 : 86)
                             .padding(.top, 4)
 
                         Text(OnboardingLocale.text(id: "Lebih Dekat dengan Tuhan", en: "Grow Closer to God"))
-                            .font(.system(size: 30, weight: .heavy))
+                            .font(.system(size: isPad ? 40 : 30, weight: .heavy))
                             .foregroundColor(.black)
                             .multilineTextAlignment(.center)
                             .padding(.top, 4)
@@ -668,6 +672,8 @@ struct OnboardingProPaywallView: View {
                             .overlay(Capsule().stroke(OnboardingTheme.growLine, lineWidth: 1))
                             .padding(.top, 12)
 
+                        if isPad { Spacer(minLength: 12) }
+
                         VStack(alignment: .leading, spacing: 11) {
                             benefit("nosign", OnboardingLocale.text(id: "Tanpa Iklan, Hanya Firman", en: "No Ads, Just Scripture"))
                             benefit("headphones", OnboardingLocale.text(id: "Baca & Dengarkan, Termasuk Offline", en: "Read & Listen, Even Offline"))
@@ -677,6 +683,8 @@ struct OnboardingProPaywallView: View {
                         }
                         .padding(.top, 16)
                         .padding(.horizontal, 8)
+
+                        if isPad { Spacer(minLength: 12) }
 
                         VStack(spacing: 8) {
                             Text(OnboardingLocale.text(id: "Akses Seumur Hidup", en: "Lifetime Access"))
@@ -713,8 +721,13 @@ struct OnboardingProPaywallView: View {
                             .foregroundColor(Color(hex: "6B7487"))
                             .multilineTextAlignment(.center)
                             .padding(.top, 10)
+
+                        if isPad { Spacer(minLength: 8) }
                     }
-                    .padding(.horizontal, 22)
+                    .padding(.horizontal, isPad ? 48 : 22)
+                    .frame(maxWidth: isPad ? 680 : .infinity)
+                    .frame(maxWidth: .infinity, minHeight: isPad ? geo.size.height : nil)
+                }
                 }
 
                 // Error states have their own "Try Again" button inside the price card.
@@ -735,6 +748,7 @@ struct OnboardingProPaywallView: View {
                     .buttonStyle(PlainButtonStyle())
                     .disabled(pricePhase == .loading || pricePhase == .retrying)
                     .padding(.horizontal, 22)
+                    .frame(maxWidth: isPad ? 680 : .infinity)
                     .padding(.top, 8)
                 }
 
@@ -1119,7 +1133,16 @@ struct OnboardingProPaywallView: View {
             paywallHost()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
             return
         }
-        beginPurchase(SUBSCRIPTIONID_LifeTime, kind: .lifetime)
+        // Already has a plan: show the "Already Have an Active Plan" alert first (same as the iPhone paywall).
+        PaywallOwnedPlanGuard.check(
+            store: storeManager,
+            trying: .lifetime,
+            onProceed: { beginPurchase(SUBSCRIPTIONID_LifeTime, kind: .lifetime) },
+            onRestore: {
+                purchaseWait = .restore
+                storeManager.restorePurchases(includeLegacyPaidDownload: true)
+            }
+        )
     }
 
     private func buyExit() {

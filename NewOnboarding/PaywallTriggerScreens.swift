@@ -514,7 +514,8 @@ private struct PaywallTriggerRoot: View {
     }
 
     private func closePlans() {
-        if onboarding && !model.offer.isEmpty && !model.life.isEmpty {
+        if onboarding {
+            // Always show the exit offer; it shows its own loading / no-internet / retry price states.
             showExit = true
         } else if onboarding {
             finishOnboarding()
@@ -1558,13 +1559,15 @@ private struct TriggerPlans: View {
                                 .padding(.top, 8)
 
                             HStack(spacing: 0) {
-                                planIcon("book.fill", "Ad-free\nreading")
-                                planIcon("lightbulb.fill", "AI explanations\n& summaries")
-                                planIcon("list.bullet.rectangle", "Quizzes &\nmemory tools")
-                                planIcon("chart.bar.fill", "Track your\nprogress")
+                                planIcon("book", "Ad-free\nreading")
+                                planIcon("lightbulb", "AI explanations\n& summaries")
+                                // Clipboard with a checklist, like the design (iOS 16+). iOS 15 falls back to a checklist.
+                                planIcon({ if #available(iOS 16.0, *) { return "list.clipboard" } else { return "checklist" } }(), "Quizzes &\nmemory tools")
+                                planIcon("chart.bar", "Track your\nprogress")
                             }
                             .padding(.top, compact ? 150 : max(56, geo.size.height * 0.08) + contentDown + 32)
 
+                            if pricePhase == .ready {
                             planCard(index: 0, title: "1 Year Premium", detail: "Ad-free + unlimited AI study", extra: TriggerPrices.perMonth(model.year), price: model.year, badge: "Best value")
                                 .padding(.top, compact ? 40 : max(40, geo.size.height * 0.06))
                                 .shadow(color: Color.black.opacity(0.15), radius: 6, y: 3)
@@ -1596,6 +1599,23 @@ private struct TriggerPlans: View {
                                 .foregroundColor(Color(hex: "8FA0BF"))
                                 .multilineTextAlignment(.center)
                                 .padding(.top, 6)
+                            } else {
+                                priceStatusCard
+                                    .padding(.top, compact ? 40 : max(40, geo.size.height * 0.06))
+                                if isPad {
+                                    Spacer(minLength: 0)
+                                }
+                                if pricePhase == .loading || pricePhase == .retrying {
+                                    // Disabled until a price arrives.
+                                    Text("Loading price...")
+                                        .font(.system(size: 17, weight: .bold))
+                                        .foregroundColor(Color(hex: "1B2536"))
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 56)
+                                        .background(RoundedRectangle(cornerRadius: 16).fill(Color(hex: "F7D57C").opacity(0.45)))
+                                        .padding(.top, 16)
+                                }
+                            }
                             TriggerLegalRow(onRestore: { model.restore() })
                                 .padding(.top, 10)
                                 .padding(.bottom, bottomInset + 8)
@@ -1609,6 +1629,91 @@ private struct TriggerPlans: View {
             .clipped()
         }
         .ignoresSafeArea()
+    }
+
+    // MARK: - Price states (loading / no internet / unavailable / retrying)
+    private enum PricePhase { case ready, loading, retrying, noInternet, unavailable }
+    @State private var isRetryingPrices = false
+    @State private var priceWaitExpired = false
+
+    private var pricePhase: PricePhase {
+        if !model.month.isEmpty || !model.year.isEmpty || !model.life.isEmpty { return .ready }
+        let store = model.store
+        let fetching = store.isLoading1 || store.isLoading2 || store.isLoading3
+        let online = NetworkManager.sharedInstance.isConnectedToInternet()
+        if isRetryingPrices { return fetching ? .retrying : (online ? .unavailable : .noInternet) }
+        if fetching { return .loading }
+        if !online { return .noInternet }
+        if store.hasProductLoadError || priceWaitExpired { return .unavailable }
+        return .loading
+    }
+
+    private func retryPrices() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
+            return
+        }
+        isRetryingPrices = true
+        model.store.retryAllPrices()
+    }
+
+    private var priceStatusCard: some View {
+        let phase = pricePhase
+        let waiting = phase == .loading || phase == .retrying
+        let offline = phase == .noInternet
+        return VStack(spacing: 10) {
+            if waiting {
+                SwiftUI.ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(1.2)
+            } else {
+                Image(systemName: offline ? "wifi.slash" : "exclamationmark.circle")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundColor(offline ? Color(hex: "9FB0CC") : Color(hex: "FF6B5E"))
+            }
+            Text(waiting
+                 ? (phase == .retrying ? "Retrying..." : "Getting your price...")
+                 : (offline ? "No Internet Connection" : "Price unavailable"))
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(.white)
+            Text(waiting
+                 ? (phase == .retrying ? "Getting your price again..." : "Please wait a moment")
+                 : (offline ? "Please check your internet connection and try again." : "We couldn't load the purchase price. This may be a temporary issue. Please try again."))
+                .font(.system(size: 13))
+                .foregroundColor(Color(hex: "B9C6DE"))
+                .multilineTextAlignment(.center)
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 12)
+            if !waiting {
+                Button(action: retryPrices) {
+                    HStack(spacing: 8) {
+                        Text("Try Again")
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 15, weight: .bold))
+                    }
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(Color(hex: "1B2536"))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(LinearGradient(colors: [Color(hex: "F7D57C"), Color(hex: "D9A23A")], startPoint: .leading, endPoint: .trailing)))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 22)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.white.opacity(0.07))
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.16), lineWidth: 1))
+        )
+        .onAppear {
+            // Never spin forever if Apple does not answer.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 12) { priceWaitExpired = true }
+        }
     }
 
     private var ctaPrice: String {
@@ -1631,22 +1736,32 @@ private struct TriggerPlans: View {
     }
 
     private func buy() {
-        if plan == 0 { model.buy(SUBSCRIPTIONID_OneYear) }
-        else if plan == 1 { model.buy(SUBSCRIPTIONID_Six_month) }
-        else { model.buy(SUBSCRIPTIONID_LifeTime) }
+        let productId = plan == 0 ? SUBSCRIPTIONID_OneYear : (plan == 1 ? SUBSCRIPTIONID_Six_month : SUBSCRIPTIONID_LifeTime)
+        let trying: PaywallOwnedPlanGuard.Plan = plan == 0 ? .year : (plan == 1 ? .month : .lifetime)
+        // Already has a plan: show the "Already Have an Active Plan" alert first (same as iPhone paywall).
+        PaywallOwnedPlanGuard.check(
+            store: model.store,
+            trying: trying,
+            onProceed: { model.buy(productId) },
+            onRestore: { model.restore() }
+        )
     }
 
     private func planIcon(_ symbol: String, _ title: String) -> some View {
         VStack(spacing: 6) {
             Image(systemName: symbol)
-                .font(.system(size: 16))
-                .foregroundColor(Color(hex: "F7D57C"))
-                .frame(width: 36, height: 36)
-                .background(Circle().fill(Color.white.opacity(0.08)))
+                .font(.system(size: 17, weight: .regular))
+                .foregroundColor(.white)
+                .frame(width: 40, height: 40)
+                .background(Circle().fill(Color.white.opacity(0.05)))
+                .overlay(Circle().stroke(Color.white.opacity(0.35), lineWidth: 1))
+            // Wrap to as many lines as needed so the label is never cut with "...".
             Text(title)
                 .font(.system(size: 10, weight: .medium))
-                .foregroundColor(Color(hex: "B9C6DE"))
+                .foregroundColor(.white)
                 .multilineTextAlignment(.center)
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
     }
@@ -1658,12 +1773,19 @@ private struct TriggerPlans: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
                         .font(.system(size: 16, weight: .bold))
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(extra.isEmpty ? detail : "\(detail)\n\(extra)")
                         .font(.system(size: 12))
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer()
+                Spacer(minLength: 8)
+                // Price is never cut; the description wraps instead.
                 Text(price)
                     .font(.system(size: 20, weight: .heavy))
+                    .lineLimit(1)
+                    .fixedSize()
                 Image(systemName: selected ? "largecircle.fill.circle" : "circle")
                     .font(.system(size: 18))
             }
@@ -1805,6 +1927,103 @@ private struct TriggerExitOffer: View {
     private var showsOldPrice: Bool { !model.offer.isEmpty && model.life != model.offer && !model.life.isEmpty }
     private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
 
+    // Exit offer price states (slow / no network)
+    private enum ExitPhase { case ready, loading, retrying, noInternet, unavailable }
+    @State private var exitRetrying = false
+    @State private var exitWaitExpired = false
+    @State private var exitWaitToken = 0
+
+    private var exitPhase: ExitPhase {
+        if !model.offer.isEmpty { return .ready }
+        if SUBSCRIPTIONID_ExitOffer.isEmpty && !model.life.isEmpty { return .ready }
+        if !NetworkManager.sharedInstance.isConnectedToInternet() { return .noInternet }
+        if exitRetrying { return .retrying }
+        if exitWaitExpired { return .unavailable }
+        return .loading
+    }
+
+    /// Stops waiting for the exit-offer price after 10 seconds and shows "Price unavailable".
+    private func startExitPriceWait(retry: Bool) {
+        exitWaitToken += 1
+        let token = exitWaitToken
+        exitWaitExpired = false
+        exitRetrying = retry
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+            guard token == exitWaitToken else { return }
+            exitRetrying = false
+            exitWaitExpired = true
+        }
+    }
+
+    private func retryExitPrice() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
+            return
+        }
+        startExitPriceWait(retry: true)
+        model.store.retryLifetimePrice()
+        model.store.retryExitOfferPrice()
+    }
+
+    private var exitStatusCard: some View {
+        let phase = exitPhase
+        let waiting = phase == .loading || phase == .retrying
+        let offline = phase == .noInternet
+        return VStack(spacing: 10) {
+            if waiting {
+                SwiftUI.ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "C9862A")))
+                    .scaleEffect(1.2)
+            } else {
+                Image(systemName: offline ? "wifi.slash" : "exclamationmark.circle")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundColor(offline ? Color(hex: "5E7194") : Color(hex: "D6453B"))
+            }
+            Text(waiting
+                 ? (phase == .retrying ? "Retrying..." : "Getting your price...")
+                 : (offline ? "No Internet Connection" : "Price unavailable"))
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(Color(hex: "12315C"))
+            Text(waiting
+                 ? (phase == .retrying ? "Getting your price again..." : "Please wait a moment")
+                 : (offline ? "Please check your internet connection and try again." : "We couldn't load the purchase price. This may be a temporary issue. Please try again."))
+                .font(.system(size: 13))
+                .foregroundColor(Color(hex: "5E7194"))
+                .multilineTextAlignment(.center)
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 12)
+            if !waiting {
+                Button(action: retryExitPrice) {
+                    HStack(spacing: 8) {
+                        Text("Try Again")
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 15, weight: .bold))
+                    }
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(Color(hex: "1B2536"))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(RoundedRectangle(cornerRadius: 14).fill(LinearGradient(colors: [Color(hex: "F7D57C"), Color(hex: "D9A23A")], startPoint: .leading, endPoint: .trailing)))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+        .background(RoundedRectangle(cornerRadius: 18).fill(LinearGradient(colors: [Color.white, Color(hex: "F6EDD6")], startPoint: .top, endPoint: .bottom)))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color(hex: "E8B64C"), lineWidth: 1.5))
+        .onAppear {
+            guard model.offer.isEmpty else { return }
+            startExitPriceWait(retry: false)
+            if NetworkManager.sharedInstance.isConnectedToInternet() {
+                model.store.retryExitOfferPrice()
+            }
+        }
+    }
+
     var body: some View {
         GeometryReader { geo in
             // iPad: keep content high + pin X to top-trailing. Phone layout unchanged.
@@ -1812,9 +2031,8 @@ private struct TriggerExitOffer: View {
                 ? max(geo.safeAreaInsets.top, 16)
                 : max(geo.safeAreaInsets.top, closeTopInset)
             let bottomPad = max(geo.safeAreaInsets.bottom, closeBottomInset)
-            let bgHeight = isPad
-                ? min(max(geo.size.height * 0.52, 420), 640)
-                : max(geo.size.height, 1)
+            // iPad: the night sky fills the whole screen (no empty dark band under it).
+            let bgHeight = max(geo.size.height, 1)
             let cardTop = isPad ? 28 : max(56, geo.size.height * 0.08)
             let contentWidth = isPad ? min(geo.size.width, 560) : geo.size.width
 
@@ -1869,6 +2087,7 @@ private struct TriggerExitOffer: View {
                                 .foregroundColor(Color(hex: "B9C6DE"))
                                 .padding(.top, 10)
 
+                            if exitPhase == .ready {
                             HStack(alignment: .center, spacing: 12) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("Lifetime")
@@ -1905,6 +2124,10 @@ private struct TriggerExitOffer: View {
                             .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color(hex: "E8B64C"), lineWidth: 1.5))
                             // Referral gap under subtitle — card a bit lower (phone). Tighter on iPad.
                             .padding(.top, cardTop)
+                            } else {
+                                exitStatusCard
+                                    .padding(.top, cardTop)
+                            }
 
                             VStack(alignment: .leading, spacing: 12) {
                                 exitLine("One payment, no renewals")
@@ -1922,15 +2145,16 @@ private struct TriggerExitOffer: View {
                                 }
                                 model.buy(SUBSCRIPTIONID_ExitOffer.isEmpty ? SUBSCRIPTIONID_LifeTime : SUBSCRIPTIONID_ExitOffer)
                             }) {
-                                Text("Get Lifetime · \(salePrice)")
+                                Text(exitPhase == .loading || exitPhase == .retrying ? "Loading price..." : "Get Lifetime Access")
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(Color(hex: "1B2536"))
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 56)
                                     .background(RoundedRectangle(cornerRadius: 16).fill(LinearGradient(colors: [Color(hex: "F7D57C"), Color(hex: "D9A23A")], startPoint: .leading, endPoint: .trailing)))
+                                    .opacity(exitPhase == .ready ? 1 : 0.55)
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .disabled(model.buying || salePrice.isEmpty)
+                            .disabled(model.buying || salePrice.isEmpty || exitPhase != .ready)
                             .shadow(color: Color(hex: "F7D57C").opacity(0.35), radius: 14, y: 6)
                             .padding(.top, 16)
 
@@ -1958,6 +2182,8 @@ private struct TriggerExitOffer: View {
                         .padding(.horizontal, isPad ? 32 : 24)
                         .frame(width: contentWidth, alignment: .top)
                         .frame(maxWidth: .infinity, alignment: .top)
+                        // iPad only: centre the offer on the full-screen background. Phone keeps minHeight 0.
+                        .frame(minHeight: isPad ? geo.size.height : 0, alignment: .center)
                     }
                 }
 
@@ -2025,5 +2251,209 @@ private struct TriggerExitOffer: View {
         let safari = SFSafariViewController(url: url)
         safari.dismissButtonStyle = .close
         host.present(safari, animated: true)
+    }
+}
+
+// MARK: - Already-have-a-plan check before a purchase
+/// Same "You Already Have an Active Plan" alert as the BibleSubscriptionView paywall.
+/// Used by the 3-plan paywall and the Pro paywall so iPhone and iPad behave the same.
+enum PaywallOwnedPlanGuard {
+    enum Plan { case month, year, lifetime }
+
+    private static var isChecking = false
+    private static weak var hud: UIView?
+
+    /// Calls `onProceed` when the user may buy. Shows the alert instead when a plan is already active.
+    static func check(store: StoreManager, trying: Plan, onProceed: @escaping () -> Void, onRestore: @escaping () -> Void) {
+        guard !isChecking else { return }
+        if let saved = savedLastPlan() {
+            if let expiry = saved.expiry, saved.kind != .lifetime, expiry.timeIntervalSinceNow < 0 {
+                onProceed()
+                return
+            }
+            present(owned: saved.kind, expiry: saved.expiry, trying: trying, onProceed: onProceed, onRestore: onRestore)
+            return
+        }
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            onProceed()
+            return
+        }
+        isChecking = true
+        showHUD()
+        store.lookupLastStorePlans { plans, cancelled in
+            isChecking = false
+            hideHUD()
+            if cancelled { return }
+            if let found = lastStorePlan(from: plans) {
+                let expiry = found.kind == .lifetime ? nil : storePlanExpiry(kind: found.kind, purchasedAt: found.purchasedAt)
+                if let expiry = expiry, expiry.timeIntervalSinceNow < 0 {
+                    onProceed()
+                    return
+                }
+                present(owned: found.kind, expiry: expiry, trying: trying, onProceed: onProceed, onRestore: onRestore)
+                return
+            }
+            onProceed()
+        }
+    }
+
+    // MARK: Saved / store plan
+
+    private static func savedLastPlan() -> (kind: Plan, expiry: Date?)? {
+        let paymentId = UserDefaults.standard.string(forKey: "PaymentId") ?? ""
+        var kind = planKind(from: paymentId)
+        if kind == nil && UserDefaults.standard.bool(forKey: "HasLifetimePurchase") {
+            kind = .lifetime
+        }
+        let expiry = savedPlanExpiry()
+        if kind == nil && expiry != nil {
+            kind = .month
+        }
+        guard let kind = kind else { return nil }
+        return (kind, kind == .lifetime ? nil : expiry)
+    }
+
+    private static func lastStorePlan(from plans: [(id: String, purchasedAt: Date?)]) -> (kind: Plan, purchasedAt: Date?)? {
+        var newestKind: Plan?
+        var newestDate: Date?
+        var undated: [Plan] = []
+        for plan in plans {
+            guard let kind = planKind(from: plan.id) else { continue }
+            if let date = plan.purchasedAt {
+                if newestDate == nil || date > newestDate! {
+                    newestDate = date
+                    newestKind = kind
+                }
+            } else {
+                undated.append(kind)
+            }
+        }
+        if let newestKind = newestKind { return (newestKind, newestDate) }
+        if undated.contains(.year) { return (.year, nil) }
+        if undated.contains(.month) { return (.month, nil) }
+        if undated.contains(.lifetime) { return (.lifetime, nil) }
+        return nil
+    }
+
+    private static func storePlanExpiry(kind: Plan, purchasedAt: Date?) -> Date? {
+        guard let purchasedAt = purchasedAt else { return nil }
+        let days: Int
+        switch kind {
+        case .year: days = 365
+        case .month: days = 30
+        case .lifetime: return nil
+        }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar.date(byAdding: .day, value: days, to: purchasedAt)
+    }
+
+    private static func savedPlanExpiry() -> Date? {
+        let stamp = UserDefaults.standard.double(forKey: "SubscriptionExpiryGMT")
+        if stamp > 0 {
+            return Date(timeIntervalSince1970: stamp)
+        }
+        let stored = CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI)
+        guard !stored.isEmpty else { return nil }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "dd-MM-yyyy"
+        return formatter.date(from: stored)
+    }
+
+    private static func planKind(from productId: String) -> Plan? {
+        let id = productId.lowercased()
+        guard !id.isEmpty else { return nil }
+        if id.contains("lifetime")
+            || productId == SUBSCRIPTIONID_LifeTime
+            || productId == SUBSCRIPTIONID_ExitOffer
+            || productId == FallbackIAPConstants.lifetimeProductID
+            || productId == FallbackIAPConstants.exitOfferProductID {
+            return .lifetime
+        }
+        if id.contains("oneyear") || id.contains("1year")
+            || productId == SUBSCRIPTIONID_OneYear
+            || productId == FallbackIAPConstants.oneYearProductID {
+            return .year
+        }
+        if id.contains("onemonth") || id.contains("sixmonth") || id.contains("month")
+            || productId == SUBSCRIPTIONID_Six_month
+            || productId == FallbackIAPConstants.oneMonthProductID {
+            return .month
+        }
+        return nil
+    }
+
+    // MARK: Alert
+
+    private static func planName(_ kind: Plan) -> String {
+        switch kind {
+        case .month: return "1 Month"
+        case .year: return "1 Year"
+        case .lifetime: return "Lifetime"
+        }
+    }
+
+    private static func present(owned: Plan, expiry: Date?, trying: Plan, onProceed: @escaping () -> Void, onRestore: @escaping () -> Void) {
+        let tryingLifetime = trying == .lifetime
+        let tryingYear = trying == .year
+        let ownedLifetime = owned == .lifetime
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "MMM d, yyyy"
+        let expiryLabel = expiry.map { formatter.string(from: $0) }
+
+        let title = ownedLifetime ? "You Already Own\nLifetime" : "You Already Have\nan Active Plan"
+        var message: String
+        if ownedLifetime {
+            message = tryingLifetime
+                ? "You already have Lifetime access."
+                : "You have Lifetime access. The \(tryingYear ? "1 Year" : "1 Month") plan will renew automatically \(tryingYear ? "each year" : "each month")."
+        } else if let expiryLabel = expiryLabel {
+            message = "Your last \(planName(owned)) plan is currently active until \(expiryLabel). Purchasing another plan will create an additional charge.\n\nExpires on \(expiryLabel)"
+        } else {
+            message = "Your last plan is \(planName(owned)). Purchasing another plan will create an additional charge."
+        }
+
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Close", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Restore My Current Plan", style: .default) { _ in onRestore() })
+        if ownedLifetime && !tryingLifetime {
+            let addLabel = tryingYear ? "Add 1 Year Plan" : "Add 1 Month Plan"
+            alert.addAction(UIAlertAction(title: addLabel, style: .default) { _ in onProceed() })
+        }
+        DispatchQueue.main.async {
+            OnboardingAuthManager.topViewController()?.present(alert, animated: true)
+        }
+    }
+
+    // MARK: Loader
+
+    private static func showHUD() {
+        DispatchQueue.main.async {
+            guard hud == nil, let container = OnboardingAuthManager.topViewController()?.view.window else { return }
+            let dim = UIView(frame: container.bounds)
+            dim.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            dim.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+            let spinner = UIActivityIndicatorView(style: .large)
+            spinner.color = .white
+            spinner.center = CGPoint(x: dim.bounds.midX, y: dim.bounds.midY)
+            spinner.autoresizingMask = [.flexibleLeftMargin, .flexibleRightMargin, .flexibleTopMargin, .flexibleBottomMargin]
+            spinner.startAnimating()
+            dim.addSubview(spinner)
+            container.addSubview(dim)
+            hud = dim
+        }
+    }
+
+    private static func hideHUD() {
+        DispatchQueue.main.async {
+            hud?.removeFromSuperview()
+            hud = nil
+        }
     }
 }

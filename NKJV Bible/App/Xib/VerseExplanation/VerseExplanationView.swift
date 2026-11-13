@@ -466,6 +466,8 @@ final class VerseExplanationView: UIView {
 
         titleLabel.text = screenTitle ?? verseReference.replacingOccurrences(of: "-", with: " ")
 
+        subtitleLabel.text = isSummaryContent ? "CHAPTER SUMMARY" : "VERSE EXPLANATION"
+
         if isSummaryContent {
             verseLabel.text = nil
             verseLabel.isHidden = true
@@ -544,6 +546,7 @@ final class VerseExplanationView: UIView {
                 // Keep the sheet open — auto-dismiss looked like Get Explanation never opened.
                 let message = getConnection.shared.networkBlockMessage() ?? "No internet connection."
                 self.showError(message)
+                self.makeToast("Check your internet connection", duration: 2.0, position: .top)
             case .failure(let error):
                 self.showError(error.localizedDescription)
             }
@@ -563,6 +566,7 @@ final class VerseExplanationView: UIView {
             self.fetchTask = nil
             self.isLoading = false
             self.showError("This is taking too long. Please check your internet and tap Retry.")
+            self.makeToast("Check your internet connection", duration: 2.0, position: .top)
         }
     }
 
@@ -600,6 +604,7 @@ final class VerseExplanationView: UIView {
                 // Keep the sheet open — auto-dismiss looked like the summary never opened.
                 let message = getConnection.shared.networkBlockMessage() ?? "No internet connection."
                 self.showError(message)
+                self.makeToast("Check your internet connection", duration: 2.0, position: .top)
             case .failure(let error):
                 self.showError(error.localizedDescription)
             }

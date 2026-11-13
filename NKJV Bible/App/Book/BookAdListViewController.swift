@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import SafariServices
 
 class BookAdListViewController: UIViewController {
     @IBOutlet var BookCatagory : UICollectionView!
@@ -210,14 +211,28 @@ extension BookAdListViewController: UICollectionViewDelegate, UICollectionViewDa
     
     @objc func ClickBookLink(sender: UIButton!) {
         if NetworkManager.sharedInstance.isConnectedToInternet() {
-                   if let url = URL(string: self.book_url[sender.tag]), UIApplication.shared.canOpenURL(url) {
-                       UIApplication.shared.open(url, options: [:]) { success in
-                           print(success ? "URL was opened successfully." : "Failed to open URL.")
-                       }
-                   } else {
+                   guard sender.tag < self.book_url.count else { return }
+                   let raw = self.book_url[sender.tag].trimmingCharacters(in: .whitespacesAndNewlines)
+                   // Links with spaces or special characters were silently rejected; encode them once.
+                   let encoded = raw.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed.union(CharacterSet(charactersIn: "#%")))
+                   guard let url = URL(string: raw) ?? encoded.flatMap({ URL(string: $0) }) else {
                        self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
+                       return
                    }
-                   
+                   UIApplication.shared.open(url, options: [:]) { [weak self] success in
+                       guard !success else { return }
+                       // The system could not open it (this used to do nothing). Fall back to an in-app browser.
+                       DispatchQueue.main.async {
+                           guard let self = self else { return }
+                           if let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" {
+                               let safari = SFSafariViewController(url: url)
+                               safari.dismissButtonStyle = .close
+                               self.present(safari, animated: true)
+                           } else {
+                               self.view.makeToast("Invalid URL or cannot open.", duration: 2.0, position: .top)
+                           }
+                       }
+                   }
                } else {
                    self.view.makeToast("No internet connection", duration: 2.0, position: .top)
                }

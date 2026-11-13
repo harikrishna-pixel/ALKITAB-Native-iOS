@@ -264,6 +264,7 @@ extension PaymentPopupVC {
                         self.transId = trans.transactionIdentifier!
                         UserDefaults.standard.set(true, forKey: "isPurchased")
                         self.LoaderVu.isHidden = true
+                        RestoreClass.shared.showPurchasedToast()
                     }
                 case .failed:
                     SKPaymentQueue.default().finishTransaction(transaction as! SKPaymentTransaction)

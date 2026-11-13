@@ -1723,17 +1723,33 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         }
     }
     
+    /// Tab that was selected before the More sheet opened, so closing the sheet can put it back.
+    private var moreReturnTab: String?
+
+    private func restoreTabAfterMoreSheet() {
+        defer { moreReturnTab = nil }
+        guard SelectedTab == "5", let previous = moreReturnTab, previous != "5" else { return }
+        SelectedTab = previous
+        reapplyBottomTabHighlightForSelectedTab()
+    }
+
     @IBAction func MoreAction(_ sender: Any) {
+        if view.viewWithTag(8822002) != nil {
+            // More tapped again while the sheet is open: close it and go back to the previous tab.
+            dismissMoreSheet()
+            restoreTabAfterMoreSheet()
+            return
+        }
+        if SelectedTab != "5" { moreReturnTab = SelectedTab }
         self.SelectedTab = "5"
         self.Buttonfram()
         self.selectBottomTabHighlight(.more)
-        if view.viewWithTag(8822002) != nil {
-            dismissMoreSheet()
-            return
-        }
 
         let sheet = ReaderMoreSheet()
         sheet.tag = 8822002
+        sheet.onDismissedByUser = { [weak self] in
+            self?.restoreTabAfterMoreSheet()
+        }
         sheet.onProfile = { [weak self] in
             self?.dismissMoreSheet()
             self?.openMoreProfile()

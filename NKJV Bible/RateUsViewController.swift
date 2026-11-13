@@ -80,19 +80,30 @@ class RateUsViewController: UIViewController {
             
             if self.RateBtn.titleLabel?.text == "Feedback" {
                 // Feedback requires internet
-                if NetworkManager.sharedInstance.isConnectedToInternet() {
-                    App_Protocol.SettingDelegate?.CallRate(Rate: "Feedback")
+                // Offline, 2G or Low Data Mode all show the same toast.
+                if getConnection.shared.networkBlockMessage() == nil {
+                    if let settingDelegate = App_Protocol.SettingDelegate {
+                        settingDelegate.CallRate(Rate: "Feedback")
+                    } else {
+                        // Settings was never opened, so its delegate is nil — open Feedback from the reader.
+                        App_Protocol.delegateReader?.FeedbackNavigate()
+                    }
                     self.dismiss(animated: true, completion: nil)
                 } else {
-                    self.view.makeToast("No internet connection", duration: 2.0, position: .top)
+                    self.view.makeToast("Check your internet connection", duration: 2.0, position: .top)
                 }
             } else {
-                // NEW FIX: Rate Us also requires internet check
-                if NetworkManager.sharedInstance.isConnectedToInternet() {
-                    App_Protocol.SettingDelegate?.CallRate(Rate: (self.RateBtn.titleLabel?.text)!)
+                // NEW FIX: Rate Us also requires internet check (offline, 2G or Low Data Mode)
+                if getConnection.shared.networkBlockMessage() == nil {
+                    if let settingDelegate = App_Protocol.SettingDelegate {
+                        settingDelegate.CallRate(Rate: (self.RateBtn.titleLabel?.text)!)
+                    } else {
+                        // Settings was never opened, so its delegate is nil — open Apple's rating directly.
+                        SKStoreReviewController.requestReviewInCurrentScene()
+                    }
                     self.dismiss(animated: true, completion: nil)
                 } else {
-                    self.view.makeToast("No internet connection", duration: 2.0, position: .top)
+                    self.view.makeToast("Check your internet connection", duration: 2.0, position: .top)
                 }
             }
         }
