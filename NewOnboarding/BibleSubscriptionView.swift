@@ -2213,6 +2213,26 @@ final class PaywallTriggerGate {
         return aiActiveDays.count - shownAt >= 7
     }
 
+    /// Separate trigger for Get Summary, Get Explanation and AI Chat. Each feature has its own counter,
+    /// so one feature using its trigger never blocks another. Shows the first time the limit is over,
+    /// then again after 7 more active days. Returns false when nothing opened (not due, offline, paid user),
+    /// so the caller can show the credits card or toast instead. `onClosed` runs when the sheet closes.
+    @discardableResult
+    func requestFeatureLimitSheet(feature: String, trigger: String, onClosed: @escaping () -> Void) -> Bool {
+        guard isEnabled, !isEntitled else { return false }
+        noteAIActiveDay()
+        let key = "PaywallTriggerFeatureSheetAtCount_" + feature
+        if UserDefaults.standard.object(forKey: key) != nil {
+            let shownAt = UserDefaults.standard.integer(forKey: key)
+            guard aiActiveDays.count - shownAt >= 7 else { return false }
+        }
+        guard NetworkManager.sharedInstance.isConnectedToInternet(),
+              PaywallTriggerPresenter.canPresent(trigger) else { return false }
+        UserDefaults.standard.set(aiActiveDays.count, forKey: key)
+        presentCurrentPaywall(countsAsPopup: false, trigger: trigger, onClose: onClosed)
+        return true
+    }
+
     /// Returns false when nothing will open, so the caller can show another response instead of doing nothing.
     @discardableResult
     func requestUserStarted(_ name: String) -> Bool {

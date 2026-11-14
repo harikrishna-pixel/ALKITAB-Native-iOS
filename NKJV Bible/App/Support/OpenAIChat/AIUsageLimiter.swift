@@ -236,10 +236,28 @@ final class AIUsageLimiter {
                     onGranted()
                     return
                 }
-                // Limit over (Chat, Get Explanation, Get Summary): enough credits shows the "Use 20 credits?" card,
-                // otherwise a toast. No paywall sheet in between. Set to false to bring the old trigger sheets back.
+                // Limit over (Chat, Get Explanation, Get Summary): each feature has its own trigger sheet (first time,
+                // then again after 7 active days). After it closes, or when it is not due, enough credits shows the
+                // "Use 20 credits?" card, otherwise a toast. Set to false to bring the old shared trigger sheets back.
                 if Self.limitUsesCreditsCardOrToast {
-                    self.offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
+                    let triggerName = feature == .aiChat
+                        ? (ChallengeWallet.coins <= 0 ? "chatCredits" : "chatLimit")
+                        : "aiExplain"
+                    let opened = PaywallTriggerGate.shared.requestFeatureLimitSheet(feature: feature.rawValue, trigger: triggerName, onClosed: { [weak self] in
+                        guard let self = self else { return }
+                        // Let the sheet finish closing before the credits card or toast.
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                            if self.hasUnlimitedPlan {
+                                self.pending[feature] = .unlimited
+                                onGranted()
+                                return
+                            }
+                            self.offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
+                        }
+                    })
+                    if !opened {
+                        self.offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
+                    }
                     return
                 }
                 if feature == .aiChat {

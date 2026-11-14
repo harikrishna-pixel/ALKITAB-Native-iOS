@@ -241,7 +241,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
       case (3, 0):
           self.BookCatagory()
       case (3, 1):
-          if NetworkManager.sharedInstance.isConnectedToInternet() {
+          if let message = getConnection.shared.networkBlockMessage() {
+              self.view.makeToast(message, duration: 2.0, position: .top)
+          } else if NetworkManager.sharedInstance.isConnectedToInternet() {
               let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "FeedbackViewController") as! FeedbackViewController
               self.navigationController?.pushViewController(vc, animated: true)
           } else {
@@ -251,7 +253,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           self.AboutUsNavigate()
           App_Protocol.delegateReader?.hideBottomMenu(Status: true)
       case (3, 3):
-          if NetworkManager.sharedInstance.isConnectedToInternet() {
+          if let message = getConnection.shared.networkBlockMessage() {
+              self.view.makeToast(message, duration: 2.0, position: .top)
+          } else if NetworkManager.sharedInstance.isConnectedToInternet() {
               SKStoreReviewController.requestReviewInCurrentScene()
           } else {
               self.view.makeToast("No internet connection", duration: 2.0, position: .top)

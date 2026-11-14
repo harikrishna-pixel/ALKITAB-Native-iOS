@@ -199,7 +199,9 @@ class AboutUsViewController: UIViewController, Setting {
     @IBAction func FeedBack(_ sender: Any) {
 //        App_Protocol.delegateReader?.FeedbackNavigate()
         
-        if NetworkManager.sharedInstance.isConnectedToInternet() {
+        if let message = getConnection.shared.networkBlockMessage() {
+            self.view.makeToast(message, duration: 2.0, position: .bottom)
+        } else if NetworkManager.sharedInstance.isConnectedToInternet() {
             let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "FeedbackViewController") as! FeedbackViewController
             self.navigationController?.pushViewController(vc, animated: true)
         } else {
