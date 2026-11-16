@@ -16,7 +16,7 @@ class SplashVc: UIViewController, SplashDelegate {
     @IBOutlet weak var AppText: UILabel!
     
     private let splashStartTime = Date()
-    private let minimumSplashDuration: TimeInterval = 1.2
+    private let minimumSplashDuration: TimeInterval = 2.4
         
     
     var PopupView:UIView?
@@ -35,6 +35,7 @@ class SplashVc: UIViewController, SplashDelegate {
         AppConstrains.shared.Constrains()
         App_Protocol.DelegateSplash = self
         configureSplashBranding()
+        showDualSplash()
         
         // MARK: - Preload IAP Products Early
         // Load fallback or cached data first, then preload products
@@ -252,9 +253,24 @@ class SplashVc: UIViewController, SplashDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 
+    /// Dual-Bible app: cover the original splash with the dual splash so only one splash is ever visible.
+    private func showDualSplash() {
+        guard APP_TYPE == "2" else { return }
+        let splash = UIHostingController(rootView: DualSplashView())
+        addChild(splash)
+        splash.view.frame = view.bounds
+        splash.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(splash.view)
+        splash.didMove(toParent: self)
+    }
+
     private func presentOnboarding() {
         DispatchQueue.main.async {
-            if usesOldOnboarding {
+            if APP_TYPE == "2" {
+                // Dual-Bible app: welcome, goal, explain a verse, reminders, then the paywall (splash already shown above).
+                let hostingController = UIHostingController(rootView: DualOnboardingRoot())
+                self.navigationController?.pushViewController(hostingController, animated: false)
+            } else if usesOldOnboarding {
                 let hostingController = UIHostingController(rootView: BeforeOnboarding1())
                 self.navigationController?.pushViewController(hostingController, animated: true)
             } else {

@@ -241,6 +241,8 @@ private final class PaywallTriggerModel: ObservableObject {
     let store = StoreManager()
     @Published var buying = false
     @Published var loading = false
+    /// Dual plans screen only. 0 = 1 month, 1 = 1 year, 2 = lifetime.
+    @Published var dualPick = 1
     var onFinished: (() -> Void)?
     private var priceWatch: AnyCancellable?
     private var alertWatch: AnyCancellable?
@@ -324,7 +326,11 @@ private struct PaywallTriggerRoot: View {
             rootFillColor.ignoresSafeArea()
 
             if showExit {
-                TriggerExitOffer(model: model, onClose: finishOnboarding, onRestore: { model.restore() })
+                if APP_TYPE == "2" {
+                    DualPaywallExitOffer(model: model, onClose: finishOnboarding, onRestore: { model.restore() })
+                } else {
+                    TriggerExitOffer(model: model, onClose: finishOnboarding, onRestore: { model.restore() })
+                }
             } else if let followUp = followUp {
                 screenBody(followUp)
             } else {
@@ -456,7 +462,9 @@ private struct PaywallTriggerRoot: View {
         case .day30:
             TriggerDay30(model: model, onClose: closeModal)
         case .plans:
-            TriggerPlans(model: model, onClose: closePlans)
+            // .id forces a fresh plans screen on every plan tap. The screen itself did not redraw, so the tick stayed on 1 Year.
+            DualPaywallPlans(model: model, pick: model.dualPick, onClose: closePlans)
+                .id(model.dualPick)
         case .feedback(let book, let chapters):
             TriggerFeedbackCard(
                 book: book,
@@ -1485,336 +1493,6 @@ private struct TriggerStreakRating: View {
     }
 }
 
-private struct TriggerPlans: View {
-    @ObservedObject var model: PaywallTriggerModel
-    var onClose: () -> Void
-    @State private var plan = 0
-
-    var body: some View {
-        GeometryReader { geo in
-            let topInset = max(geo.safeAreaInsets.top, 12)
-            let bottomInset = max(geo.safeAreaInsets.bottom, 10)
-            // Short iPhones (SE / 8 size) only; taller phones and iPad keep the values below.
-            let compact = geo.size.height < 750 && UIDevice.current.userInterfaceIdiom != .pad
-            let topBgHeight = geo.size.height * (compact ? 0.55 : 0.42) + topInset
-            let contentDown: CGFloat = 28
-            // iPad: CTA + fine print sit at the bottom of the screen instead of under the cards.
-            let isPad = UIDevice.current.userInterfaceIdiom == .pad
-
-            ZStack(alignment: .top) {
-                Color(hex: "0A1A2F")
-
-                // Photo + content share one ScrollView so bg moves with text/cards.
-                ScrollView(showsIndicators: false) {
-                    ZStack(alignment: .top) {
-                        Image("main_paywall_bg")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: geo.size.width, height: topBgHeight, alignment: .bottom)
-                            .clipped()
-                            .overlay(Color(hex: "0A1A2F").opacity(0.16))
-                            .overlay(
-                                LinearGradient(
-                                    colors: [
-                                        Color.clear,
-                                        Color(hex: "0A1A2F").opacity(0.35),
-                                        Color(hex: "0A1A2F")
-                                    ],
-                                    startPoint: .center,
-                                    endPoint: .bottom
-                                )
-                            )
-                            .frame(maxWidth: .infinity, alignment: .top)
-
-                        VStack(spacing: 0) {
-                            // X scrolls with bg + content.
-                            HStack(alignment: .center) {
-                                Text("PREMIUM")
-                                    .font(.system(size: 11, weight: .heavy))
-                                    .tracking(1.6)
-                                    .foregroundColor(Color(hex: "F7D57C"))
-                                Spacer(minLength: 8)
-                                Button(action: onClose) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 32, height: 32)
-                                        .background(Circle().fill(Color.white.opacity(0.22)))
-                                        .contentShape(Circle())
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .accessibilityLabel("Close")
-                            }
-                            .padding(.top, compact ? topInset + 16 : topInset + 8 + contentDown + 28)
-
-                            Text("Know the Word Better.")
-                                .font(.system(size: 34, weight: .bold, design: .serif))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.top, 10)
-                            Text("Read Scripture. Explore its meaning.\nTest what you’ve learned.")
-                                .font(.system(size: 15))
-                                .foregroundColor(Color(hex: "B9C6DE"))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.top, 8)
-
-                            HStack(spacing: 0) {
-                                planIcon("book", "Ad-free\nreading")
-                                planIcon("lightbulb", "AI explanations\n& summaries")
-                                // Clipboard with a checklist, like the design (iOS 16+). iOS 15 falls back to a checklist.
-                                planIcon({ if #available(iOS 16.0, *) { return "list.clipboard" } else { return "checklist" } }(), "Quizzes &\nmemory tools")
-                                planIcon("chart.bar", "Track your\nprogress")
-                            }
-                            .padding(.top, compact ? 150 : max(56, geo.size.height * 0.08) + contentDown + 32)
-
-                            if pricePhase == .ready {
-                            planCard(index: 0, title: "1 Year Premium", detail: "Ad-free + unlimited AI study", extra: TriggerPrices.perMonth(model.year), price: model.year, badge: "Best value")
-                                .padding(.top, compact ? 40 : max(40, geo.size.height * 0.06))
-                                .shadow(color: Color.black.opacity(0.15), radius: 6, y: 3)
-                            planCard(index: 1, title: "1 Month Premium", detail: "Ad-free + unlimited AI study", extra: "", price: model.month, badge: "")
-                                .padding(.top, 10)
-                            planCard(index: 2, title: "Lifetime Ad-Free", detail: "One payment · no AI", extra: "", price: model.life, badge: "")
-                                .padding(.top, 10)
-                            if isPad {
-                                Spacer(minLength: 0)
-                            }
-                            Button(action: buy) {
-                                Text(cta)
-                                    .font(.system(size: 17, weight: .bold))
-                                    .foregroundColor(Color(hex: "1B2536"))
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 56)
-                                    .background(RoundedRectangle(cornerRadius: 16).fill(LinearGradient(colors: [Color(hex: "F7D57C"), Color(hex: "D9A23A")], startPoint: .leading, endPoint: .trailing)))
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .disabled(ctaPrice.isEmpty || model.buying)
-                            .shadow(color: Color.black.opacity(0.18), radius: 6, y: 3)
-                            .padding(.top, 16)
-                            Text(plan == 2 ? "Purchase managed by Apple" : "Cancel anytime · Purchase managed by Apple")
-                                .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "B9C6DE"))
-                                .padding(.top, 8)
-                            Text(finePrint)
-                                .font(.system(size: 11))
-                                .foregroundColor(Color(hex: "8FA0BF"))
-                                .multilineTextAlignment(.center)
-                                .padding(.top, 6)
-                            } else {
-                                priceStatusCard
-                                    .padding(.top, compact ? 40 : max(40, geo.size.height * 0.06))
-                                if isPad {
-                                    Spacer(minLength: 0)
-                                }
-                                if pricePhase == .loading || pricePhase == .retrying {
-                                    // Disabled until a price arrives.
-                                    Text("Loading price...")
-                                        .font(.system(size: 17, weight: .bold))
-                                        .foregroundColor(Color(hex: "1B2536"))
-                                        .frame(maxWidth: .infinity)
-                                        .frame(height: 56)
-                                        .background(RoundedRectangle(cornerRadius: 16).fill(Color(hex: "F7D57C").opacity(0.45)))
-                                        .padding(.top, 16)
-                                }
-                            }
-                            TriggerLegalRow(onRestore: { model.restore() })
-                                .padding(.top, 10)
-                                .padding(.bottom, bottomInset + 8)
-                        }
-                        .padding(.horizontal, 22)
-                        .frame(minHeight: isPad ? geo.size.height : nil, alignment: .top)
-                    }
-                }
-            }
-            .frame(width: geo.size.width, height: geo.size.height)
-            .clipped()
-        }
-        .ignoresSafeArea()
-    }
-
-    // MARK: - Price states (loading / no internet / unavailable / retrying)
-    private enum PricePhase { case ready, loading, retrying, noInternet, unavailable }
-    @State private var isRetryingPrices = false
-    @State private var priceWaitExpired = false
-
-    private var pricePhase: PricePhase {
-        if !model.month.isEmpty || !model.year.isEmpty || !model.life.isEmpty { return .ready }
-        let store = model.store
-        let fetching = store.isLoading1 || store.isLoading2 || store.isLoading3
-        let online = NetworkManager.sharedInstance.isConnectedToInternet()
-        if isRetryingPrices { return fetching ? .retrying : (online ? .unavailable : .noInternet) }
-        if fetching { return .loading }
-        if !online { return .noInternet }
-        if store.hasProductLoadError || priceWaitExpired { return .unavailable }
-        return .loading
-    }
-
-    private func retryPrices() {
-        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
-            OnboardingAuthManager.topViewController()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
-            return
-        }
-        isRetryingPrices = true
-        model.store.retryAllPrices()
-    }
-
-    private var priceStatusCard: some View {
-        let phase = pricePhase
-        let waiting = phase == .loading || phase == .retrying
-        let offline = phase == .noInternet
-        return VStack(spacing: 10) {
-            if waiting {
-                SwiftUI.ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    .scaleEffect(1.2)
-            } else {
-                Image(systemName: offline ? "wifi.slash" : "exclamationmark.circle")
-                    .font(.system(size: 28, weight: .medium))
-                    .foregroundColor(offline ? Color(hex: "9FB0CC") : Color(hex: "FF6B5E"))
-            }
-            Text(waiting
-                 ? (phase == .retrying ? "Retrying..." : "Getting your price...")
-                 : (offline ? "No Internet Connection" : "Price unavailable"))
-                .font(.system(size: 17, weight: .bold))
-                .foregroundColor(.white)
-            Text(waiting
-                 ? (phase == .retrying ? "Getting your price again..." : "Please wait a moment")
-                 : (offline ? "Please check your internet connection and try again." : "We couldn't load the purchase price. This may be a temporary issue. Please try again."))
-                .font(.system(size: 13))
-                .foregroundColor(Color(hex: "B9C6DE"))
-                .multilineTextAlignment(.center)
-                .lineLimit(nil)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 12)
-            if !waiting {
-                Button(action: retryPrices) {
-                    HStack(spacing: 8) {
-                        Text("Try Again")
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 15, weight: .bold))
-                    }
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(Color(hex: "1B2536"))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(LinearGradient(colors: [Color(hex: "F7D57C"), Color(hex: "D9A23A")], startPoint: .leading, endPoint: .trailing)))
-                }
-                .buttonStyle(PlainButtonStyle())
-                .padding(.horizontal, 16)
-                .padding(.top, 4)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 22)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color.white.opacity(0.07))
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.16), lineWidth: 1))
-        )
-        .onAppear {
-            // Never spin forever if Apple does not answer.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 12) { priceWaitExpired = true }
-        }
-    }
-
-    private var ctaPrice: String {
-        plan == 0 ? model.year : (plan == 1 ? model.month : model.life)
-    }
-
-    private var cta: String {
-        if plan == 0 { return "Get Yearly Access" }
-        if plan == 1 { return "Start 3-Day Free Trial" }
-        return "Get Lifetime Access"
-    }
-
-    private var finePrint: String {
-        if plan == 2 {
-            return "One-time purchase. Nothing renews. Removes banners and interstitial ads; does not include AI."
-        }
-        let price = plan == 0 ? model.year : model.month
-        let period = plan == 0 ? "year" : "month"
-        return "\(price) per \(period), renews every \(period) until cancelled. Cancel anytime in iPhone Settings → Apple ID → Subscriptions."
-    }
-
-    private func buy() {
-        let productId = plan == 0 ? SUBSCRIPTIONID_OneYear : (plan == 1 ? SUBSCRIPTIONID_Six_month : SUBSCRIPTIONID_LifeTime)
-        let trying: PaywallOwnedPlanGuard.Plan = plan == 0 ? .year : (plan == 1 ? .month : .lifetime)
-        // Already has a plan: show the "Already Have an Active Plan" alert first (same as iPhone paywall).
-        PaywallOwnedPlanGuard.check(
-            store: model.store,
-            trying: trying,
-            onProceed: { model.buy(productId) },
-            onRestore: { model.restore() }
-        )
-    }
-
-    private func planIcon(_ symbol: String, _ title: String) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: symbol)
-                .font(.system(size: 17, weight: .regular))
-                .foregroundColor(.white)
-                .frame(width: 40, height: 40)
-                .background(Circle().fill(Color.white.opacity(0.05)))
-                .overlay(Circle().stroke(Color.white.opacity(0.35), lineWidth: 1))
-            // Wrap to as many lines as needed so the label is never cut with "...".
-            Text(title)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
-                .lineLimit(nil)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func planCard(index: Int, title: String, detail: String, extra: String, price: String, badge: String) -> some View {
-        let selected = plan == index
-        return Button(action: { plan = index }) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(.system(size: 16, weight: .bold))
-                        .lineLimit(nil)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(extra.isEmpty ? detail : "\(detail)\n\(extra)")
-                        .font(.system(size: 12))
-                        .lineLimit(nil)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 8)
-                // Price is never cut; the description wraps instead.
-                Text(price)
-                    .font(.system(size: 20, weight: .heavy))
-                    .lineLimit(1)
-                    .fixedSize()
-                Image(systemName: selected ? "largecircle.fill.circle" : "circle")
-                    .font(.system(size: 18))
-            }
-            .foregroundColor(selected ? Color(hex: "12315C") : .white)
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(selected ? LinearGradient(colors: [Color.white, Color(hex: "F6EDD6")], startPoint: .top, endPoint: .bottom) : LinearGradient(colors: [Color.white.opacity(0.07), Color.white.opacity(0.07)], startPoint: .top, endPoint: .bottom))
-                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(selected ? Color(hex: "E8B64C") : Color.white.opacity(0.16), lineWidth: 1))
-            )
-            .overlay(
-                Group {
-                    if !badge.isEmpty {
-                        Text(badge)
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(Color(hex: "1B2536"))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Capsule().fill(Color(hex: "F7D57C")))
-                            .offset(y: -10)
-                    }
-                },
-                alignment: .topTrailing
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
 private struct TriggerDay30: View {
     @ObservedObject var model: PaywallTriggerModel
     var onClose: () -> Void
@@ -2455,5 +2133,707 @@ enum PaywallOwnedPlanGuard {
             hud?.removeFromSuperview()
             hud = nil
         }
+    }
+}
+
+// MARK: - Dual-Bible onboarding paywall (APP_TYPE "2"): square plan tiles + one-time exit offer
+// Same model, prices, purchase and restore as the screens above; only the look is different.
+
+private enum DualPayInsets {
+    private static var window: UIWindow? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+    }
+    static var top: CGFloat { max(window?.safeAreaInsets.top ?? 0, 20) }
+    // 34 clears the home indicator. The old floor of 14 let the last row slide under it.
+    static var bottom: CGFloat { max(window?.safeAreaInsets.bottom ?? 0, 34) }
+}
+
+private let dualPayCTA = Color(hex: "E9BB58")
+private let dualPayInk = Color(hex: "1B1406")
+
+private struct DualPayCTAButton: View {
+    let title: String
+    var enabled: Bool = true
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 19, weight: .bold))
+                .foregroundColor(dualPayInk)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+                .background(Capsule().fill(dualPayCTA))
+                .shadow(color: Color.black.opacity(0.28), radius: 12, x: 0, y: 6)
+                .opacity(enabled ? 1 : 0.5)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(!enabled)
+    }
+}
+
+private struct DualPayBenefits: View {
+    let lines: [String]
+    let scale: CGFloat
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14 * scale) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                HStack(spacing: 14 * scale) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11 * scale, weight: .heavy))
+                        .foregroundColor(DualTheme.gold)
+                        .frame(width: 28 * scale, height: 28 * scale)
+                        .overlay(Circle().stroke(DualTheme.gold, lineWidth: 1.5))
+                    Text(line)
+                        .font(.system(size: 17 * scale, weight: .bold))
+                        .foregroundColor(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+    }
+}
+
+private struct DualPayStatusCard: View {
+    let waiting: Bool
+    let offline: Bool
+    let retrying: Bool
+    let scale: CGFloat
+    let retry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 10) {
+            if waiting {
+                SwiftUI.ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(1.2)
+            } else {
+                Image(systemName: offline ? "wifi.slash" : "exclamationmark.circle")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundColor(offline ? Color(hex: "9FB0CC") : Color(hex: "FF6B5E"))
+            }
+            Text(waiting
+                 ? (retrying ? "Retrying..." : "Getting your price...")
+                 : (offline ? "No Internet Connection" : "Price unavailable"))
+                .font(.system(size: 17 * scale, weight: .bold))
+                .foregroundColor(.white)
+            Text(waiting
+                 ? (retrying ? "Getting your price again..." : "Please wait a moment")
+                 : (offline ? "Please check your internet connection and try again." : "We couldn't load the purchase price. This may be a temporary issue. Please try again."))
+                .font(.system(size: 14 * scale))
+                .foregroundColor(DualTheme.dim)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 12)
+            if !waiting {
+                Button(action: retry) {
+                    HStack(spacing: 8) {
+                        Text("Try Again")
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 15, weight: .bold))
+                    }
+                    .font(.system(size: 17 * scale, weight: .bold))
+                    .foregroundColor(dualPayInk)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50 * scale)
+                    .background(Capsule().fill(dualPayCTA))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 22 * scale)
+        .background(
+            RoundedRectangle(cornerRadius: 24 * scale, style: .continuous)
+                .fill(Color.white.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24 * scale, style: .continuous)
+                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+        )
+    }
+}
+
+private func dualPayOpen(_ urlString: String) {
+    guard let url = URL(string: urlString),
+          let host = OnboardingAuthManager.topViewController() else { return }
+    let safari = SFSafariViewController(url: url)
+    safari.dismissButtonStyle = .close
+    host.present(safari, animated: true)
+}
+
+private struct DualPayLegalRow: View {
+    let onRestore: () -> Void
+    let scale: CGFloat
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Button("Restore Purchases", action: onRestore)
+            Text("·")
+            Button("Terms of Use") { dualPayOpen(TermsURL) }
+            Text("·")
+            Button("Privacy Policy") { dualPayOpen(PrivacyURL) }
+        }
+        .font(.system(size: 14 * scale, weight: .semibold))
+        .foregroundColor(Color.white.opacity(0.7))
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+/// Dual plans screen. A tap sets `model.dualPick` (0 month, 1 year, 2 lifetime).
+private struct DualPaywallPlans: View {
+    @ObservedObject var model: PaywallTriggerModel
+    /// Passed in by the parent on every update. Reading `model.dualPick` here did not re-run this view's body.
+    let pick: Int
+    var onClose: () -> Void
+
+    @State private var isRetryingPrices = false
+    @State private var priceWaitExpired = false
+
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+
+    private enum PricePhase { case ready, loading, retrying, noInternet, unavailable }
+
+    private var pricePhase: PricePhase {
+        if !model.month.isEmpty || !model.year.isEmpty || !model.life.isEmpty { return .ready }
+        let store = model.store
+        let fetching = store.isLoading1 || store.isLoading2 || store.isLoading3
+        let online = NetworkManager.sharedInstance.isConnectedToInternet()
+        if isRetryingPrices { return fetching ? .retrying : (online ? .unavailable : .noInternet) }
+        if fetching { return .loading }
+        if !online { return .noInternet }
+        if store.hasProductLoadError || priceWaitExpired { return .unavailable }
+        return .loading
+    }
+
+    private func retryPrices() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
+            return
+        }
+        isRetryingPrices = true
+        model.store.retryAllPrices()
+    }
+
+    private var titleLines: [String] {
+        switch pick {
+        case 0: return ["Start a daily habit", "with God's Word"]
+        case 1: return ["A whole year", "with God's Word"]
+        default: return ["God's Word,", "yours for life"]
+        }
+    }
+    private var subtitle: String {
+        switch pick {
+        case 0: return "Try it free for 3 days. See how a little Scripture each day feels."
+        case 1: return "Our best value. A full year of growing closer to God's Word."
+        default: return "One payment. Scripture by your side in every season."
+        }
+    }
+    private var benefits: [String] {
+        switch pick {
+        case 0: return ["Fully ad-free while you read", "Unlimited AI explanations and chat", "Unlimited challenges and streak"]
+        case 1: return ["Fully ad-free for the whole year", "Unlimited AI explanations and chat", "Unlimited challenges and streak"]
+        default: return ["Fully ad-free, forever", "One-time purchase, never expires", "Unlimited challenges and streak"]
+        }
+    }
+    private var helper: String {
+        switch pick {
+        case 0: return "Start free. We hope it becomes part of your day."
+        case 1: return "Our best offer. Stay with it, cancel anytime."
+        default: return "One-time purchase. AI help runs on credits."
+        }
+    }
+    private var cta: String {
+        switch pick {
+        case 0: return "Start 3-Day Free Trial"
+        case 1: return "Claim the Best Offer"
+        default: return "Get Lifetime Access"
+        }
+    }
+    private var noteLine: String {
+        switch pick {
+        case 0: return "Your 3 free days come first. Cancel anytime."
+        case 1: return "One simple yearly plan. Cancel anytime."
+        default: return "Pay once and it is yours for life."
+        }
+    }
+    private var fineLine: String {
+        switch pick {
+        case 0: return "Renews monthly. Manage in Apple Account settings."
+        case 1: return "Renews yearly. Manage in Apple Account settings."
+        default: return "No subscription, no renewal."
+        }
+    }
+    private var saveBadge: String {
+        guard let month = TriggerPrices.amount(model.month), let year = TriggerPrices.amount(model.year),
+              month > 0, year > 0 else { return "" }
+        let percent = Int(((1 - year / (month * 12)) * 100).rounded())
+        return percent > 0 ? "SAVE \(percent)%" : ""
+    }
+    private var selectedPrice: String {
+        pick == 0 ? model.month : (pick == 1 ? model.year : model.life)
+    }
+
+    var body: some View {
+        let s = DualTheme.scale(isPad: isPad, height: UIScreen.main.bounds.height)
+        // Built here, not inside the GeometryReader closure: SwiftUI did not re-run that closure when the
+        // chosen plan changed, so the tick, outline and text stayed on 1 Year.
+        let headerView = header(scale: s)
+        let choicesView = choices(scale: s)
+        ZStack {
+            DualBackground()
+            // One scroll for the whole page. On a tall phone the plans sit at the bottom; on a short one everything scrolls.
+            GeometryReader { area in
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        headerView
+                        Spacer(minLength: 0)
+                        choicesView
+                    }
+                    .frame(maxWidth: isPad ? 600 : .infinity)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: area.size.height, alignment: .top)
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 12) { priceWaitExpired = true }
+        }
+    }
+
+    private func header(scale s: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15 * s, weight: .bold))
+                        .foregroundColor(Color.white.opacity(0.8))
+                        .frame(width: 44 * s, height: 44 * s)
+                        .background(Circle().fill(Color.white.opacity(0.14)))
+                }
+                .buttonStyle(BorderlessButtonStyle())
+                .accessibilityLabel("Close")
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, DualPayInsets.top + 6)
+
+            Text("✦ GO PREMIUM")
+                .font(.system(size: 14 * s, weight: .heavy))
+                .tracking(1.6)
+                .foregroundColor(DualTheme.gold)
+                .padding(.horizontal, 18 * s)
+                .padding(.vertical, 9 * s)
+                .background(Capsule().fill(Color.white.opacity(0.06)))
+                .overlay(Capsule().stroke(DualTheme.gold.opacity(0.7), lineWidth: 1))
+                .padding(.top, 8 * s)
+
+            VStack(spacing: 0) {
+                ForEach(titleLines, id: \.self) { line in
+                    Text(line)
+                        .font(.system(size: 36 * s, weight: .bold, design: .serif))
+                        .foregroundColor(.white)
+                }
+            }
+            .multilineTextAlignment(.center)
+            .padding(.top, 14 * s)
+
+            Text(subtitle)
+                .font(.system(size: 17 * s))
+                .lineSpacing(3)
+                .foregroundColor(DualTheme.dim)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 44)
+                .padding(.top, 10 * s)
+
+            DualPayBenefits(lines: benefits, scale: s)
+                .padding(.horizontal, 34)
+                .padding(.top, 16 * s)
+                .padding(.bottom, 6 * s)
+        }
+    }
+
+    private func choices(scale s: CGFloat) -> some View {
+        let ready = pricePhase == .ready
+        return VStack(spacing: 0) {
+            Text("CHOOSE YOUR PLAN")
+                .font(.system(size: 13 * s, weight: .heavy))
+                .tracking(1.6)
+                .foregroundColor(DualTheme.dim)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 30)
+                .padding(.top, 8 * s)
+
+            if ready {
+                HStack(spacing: 10 * s) {
+                    choice(0, "1 MONTH", model.month, "3 days free", "", s)
+                    choice(1, "1 YEAR", model.year, TriggerPrices.perMonth(model.year), saveBadge, s)
+                    choice(2, "LIFETIME", model.life, "Pay once", "", s)
+                }
+                .padding(.horizontal, 30)
+                .padding(.top, 14 * s)
+
+                Text(helper)
+                    .font(.system(size: 15 * s))
+                    .foregroundColor(DualTheme.dim)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
+                    .padding(.top, 14 * s)
+                    .padding(.bottom, 8 * s)
+            } else {
+                let phase = pricePhase
+                DualPayStatusCard(
+                    waiting: phase == .loading || phase == .retrying,
+                    offline: phase == .noInternet,
+                    retrying: phase == .retrying,
+                    scale: s,
+                    retry: retryPrices
+                )
+                .padding(.horizontal, 30)
+                .padding(.top, 14 * s)
+                .padding(.bottom, 16 * s)
+            }
+
+            DualPayCTAButton(
+                title: ready ? cta : "Loading price...",
+                enabled: ready && !model.buying && !selectedPrice.isEmpty,
+                action: buy
+            )
+            .padding(.horizontal, 30)
+
+            Text(noteLine)
+                .font(.system(size: 15 * s))
+                .foregroundColor(DualTheme.dim)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 30)
+                .padding(.top, 8 * s)
+            Text(fineLine)
+                .font(.system(size: 13 * s))
+                .foregroundColor(Color.white.opacity(0.5))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 30)
+                .padding(.top, 4 * s)
+
+            DualPayLegalRow(onRestore: { model.restore() }, scale: s)
+                .padding(.horizontal, 24)
+                .padding(.top, 10 * s)
+                .padding(.bottom, DualPayInsets.bottom)
+        }
+    }
+
+    private func choice(_ index: Int, _ name: String, _ price: String, _ sub: String, _ badge: String, _ s: CGFloat) -> some View {
+        let on = pick == index
+        // Same Button + PlainButtonStyle pattern as the working option rows on the other dual onboarding screens.
+        return Button(action: { model.dualPick = index }) {
+            VStack(spacing: 0) {
+                Text(name)
+                    .font(.system(size: 13 * s, weight: .heavy))
+                    .tracking(0.8)
+                    .foregroundColor(on ? DualTheme.gold : DualTheme.dim)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Spacer(minLength: 6 * s)
+                Text(price.isEmpty ? "—" : price)
+                    .font(.system(size: 30 * s, weight: .bold, design: .serif))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.45)
+                Text(sub.isEmpty ? " " : sub)
+                    .font(.system(size: 14 * s))
+                    .foregroundColor(DualTheme.dim)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .padding(.top, 6 * s)
+                Spacer(minLength: 8 * s)
+                ZStack {
+                    if on {
+                        Circle().fill(dualPayCTA)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12 * s, weight: .heavy))
+                            .foregroundColor(dualPayInk)
+                    } else {
+                        Circle().stroke(Color.white.opacity(0.4), lineWidth: 1.5)
+                    }
+                }
+                .frame(width: 28 * s, height: 28 * s)
+            }
+            .padding(.horizontal, 6 * s)
+            .padding(.top, badge.isEmpty ? 20 * s : 24 * s)
+            .padding(.bottom, 14 * s)
+            .frame(maxWidth: .infinity)
+            .frame(height: 160 * s)
+            .background(
+                RoundedRectangle(cornerRadius: 26 * s, style: .continuous)
+                    .fill(Color.white.opacity(on ? 0.16 : 0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 26 * s, style: .continuous)
+                    .stroke(on ? DualTheme.gold : Color.white.opacity(0.18), lineWidth: on ? 2 : 1)
+            )
+            .overlay(alignment: .top) {
+                if !badge.isEmpty {
+                    Text(badge)
+                        .font(.system(size: 11 * s, weight: .heavy))
+                        .foregroundColor(dualPayInk)
+                        .padding(.horizontal, 12 * s)
+                        .padding(.vertical, 5 * s)
+                        .background(Capsule().fill(dualPayCTA))
+                        .offset(y: -11 * s)
+                        .allowsHitTesting(false)
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 26 * s, style: .continuous))
+        }
+        .buttonStyle(PlainButtonStyle())
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    private func buy() {
+        let productId = pick == 0 ? SUBSCRIPTIONID_Six_month : (pick == 1 ? SUBSCRIPTIONID_OneYear : SUBSCRIPTIONID_LifeTime)
+        let trying: PaywallOwnedPlanGuard.Plan = pick == 0 ? .month : (pick == 1 ? .year : .lifetime)
+        PaywallOwnedPlanGuard.check(
+            store: model.store,
+            trying: trying,
+            onProceed: { model.buy(productId) },
+            onRestore: { model.restore() }
+        )
+    }
+}
+
+/// One-time exit offer (mock "Onboarding 7"): shown once when the paywall is closed.
+private struct DualPaywallExitOffer: View {
+    @ObservedObject var model: PaywallTriggerModel
+    var onClose: () -> Void
+    var onRestore: () -> Void
+
+    @State private var exitRetrying = false
+    @State private var exitWaitExpired = false
+    @State private var exitWaitToken = 0
+
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+    private var salePrice: String { model.offer.isEmpty ? model.life : model.offer }
+
+    private enum ExitPhase { case ready, loading, retrying, noInternet, unavailable }
+
+    private var exitPhase: ExitPhase {
+        if !model.offer.isEmpty { return .ready }
+        if SUBSCRIPTIONID_ExitOffer.isEmpty && !model.life.isEmpty { return .ready }
+        if !NetworkManager.sharedInstance.isConnectedToInternet() { return .noInternet }
+        if exitRetrying { return .retrying }
+        if exitWaitExpired { return .unavailable }
+        return .loading
+    }
+
+    private func startExitPriceWait(retry: Bool) {
+        exitWaitToken += 1
+        let token = exitWaitToken
+        exitWaitExpired = false
+        exitRetrying = retry
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+            guard token == exitWaitToken else { return }
+            exitRetrying = false
+            exitWaitExpired = true
+        }
+    }
+
+    private func retryExitPrice() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
+            return
+        }
+        startExitPriceWait(retry: true)
+        model.store.retryLifetimePrice()
+        model.store.retryExitOfferPrice()
+    }
+
+    /// "SAVE 33%": the percentage from the store text when there is one, else offer against the yearly price.
+    private var saveBadge: String {
+        let fromStore = model.store.exitOfferDiscountText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !fromStore.isEmpty { return "SAVE \(fromStore)" }
+        guard let offer = TriggerPrices.amount(model.offer), let year = TriggerPrices.amount(model.year),
+              offer > 0, year > offer else { return "" }
+        return "SAVE \(Int(((1 - offer / year) * 100).rounded()))%"
+    }
+
+    private var thenLine: String {
+        model.year.isEmpty ? "Cancel anytime." : "then \(model.year) a year. Cancel anytime."
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let s = DualTheme.scale(isPad: isPad, height: geo.size.height)
+            let maxWidth: CGFloat = isPad ? 600 : .infinity
+            ZStack {
+                DualBackground()
+                VStack(spacing: 0) {
+                    GeometryReader { area in
+                        ScrollView(showsIndicators: false) {
+                            scrollContent(scale: s)
+                                .frame(maxWidth: maxWidth)
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: area.size.height, alignment: .top)
+                        }
+                    }
+                    bottomBlock(scale: s)
+                        .frame(maxWidth: maxWidth)
+                }
+            }
+        }
+        .ignoresSafeArea()
+    }
+
+    private func scrollContent(scale s: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            Text("ONE MORE OPTION")
+                .font(.system(size: 14 * s, weight: .heavy))
+                .tracking(1.6)
+                .foregroundColor(DualTheme.eyebrow)
+                .padding(.top, DualPayInsets.top + 18 * s)
+
+            VStack(spacing: 0) {
+                Text("A gentler start")
+                Text("to your first year")
+            }
+            .font(.system(size: 36 * s, weight: .bold, design: .serif))
+            .foregroundColor(.white)
+            .multilineTextAlignment(.center)
+            .padding(.top, 10 * s)
+
+            Text("Our best offer to keep you in God's Word.")
+                .font(.system(size: 17 * s))
+                .foregroundColor(DualTheme.dim)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 30)
+                .padding(.top, 10 * s)
+
+            if exitPhase == .ready {
+                offerCard(scale: s)
+                    .padding(.horizontal, 30)
+                    .padding(.top, 26 * s)
+            } else {
+                DualPayStatusCard(
+                    waiting: exitPhase == .loading || exitPhase == .retrying,
+                    offline: exitPhase == .noInternet,
+                    retrying: exitPhase == .retrying,
+                    scale: s,
+                    retry: retryExitPrice
+                )
+                .padding(.horizontal, 30)
+                .padding(.top, 26 * s)
+                .onAppear {
+                    guard model.offer.isEmpty else { return }
+                    startExitPriceWait(retry: false)
+                    if NetworkManager.sharedInstance.isConnectedToInternet() {
+                        model.store.retryExitOfferPrice()
+                    }
+                }
+            }
+
+            DualPayBenefits(
+                lines: ["Fully ad-free for the whole year", "Unlimited AI explanations and chat", "Unlimited challenges and streak"],
+                scale: s
+            )
+            .padding(.horizontal, 34)
+            .padding(.top, 30 * s)
+
+            Spacer(minLength: 12 * s)
+        }
+    }
+
+    private func offerCard(scale s: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            Text("FIRST YEAR")
+                .font(.system(size: 15 * s, weight: .heavy))
+                .tracking(1.8)
+                .foregroundColor(DualTheme.dim)
+            Text(salePrice)
+                .font(.system(size: 72 * s, weight: .bold, design: .serif))
+                .foregroundColor(DualTheme.gold)
+                .lineLimit(1)
+                .minimumScaleFactor(0.4)
+                .padding(.top, 6 * s)
+            Text(thenLine)
+                .font(.system(size: 16 * s))
+                .foregroundColor(Color.white.opacity(0.85))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 4 * s)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 16)
+        .padding(.top, 36 * s)
+        .padding(.bottom, 28 * s)
+        .background(
+            RoundedRectangle(cornerRadius: 32 * s, style: .continuous)
+                .fill(Color.white.opacity(0.12))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 32 * s, style: .continuous)
+                .stroke(DualTheme.gold.opacity(0.9), lineWidth: 1.5)
+        )
+        .overlay(
+            Group {
+                if !saveBadge.isEmpty {
+                    Text(saveBadge)
+                        .font(.system(size: 14 * s, weight: .heavy))
+                        .tracking(0.8)
+                        .foregroundColor(dualPayInk)
+                        .padding(.horizontal, 22 * s)
+                        .padding(.vertical, 7 * s)
+                        .background(Capsule().fill(dualPayCTA))
+                        .fixedSize()
+                        .offset(y: -15 * s)
+                }
+            },
+            alignment: .top
+        )
+    }
+
+    private func bottomBlock(scale s: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            Text("Shown once. Renews yearly. Manage in Apple Account settings.")
+                .font(.system(size: 14 * s))
+                .foregroundColor(Color.white.opacity(0.6))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+                .padding(.bottom, 20 * s)
+
+            DualPayCTAButton(
+                title: exitPhase == .loading || exitPhase == .retrying ? "Loading price..." : "Claim This Offer",
+                enabled: exitPhase == .ready && !model.buying && !salePrice.isEmpty,
+                action: claim
+            )
+            .padding(.horizontal, 30)
+
+            Button(action: onClose) {
+                Text("Continue free")
+                    .font(.system(size: 17 * s, weight: .bold))
+                    .foregroundColor(Color.white.opacity(0.75))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14 * s)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal, 30)
+            .padding(.bottom, DualPayInsets.bottom + 4)
+        }
+    }
+
+    private func claim() {
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            OnboardingAuthManager.topViewController()?.view.makeToast("No internet connection", duration: 2.0, position: .top)
+            return
+        }
+        model.buy(SUBSCRIPTIONID_ExitOffer.isEmpty ? SUBSCRIPTIONID_LifeTime : SUBSCRIPTIONID_ExitOffer)
     }
 }

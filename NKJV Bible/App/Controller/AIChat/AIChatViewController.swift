@@ -33,6 +33,8 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
 
     private let bannerView = UIView()
     private let titleLabel = UILabel()
+    private let languageControl = UISegmentedControl()
+    private let answerLanguageLabel = UILabel()
     private let backImageView = UIImageView()
     private let backButton = UIButton(type: .system)
     private let tableView = UITableView(frame: .zero, style: .plain)
@@ -52,8 +54,10 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     private var tableAboveSuggestionsConstraint: NSLayoutConstraint?
     private var tableAboveComposerConstraint: NSLayoutConstraint?
     private var verseSuggestionFooterWidth: CGFloat = 0
+    private var floatingSuggestionTitles: [String] = []
     private var contextHeaderShowsGreeting: Bool?
     var launchContext: AIChatLaunchContext?
+    private var didAskConsent = false
 
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         self.isNight = (UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor) == BGNightMode
@@ -85,6 +89,12 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         IQKeyboardManager.shared().isEnabled = false
         refreshSendLock()
         restoreChatLayout()
+        applyAnswerLanguage()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        presentConsentIfNeeded()
     }
 
     @objc private func appDidBecomeActive() {
@@ -101,7 +111,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         if suggestionStack.arrangedSubviews.isEmpty {
             refreshFollowUpSuggestions()
         }
-        emptyStateView.isHidden = !messages.isEmpty || launchContext != nil
+        emptyStateView.isHidden = true
         view.layoutIfNeeded()
     }
 
@@ -157,11 +167,26 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         view.addSubview(bannerView)
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.text = "Your Bible Companion"
+        titleLabel.text = "Ask AI"
         titleLabel.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
         titleLabel.textColor = .white
         titleLabel.textAlignment = .center
         bannerView.addSubview(titleLabel)
+
+        languageControl.translatesAutoresizingMaskIntoConstraints = false
+        languageControl.selectedSegmentTintColor = .white
+        languageControl.backgroundColor = UIColor.white.withAlphaComponent(0.25)
+        languageControl.setTitleTextAttributes([.foregroundColor: UIColor.white, .font: UIFont.systemFont(ofSize: 13, weight: .semibold)], for: .normal)
+        languageControl.setTitleTextAttributes([.foregroundColor: themeColor, .font: UIFont.systemFont(ofSize: 13, weight: .bold)], for: .selected)
+        languageControl.addTarget(self, action: #selector(answerLanguageChanged), for: .valueChanged)
+        bannerView.addSubview(languageControl)
+
+        answerLanguageLabel.translatesAutoresizingMaskIntoConstraints = false
+        answerLanguageLabel.font = UIFont.systemFont(ofSize: 13)
+        answerLanguageLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.7) : UIColor(white: 0.45, alpha: 1)
+        answerLanguageLabel.textAlignment = .center
+        answerLanguageLabel.numberOfLines = 2
+        view.addSubview(answerLanguageLabel)
 
         backImageView.translatesAutoresizingMaskIntoConstraints = false
         backImageView.image = UIImage(named: "BackArrow")
@@ -261,6 +286,16 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
 
             titleLabel.centerXAnchor.constraint(equalTo: bannerView.centerXAnchor),
             titleLabel.bottomAnchor.constraint(equalTo: bannerView.bottomAnchor, constant: -15),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: languageControl.leadingAnchor, constant: -8),
+
+            languageControl.trailingAnchor.constraint(equalTo: bannerView.trailingAnchor, constant: -16),
+            languageControl.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+            languageControl.widthAnchor.constraint(greaterThanOrEqualToConstant: 88),
+            languageControl.heightAnchor.constraint(equalToConstant: 32),
+
+            answerLanguageLabel.topAnchor.constraint(equalTo: bannerView.bottomAnchor, constant: 10),
+            answerLanguageLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            answerLanguageLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
 
             backImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 30),
             backImageView.bottomAnchor.constraint(equalTo: bannerView.bottomAnchor, constant: -15),
@@ -299,7 +334,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             sendButton.widthAnchor.constraint(equalTo: inputTextView.heightAnchor),
             sendButton.heightAnchor.constraint(equalTo: inputTextView.heightAnchor),
 
-            tableView.topAnchor.constraint(equalTo: bannerView.bottomAnchor),
+            tableView.topAnchor.constraint(equalTo: answerLanguageLabel.bottomAnchor, constant: 6),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableAboveSuggestions,
@@ -336,13 +371,13 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         refreshFollowUpSuggestions()
         view.bringSubviewToFront(suggestionContainer)
         view.bringSubviewToFront(composerContainer)
-        emptyStateView.isHidden = !messages.isEmpty || launchContext != nil
+        emptyStateView.isHidden = true
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         installContextHeaderIfNeeded()
-        installVerseSuggestionFooterIfNeeded()
+        installFloatingSuggestionFooter()
         fitEmptyStateToSpace()
     }
 
@@ -409,64 +444,63 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         return button
     }
 
-    /// Always false: Keep Ask (Explanation / Summary) suggestion rows above the composer, like Bible Companion.
-    private var pinsVerseQuestionsUnderCard: Bool { false }
-
+    /// Suggestions after an answer sit in the chat, under that answer. They are not pinned above the composer.
     private func refreshFollowUpSuggestions() {
-        // Keep suggestion height unchanged while waiting for a reply to avoid layout jump.
-        if isSending && !pinsVerseQuestionsUnderCard && tableView.tableFooterView == nil {
-            suggestionStack.isUserInteractionEnabled = false
-            return
-        }
-        suggestionStack.isUserInteractionEnabled = !isSending
-
-        if pinsVerseQuestionsUnderCard {
-            clearSuggestionStack()
-            suggestionContainer.isHidden = true
-            tableAboveSuggestionsConstraint?.isActive = false
-            tableAboveComposerConstraint?.isActive = true
-            view.setNeedsLayout()
-            return
-        }
-
-        if tableView.tableFooterView != nil {
-            tableView.tableFooterView = nil
-            verseSuggestionFooterWidth = 0
-        }
-        suggestionContainer.isHidden = false
-        tableAboveComposerConstraint?.isActive = false
-        tableAboveSuggestionsConstraint?.isActive = true
-
-        clearSuggestionStack()
-
         if isSending {
-            if let context = launchContext, !context.isChapterSummary {
-                contextSuggestions(for: context).forEach {
-                    suggestionStack.addArrangedSubview(makeContextSuggestionRow(title: $0))
-                }
-            }
-            suggestionStack.isUserInteractionEnabled = false
+            showFixedSuggestions([])
+            showFloatingSuggestions([])
             return
         }
 
-        let chips: [String]
         if let lastAssistant = messages.last(where: { $0.role == .assistant }),
            let lastUser = messages.last(where: { $0.role == .user }) {
-            chips = makeFollowUpSuggestions(userText: lastUser.text, assistantText: lastAssistant.text)
-        } else if messages.isEmpty {
-            chips = starterSuggestions()
-        } else {
-            chips = []
+            showFixedSuggestions([])
+            showFloatingSuggestions(makeFollowUpSuggestions(userText: lastUser.text, assistantText: lastAssistant.text))
+            return
         }
 
-        let useContextRows = launchContext != nil && messages.isEmpty
-        chips.forEach { title in
-            if useContextRows {
-                suggestionStack.addArrangedSubview(makeContextSuggestionRow(title: title))
-            } else {
-                suggestionStack.addArrangedSubview(makeSuggestionChip(title: title))
+        if messages.isEmpty {
+            showFloatingSuggestions([])
+            showFixedSuggestions(starterSuggestions())
+            return
+        }
+
+        showFixedSuggestions([])
+        showFloatingSuggestions([])
+    }
+
+    private func showFixedSuggestions(_ titles: [String]) {
+        clearSuggestionStack()
+        guard !titles.isEmpty else {
+            suggestionContainer.isHidden = true
+            suggestionContainer.isUserInteractionEnabled = false
+            tableAboveSuggestionsConstraint?.isActive = false
+            tableAboveComposerConstraint?.isActive = true
+            return
+        }
+        suggestionContainer.isHidden = false
+        suggestionContainer.isUserInteractionEnabled = true
+        tableAboveComposerConstraint?.isActive = false
+        tableAboveSuggestionsConstraint?.isActive = true
+        titles.forEach { suggestionStack.addArrangedSubview(makeSuggestionChip(title: $0)) }
+    }
+
+    private func showFloatingSuggestions(_ titles: [String]) {
+        if titles == floatingSuggestionTitles {
+            if titles.isEmpty {
+                if tableView.tableFooterView != nil {
+                    tableView.tableFooterView = nil
+                    verseSuggestionFooterWidth = 0
+                }
+                return
+            }
+            if tableView.tableFooterView != nil {
+                return
             }
         }
+        floatingSuggestionTitles = titles
+        verseSuggestionFooterWidth = 0
+        installFloatingSuggestionFooter()
     }
 
     private func clearSuggestionStack() {
@@ -476,28 +510,36 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         }
     }
 
-    private func installVerseSuggestionFooterIfNeeded() {
-        guard pinsVerseQuestionsUnderCard else { return }
+    private func installFloatingSuggestionFooter() {
         let width = tableView.bounds.width
-        guard width > 0, let context = launchContext else { return }
+        guard width > 0 else { return }
+        guard !floatingSuggestionTitles.isEmpty else {
+            if tableView.tableFooterView != nil {
+                tableView.tableFooterView = nil
+                verseSuggestionFooterWidth = 0
+            }
+            return
+        }
         if abs(verseSuggestionFooterWidth - width) < 1, tableView.tableFooterView != nil {
             return
         }
 
         let footer = UIView()
         footer.translatesAutoresizingMaskIntoConstraints = false
+        footer.backgroundColor = .clear
         let stack = UIStackView()
         stack.axis = .vertical
+        stack.alignment = .fill
         stack.spacing = 10
         stack.translatesAutoresizingMaskIntoConstraints = false
         footer.addSubview(stack)
-        contextSuggestions(for: context).forEach {
-            stack.addArrangedSubview(makeContextSuggestionRow(title: $0))
+        floatingSuggestionTitles.forEach {
+            stack.addArrangedSubview(makeSuggestionChip(title: $0))
         }
         let widthConstraint = footer.widthAnchor.constraint(equalToConstant: width)
         NSLayoutConstraint.activate([
             widthConstraint,
-            stack.topAnchor.constraint(equalTo: footer.topAnchor, constant: 4),
+            stack.topAnchor.constraint(equalTo: footer.topAnchor, constant: 8),
             stack.leadingAnchor.constraint(equalTo: footer.leadingAnchor, constant: 16),
             stack.trailingAnchor.constraint(equalTo: footer.trailingAnchor, constant: -16),
             stack.bottomAnchor.constraint(equalTo: footer.bottomAnchor, constant: -8)
@@ -515,10 +557,17 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     private var usesIndonesian: Bool {
-        let code = (UserDefaults.standard.string(forKey: "language_code") ?? language_code).lowercased()
-        let name = (UserDefaults.standard.string(forKey: "language_name") ?? language_name).lowercased()
-        if code.hasPrefix("id") || code == "in" || name.contains("indones") { return true }
-        return code.isEmpty && name.isEmpty
+        answerTongue == .indonesian
+    }
+
+    private enum AnswerTongue { case english, indonesian, tamil }
+
+    /// The language chosen on the Ask AI switch, not the phone language.
+    private var answerTongue: AnswerTongue {
+        let code = AIAnswerLanguage.selected.code.lowercased()
+        if code.hasPrefix("id") || code == "in" { return .indonesian }
+        if code.hasPrefix("ta") { return .tamil }
+        return .english
     }
 
     private func passageName(from title: String) -> String {
@@ -526,15 +575,47 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     private func contextPlaceholder() -> String {
-        guard let context = launchContext else { return "Ask about a verse..." }
-        if context.isChapterSummary {
-            return usesIndonesian ? "Ketik pertanyaan Anda..." : "Type your question..."
+        guard let context = launchContext else {
+            switch answerTongue {
+            case .tamil: return "ஒரு வசனத்தைப் பற்றி கேளுங்கள்..."
+            case .indonesian: return "Tanyakan tentang sebuah ayat..."
+            case .english: return "Ask about a verse..."
+            }
         }
-        return usesIndonesian ? "Tanyakan tentang \(context.title)..." : "Ask about \(context.title)..."
+        if context.isChapterSummary {
+            switch answerTongue {
+            case .tamil: return "உங்கள் கேள்வியை எழுதுங்கள்..."
+            case .indonesian: return "Ketik pertanyaan Anda..."
+            case .english: return "Type your question..."
+            }
+        }
+        switch answerTongue {
+        case .tamil: return "\(context.title) பற்றி கேளுங்கள்..."
+        case .indonesian: return "Tanyakan tentang \(context.title)..."
+        case .english: return "Ask about \(context.title)..."
+        }
     }
 
     private func contextSuggestions(for context: AIChatLaunchContext) -> [String] {
         let name = passageName(from: context.title)
+        if answerTongue == .tamil {
+            if context.isChapterSummary {
+                return [
+                    "\(name) இன் முக்கிய செய்தி என்ன?",
+                    "\(name) இல் என்ன நடக்கிறது?",
+                    "\(name) இல் முக்கியமானவர் யார்?",
+                    "\(name) இன் முக்கிய பகுதி என்ன?",
+                    "\(name) ஐ என் வாழ்க்கையில் எப்படி பயன்படுத்துவது?"
+                ]
+            }
+            return [
+                "\(context.title) என்றால் என்ன?",
+                "இந்த வசனம் ஏன் முக்கியம்?",
+                "இந்த வசனம் என்ன சொல்கிறது?",
+                "இந்த வசனத்தை எப்படி கடைப்பிடிப்பது?",
+                "\(context.title) இலிருந்து நான் என்ன கற்றுக்கொள்வேன்?"
+            ]
+        }
         if usesIndonesian {
             if context.isChapterSummary {
                 return [
@@ -571,35 +652,9 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         ]
     }
 
-    private func makeContextSuggestionRow(title: String) -> UIButton {
-        let row = UIButton(type: .system)
-        row.setTitle(title, for: .normal)
-        row.setImage(UIImage(systemName: "bubble.left"), for: .normal)
-        row.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .medium)
-        row.titleLabel?.numberOfLines = 2
-        row.titleLabel?.textAlignment = .left
-        row.contentHorizontalAlignment = .left
-        row.setTitleColor(isNight ? .white : themeColor, for: .normal)
-        row.tintColor = isNight ? .white : themeColor
-        row.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.08) : themeColor.withAlphaComponent(0.08)
-        row.layer.cornerRadius = 16
-        row.contentEdgeInsets = UIEdgeInsets(top: 14, left: 14, bottom: 14, right: 36)
-        row.titleEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: -10)
-        row.addTarget(self, action: #selector(suggestionTapped(_:)), for: .touchUpInside)
-
-        let chevron = UIImageView(image: UIImage(systemName: "chevron.right", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)))
-        chevron.translatesAutoresizingMaskIntoConstraints = false
-        chevron.tintColor = isNight ? UIColor.white.withAlphaComponent(0.7) : themeColor
-        chevron.isUserInteractionEnabled = false
-        row.addSubview(chevron)
-        NSLayoutConstraint.activate([
-            chevron.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -14),
-            chevron.centerYAnchor.constraint(equalTo: row.centerYAnchor)
-        ])
-        return row
-    }
-
     private func installContextHeaderIfNeeded() {
+        // The old passage card and greeting sat on top of the new Ask AI screen.
+        return
         guard let context = launchContext, tableView.tableHeaderView == nil, view.bounds.width > 0 else { return }
         let header = makeContextHeader(context)
         let width = view.bounds.width
@@ -785,29 +840,29 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         if let context = launchContext {
             return contextSuggestions(for: context)
         }
-        let pool = usesIndonesian
-            ? [
-                "Jelaskan Yohanes 3:16",
-                "Apa itu kasih karunia?",
-                "Bantu saya mempelajari Mazmur",
-                "Bagaimana saya bisa bertumbuh dalam iman?",
-                "Apa arti Roma 8:28?",
-                "Sarankan ayat untuk kecemasan"
-            ]
-            : [
-                "Explain John 3:16",
-                "What is grace?",
-                "Help me study Psalms",
-                "How can I grow in faith?",
-                "What does Romans 8:28 mean?",
-                "Suggest a verse for anxiety"
-            ]
-        return Array(pool.shuffled().prefix(3))
+        switch answerTongue {
+        case .tamil:
+            return ["இந்த வசனத்தை விளக்கு", "ஒரு சிறு ஜெபம் எழுது", "இந்த அதிகாரத்தை சுருக்கு"]
+        case .indonesian:
+            return ["Jelaskan ayat ini", "Tulis doa singkat", "Ringkas pasal ini"]
+        case .english:
+            return ["Explain this verse", "Write a short prayer", "Summarize this chapter"]
+        }
     }
 
     private func makeFollowUpSuggestions(userText: String, assistantText: String) -> [String] {
         let combined = userText + "\n" + assistantText
         let lowered = combined.lowercased()
+        if answerTongue == .tamil {
+            if let verse = firstVerseReference(in: combined) {
+                return [
+                    "\(verse) எளிய சொற்களில் விளக்கு",
+                    "\(verse) இன் முக்கிய செய்தி என்ன?",
+                    "\(verse) ஐ வாழ்க்கையில் எப்படி பயன்படுத்துவது?"
+                ]
+            }
+            return ["இன்னும் எளிமையாக சொல்", "ஒரு சிறு ஜெபம் எழுது", "தொடர்புடைய வசனங்களை காட்டு"]
+        }
         let id = usesIndonesian
         var pool: [String] = []
 
@@ -1050,7 +1105,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             if !context.sourceText.isEmpty {
                 lines.append("Text already shown to the user:\n\(context.sourceText)")
             }
-            lines.append("Stay on this passage. Answer in the same language as the user's question.")
+            lines.append("Stay on this passage.")
         }
 
             lines.append("Conversation so far:")
@@ -1060,8 +1115,52 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             }
         }
 
+        lines.append("Answer in \(AIAnswerLanguage.selected.name).")
         lines.append("User: \(latestUserText)")
         return lines.joined(separator: "\n")
+    }
+
+    private func applyAnswerLanguage() {
+        let options = AIAnswerLanguage.options()
+        languageControl.removeAllSegments()
+        for (index, option) in options.enumerated() {
+            languageControl.insertSegment(withTitle: option.short, at: index, animated: false)
+        }
+        languageControl.isHidden = options.count < 2
+        if let index = options.firstIndex(of: AIAnswerLanguage.selected) {
+            languageControl.selectedSegmentIndex = index
+        }
+        answerLanguageLabel.text = AIAnswerLanguage.statusLine
+        if inputTextView.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            placeholderLabel.text = contextPlaceholder()
+        }
+    }
+
+    @objc private func answerLanguageChanged() {
+        let options = AIAnswerLanguage.options()
+        let index = languageControl.selectedSegmentIndex
+        guard options.indices.contains(index) else { return }
+        AIAnswerLanguage.select(options[index])
+        answerLanguageLabel.text = AIAnswerLanguage.statusLine
+        refreshFollowUpSuggestions()
+        if inputTextView.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            placeholderLabel.text = contextPlaceholder()
+            placeholderLabel.isHidden = false
+        }
+    }
+
+    private func presentConsentIfNeeded() {
+        guard !didAskConsent, !AIAnswerLanguage.granted else { return }
+        didAskConsent = true
+        AIConsentPresenter.confirm(from: self, onAllow: { [weak self] in
+            self?.applyAnswerLanguage()
+        }, onDecline: { [weak self] in
+            if let nav = self?.navigationController, nav.viewControllers.count > 1 {
+                nav.popViewController(animated: true)
+            } else {
+                self?.dismiss(animated: true)
+            }
+        })
     }
 
     private func refreshInputHeight() {
@@ -1077,11 +1176,13 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             let rowCount = self.tableView.numberOfRows(inSection: 0)
             guard rowCount > 0 else { return }
 
-            // Layout only the table so the chat shell/background does not reflow/jump.
+            // Include the suggestion footer so it stays under the answer instead of off the bottom.
             self.tableView.layoutIfNeeded()
-
-            let indexPath = IndexPath(row: rowCount - 1, section: 0)
-            self.tableView.scrollToRow(at: indexPath, at: .bottom, animated: shouldAnimate)
+            let minY = -self.tableView.adjustedContentInset.top
+            let maxY = self.tableView.contentSize.height - self.tableView.bounds.height + self.tableView.adjustedContentInset.bottom
+            let y = max(minY, maxY)
+            if abs(self.tableView.contentOffset.y - y) < 1 { return }
+            self.tableView.setContentOffset(CGPoint(x: 0, y: y), animated: shouldAnimate)
         }
 
         performScroll(animated)

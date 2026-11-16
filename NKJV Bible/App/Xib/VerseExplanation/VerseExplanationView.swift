@@ -54,6 +54,8 @@ final class VerseExplanationView: UIView {
     private let closeButton = UIButton(type: .custom)
     private let footerContainer = UIView()
     private let footerDivider = UIView()
+    private let summaryActionRow = UIStackView()
+    private var summaryRowHeightConstraint: NSLayoutConstraint?
     private let actionStack = UIStackView()
     private var footerIconHolders: [UIView] = []
     private var footerImageViews: [UIImageView] = []
@@ -244,6 +246,16 @@ final class VerseExplanationView: UIView {
             : UIColor.black.withAlphaComponent(0.08)
         footerContainer.addSubview(footerDivider)
 
+        let accent = themeColor == BGNightMode ? UIColor.white : themeColor
+        summaryActionRow.translatesAutoresizingMaskIntoConstraints = false
+        summaryActionRow.axis = .horizontal
+        summaryActionRow.spacing = 12
+        summaryActionRow.distribution = .fillEqually
+        summaryActionRow.isHidden = true
+        summaryActionRow.addArrangedSubview(makeAskMoreButton(accent: accent))
+        summaryActionRow.addArrangedSubview(makeQuizChapterButton(accent: accent))
+        footerContainer.addSubview(summaryActionRow)
+
         let copyAction = makeActionButton(title: "Copy", imageName: "CopyNewImg", action: #selector(copyTapped))
         let shareAction = makeActionButton(title: "Share", imageName: "shareVerse", action: #selector(shareTapped))
         let saveAction = makeActionButton(title: "Save", imageName: "save", action: #selector(saveTapped))
@@ -352,7 +364,11 @@ final class VerseExplanationView: UIView {
             footerDivider.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor, constant: -20),
             footerDivider.heightAnchor.constraint(equalToConstant: 1),
 
-            actionStack.topAnchor.constraint(equalTo: footerDivider.bottomAnchor, constant: 10),
+            summaryActionRow.topAnchor.constraint(equalTo: footerDivider.bottomAnchor),
+            summaryActionRow.leadingAnchor.constraint(equalTo: footerContainer.leadingAnchor, constant: 20),
+            summaryActionRow.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor, constant: -20),
+
+            actionStack.topAnchor.constraint(equalTo: summaryActionRow.bottomAnchor, constant: 10),
             actionStack.leadingAnchor.constraint(equalTo: footerContainer.leadingAnchor, constant: 16),
             actionStack.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor, constant: -16),
             actionStack.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -tabBarOverlap),
@@ -361,6 +377,38 @@ final class VerseExplanationView: UIView {
 
         verseContainerHeightConstraint = verseContainer.heightAnchor.constraint(equalToConstant: 0)
         verseContainerHeightConstraint?.isActive = false
+        summaryRowHeightConstraint = summaryActionRow.heightAnchor.constraint(equalToConstant: 0)
+        summaryRowHeightConstraint?.isActive = true
+    }
+
+    private func makeAskMoreButton(accent: UIColor) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(" Ask AI more", for: .normal)
+        button.setImage(UIImage(systemName: "sparkles", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)), for: .normal)
+        button.tintColor = accent
+        button.setTitleColor(accent, for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        button.titleLabel?.adjustsFontSizeToFitWidth = true
+        button.titleLabel?.minimumScaleFactor = 0.8
+        button.backgroundColor = themeColor == BGNightMode ? UIColor.white.withAlphaComponent(0.06) : .white
+        button.layer.cornerRadius = 24
+        button.layer.borderWidth = 1.5
+        button.layer.borderColor = accent.cgColor
+        button.addTarget(self, action: #selector(askTapped), for: .touchUpInside)
+        return button
+    }
+
+    private func makeQuizChapterButton(accent: UIColor) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle("Quiz this chapter", for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .bold)
+        button.titleLabel?.adjustsFontSizeToFitWidth = true
+        button.titleLabel?.minimumScaleFactor = 0.8
+        button.backgroundColor = themeColor == BGNightMode ? DarkModeColor : accent
+        button.layer.cornerRadius = 24
+        button.addTarget(self, action: #selector(quizTapped), for: .touchUpInside)
+        return button
     }
 
     private func makeActionButton(title: String, imageName: String, systemName: String? = nil, action: Selector) -> UIView {
@@ -467,6 +515,9 @@ final class VerseExplanationView: UIView {
         titleLabel.text = screenTitle ?? verseReference.replacingOccurrences(of: "-", with: " ")
 
         subtitleLabel.text = isSummaryContent ? "CHAPTER SUMMARY" : "VERSE EXPLANATION"
+        let showQuiz = isSummaryContent
+        summaryActionRow.isHidden = !showQuiz
+        summaryRowHeightConstraint?.constant = showQuiz ? 48 : 0
 
         if isSummaryContent {
             verseLabel.text = nil
@@ -513,6 +564,7 @@ final class VerseExplanationView: UIView {
     }
 
     private func requestExplanation() {
+        guard consentAllows(retry: { [weak self] in self?.requestExplanation() }) else { return }
         guard !isLoading else { return }
         guard !verseText.isEmpty else {
             showError("Please try again")
@@ -524,7 +576,7 @@ final class VerseExplanationView: UIView {
 
         fetchGeneration += 1
         let generation = fetchGeneration
-        let languageCode = UserDefaults.standard.string(forKey: "language_code") ?? language_code
+        let languageCode = AIAnswerLanguage.selected.code.lowercased()
         fetchTask?.cancel()
         let task = OpenAIExplanationService.shared.fetchExplanation(
             verseReference: verseReference,
@@ -570,7 +622,15 @@ final class VerseExplanationView: UIView {
         }
     }
 
+    private func consentAllows(retry: @escaping () -> Void) -> Bool {
+        if AIAnswerLanguage.granted { return true }
+        guard let host = OnboardingAuthManager.topViewController() else { return true }
+        AIConsentPresenter.confirm(from: host, onAllow: retry, onDecline: {})
+        return false
+    }
+
     private func requestChapterSummary() {
+        guard consentAllows(retry: { [weak self] in self?.requestChapterSummary() }) else { return }
         guard !isLoading else { return }
         guard !verseText.isEmpty else {
             showError("Please try again")
@@ -582,7 +642,7 @@ final class VerseExplanationView: UIView {
 
         fetchGeneration += 1
         let generation = fetchGeneration
-        let languageCode = UserDefaults.standard.string(forKey: "language_code") ?? language_code
+        let languageCode = AIAnswerLanguage.selected.code.lowercased()
         fetchTask?.cancel()
         let task = OpenAIExplanationService.shared.fetchChapterSummary(
             chapterReference: screenTitle ?? verseReference.replacingOccurrences(of: "-", with: " "),
@@ -764,6 +824,13 @@ final class VerseExplanationView: UIView {
             verse: verseText
         )
         makeToast("Saved to My Library", duration: 2.0, position: .top)
+    }
+
+    @objc private func quizTapped() {
+        closeTapped()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            App_Protocol.delegateReader?.Quiz(Go: true)
+        }
     }
 
     @objc private func askTapped() {

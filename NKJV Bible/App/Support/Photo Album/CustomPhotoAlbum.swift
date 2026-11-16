@@ -18,6 +18,9 @@ class CustomPhotoAlbum {
     var photoPHAssetArray: Array<PHAsset> = []
     var assetCollection: PHAssetCollection!
     var images:Array<UIImage> = []
+    private let savedHashDefaultsKey = "CustomPhotoAlbumSavedHashes"
+    private var pendingHashes: [UInt64] = []
+    private let hashLock = NSLock()
 
     init() {
         
@@ -58,6 +61,40 @@ class CustomPhotoAlbum {
             return   // If there was an error upstream, skip the save.
         }
 
+        let imageToSave = image
+        DispatchQueue.global(qos: .userInitiated).async {
+            // One saved picture stays one Photos item. A second save of the same image is skipped.
+            guard let incoming = self.averageHash(for: imageToSave) else {
+                self.performSave(imageToSave, completion: completion)
+                return
+            }
+            self.hashLock.lock()
+            let alreadySaving = self.pendingHashes.contains(where: { self.hamming($0, incoming) <= 6 })
+            if !alreadySaving {
+                self.pendingHashes.append(incoming)
+            }
+            self.hashLock.unlock()
+            if alreadySaving || self.albumAlreadyContains(imageToSave) {
+                self.hashLock.lock()
+                self.pendingHashes.removeAll { self.hamming($0, incoming) <= 6 }
+                self.hashLock.unlock()
+                self.storeHash(incoming)
+                DispatchQueue.main.async { completion?(true) }
+                return
+            }
+            self.performSave(imageToSave) { success in
+                self.hashLock.lock()
+                self.pendingHashes.removeAll { self.hamming($0, incoming) <= 6 }
+                self.hashLock.unlock()
+                if success {
+                    self.storeHash(incoming)
+                }
+                completion?(success)
+            }
+        }
+    }
+
+    private func performSave(_ image: UIImage, completion: ((Bool) -> Void)?) {
         // BUG FIX 1 (DUPLICATE IMAGES): OLD CODE - No completion handler, async save not tracked
         /*
         PHPhotoLibrary.shared().performChanges({
@@ -180,7 +217,8 @@ class CustomPhotoAlbum {
         let photoAssets = PHAsset.fetchAssets(in: assetCollection, options: nil)
         let imageManager = PHCachingImageManager()
         var seenLocalIdentifiers = Set<String>()
-        var seenContentFingerprints = Set<Int>()
+        var keptHashes: [UInt64] = []
+        let extraCopies = NSMutableArray()
         photoAssets.enumerateObjects { (asset, _, _) in
             // Same asset must appear only once (Photos may call the handler more than once).
             guard seenLocalIdentifiers.insert(asset.localIdentifier).inserted else { return }
@@ -209,9 +247,14 @@ class CustomPhotoAlbum {
                 if self.photoPHAssetArray.contains(where: { $0.localIdentifier == asset.localIdentifier }) {
                     return
                 }
-                // Collapse separately saved copies of the same wallpaper (prior double-save bugs).
-                let fingerprint = self.contentFingerprint(for: image)
-                guard seenContentFingerprints.insert(fingerprint).inserted else { return }
+                // Collapse separately saved copies of the same wallpaper, including a slightly different render.
+                guard let hash = self.averageHash(for: image) else { return }
+                if keptHashes.contains(where: { self.hamming($0, hash) <= 6 }) {
+                    extraCopies.add(asset)
+                    return
+                }
+                keptHashes.append(hash)
+                self.storeHash(hash)
 
                 self.photo = image
                 self.photoPHAssetArray.append(asset)
@@ -219,18 +262,116 @@ class CustomPhotoAlbum {
                 self.addImgToArray(uploadImage: image)
             })
         }
+        deleteDuplicateAssets(extraCopies)
     }
-    
-    /// Tiny downscale hash so visually identical album copies are listed once.
-    private func contentFingerprint(for image: UIImage) -> Int {
-        let thumbSize = CGSize(width: 48, height: 48)
-        let format = UIGraphicsImageRendererFormat.default()
-        format.scale = 1
-        let renderer = UIGraphicsImageRenderer(size: thumbSize, format: format)
-        let data = renderer.pngData { _ in
-            image.draw(in: CGRect(origin: .zero, size: thumbSize))
+
+    /// Removes extra Photos copies so the album keeps one of each saved picture.
+    private func deleteDuplicateAssets(_ assets: NSArray) {
+        guard assets.count > 0 else { return }
+        PHPhotoLibrary.shared().performChanges({
+            PHAssetChangeRequest.deleteAssets(assets)
+        }, completionHandler: nil)
+    }
+
+    private func currentAlbum() -> PHAssetCollection? {
+        let fetchOptions = PHFetchOptions()
+        fetchOptions.predicate = NSPredicate(format: "title = %@", CustomPhotoAlbum.albumName)
+        return PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions).firstObject ?? assetCollection
+    }
+
+    /// True when the album already holds this picture, so a second save is skipped.
+    private func albumAlreadyContains(_ image: UIImage) -> Bool {
+        guard let incoming = averageHash(for: image) else { return false }
+        guard let collection = currentAlbum() else {
+            return storedHashes().contains(where: { self.hamming($0, incoming) <= 6 })
         }
-        return data.hashValue
+        let assets = PHAsset.fetchAssets(in: collection, options: nil)
+        let manager = PHCachingImageManager()
+        var found = false
+        var unreadImages = 0
+        assets.enumerateObjects { asset, _, stop in
+            guard asset.mediaType == .image else { return }
+            guard let thumb = self.imageForDuplicateCheck(asset, manager: manager),
+                  let hash = self.averageHash(for: thumb) else {
+                unreadImages += 1
+                return
+            }
+            if self.hamming(incoming, hash) <= 6 {
+                found = true
+                stop.pointee = true
+            }
+        }
+        if found { return true }
+        // The old 64px fast thumbnail request failed with Photos error 3303, so a repeat save went through.
+        if unreadImages > 0 {
+            return storedHashes().contains(where: { self.hamming($0, incoming) <= 6 })
+        }
+        return false
+    }
+
+    /// Reads a real album photo. A fast 64px thumbnail is often missing and comes back as Photos error 3303.
+    private func imageForDuplicateCheck(_ asset: PHAsset, manager: PHImageManager) -> UIImage? {
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.resizeMode = .fast
+        options.isSynchronous = true
+        options.isNetworkAccessAllowed = true
+        options.version = .current
+        var loaded: UIImage?
+        manager.requestImage(for: asset, targetSize: CGSize(width: 160, height: 160), contentMode: .aspectFit, options: options) { image, info in
+            let degraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+            let cancelled = (info?[PHImageCancelledKey] as? Bool) ?? false
+            if degraded || cancelled { return }
+            loaded = image
+        }
+        if loaded != nil { return loaded }
+        manager.requestImageDataAndOrientation(for: asset, options: options) { data, _, _, _ in
+            if let data = data {
+                loaded = UIImage(data: data)
+            }
+        }
+        return loaded
+    }
+
+    private func storedHashes() -> [UInt64] {
+        let values = UserDefaults.standard.array(forKey: savedHashDefaultsKey) as? [String] ?? []
+        return values.compactMap { UInt64($0) }
+    }
+
+    private func storeHash(_ hash: UInt64) {
+        var hashes = storedHashes()
+        if hashes.contains(where: { hamming($0, hash) <= 6 }) { return }
+        hashes.append(hash)
+        UserDefaults.standard.set(hashes.map { String($0) }, forKey: savedHashDefaultsKey)
+    }
+
+    /// 8×8 average hash. Copies of one picture stay close even when the render differs a little.
+    private func averageHash(for image: UIImage) -> UInt64? {
+        let side = 8
+        let colorSpace = CGColorSpaceCreateDeviceGray()
+        guard let context = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side, space: colorSpace, bitmapInfo: CGImageAlphaInfo.none.rawValue),
+              let buffer = context.data else { return nil }
+        context.interpolationQuality = .medium
+        context.translateBy(x: 0, y: CGFloat(side))
+        context.scaleBy(x: 1, y: -1)
+        UIGraphicsPushContext(context)
+        image.draw(in: CGRect(x: 0, y: 0, width: side, height: side))
+        UIGraphicsPopContext()
+        let bytes = buffer.bindMemory(to: UInt8.self, capacity: side * side)
+        var total = 0
+        for index in 0..<(side * side) { total += Int(bytes[index]) }
+        let average = total / (side * side)
+        var hash: UInt64 = 0
+        for index in 0..<(side * side) {
+            if Int(bytes[index]) >= average {
+                hash |= 1 << UInt64(index)
+            }
+        }
+        return hash
+    }
+
+    private func hamming(_ first: UInt64, _ second: UInt64) -> Int {
+        (first ^ second).nonzeroBitCount
     }
     
 

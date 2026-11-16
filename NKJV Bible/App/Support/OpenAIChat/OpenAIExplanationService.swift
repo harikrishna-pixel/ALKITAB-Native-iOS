@@ -65,7 +65,7 @@ final class OpenAIExplanationService {
         let language = responseLanguageCode.isEmpty ? "en" : responseLanguageCode
         let capped = Self.cappedChapterText(chapterText, maxChars: chapterTextCap)
         let cacheKey = makeKey(
-            kind: "summary",
+            kind: "summaryShort",
             reference: chapterReference,
             bibleVersion: bibleVersion,
             language: language
@@ -76,13 +76,27 @@ final class OpenAIExplanationService {
         }
 
         let prompt = """
-        You are a helpful Bible study assistant. Provide a clear, faithful, and concise summary of the following chapter.
+        You are a helpful Bible study assistant. Summarize this chapter in short lines. Do not write a paragraph.
 
         Translation: \(bibleVersion)
         Chapter: \(chapterReference)
         Chapter text: \(capped)
 
-        Respond in \(language) only. Do not use markdown or asterisks. Do not add a title or heading — give the summary directly.
+        Respond in \(language) only. Do not use markdown or asterisks.
+        Use only this shape:
+
+        One short headline. Two lines at most. Not a paragraph.
+
+        Then 3 to 5 points. Each point is exactly three short lines:
+        a number and a short title
+        one short sentence
+        the verse numbers, like v1-3
+
+        Then these two lines:
+        KEY TAKEAWAY
+        one short sentence
+
+        No introduction. No extra headings. No long sentences.
         """
         return OpenAIChatService.shared.send(input: prompt) { [weak self] result in
             if case .success(let text) = result {
