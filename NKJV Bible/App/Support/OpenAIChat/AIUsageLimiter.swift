@@ -224,6 +224,16 @@ final class AIUsageLimiter {
     }
 
     private func presentLimitReachedAlert(_ feature: AIUsageFeature, cost: Int, from host: UIViewController?, onGranted: @escaping () -> Void) {
+        // AI chat: no trigger sheet. Enough credits shows the "Use 20 credits?" card; the chat screen shows its own limit card otherwise.
+        if feature == .aiChat {
+            if hasUnlimitedPlan {
+                pending[feature] = .unlimited
+                onGranted()
+                return
+            }
+            offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
+            return
+        }
         if PaywallTriggerGate.shared.isEnabled && feature != .quiz {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
                 guard let self = self else { return }

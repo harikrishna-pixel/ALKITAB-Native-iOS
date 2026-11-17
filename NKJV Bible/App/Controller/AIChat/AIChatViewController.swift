@@ -22,6 +22,139 @@ private struct AIChatMessage {
 
     let role: Role
     let text: String
+    var answer: AIChatAnswer? = nil
+    var followUps: [String] = []
+}
+
+/// Structured assistant reply: lead sentence, one passage, short points.
+private struct AIChatAnswer {
+    let lead: String
+    let reference: String?
+    var verse: String?
+    let points: [String]
+
+    private static let labels = ["LEAD", "REF", "VERSE", "POINT", "NEXT"]
+
+    static func parse(_ reply: String) -> (answer: AIChatAnswer?, followUps: [String], plainText: String) {
+        var lead = ""
+        var reference: String?
+        var verse: String?
+        var points: [String] = []
+        var followUps: [String] = []
+        var plainLines: [String] = []
+
+        for rawLine in reply.components(separatedBy: .newlines) {
+            let line = rawLine.replacingOccurrences(of: "*", with: "").trimmingCharacters(in: .whitespaces)
+            guard let colon = line.firstIndex(of: ":"),
+                  case let label = line[..<colon].trimmingCharacters(in: .whitespaces).uppercased(),
+                  labels.contains(label) else {
+                plainLines.append(line)
+                continue
+            }
+            let value = line[line.index(after: colon)...].trimmingCharacters(in: CharacterSet(charactersIn: "-•· "))
+            let isEmptyValue = value.isEmpty || value.uppercased() == "NONE"
+            switch label {
+            case "LEAD":
+                if !isEmptyValue { lead = value }
+            case "REF":
+                if !isEmptyValue { reference = value }
+            case "VERSE":
+                if !isEmptyValue { verse = value.trimmingCharacters(in: CharacterSet(charactersIn: "\"“”")) }
+            case "POINT":
+                if !isEmptyValue { points.append(value) }
+            default:
+                if !isEmptyValue { followUps.append(value) }
+            }
+            if label != "NEXT", label != "REF", !isEmptyValue {
+                plainLines.append(value)
+            }
+        }
+
+        let plain = plainLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !lead.isEmpty, !points.isEmpty else {
+            return (nil, Array(followUps.prefix(2)), plain.isEmpty ? reply : plain)
+        }
+        let answer = AIChatAnswer(lead: lead, reference: reference, verse: verse, points: Array(points.prefix(3)))
+        return (answer, Array(followUps.prefix(2)), answer.plainText)
+    }
+
+    var plainText: String {
+        var parts = [lead]
+        if let verse = verse, !verse.isEmpty {
+            parts.append("\"\(verse)\"" + (reference.map { "\n— \($0)" } ?? ""))
+        }
+        parts.append(points.map { "• \($0)" }.joined(separator: "\n"))
+        return parts.joined(separator: "\n\n")
+    }
+}
+
+/// Reads verse text from the Bible installed in the app (Documents/<SelectedLanguage>).
+private enum AIChatScripture {
+    private static let lock = NSLock()
+    private static var cachedFolder: String?
+    private static var cachedChapters: [String: [String]] = [:]
+
+    private static func folderURL() -> (name: String, url: URL)? {
+        guard let folder = UserDefaults.standard.string(forKey: "SelectedLanguage"), !folder.isEmpty,
+              let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return nil }
+        return (folder, documents.appendingPathComponent(folder))
+    }
+
+    static func books() -> [(name: String, chapters: Int)] {
+        guard let url = folderURL()?.url.appendingPathComponent("fullchapters.plist"),
+              let data = try? Data(contentsOf: url),
+              let list = (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String] else { return [] }
+        return list.map { entry in
+            guard let dash = entry.lastIndex(of: "-"),
+                  let count = Int(entry[entry.index(after: dash)...]) else { return (entry, 0) }
+            return (String(entry[..<dash]).trimmingCharacters(in: .whitespaces), count)
+        }
+    }
+
+    /// "Book 3:16" or "Book 3:16-18" (up to 4 verses). Nil when the reference is not in the installed Bible.
+    static func text(for reference: String) -> String? {
+        let trimmed = reference.trimmingCharacters(in: .whitespacesAndNewlines)
+        let pattern = #"^(.+?)\s+(\d{1,3})\s*:\s*(\d{1,3})(?:\s*[-–]\s*(\d{1,3}))?$"#
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: trimmed, range: NSRange(trimmed.startIndex..., in: trimmed)),
+              let bookRange = Range(match.range(at: 1), in: trimmed),
+              let chapterRange = Range(match.range(at: 2), in: trimmed),
+              let verseRange = Range(match.range(at: 3), in: trimmed),
+              let chapter = Int(trimmed[chapterRange]),
+              let firstVerse = Int(trimmed[verseRange]) else { return nil }
+        var lastVerse = firstVerse
+        if let endRange = Range(match.range(at: 4), in: trimmed), let end = Int(trimmed[endRange]), end >= firstVerse {
+            lastVerse = min(end, firstVerse + 3)
+        }
+
+        let bookName = String(trimmed[bookRange]).replacingOccurrences(of: ".", with: "")
+        let list = books()
+        guard let bookIndex = list.firstIndex(where: { $0.name.caseInsensitiveCompare(bookName) == .orderedSame }),
+              chapter >= 1, chapter <= list[bookIndex].chapters,
+              let chapters = chapterTexts(bookNumber: bookIndex + 1),
+              chapter <= chapters.count else { return nil }
+
+        var chapterText = chapters[chapter - 1].withoutHtmlTags()
+        chapterText = chapterText.deletingPrefix("\n")
+        let verses = chapterText.components(separatedBy: "@@@@").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        guard firstVerse >= 1, firstVerse <= verses.count else { return nil }
+        let picked = verses[(firstVerse - 1)..<min(lastVerse, verses.count)].filter { !$0.isEmpty }
+        return picked.isEmpty ? nil : picked.joined(separator: " ")
+    }
+
+    private static func chapterTexts(bookNumber: Int) -> [String]? {
+        guard let folder = folderURL() else { return nil }
+        lock.lock()
+        defer { lock.unlock() }
+        if cachedFolder != folder.name {
+            let url = folder.url.appendingPathComponent("audio.plist")
+            guard let data = try? Data(contentsOf: url),
+                  let dictionary = (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: [String]] else { return nil }
+            cachedChapters = dictionary
+            cachedFolder = folder.name
+        }
+        return cachedChapters[String(bookNumber)]
+    }
 }
 
 final class AIChatViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UITextViewDelegate {
@@ -53,6 +186,12 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     private var tableAboveComposerConstraint: NSLayoutConstraint?
     private var verseSuggestionFooterWidth: CGFloat = 0
     private var contextHeaderShowsGreeting: Bool?
+    private var starterFooter: UIView?
+    private var starterFooterWidth: CGFloat = 0
+    private lazy var starterTitles: [String] = Array(starterSuggestions().prefix(3))
+    private var animatedRowCount = 0
+    private var showsLimitCard = false
+    private var limitCardFooterWidth: CGFloat = 0
     var launchContext: AIChatLaunchContext?
 
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
@@ -101,11 +240,14 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         if suggestionStack.arrangedSubviews.isEmpty {
             refreshFollowUpSuggestions()
         }
-        emptyStateView.isHidden = !messages.isEmpty || launchContext != nil
+        emptyStateView.isHidden = true
         view.layoutIfNeeded()
     }
 
     private func refreshSendLock() {
+        if showsLimitCard && !isOutOfFreeChatsAndCredits {
+            hideLimitCard()
+        }
         let sendConfig = UIImage.SymbolConfiguration(pointSize: 36, weight: .semibold)
         sendButton.setImage(UIImage(systemName: "arrow.up.circle.fill", withConfiguration: sendConfig), for: .normal)
         refreshFreeCount()
@@ -184,6 +326,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         tableView.rowHeight = UITableView.automaticDimension
         tableView.register(AIChatBubbleCell.self, forCellReuseIdentifier: AIChatBubbleCell.reuseId)
         tableView.register(AIChatWaitingCell.self, forCellReuseIdentifier: AIChatWaitingCell.reuseId)
+        tableView.register(AIChatAnswerCell.self, forCellReuseIdentifier: AIChatAnswerCell.reuseId)
         view.addSubview(tableView)
 
         suggestionContainer.translatesAutoresizingMaskIntoConstraints = false
@@ -260,9 +403,11 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             bannerHeightConstraint!,
 
             titleLabel.centerXAnchor.constraint(equalTo: bannerView.centerXAnchor),
-            titleLabel.bottomAnchor.constraint(equalTo: bannerView.bottomAnchor, constant: -15),
+            titleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: backImageView.trailingAnchor, constant: 8),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: bannerView.trailingAnchor, constant: -16),
+            titleLabel.centerYAnchor.constraint(equalTo: backImageView.centerYAnchor),
 
-            backImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 30),
+            backImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             backImageView.bottomAnchor.constraint(equalTo: bannerView.bottomAnchor, constant: -15),
             backImageView.widthAnchor.constraint(equalToConstant: 20),
             backImageView.heightAnchor.constraint(equalToConstant: 20),
@@ -336,13 +481,15 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         refreshFollowUpSuggestions()
         view.bringSubviewToFront(suggestionContainer)
         view.bringSubviewToFront(composerContainer)
-        emptyStateView.isHidden = !messages.isEmpty || launchContext != nil
+        emptyStateView.isHidden = true
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         installContextHeaderIfNeeded()
         installVerseSuggestionFooterIfNeeded()
+        installStarterFooterIfNeeded()
+        installLimitCardIfNeeded()
         fitEmptyStateToSpace()
     }
 
@@ -412,61 +559,262 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     /// Always false: Keep Ask (Explanation / Summary) suggestion rows above the composer, like Bible Companion.
     private var pinsVerseQuestionsUnderCard: Bool { false }
 
+    /// Nothing is pinned above the composer: starters live in the chat footer, follow-ups under each answer.
     private func refreshFollowUpSuggestions() {
-        // Keep suggestion height unchanged while waiting for a reply to avoid layout jump.
-        if isSending && !pinsVerseQuestionsUnderCard && tableView.tableFooterView == nil {
-            suggestionStack.isUserInteractionEnabled = false
-            return
-        }
-        suggestionStack.isUserInteractionEnabled = !isSending
-
-        if pinsVerseQuestionsUnderCard {
-            clearSuggestionStack()
-            suggestionContainer.isHidden = true
-            tableAboveSuggestionsConstraint?.isActive = false
-            tableAboveComposerConstraint?.isActive = true
-            view.setNeedsLayout()
-            return
-        }
-
-        if tableView.tableFooterView != nil {
-            tableView.tableFooterView = nil
-            verseSuggestionFooterWidth = 0
-        }
-        suggestionContainer.isHidden = false
-        tableAboveComposerConstraint?.isActive = false
-        tableAboveSuggestionsConstraint?.isActive = true
-
         clearSuggestionStack()
+        suggestionContainer.isHidden = true
+        tableAboveSuggestionsConstraint?.isActive = false
+        tableAboveComposerConstraint?.isActive = true
+        installStarterFooterIfNeeded()
+        view.setNeedsLayout()
+    }
 
-        if isSending {
-            if let context = launchContext, !context.isChapterSummary {
-                contextSuggestions(for: context).forEach {
-                    suggestionStack.addArrangedSubview(makeContextSuggestionRow(title: $0))
-                }
+    private func installStarterFooterIfNeeded() {
+        guard !showsLimitCard else { return }
+        guard messages.isEmpty, !isSending else {
+            if starterFooter != nil {
+                tableView.tableFooterView = nil
+                starterFooter = nil
+                starterFooterWidth = 0
             }
-            suggestionStack.isUserInteractionEnabled = false
             return
         }
+        let width = tableView.bounds.width
+        guard width > 0 else { return }
+        if abs(starterFooterWidth - width) < 1, starterFooter != nil { return }
 
-        let chips: [String]
-        if let lastAssistant = messages.last(where: { $0.role == .assistant }),
-           let lastUser = messages.last(where: { $0.role == .user }) {
-            chips = makeFollowUpSuggestions(userText: lastUser.text, assistantText: lastAssistant.text)
-        } else if messages.isEmpty {
-            chips = starterSuggestions()
-        } else {
-            chips = []
-        }
+        let footer = UIView()
+        footer.translatesAutoresizingMaskIntoConstraints = false
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 8
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        footer.addSubview(stack)
 
-        let useContextRows = launchContext != nil && messages.isEmpty
-        chips.forEach { title in
-            if useContextRows {
-                suggestionStack.addArrangedSubview(makeContextSuggestionRow(title: title))
-            } else {
-                suggestionStack.addArrangedSubview(makeSuggestionChip(title: title))
-            }
+        if launchContext == nil {
+            let heading = UILabel()
+            heading.text = "Bible AI Assistant"
+            heading.font = UIFont.systemFont(ofSize: 19, weight: .semibold)
+            heading.textColor = isNight ? .white : UIColor(red: 0.086, green: 0.1, blue: 0.13, alpha: 1)
+            heading.numberOfLines = 0
+            stack.addArrangedSubview(heading)
+            stack.setCustomSpacing(6, after: heading)
+
+            let subtitle = UILabel()
+            subtitle.text = "Ask for verse meaning, context, or study help."
+            subtitle.font = UIFont.systemFont(ofSize: 14.5)
+            subtitle.textColor = isNight ? UIColor.white.withAlphaComponent(0.6) : UIColor(red: 0.42, green: 0.45, blue: 0.5, alpha: 1)
+            subtitle.numberOfLines = 0
+            stack.addArrangedSubview(subtitle)
+            stack.setCustomSpacing(18, after: subtitle)
         }
+        starterTitles.forEach { stack.addArrangedSubview(makeStarterRow(title: $0)) }
+
+        let widthConstraint = footer.widthAnchor.constraint(equalToConstant: width)
+        NSLayoutConstraint.activate([
+            widthConstraint,
+            stack.topAnchor.constraint(equalTo: footer.topAnchor, constant: launchContext == nil ? 12 : 4),
+            stack.leadingAnchor.constraint(equalTo: footer.leadingAnchor, constant: 20),
+            stack.trailingAnchor.constraint(equalTo: footer.trailingAnchor, constant: -20),
+            stack.bottomAnchor.constraint(equalTo: footer.bottomAnchor, constant: -8)
+        ])
+        let height = footer.systemLayoutSizeFitting(
+            CGSize(width: width, height: 0),
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        ).height
+        widthConstraint.isActive = false
+        footer.translatesAutoresizingMaskIntoConstraints = true
+        footer.frame = CGRect(x: 0, y: 0, width: width, height: max(height, 1))
+        starterFooter = footer
+        starterFooterWidth = width
+        tableView.tableFooterView = footer
+    }
+
+    private func makeStarterRow(title: String) -> UIButton {
+        let row = UIButton(type: .custom)
+        row.setTitle(title, for: .normal)
+        row.titleLabel?.font = UIFont.systemFont(ofSize: 14.5)
+        row.titleLabel?.numberOfLines = 2
+        row.contentHorizontalAlignment = .left
+        let ink = isNight ? UIColor.white : UIColor(red: 0.086, green: 0.1, blue: 0.13, alpha: 1)
+        row.setTitleColor(ink, for: .normal)
+        row.setTitleColor(isNight ? .white : themeColor, for: .highlighted)
+        row.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.08) : .white
+        row.layer.cornerRadius = 14
+        row.layer.borderWidth = 1
+        row.layer.borderColor = (isNight ? UIColor.white.withAlphaComponent(0.12) : UIColor(red: 0.91, green: 0.925, blue: 0.95, alpha: 1)).cgColor
+        row.contentEdgeInsets = UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 40)
+        row.addTarget(self, action: #selector(suggestionTapped(_:)), for: .touchUpInside)
+
+        let chevron = UIImageView(image: UIImage(systemName: "chevron.right", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)))
+        chevron.translatesAutoresizingMaskIntoConstraints = false
+        chevron.tintColor = isNight ? UIColor.white.withAlphaComponent(0.45) : UIColor(red: 0.6, green: 0.63, blue: 0.68, alpha: 1)
+        chevron.isUserInteractionEnabled = false
+        row.addSubview(chevron)
+        NSLayoutConstraint.activate([
+            chevron.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -16),
+            chevron.centerYAnchor.constraint(equalTo: row.centerYAnchor)
+        ])
+        return row
+    }
+
+    /// Free chats used up and not enough credits for one more message.
+    private var isOutOfFreeChatsAndCredits: Bool {
+        let limiter = AIUsageLimiter.shared
+        return AIDisclaimer.isAccepted
+            && !limiter.hasUnlimitedPlan
+            && limiter.freeUsesLeft(.aiChat) <= 0
+            && ChallengeWallet.coins < AIUsageFeature.aiChat.creditCost
+    }
+
+    private func showLimitCard() {
+        view.endEditing(true)
+        guard !showsLimitCard else {
+            scrollToLimitCard()
+            return
+        }
+        showsLimitCard = true
+        tableView.tableFooterView = nil
+        starterFooter = nil
+        starterFooterWidth = 0
+        limitCardFooterWidth = 0
+        installLimitCardIfNeeded()
+        scrollToLimitCard()
+    }
+
+    private func hideLimitCard() {
+        guard showsLimitCard else { return }
+        showsLimitCard = false
+        tableView.tableFooterView = nil
+        limitCardFooterWidth = 0
+        installStarterFooterIfNeeded()
+    }
+
+    private func scrollToLimitCard() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, let footer = self.tableView.tableFooterView, self.showsLimitCard else { return }
+            self.tableView.layoutIfNeeded()
+            self.tableView.scrollRectToVisible(footer.frame, animated: true)
+        }
+    }
+
+    private func installLimitCardIfNeeded() {
+        guard showsLimitCard else { return }
+        let width = tableView.bounds.width
+        guard width > 0 else { return }
+        if abs(limitCardFooterWidth - width) < 1, tableView.tableFooterView != nil { return }
+
+        let ink = isNight ? UIColor.white : UIColor(red: 0.086, green: 0.1, blue: 0.13, alpha: 1)
+        let ink3 = isNight ? UIColor.white.withAlphaComponent(0.6) : UIColor(red: 0.42, green: 0.45, blue: 0.5, alpha: 1)
+        let accent = isNight ? UIColor.white : themeColor
+
+        let footer = UIView()
+        footer.translatesAutoresizingMaskIntoConstraints = false
+        let card = UIView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        card.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.08) : .white
+        card.layer.cornerRadius = 22
+        card.layer.borderWidth = 1
+        card.layer.borderColor = (isNight ? UIColor.white.withAlphaComponent(0.12) : UIColor(red: 0.91, green: 0.925, blue: 0.95, alpha: 1)).cgColor
+        footer.addSubview(card)
+
+        let iconBox = UIView()
+        iconBox.translatesAutoresizingMaskIntoConstraints = false
+        iconBox.backgroundColor = accent.withAlphaComponent(isNight ? 0.14 : 0.1)
+        iconBox.layer.cornerRadius = 14
+        let icon = UIImageView(image: UIImage(systemName: "sparkle", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)))
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.tintColor = accent
+        iconBox.addSubview(icon)
+
+        let title = UILabel()
+        title.text = "That’s today’s free messages"
+        title.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+        title.textColor = ink
+        title.textAlignment = .center
+        title.numberOfLines = 0
+
+        let message = UILabel()
+        message.text = "You get \(AIUsageFeature.aiChat.dailyFreeLimit) free messages a day. Premium removes the limit on chat, verse explanations and chapter summaries."
+        message.font = UIFont.systemFont(ofSize: 14.5)
+        message.textColor = ink3
+        message.textAlignment = .center
+        message.numberOfLines = 0
+
+        let unlimited = UIButton(type: .system)
+        unlimited.setTitle("Go unlimited", for: .normal)
+        unlimited.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        unlimited.setTitleColor(isNight ? BGNightMode : .white, for: .normal)
+        unlimited.backgroundColor = accent
+        unlimited.layer.cornerRadius = 14
+        unlimited.translatesAutoresizingMaskIntoConstraints = false
+        unlimited.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        unlimited.addTarget(self, action: #selector(limitCardUnlimitedTapped), for: .touchUpInside)
+
+        let later = UIButton(type: .system)
+        later.setTitle("Maybe tomorrow", for: .normal)
+        later.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        later.setTitleColor(ink3, for: .normal)
+        later.translatesAutoresizingMaskIntoConstraints = false
+        later.heightAnchor.constraint(equalToConstant: 40).isActive = true
+        later.addTarget(self, action: #selector(limitCardLaterTapped), for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [iconBox, title, message, unlimited, later])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 8
+        stack.setCustomSpacing(16, after: iconBox)
+        stack.setCustomSpacing(22, after: message)
+        stack.setCustomSpacing(6, after: unlimited)
+        card.addSubview(stack)
+
+        let widthConstraint = footer.widthAnchor.constraint(equalToConstant: width)
+        NSLayoutConstraint.activate([
+            widthConstraint,
+            card.topAnchor.constraint(equalTo: footer.topAnchor, constant: 8),
+            card.leadingAnchor.constraint(equalTo: footer.leadingAnchor, constant: 16),
+            card.trailingAnchor.constraint(equalTo: footer.trailingAnchor, constant: -16),
+            card.bottomAnchor.constraint(equalTo: footer.bottomAnchor, constant: -12),
+
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: 24),
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -10),
+
+            iconBox.widthAnchor.constraint(equalToConstant: 46),
+            iconBox.heightAnchor.constraint(equalToConstant: 46),
+            icon.centerXAnchor.constraint(equalTo: iconBox.centerXAnchor),
+            icon.centerYAnchor.constraint(equalTo: iconBox.centerYAnchor),
+
+            title.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            message.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            unlimited.widthAnchor.constraint(equalTo: stack.widthAnchor)
+        ])
+        let height = footer.systemLayoutSizeFitting(
+            CGSize(width: width, height: 0),
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        ).height
+        widthConstraint.isActive = false
+        footer.translatesAutoresizingMaskIntoConstraints = true
+        footer.frame = CGRect(x: 0, y: 0, width: width, height: max(height, 1))
+        limitCardFooterWidth = width
+        tableView.tableFooterView = footer
+    }
+
+    @objc private func limitCardUnlimitedTapped() {
+        AIUsageLimiter.shared.presentPlansPaywall()
+    }
+
+    @objc private func limitCardLaterTapped() {
+        hideLimitCard()
+    }
+
+    private func refreshSendButtonState() {
+        sendButton.isEnabled = !isSending
+        sendButton.alpha = isSending ? 0.35 : 1
     }
 
     private func clearSuggestionStack() {
@@ -993,6 +1341,11 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             return
         }
 
+        if isOutOfFreeChatsAndCredits {
+            showLimitCard()
+            return
+        }
+
         AIUsageLimiter.shared.requestAccess(.aiChat, from: self) { [weak self] in
             self?.sendMessage(text)
         }
@@ -1006,6 +1359,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         refreshInputHeight()
         emptyStateView.isHidden = true
         isSending = true
+        refreshSendButtonState()
         refreshFollowUpSuggestions()
         reloadChatAndScrollToBottom(animated: true)
         // Keep keyboard/composer frame stable while the reply loads (avoids screen jump).
@@ -1013,20 +1367,75 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         let payload = buildInput(for: text)
         OpenAIChatService.shared.send(input: payload) { [weak self] result in
             guard let self = self else { return }
-            self.isSending = false
 
             switch result {
             case .success(let reply):
                 AIUsageLimiter.shared.commit(.aiChat)
                 self.refreshSendLock()
-                self.messages.append(AIChatMessage(role: .assistant, text: reply))
+                self.appendAssistantReply(reply, userText: text)
             case .failure(let error):
                 self.view.makeToast(error.localizedDescription, duration: 2.5, position: .top)
+                self.finishSending()
             }
-            self.tableView.reloadData()
-            self.refreshFollowUpSuggestions()
-            self.scrollToBottom(animated: true)
         }
+    }
+
+    private func appendAssistantReply(_ reply: String, userText: String) {
+        let parsed = AIChatAnswer.parse(reply)
+        var followUps = parsed.followUps
+        if followUps.isEmpty {
+            followUps = Array(makeFollowUpSuggestions(userText: userText, assistantText: parsed.plainText).prefix(2))
+        }
+
+        guard var answer = parsed.answer, let reference = answer.reference else {
+            messages.append(AIChatMessage(role: .assistant, text: parsed.plainText, answer: parsed.answer, followUps: followUps))
+            finishSending()
+            return
+        }
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let bibleText = AIChatScripture.text(for: reference)
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                if let bibleText = bibleText {
+                    answer.verse = bibleText
+                }
+                self.messages.append(AIChatMessage(role: .assistant, text: answer.plainText, answer: answer, followUps: followUps))
+                self.finishSending()
+            }
+        }
+    }
+
+    private func finishSending() {
+        isSending = false
+        refreshSendButtonState()
+        tableView.reloadData()
+        refreshFollowUpSuggestions()
+        scrollToBottom(animated: true)
+    }
+
+    private func ask(_ question: String) {
+        inputTextView.text = question
+        placeholderLabel.isHidden = true
+        sendTapped()
+    }
+
+    private func copyText(_ text: String) {
+        UIPasteboard.general.string = text
+        view.makeToast("Copied", duration: 1.5, position: .top)
+    }
+
+    private func shareText(_ text: String) {
+        let activityVC = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+        activityVC.popoverPresentationController?.sourceView = view
+        activityVC.popoverPresentationController?.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.maxY, width: 0, height: 0)
+        activityVC.completionWithItemsHandler = { [weak self] _, _, _, _ in
+            // Re-apply composer inset after share dismiss without IQKeyboard fighting the layout.
+            guard let self = self else { return }
+            self.composerBottomConstraint?.constant = 0
+            self.view.layoutIfNeeded()
+        }
+        present(activityVC, animated: true, completion: nil)
     }
 
     private func reloadChatAndScrollToBottom(animated: Bool) {
@@ -1038,6 +1447,21 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         var lines: [String] = [
             "You are a helpful Bible study assistant in the \(APPNAME) app. Give clear, faithful, and concise answers. Do not use markdown or asterisks."
         ]
+
+        let bookNames = AIChatScripture.books().map { $0.name }
+        let bookRule = bookNames.isEmpty ? "" : " Use one of these book names exactly: \(bookNames.joined(separator: ", "))."
+        lines.append("""
+        Reply only with these labeled lines, each on its own line:
+        LEAD: one short sentence that directly answers the question.
+        REF: one Bible reference that best supports the answer, written as Book chapter:verse or Book chapter:verse-verse (at most 4 verses).\(bookRule)
+        VERSE: the text of that passage.
+        POINT: one short sentence on why it matters.
+        POINT: one short sentence on why it matters.
+        POINT: one short sentence on why it matters.
+        NEXT: a short follow-up question the user may ask next (at most 8 words).
+        NEXT: another short follow-up question (at most 8 words).
+        Keep the labels LEAD, REF, VERSE, POINT and NEXT in English. Write the text after each label in the same language as the user's question.
+        """)
 
         let history = messages.dropLast()
         if !history.isEmpty {
@@ -1102,40 +1526,70 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.row >= messages.count {
             let cell = tableView.dequeueReusableCell(withIdentifier: AIChatWaitingCell.reuseId, for: indexPath) as! AIChatWaitingCell
-            cell.configure(isNight: isNight)
+            cell.configure(isNight: isNight, themeColor: themeColor, indonesian: false)
+            return cell
+        }
+
+        let message = messages[indexPath.row]
+        if message.role == .assistant {
+            let cell = tableView.dequeueReusableCell(withIdentifier: AIChatAnswerCell.reuseId, for: indexPath) as! AIChatAnswerCell
+            cell.configure(message: message, isNight: isNight, themeColor: themeColor, indonesian: false)
+            cell.onCopy = { [weak self] text in self?.copyText(text) }
+            cell.onShare = { [weak self] text in self?.shareText(text) }
+            cell.onAsk = { [weak self] question in self?.ask(question) }
             return cell
         }
 
         let cell = tableView.dequeueReusableCell(withIdentifier: AIChatBubbleCell.reuseId, for: indexPath) as! AIChatBubbleCell
-        cell.configure(message: messages[indexPath.row], isNight: isNight, themeColor: themeColor)
-        cell.onCopy = { [weak self] text in
-            guard let self = self else { return }
-            UIPasteboard.general.string = text
-            self.view.makeToast("Copied", duration: 1.5, position: .top)
-        }
-        cell.onShare = { [weak self] text in
-            guard let self = self else { return }
-            let activityVC = UIActivityViewController(activityItems: [text], applicationActivities: nil)
-            activityVC.popoverPresentationController?.sourceView = self.view
-            activityVC.popoverPresentationController?.sourceRect = CGRect(x: self.view.bounds.midX, y: self.view.bounds.maxY, width: 0, height: 0)
-            activityVC.completionWithItemsHandler = { [weak self] _, _, _, _ in
-                // Re-apply composer inset after share dismiss without IQKeyboard fighting the layout.
-                guard let self = self else { return }
-                self.composerBottomConstraint?.constant = 0
-                self.view.layoutIfNeeded()
-            }
-            self.present(activityVC, animated: true, completion: nil)
-        }
+        cell.configure(message: message, isNight: isNight, themeColor: themeColor)
+        cell.onCopy = { [weak self] text in self?.copyText(text) }
+        cell.onShare = { [weak self] text in self?.shareText(text) }
         return cell
+    }
+
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        guard indexPath.row < messages.count, indexPath.row >= animatedRowCount else { return }
+        animatedRowCount = indexPath.row + 1
+        guard !UIAccessibility.isReduceMotionEnabled else { return }
+        cell.contentView.alpha = 0
+        cell.contentView.transform = CGAffineTransform(translationX: 0, y: 10)
+        UIView.animate(withDuration: 0.34, delay: 0, options: [.curveEaseOut, .allowUserInteraction]) {
+            cell.contentView.alpha = 1
+            cell.contentView.transform = .identity
+        }
     }
 }
 
-/// Left assistant-style bubble while a reply loads (replaces "Typing..." and the composer status line).
+/// "ASK AI" label with a dot, shared by the waiting row and the answer.
+private func makeAIChatTag(accent: UIColor, indonesian: Bool) -> UIView {
+    let dot = UIView()
+    dot.translatesAutoresizingMaskIntoConstraints = false
+    dot.backgroundColor = accent
+    dot.layer.cornerRadius = 3
+    let label = UILabel()
+    label.attributedText = NSAttributedString(string: indonesian ? "TANYA AI" : "ASK AI", attributes: [
+        .font: UIFont.systemFont(ofSize: 10.5, weight: .bold),
+        .kern: 1.4,
+        .foregroundColor: accent
+    ])
+    let row = UIStackView(arrangedSubviews: [dot, label])
+    row.axis = .horizontal
+    row.alignment = .center
+    row.spacing = 7
+    NSLayoutConstraint.activate([
+        dot.widthAnchor.constraint(equalToConstant: 6),
+        dot.heightAnchor.constraint(equalToConstant: 6)
+    ])
+    return row
+}
+
+/// "ASK AI" label with three bouncing dots while a reply loads.
 private final class AIChatWaitingCell: UITableViewCell {
     static let reuseId = "AIChatWaitingCell"
 
-    private let bubbleView = UIView()
-    private let label = UILabel()
+    private let stack = UIStackView()
+    private let dotsStack = UIStackView()
+    private var dots: [UIView] = []
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -1143,27 +1597,29 @@ private final class AIChatWaitingCell: UITableViewCell {
         backgroundColor = .clear
         contentView.backgroundColor = .clear
 
-        bubbleView.translatesAutoresizingMaskIntoConstraints = false
-        bubbleView.layer.cornerRadius = 18
-        bubbleView.layer.maskedCorners = [.layerMaxXMinYCorner, .layerMaxXMaxYCorner, .layerMinXMinYCorner]
-        contentView.addSubview(bubbleView)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .vertical
+        stack.alignment = .leading
+        stack.spacing = 12
+        contentView.addSubview(stack)
 
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = "Searching the Scriptures for you..."
-        label.font = UIFont.systemFont(ofSize: 15)
-        label.numberOfLines = 0
-        bubbleView.addSubview(label)
+        dotsStack.axis = .horizontal
+        dotsStack.spacing = 5
+        for _ in 0..<3 {
+            let dot = UIView()
+            dot.translatesAutoresizingMaskIntoConstraints = false
+            dot.layer.cornerRadius = 3.5
+            dot.widthAnchor.constraint(equalToConstant: 7).isActive = true
+            dot.heightAnchor.constraint(equalToConstant: 7).isActive = true
+            dots.append(dot)
+            dotsStack.addArrangedSubview(dot)
+        }
 
         NSLayoutConstraint.activate([
-            bubbleView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            bubbleView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 6),
-            bubbleView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
-            bubbleView.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -48),
-
-            label.topAnchor.constraint(equalTo: bubbleView.topAnchor, constant: 12),
-            label.leadingAnchor.constraint(equalTo: bubbleView.leadingAnchor, constant: 14),
-            label.trailingAnchor.constraint(equalTo: bubbleView.trailingAnchor, constant: -14),
-            label.bottomAnchor.constraint(equalTo: bubbleView.bottomAnchor, constant: -12)
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 22),
+            stack.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -22),
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12)
         ])
     }
 
@@ -1171,9 +1627,316 @@ private final class AIChatWaitingCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func configure(isNight: Bool) {
-        bubbleView.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.1) : UIColor(white: 0.94, alpha: 1)
-        label.textColor = isNight ? UIColor.white.withAlphaComponent(0.75) : UIColor(white: 0.35, alpha: 1)
+    func configure(isNight: Bool, themeColor: UIColor, indonesian: Bool) {
+        let accent = isNight ? UIColor.white : themeColor
+        stack.arrangedSubviews.forEach {
+            stack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        stack.addArrangedSubview(makeAIChatTag(accent: accent, indonesian: indonesian))
+        stack.addArrangedSubview(dotsStack)
+        dots.forEach { $0.backgroundColor = accent }
+        startBouncing()
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window != nil { startBouncing() }
+    }
+
+    private func startBouncing() {
+        guard !UIAccessibility.isReduceMotionEnabled else {
+            dots.forEach { $0.alpha = 0.6 }
+            return
+        }
+        for (index, dot) in dots.enumerated() {
+            dot.layer.removeAllAnimations()
+            let move = CAKeyframeAnimation(keyPath: "transform.translation.y")
+            move.values = [0, -4, 0, 0]
+            let fade = CAKeyframeAnimation(keyPath: "opacity")
+            fade.values = [0.35, 1, 0.35, 0.35]
+            let group = CAAnimationGroup()
+            group.animations = [move, fade]
+            [move, fade].forEach { $0.keyTimes = [0, 0.3, 0.6, 1] }
+            group.duration = 1.2
+            group.repeatCount = .infinity
+            group.beginTime = CACurrentMediaTime() + Double(index) * 0.15
+            dot.layer.add(group, forKey: "bounce")
+        }
+    }
+}
+
+/// Assistant answer laid out as: tag, lead, the passage, why it matters, Copy/Share, continue chips.
+private final class AIChatAnswerCell: UITableViewCell {
+    static let reuseId = "AIChatAnswerCell"
+
+    var onCopy: ((String) -> Void)?
+    var onShare: ((String) -> Void)?
+    var onAsk: ((String) -> Void)?
+
+    private let stack = UIStackView()
+    private var messageText = ""
+    private var accent = UIColor.black
+    private var hair = UIColor.lightGray
+    private var ink = UIColor.black
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        selectionStyle = .none
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .vertical
+        stack.alignment = .fill
+        contentView.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 22),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -22),
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func configure(message: AIChatMessage, isNight: Bool, themeColor: UIColor, indonesian: Bool) {
+        stack.arrangedSubviews.forEach {
+            stack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        messageText = message.text
+        accent = isNight ? .white : themeColor
+        ink = isNight ? .white : UIColor(red: 0.086, green: 0.1, blue: 0.13, alpha: 1)
+        let ink2 = isNight ? UIColor.white.withAlphaComponent(0.75) : UIColor(red: 0.27, green: 0.31, blue: 0.37, alpha: 1)
+        let ink3 = isNight ? UIColor.white.withAlphaComponent(0.5) : UIColor(red: 0.55, green: 0.58, blue: 0.63, alpha: 1)
+        hair = isNight ? UIColor.white.withAlphaComponent(0.14) : UIColor(red: 0.9, green: 0.915, blue: 0.94, alpha: 1)
+
+        let tag = makeAIChatTag(accent: accent, indonesian: indonesian)
+        let tagRow = UIStackView(arrangedSubviews: [tag, UIView()])
+        stack.addArrangedSubview(tagRow)
+        stack.setCustomSpacing(10, after: tagRow)
+
+        if let answer = message.answer {
+            let lead = makeLabel(answer.lead, font: .systemFont(ofSize: 17, weight: .semibold), color: ink, lineSpacing: 3)
+            stack.addArrangedSubview(lead)
+            stack.setCustomSpacing(20, after: lead)
+
+            if let verse = answer.verse, !verse.isEmpty {
+                let rule = makeRule(indonesian ? "AYAT" : "THE PASSAGE", color: ink3)
+                stack.addArrangedSubview(rule)
+                stack.setCustomSpacing(12, after: rule)
+                let quote = makeQuote(verse: verse, reference: answer.reference, citeColor: ink3)
+                stack.addArrangedSubview(quote)
+                stack.setCustomSpacing(20, after: quote)
+            }
+
+            let rule = makeRule(indonesian ? "MENGAPA INI PENTING" : "WHY IT MATTERS", color: ink3)
+            stack.addArrangedSubview(rule)
+            stack.setCustomSpacing(12, after: rule)
+            for (index, point) in answer.points.enumerated() {
+                let row = makePoint(point, color: ink2)
+                stack.addArrangedSubview(row)
+                stack.setCustomSpacing(index == answer.points.count - 1 ? 16 : 10, after: row)
+            }
+        } else {
+            let body = makeLabel(message.text, font: .systemFont(ofSize: 16), color: ink, lineSpacing: 4)
+            stack.addArrangedSubview(body)
+            stack.setCustomSpacing(16, after: body)
+        }
+
+        let actions = UIStackView(arrangedSubviews: [
+            makeQuietButton(indonesian ? "Salin" : "Copy", symbol: "doc.on.doc", color: ink3, action: #selector(copyTapped)),
+            makeQuietButton(indonesian ? "Bagikan" : "Share", symbol: "square.and.arrow.up", color: ink3, action: #selector(shareTapped)),
+            UIView()
+        ])
+        actions.axis = .horizontal
+        actions.alignment = .center
+        actions.spacing = 20
+        stack.addArrangedSubview(actions)
+
+        guard !message.followUps.isEmpty else { return }
+        stack.setCustomSpacing(20, after: actions)
+        let rule = makeRule(indonesian ? "LANJUTKAN" : "CONTINUE", color: ink3)
+        stack.addArrangedSubview(rule)
+        stack.setCustomSpacing(12, after: rule)
+        stack.addArrangedSubview(makeChipRow(message.followUps, isNight: isNight))
+    }
+
+    private func makeLabel(_ text: String, font: UIFont, color: UIColor, lineSpacing: CGFloat) -> UILabel {
+        let label = UILabel()
+        label.numberOfLines = 0
+        let style = NSMutableParagraphStyle()
+        style.lineSpacing = lineSpacing
+        label.attributedText = NSAttributedString(string: text, attributes: [
+            .font: font,
+            .foregroundColor: color,
+            .paragraphStyle: style
+        ])
+        return label
+    }
+
+    private func makeRule(_ title: String, color: UIColor) -> UIView {
+        let label = UILabel()
+        label.attributedText = NSAttributedString(string: title, attributes: [
+            .font: UIFont.systemFont(ofSize: 10.5, weight: .bold),
+            .kern: 1.3,
+            .foregroundColor: color
+        ])
+        label.setContentHuggingPriority(.required, for: .horizontal)
+        label.setContentCompressionResistancePriority(.required, for: .horizontal)
+        let line = UIView()
+        line.translatesAutoresizingMaskIntoConstraints = false
+        line.backgroundColor = hair
+        line.heightAnchor.constraint(equalToConstant: 1).isActive = true
+        let row = UIStackView(arrangedSubviews: [label, line])
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 10
+        return row
+    }
+
+    private func makeQuote(verse: String, reference: String?, citeColor: UIColor) -> UIView {
+        let container = UIView()
+        let bar = UIView()
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        bar.backgroundColor = accent
+        bar.layer.cornerRadius = 1.25
+        container.addSubview(bar)
+
+        let serifDescriptor = UIFont.systemFont(ofSize: 17).fontDescriptor.withDesign(.serif)
+        let serif = serifDescriptor.map { UIFont(descriptor: $0, size: 17) } ?? UIFont.systemFont(ofSize: 17)
+        let verseLabel = makeLabel(verse, font: serif, color: ink, lineSpacing: 5)
+        let textStack = UIStackView(arrangedSubviews: [verseLabel])
+        textStack.translatesAutoresizingMaskIntoConstraints = false
+        textStack.axis = .vertical
+        textStack.spacing = 8
+        if let reference = reference, !reference.isEmpty {
+            let cite = UILabel()
+            cite.numberOfLines = 0
+            cite.attributedText = NSAttributedString(string: reference.uppercased(), attributes: [
+                .font: UIFont.systemFont(ofSize: 10.5, weight: .semibold),
+                .kern: 1.0,
+                .foregroundColor: citeColor
+            ])
+            textStack.addArrangedSubview(cite)
+        }
+        container.addSubview(textStack)
+
+        NSLayoutConstraint.activate([
+            bar.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            bar.topAnchor.constraint(equalTo: container.topAnchor, constant: 2),
+            bar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -2),
+            bar.widthAnchor.constraint(equalToConstant: 2.5),
+
+            textStack.leadingAnchor.constraint(equalTo: bar.trailingAnchor, constant: 16),
+            textStack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            textStack.topAnchor.constraint(equalTo: container.topAnchor),
+            textStack.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+        ])
+        return container
+    }
+
+    private func makePoint(_ text: String, color: UIColor) -> UIView {
+        let container = UIView()
+        let dot = UIView()
+        dot.translatesAutoresizingMaskIntoConstraints = false
+        dot.backgroundColor = accent.withAlphaComponent(0.55)
+        dot.layer.cornerRadius = 2.5
+        container.addSubview(dot)
+
+        let label = makeLabel(text, font: .systemFont(ofSize: 15), color: color, lineSpacing: 3)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            dot.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 1),
+            dot.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            dot.widthAnchor.constraint(equalToConstant: 5),
+            dot.heightAnchor.constraint(equalToConstant: 5),
+
+            label.leadingAnchor.constraint(equalTo: dot.trailingAnchor, constant: 12),
+            label.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            label.topAnchor.constraint(equalTo: container.topAnchor),
+            label.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+        ])
+        return container
+    }
+
+    private func makeQuietButton(_ title: String, symbol: String, color: UIColor, action: Selector) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(title, for: .normal)
+        button.setImage(UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .medium)), for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        button.tintColor = color
+        button.setTitleColor(color, for: .normal)
+        button.titleEdgeInsets = UIEdgeInsets(top: 0, left: 6, bottom: 0, right: -6)
+        button.contentEdgeInsets = UIEdgeInsets(top: 6, left: 0, bottom: 6, right: 6)
+        button.addTarget(self, action: action, for: .touchUpInside)
+        return button
+    }
+
+    private func makeChipRow(_ titles: [String], isNight: Bool) -> UIView {
+        let scroll = UIScrollView()
+        scroll.showsHorizontalScrollIndicator = false
+        scroll.alwaysBounceHorizontal = true
+
+        let row = UIStackView()
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.axis = .horizontal
+        row.spacing = 8
+        scroll.addSubview(row)
+
+        titles.forEach { title in
+            let chip = UIButton(type: .custom)
+            chip.setTitle(title, for: .normal)
+            chip.titleLabel?.font = UIFont.systemFont(ofSize: 13.5, weight: .medium)
+            chip.setTitleColor(ink, for: .normal)
+            chip.setTitleColor(accent, for: .highlighted)
+            chip.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.08) : .white
+            chip.layer.cornerRadius = 19
+            chip.layer.borderWidth = 1
+            chip.layer.borderColor = hair.cgColor
+            chip.contentEdgeInsets = UIEdgeInsets(top: 9, left: 14, bottom: 9, right: 14)
+            chip.addTarget(self, action: #selector(chipTouchDown(_:)), for: [.touchDown, .touchDragEnter])
+            chip.addTarget(self, action: #selector(chipTouchEnded(_:)), for: [.touchUpOutside, .touchCancel, .touchDragExit])
+            chip.addTarget(self, action: #selector(chipTapped(_:)), for: .touchUpInside)
+            row.addArrangedSubview(chip)
+        }
+
+        NSLayoutConstraint.activate([
+            row.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
+            row.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
+            row.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
+            row.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
+            row.heightAnchor.constraint(equalTo: scroll.frameLayoutGuide.heightAnchor),
+            scroll.heightAnchor.constraint(equalToConstant: 38)
+        ])
+        return scroll
+    }
+
+    @objc private func chipTouchDown(_ sender: UIButton) {
+        sender.layer.borderColor = accent.cgColor
+    }
+
+    @objc private func chipTouchEnded(_ sender: UIButton) {
+        sender.layer.borderColor = hair.cgColor
+    }
+
+    @objc private func chipTapped(_ sender: UIButton) {
+        sender.layer.borderColor = hair.cgColor
+        guard let title = sender.title(for: .normal) else { return }
+        onAsk?(title)
+    }
+
+    @objc private func copyTapped() {
+        onCopy?(messageText)
+    }
+
+    @objc private func shareTapped() {
+        onShare?(messageText)
     }
 }
 
@@ -1240,7 +2003,7 @@ private final class AIChatBubbleCell: UITableViewCell {
         NSLayoutConstraint.activate([
             bubbleView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 6),
             bubbleView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
-            bubbleView.widthAnchor.constraint(lessThanOrEqualTo: contentView.widthAnchor, multiplier: 0.78),
+            bubbleView.widthAnchor.constraint(lessThanOrEqualTo: contentView.widthAnchor, multiplier: 0.8),
 
             messageLabel.topAnchor.constraint(equalTo: bubbleView.topAnchor, constant: 10),
             messageLabel.leadingAnchor.constraint(equalTo: bubbleView.leadingAnchor, constant: 14),
@@ -1277,8 +2040,9 @@ private final class AIChatBubbleCell: UITableViewCell {
         trailingConstraint?.isActive = false
 
         if message.role == .user {
-            bubbleView.backgroundColor = isNight ? DarkModeColor : themeColor
-            messageLabel.textColor = .white
+            bubbleView.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.12) : themeColor.withAlphaComponent(0.1)
+            messageLabel.textColor = isNight ? .white : UIColor(red: 0.086, green: 0.1, blue: 0.13, alpha: 1)
+            bubbleView.layer.cornerRadius = 20
             trailingConstraint?.isActive = true
             bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMinXMaxYCorner, .layerMaxXMinYCorner]
             actionStack.isHidden = true

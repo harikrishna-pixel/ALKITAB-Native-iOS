@@ -38,15 +38,9 @@ final class VerseExplanationView: UIView {
     private let grabHandle = UIView()
     private let grabButton = UIButton(type: .custom)
     private var isDismissingSheet = false
-    private let titleLabel = UILabel()
-    private let subtitleLabel = UILabel()
-    private let verseContainer = UIView()
-    private let verseAccent = UIView()
-    private let verseLabel = UILabel()
-    private let sectionLabel = UILabel()
     private let contentContainer = UIView()
     private let scrollView = UIScrollView()
-    private let contentLabel = UILabel()
+    private let contentStack = UIStackView()
     private let loadingIndicator = UIActivityIndicatorView(style: .large)
     private let loadingLabel = UILabel()
     private let errorLabel = UILabel()
@@ -54,14 +48,15 @@ final class VerseExplanationView: UIView {
     private let closeButton = UIButton(type: .custom)
     private let footerContainer = UIView()
     private let footerDivider = UIView()
+    private let askPrimaryButton = UIButton(type: .system)
     private let actionStack = UIStackView()
     private var footerIconHolders: [UIView] = []
     private var footerImageViews: [UIImageView] = []
     private var footerLabels: [UILabel] = []
     private var cardBottomConstraint: NSLayoutConstraint?
-    private var verseContainerHeightConstraint: NSLayoutConstraint?
 
-    private let tabBarOverlap: CGFloat = 96
+    /// HTML sheet sits on the home indicator, not above the old tab bar.
+    private let sheetBottomInset: CGFloat = 8
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -127,75 +122,22 @@ final class VerseExplanationView: UIView {
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         cardView.addSubview(closeButton)
 
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-        titleLabel.textColor = themeColor == BGNightMode ? .white : themeColor
-        titleLabel.textAlignment = .center
-        titleLabel.numberOfLines = 2
-        cardView.addSubview(titleLabel)
-
-        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.font = UIFont.systemFont(ofSize: 12, weight: .semibold)
-        subtitleLabel.textColor = themeColor == BGNightMode ? UIColor.white.withAlphaComponent(0.55) : UIColor(red: 0.45, green: 0.5, blue: 0.58, alpha: 1)
-        subtitleLabel.textAlignment = .center
-        subtitleLabel.text = "VERSE EXPLANATION"
-        cardView.addSubview(subtitleLabel)
-
-        verseContainer.translatesAutoresizingMaskIntoConstraints = false
-        verseContainer.backgroundColor = themeColor == BGNightMode
-            ? UIColor.white.withAlphaComponent(0.08)
-            : UIColor(red: 0.95, green: 0.97, blue: 1.0, alpha: 1)
-        verseContainer.layer.cornerRadius = 14
-        verseContainer.layer.borderWidth = 1
-        verseContainer.layer.borderColor = (themeColor == BGNightMode
-            ? UIColor.white.withAlphaComponent(0.1)
-            : themeColor.withAlphaComponent(0.12)).cgColor
-        verseContainer.clipsToBounds = true
-        cardView.addSubview(verseContainer)
-
-        verseAccent.translatesAutoresizingMaskIntoConstraints = false
-        verseAccent.backgroundColor = themeColor == BGNightMode ? DarkModeColor : themeColor
-        verseAccent.layer.cornerRadius = 2
-        verseContainer.addSubview(verseAccent)
-
-        verseLabel.translatesAutoresizingMaskIntoConstraints = false
-        if let serif = UIFont(name: "Georgia", size: 16) {
-            verseLabel.font = serif
-        } else {
-            verseLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        }
-        verseLabel.textColor = themeColor == BGNightMode ? UIColor.white.withAlphaComponent(0.92) : UIColor(red: 0.16, green: 0.2, blue: 0.32, alpha: 1)
-        verseLabel.numberOfLines = 0
-        verseContainer.addSubview(verseLabel)
-
-        sectionLabel.translatesAutoresizingMaskIntoConstraints = false
-        sectionLabel.font = UIFont.systemFont(ofSize: 11, weight: .bold)
-        sectionLabel.textColor = themeColor == BGNightMode ? UIColor.white.withAlphaComponent(0.5) : UIColor(red: 0.5, green: 0.54, blue: 0.62, alpha: 1)
-        sectionLabel.text = "EXPLANATION"
-        sectionLabel.isHidden = true
-        cardView.addSubview(sectionLabel)
-
         contentContainer.translatesAutoresizingMaskIntoConstraints = false
-        contentContainer.backgroundColor = themeColor == BGNightMode
-            ? UIColor.white.withAlphaComponent(0.05)
-            : UIColor(red: 0.98, green: 0.98, blue: 0.99, alpha: 1)
-        contentContainer.layer.cornerRadius = 14
-        contentContainer.layer.borderWidth = 1
-        contentContainer.layer.borderColor = (themeColor == BGNightMode
-            ? UIColor.white.withAlphaComponent(0.08)
-            : UIColor.black.withAlphaComponent(0.06)).cgColor
+        contentContainer.backgroundColor = .clear
         cardView.addSubview(contentContainer)
 
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.alwaysBounceVertical = true
-        scrollView.showsVerticalScrollIndicator = false
+        scrollView.showsVerticalScrollIndicator = true
+        scrollView.indicatorStyle = themeColor == BGNightMode ? .white : .default
+        scrollView.contentInsetAdjustmentBehavior = .never
         contentContainer.addSubview(scrollView)
 
-        contentLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentLabel.font = UIFont.systemFont(ofSize: 16, weight: .regular)
-        contentLabel.textColor = themeColor == BGNightMode ? UIColor.white.withAlphaComponent(0.92) : UIColor(red: 0.12, green: 0.14, blue: 0.18, alpha: 1)
-        contentLabel.numberOfLines = 0
-        scrollView.addSubview(contentLabel)
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        contentStack.axis = .vertical
+        contentStack.alignment = .fill
+        contentStack.spacing = 0
+        scrollView.addSubview(contentStack)
 
         loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
         loadingIndicator.hidesWhenStopped = true
@@ -244,21 +186,27 @@ final class VerseExplanationView: UIView {
             : UIColor.black.withAlphaComponent(0.08)
         footerContainer.addSubview(footerDivider)
 
+        askPrimaryButton.translatesAutoresizingMaskIntoConstraints = false
+        askPrimaryButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        askPrimaryButton.layer.cornerRadius = 14
+        askPrimaryButton.contentEdgeInsets = UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 16)
+        askPrimaryButton.addTarget(self, action: #selector(askTapped), for: .touchUpInside)
+        askPrimaryButton.isHidden = !usesOldOnboarding
+        footerContainer.addSubview(askPrimaryButton)
+
         let copyAction = makeActionButton(title: "Copy", imageName: "CopyNewImg", action: #selector(copyTapped))
         let shareAction = makeActionButton(title: "Share", imageName: "shareVerse", action: #selector(shareTapped))
         let saveAction = makeActionButton(title: "Save", imageName: "save", action: #selector(saveTapped))
         actionStack.addArrangedSubview(copyAction)
-        if usesOldOnboarding {
-            let readAction = makeActionButton(title: "Ask", imageName: "read", systemName: "bubble.left", action: #selector(askTapped))
-            actionStack.addArrangedSubview(readAction)
-        }
         actionStack.addArrangedSubview(shareAction)
         actionStack.addArrangedSubview(saveAction)
         footerContainer.addSubview(actionStack)
         setActionsEnabled(false)
+        refreshAskPrimaryTitle()
 
         cardBottomConstraint = cardView.bottomAnchor.constraint(equalTo: bottomAnchor)
 
+        // HTML `.sheet { top: 92px; bottom: 0 }` with `.sbody { flex:1; overflow-y:auto }`.
         NSLayoutConstraint.activate([
             dimButton.topAnchor.constraint(equalTo: topAnchor),
             dimButton.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -267,13 +215,13 @@ final class VerseExplanationView: UIView {
 
             cardView.leadingAnchor.constraint(equalTo: leadingAnchor),
             cardView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            cardView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 40),
             cardBottomConstraint!,
-            cardView.heightAnchor.constraint(lessThanOrEqualTo: heightAnchor, constant: -40),
 
-            grabHandle.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
+            grabHandle.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 9),
             grabHandle.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
-            grabHandle.widthAnchor.constraint(equalToConstant: 40),
-            grabHandle.heightAnchor.constraint(equalToConstant: 5),
+            grabHandle.widthAnchor.constraint(equalToConstant: 38),
+            grabHandle.heightAnchor.constraint(equalToConstant: 4.5),
 
             grabButton.topAnchor.constraint(equalTo: cardView.topAnchor),
             grabButton.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
@@ -281,53 +229,25 @@ final class VerseExplanationView: UIView {
             grabButton.heightAnchor.constraint(equalToConstant: 24),
 
             closeButton.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 14),
-            closeButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
-            closeButton.widthAnchor.constraint(equalToConstant: 32),
-            closeButton.heightAnchor.constraint(equalToConstant: 32),
+            closeButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -22),
+            closeButton.widthAnchor.constraint(equalToConstant: 30),
+            closeButton.heightAnchor.constraint(equalToConstant: 30),
 
-            titleLabel.topAnchor.constraint(equalTo: grabHandle.bottomAnchor, constant: 10),
-            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 48),
-            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -48),
+            contentContainer.topAnchor.constraint(equalTo: closeButton.bottomAnchor, constant: 18),
+            contentContainer.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 22),
+            contentContainer.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -22),
+            contentContainer.bottomAnchor.constraint(equalTo: footerContainer.topAnchor),
 
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),
-            subtitleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
-            subtitleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
+            scrollView.topAnchor.constraint(equalTo: contentContainer.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: contentContainer.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor),
 
-            verseContainer.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 10),
-            verseContainer.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            verseContainer.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
-
-            verseAccent.topAnchor.constraint(equalTo: verseContainer.topAnchor, constant: 12),
-            verseAccent.leadingAnchor.constraint(equalTo: verseContainer.leadingAnchor, constant: 12),
-            verseAccent.bottomAnchor.constraint(equalTo: verseContainer.bottomAnchor, constant: -12),
-            verseAccent.widthAnchor.constraint(equalToConstant: 4),
-
-            verseLabel.topAnchor.constraint(equalTo: verseContainer.topAnchor, constant: 12),
-            verseLabel.leadingAnchor.constraint(equalTo: verseAccent.trailingAnchor, constant: 12),
-            verseLabel.trailingAnchor.constraint(equalTo: verseContainer.trailingAnchor, constant: -14),
-            verseLabel.bottomAnchor.constraint(equalTo: verseContainer.bottomAnchor, constant: -12),
-
-            contentContainer.topAnchor.constraint(equalTo: verseContainer.bottomAnchor, constant: 10),
-            contentContainer.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            contentContainer.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
-            contentContainer.bottomAnchor.constraint(equalTo: footerContainer.topAnchor, constant: -12),
-
-            sectionLabel.topAnchor.constraint(equalTo: verseContainer.bottomAnchor, constant: 0),
-            sectionLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
-            sectionLabel.heightAnchor.constraint(equalToConstant: 0),
-
-            scrollView.topAnchor.constraint(equalTo: contentContainer.topAnchor, constant: 10),
-            scrollView.leadingAnchor.constraint(equalTo: contentContainer.leadingAnchor, constant: 10),
-            scrollView.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor, constant: -10),
-            scrollView.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor, constant: -10),
-
-            contentLabel.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
-            contentLabel.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
-            contentLabel.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
-            contentLabel.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
-            contentLabel.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
-
-            contentContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 120),
+            contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentStack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentStack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -8),
+            contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
 
             loadingIndicator.centerXAnchor.constraint(equalTo: contentContainer.centerXAnchor),
             loadingIndicator.centerYAnchor.constraint(equalTo: contentContainer.centerYAnchor),
@@ -336,7 +256,7 @@ final class VerseExplanationView: UIView {
             loadingLabel.leadingAnchor.constraint(equalTo: contentContainer.leadingAnchor, constant: 16),
             loadingLabel.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor, constant: -16),
 
-            errorLabel.topAnchor.constraint(equalTo: contentContainer.bottomAnchor, constant: 16),
+            errorLabel.centerYAnchor.constraint(equalTo: contentContainer.centerYAnchor, constant: -20),
             errorLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
             errorLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
 
@@ -347,20 +267,35 @@ final class VerseExplanationView: UIView {
             footerContainer.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
             footerContainer.bottomAnchor.constraint(equalTo: cardView.bottomAnchor),
 
-            footerDivider.topAnchor.constraint(equalTo: footerContainer.topAnchor, constant: 4),
-            footerDivider.leadingAnchor.constraint(equalTo: footerContainer.leadingAnchor, constant: 20),
-            footerDivider.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor, constant: -20),
+            footerDivider.topAnchor.constraint(equalTo: footerContainer.topAnchor),
+            footerDivider.leadingAnchor.constraint(equalTo: footerContainer.leadingAnchor, constant: 22),
+            footerDivider.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor, constant: -22),
             footerDivider.heightAnchor.constraint(equalToConstant: 1),
 
-            actionStack.topAnchor.constraint(equalTo: footerDivider.bottomAnchor, constant: 10),
-            actionStack.leadingAnchor.constraint(equalTo: footerContainer.leadingAnchor, constant: 16),
-            actionStack.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor, constant: -16),
-            actionStack.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -tabBarOverlap),
+            askPrimaryButton.topAnchor.constraint(equalTo: footerDivider.bottomAnchor, constant: 14),
+            askPrimaryButton.leadingAnchor.constraint(equalTo: footerContainer.leadingAnchor, constant: 22),
+            askPrimaryButton.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor, constant: -22),
+
+            actionStack.topAnchor.constraint(equalTo: askPrimaryButton.bottomAnchor, constant: usesOldOnboarding ? 6 : 14),
+            actionStack.leadingAnchor.constraint(equalTo: footerContainer.leadingAnchor, constant: 8),
+            actionStack.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor, constant: -8),
+            actionStack.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -sheetBottomInset),
             actionStack.heightAnchor.constraint(equalToConstant: 68)
         ])
 
-        verseContainerHeightConstraint = verseContainer.heightAnchor.constraint(equalToConstant: 0)
-        verseContainerHeightConstraint?.isActive = false
+        if !usesOldOnboarding {
+            askPrimaryButton.heightAnchor.constraint(equalToConstant: 0).isActive = true
+        }
+    }
+
+    private func refreshAskPrimaryTitle() {
+        let title = isSummaryContent ? "Ask about this chapter" : "Ask about this verse"
+        askPrimaryButton.setTitle(title, for: .normal)
+        let night = themeColor == BGNightMode
+        askPrimaryButton.backgroundColor = night
+            ? UIColor.white.withAlphaComponent(0.12)
+            : themeColor.withAlphaComponent(0.12)
+        askPrimaryButton.setTitleColor(night ? .white : themeColor, for: .normal)
     }
 
     private func makeActionButton(title: String, imageName: String, systemName: String? = nil, action: Selector) -> UIView {
@@ -439,6 +374,8 @@ final class VerseExplanationView: UIView {
 
     private func setActionsEnabled(_ enabled: Bool) {
         actionStack.isUserInteractionEnabled = enabled
+        askPrimaryButton.isEnabled = enabled
+        askPrimaryButton.alpha = enabled ? 1 : 0.45
         let tint = enabled ? actionActiveColor : actionMildColor
         let holderColor = enabled
             ? (themeColor == BGNightMode ? UIColor.white.withAlphaComponent(0.1) : themeColor.withAlphaComponent(0.1))
@@ -454,6 +391,13 @@ final class VerseExplanationView: UIView {
         }
     }
 
+    private func clearContentStack() {
+        contentStack.arrangedSubviews.forEach {
+            contentStack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+    }
+
     private func applyContent() {
         if displayMode == .saved {
             let parts = savedRecordString.components(separatedBy: ExplanationRecordDelimiter)
@@ -464,21 +408,7 @@ final class VerseExplanationView: UIView {
             verseText = parts[3]
         }
 
-        titleLabel.text = screenTitle ?? verseReference.replacingOccurrences(of: "-", with: " ")
-
-        subtitleLabel.text = isSummaryContent ? "CHAPTER SUMMARY" : "VERSE EXPLANATION"
-
-        if isSummaryContent {
-            verseLabel.text = nil
-            verseLabel.isHidden = true
-            verseContainer.isHidden = true
-            verseContainerHeightConstraint?.isActive = true
-        } else {
-            verseLabel.text = verseText
-            verseLabel.isHidden = false
-            verseContainer.isHidden = false
-            verseContainerHeightConstraint?.isActive = false
-        }
+        refreshAskPrimaryTitle()
 
         switch displayMode {
         case .saved:
@@ -615,8 +545,8 @@ final class VerseExplanationView: UIView {
     }
 
     private func showLoading() {
+        clearContentStack()
         scrollView.isHidden = false
-        contentLabel.isHidden = true
         errorLabel.isHidden = true
         retryButton.isHidden = true
         actionStack.isHidden = false
@@ -632,39 +562,204 @@ final class VerseExplanationView: UIView {
         loadingIndicator.stopAnimating()
         loadingLabel.isHidden = true
         scrollView.isHidden = false
-        contentLabel.isHidden = false
-        contentLabel.attributedText = styledExplanationText(text)
         errorLabel.isHidden = true
         retryButton.isHidden = true
         actionStack.isHidden = false
         footerDivider.isHidden = false
         footerContainer.isHidden = false
         setActionsEnabled(true)
+        renderStructuredContent(text)
         scrollView.isScrollEnabled = true
         scrollView.showsVerticalScrollIndicator = true
+        scrollView.flashScrollIndicators()
         scrollView.contentOffset = .zero
         setNeedsLayout()
         layoutIfNeeded()
+        // After layout, content height is known — keep the HTML body scrollable.
+        scrollView.layoutIfNeeded()
+        contentStack.layoutIfNeeded()
     }
 
-    private func styledExplanationText(_ text: String) -> NSAttributedString {
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.lineSpacing = 8
-        paragraph.paragraphSpacing = 12
+    private func renderStructuredContent(_ text: String) {
+        clearContentStack()
+        let colors = VerseExplanationSheetLayout.colors(theme: themeColor)
+        let split = VerseExplanationSheetLayout.splitAIText(text)
+        let isSummary = isSummaryContent
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 16, weight: .regular),
-            .foregroundColor: themeColor == BGNightMode ? UIColor.white.withAlphaComponent(0.92) : UIColor(red: 0.14, green: 0.16, blue: 0.22, alpha: 1),
-            .paragraphStyle: paragraph
-        ]
-        return NSAttributedString(string: text, attributes: attributes)
+        if !isSummary, !verseText.isEmpty {
+            let quote = VerseExplanationSheetLayout.makeScriptureQuote(verseText, colors: colors)
+            contentStack.addArrangedSubview(quote)
+            contentStack.setCustomSpacing(24, after: quote)
+        }
+
+        if isSummary {
+            renderChapterSummaryContent(text, colors: colors, fallback: split)
+            return
+        }
+
+        if !split.lead.isEmpty {
+            let lead = VerseExplanationSheetLayout.makeLead(split.lead, colors: colors)
+            contentStack.addArrangedSubview(lead)
+            contentStack.setCustomSpacing(24, after: lead)
+        }
+
+        let contextText = split.bodies.first
+        let applyText = split.bodies.dropFirst().joined(separator: "\n\n")
+        if let contextText = contextText, !contextText.isEmpty {
+            let rule = VerseExplanationSheetLayout.makeSectionRule("In context", colors: colors)
+            contentStack.addArrangedSubview(rule)
+            contentStack.setCustomSpacing(11, after: rule)
+            let body = VerseExplanationSheetLayout.makeBody(contextText, colors: colors)
+            contentStack.addArrangedSubview(body)
+            contentStack.setCustomSpacing(24, after: body)
+        }
+        if !applyText.isEmpty {
+            let rule = VerseExplanationSheetLayout.makeSectionRule("What it means today", colors: colors)
+            contentStack.addArrangedSubview(rule)
+            contentStack.setCustomSpacing(11, after: rule)
+            let body = VerseExplanationSheetLayout.makeBody(applyText, colors: colors)
+            contentStack.addArrangedSubview(body)
+            contentStack.setCustomSpacing(24, after: body)
+        }
+
+        let refs = VerseExplanationSheetLayout.relatedReferences(
+            in: text,
+            excluding: verseReference.replacingOccurrences(of: "-", with: " ")
+        )
+        if !refs.isEmpty {
+            let rule = VerseExplanationSheetLayout.makeSectionRule("Related verses", colors: colors)
+            contentStack.addArrangedSubview(rule)
+            contentStack.setCustomSpacing(11, after: rule)
+            let tags = VerseExplanationSheetLayout.makeRefTags(
+                refs,
+                colors: colors,
+                target: self,
+                action: #selector(relatedRefTapped(_:))
+            )
+            contentStack.addArrangedSubview(tags)
+        }
+    }
+
+    private func renderChapterSummaryContent(
+        _ text: String,
+        colors: VerseExplanationSheetLayout.Colors,
+        fallback: (lead: String, bodies: [String])
+    ) {
+        let parsed = VerseExplanationSheetLayout.parseChapterSummary(text)
+        if parsed.isStructured {
+            // HTML summary: lead 24 → part 11 → beats 24 → key tags 24 → themes (+ 8 bottom).
+            clearContentStack()
+            let lead = VerseExplanationSheetLayout.makeLead(parsed.lead, colors: colors)
+            contentStack.addArrangedSubview(lead)
+            contentStack.setCustomSpacing(24, after: lead)
+
+            let moveRule = VerseExplanationSheetLayout.makeSectionRule(
+                "\(parsed.movements.count) movements",
+                colors: colors
+            )
+            contentStack.addArrangedSubview(moveRule)
+            contentStack.setCustomSpacing(11, after: moveRule)
+
+            let beats = UIStackView()
+            beats.axis = .vertical
+            beats.alignment = .fill
+            beats.spacing = 0
+            for (index, move) in parsed.movements.enumerated() {
+                beats.addArrangedSubview(
+                    VerseExplanationSheetLayout.makeMovementRow(
+                        index: index + 1,
+                        title: move.title,
+                        detail: move.detail,
+                        colors: colors,
+                        showDivider: index < parsed.movements.count - 1
+                    )
+                )
+            }
+            contentStack.addArrangedSubview(beats)
+            contentStack.setCustomSpacing(24, after: beats)
+
+            if !parsed.keys.isEmpty {
+                let rule = VerseExplanationSheetLayout.makeSectionRule("Key verses", colors: colors)
+                contentStack.addArrangedSubview(rule)
+                contentStack.setCustomSpacing(11, after: rule)
+                let tags = VerseExplanationSheetLayout.makeRefTags(
+                    parsed.keys,
+                    colors: colors,
+                    target: self,
+                    action: #selector(relatedRefTapped(_:))
+                )
+                contentStack.addArrangedSubview(tags)
+                contentStack.setCustomSpacing(24, after: tags)
+            }
+
+            if !parsed.themes.isEmpty {
+                let rule = VerseExplanationSheetLayout.makeSectionRule("Themes", colors: colors)
+                contentStack.addArrangedSubview(rule)
+                contentStack.setCustomSpacing(11, after: rule)
+                let tags = VerseExplanationSheetLayout.makeThemeTags(parsed.themes, colors: colors)
+                contentStack.addArrangedSubview(tags)
+                contentStack.setCustomSpacing(8, after: tags)
+            } else {
+                let spacer = UIView()
+                spacer.translatesAutoresizingMaskIntoConstraints = false
+                spacer.heightAnchor.constraint(equalToConstant: 8).isActive = true
+                contentStack.addArrangedSubview(spacer)
+            }
+            return
+        }
+
+        if !fallback.lead.isEmpty {
+            let lead = VerseExplanationSheetLayout.makeLead(fallback.lead, colors: colors)
+            contentStack.addArrangedSubview(lead)
+            contentStack.setCustomSpacing(24, after: lead)
+        }
+        if let body = fallback.bodies.first, !body.isEmpty {
+            let rule = VerseExplanationSheetLayout.makeSectionRule("Overview", colors: colors)
+            contentStack.addArrangedSubview(rule)
+            contentStack.setCustomSpacing(11, after: rule)
+            let bodyLabel = VerseExplanationSheetLayout.makeBody(body, colors: colors)
+            contentStack.addArrangedSubview(bodyLabel)
+        }
+    }
+
+    private var displaySummaryText: String {
+        let parsed = VerseExplanationSheetLayout.parseChapterSummary(explanationText)
+        return parsed.isStructured ? parsed.plainText : explanationText
+    }
+
+    @objc private func relatedRefTapped(_ sender: UIButton) {
+        guard let title = sender.title(for: .normal), !title.isEmpty else { return }
+        inputAskAbout(title)
+    }
+
+    private func inputAskAbout(_ reference: String) {
+        guard !explanationText.isEmpty else { return }
+        let context = AIChatLaunchContext(
+            isChapterSummary: false,
+            title: reference,
+            verseText: nil,
+            sourceText: explanationText
+        )
+        let host = App_Protocol.delegateReader as? UIViewController
+        closeTapped()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            let chat = AIChatViewController()
+            chat.launchContext = context
+            if let nav = host?.navigationController {
+                nav.pushViewController(chat, animated: true)
+            } else {
+                let nav = UINavigationController(rootViewController: chat)
+                nav.modalPresentationStyle = .fullScreen
+                host?.present(nav, animated: true)
+            }
+        }
     }
 
     private func showError(_ message: String) {
         loadingIndicator.stopAnimating()
         loadingLabel.isHidden = true
+        clearContentStack()
         scrollView.isHidden = true
-        contentLabel.isHidden = true
         errorLabel.isHidden = false
         errorLabel.text = message
         retryButton.isHidden = false
@@ -747,7 +842,7 @@ final class VerseExplanationView: UIView {
         guard !explanationText.isEmpty else { return }
         if isSummaryContent {
             // verseText holds the whole chapter here — copy only the summary.
-            UIPasteboard.general.string = "\(summaryTitle)\n\n\(explanationText)\n\n\(APP_LINK)"
+            UIPasteboard.general.string = "\(summaryTitle)\n\n\(displaySummaryText)\n\n\(APP_LINK)"
             makeToast("Copied successfully", duration: 2.0, position: .top)
             return
         }
@@ -811,7 +906,7 @@ final class VerseExplanationView: UIView {
             // Share only the summary, never the full chapter text.
             App_Protocol.delegateReader?.shared(
                 VerseStr: summaryTitle,
-                Bookname: "Summary\n\n\(explanationText)"
+                Bookname: "Summary\n\n\(displaySummaryText)"
             )
             return
         }

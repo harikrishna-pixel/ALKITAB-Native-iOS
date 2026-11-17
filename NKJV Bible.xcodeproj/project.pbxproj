@@ -580,6 +580,7 @@
 		01F813CE2A73ACD700A271E6 /* WallpaperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F813CC2A73ACD600A271E6 /* WallpaperView.swift */; };
 		01F813CF2A73ACD700A271E6 /* WallpaperView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 01F813CD2A73ACD600A271E6 /* WallpaperView.xib */; };
 		01GEM02529FBD2210006BD25 /* VerseExplanationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01GEM00529FBD2210006BD05 /* VerseExplanationView.swift */; };
+		01GEM02529FBD2210006BD26 /* VerseExplanationSheetLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01GEM00529FBD2210006BD06 /* VerseExplanationSheetLayout.swift */; };
 		01OPC30129FBD2210006BD31 /* OpenChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01OPC10129FBD2210006BD11 /* OpenChatService.swift */; };
 		01OPC30229FBD2210006BD32 /* OpenChatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01OPC10229FBD2210006BD12 /* OpenChatViewController.swift */; };
 		01PRW30129FBD2210006BD31 /* PrayerWallModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10129FBD2210006BD11 /* PrayerWallModels.swift */; };
@@ -1288,6 +1289,7 @@
 		01F813CC2A73ACD600A271E6 /* WallpaperView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WallpaperView.swift; sourceTree = "<group>"; };
 		01F813CD2A73ACD600A271E6 /* WallpaperView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = WallpaperView.xib; sourceTree = "<group>"; };
 		01GEM00529FBD2210006BD05 /* VerseExplanationView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VerseExplanationView.swift; sourceTree = "<group>"; };
+		01GEM00529FBD2210006BD06 /* VerseExplanationSheetLayout.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VerseExplanationSheetLayout.swift; sourceTree = "<group>"; };
 		01OPC10129FBD2210006BD11 /* OpenChatService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenChatService.swift; sourceTree = "<group>"; };
 		01OPC10229FBD2210006BD12 /* OpenChatViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenChatViewController.swift; sourceTree = "<group>"; };
 		01PRW10129FBD2210006BD11 /* PrayerWallModels.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerWallModels.swift; sourceTree = "<group>"; };
@@ -3549,6 +3551,7 @@
 			isa = PBXGroup;
 			children = (
 				01GEM00529FBD2210006BD05 /* VerseExplanationView.swift */,
+				01GEM00529FBD2210006BD06 /* VerseExplanationSheetLayout.swift */,
 			);
 			path = VerseExplanation;
 			sourceTree = "<group>";
@@ -4549,6 +4552,7 @@
 				0180DDF12949B50A00F0C508 /* Ad_ToastController.swift in Sources */,
 				0134E06C29FBD2210006BD9B /* SaveNotes.swift in Sources */,
 				01GEM02529FBD2210006BD25 /* VerseExplanationView.swift in Sources */,
+				01GEM02529FBD2210006BD26 /* VerseExplanationSheetLayout.swift in Sources */,
 				01AIC30129FBD2210006BD21 /* OpenAIChatService.swift in Sources */,
 				01AIC30329FBD2210006BD23 /* OpenAIExplanationService.swift in Sources */,
 				D6E7F8092F49F60100000001 /* AIUsageLimiter.swift in Sources */,

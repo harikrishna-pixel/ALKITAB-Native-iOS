@@ -65,7 +65,7 @@ final class OpenAIExplanationService {
         let language = responseLanguageCode.isEmpty ? "en" : responseLanguageCode
         let capped = Self.cappedChapterText(chapterText, maxChars: chapterTextCap)
         let cacheKey = makeKey(
-            kind: "summary",
+            kind: "summary_structured_v1",
             reference: chapterReference,
             bibleVersion: bibleVersion,
             language: language
@@ -76,13 +76,25 @@ final class OpenAIExplanationService {
         }
 
         let prompt = """
-        You are a helpful Bible study assistant. Provide a clear, faithful, and concise summary of the following chapter.
+        You are a helpful Bible study assistant. Summarize the following chapter for a Bible reading app.
 
         Translation: \(bibleVersion)
         Chapter: \(chapterReference)
         Chapter text: \(capped)
 
-        Respond in \(language) only. Do not use markdown or asterisks. Do not add a title or heading — give the summary directly.
+        Reply only with these labeled lines, each on its own line:
+        LEAD: one short sentence that captures the whole chapter.
+        MOVEMENT: short title | one short sentence describing that part of the chapter
+        MOVEMENT: short title | one short sentence describing that part of the chapter
+        (Add 4 to 8 MOVEMENT lines that follow the chapter in order.)
+        KEY: Book chapter:verse
+        KEY: Book chapter:verse
+        KEY: Book chapter:verse
+        (Exactly 3 KEY lines. Use English book names for the reference, e.g. Genesis 1:3.)
+        THEME: short theme phrase
+        THEME: short theme phrase
+        (Exactly 2 THEME lines.)
+        Keep the labels LEAD, MOVEMENT, KEY and THEME in English. Write the text after each label in \(language) only. Do not use markdown or asterisks.
         """
         return OpenAIChatService.shared.send(input: prompt) { [weak self] result in
             if case .success(let text) = result {
