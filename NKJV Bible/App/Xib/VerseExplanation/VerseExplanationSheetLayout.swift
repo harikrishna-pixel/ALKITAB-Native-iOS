@@ -32,6 +32,26 @@ enum VerseExplanationSheetLayout {
         }
     }
 
+    struct VerseExplanationContent {
+        var lead: String = ""
+        var context: String = ""
+        var today: String = ""
+        var related: [String] = []
+
+        var isStructured: Bool {
+            !lead.isEmpty && (!context.isEmpty || !today.isEmpty)
+        }
+
+        var plainText: String {
+            var parts: [String] = []
+            if !lead.isEmpty { parts.append(lead) }
+            if !context.isEmpty { parts.append(context) }
+            if !today.isEmpty { parts.append(today) }
+            if !related.isEmpty { parts.append("Related: \(related.joined(separator: ", "))") }
+            return parts.joined(separator: "\n\n")
+        }
+    }
+
     struct Colors {
         let ink: UIColor
         let ink2: UIColor
@@ -51,6 +71,36 @@ enum VerseExplanationSheetLayout {
             hair: night ? UIColor.white.withAlphaComponent(0.12) : UIColor(red: 0.91, green: 0.925, blue: 0.95, alpha: 1),
             isNight: night
         )
+    }
+
+    static func parseVerseExplanation(_ text: String) -> VerseExplanationContent {
+        var content = VerseExplanationContent()
+        let labels: Set<String> = ["LEAD", "CONTEXT", "TODAY", "RELATED"]
+        for rawLine in text.components(separatedBy: .newlines) {
+            let line = rawLine.replacingOccurrences(of: "*", with: "").trimmingCharacters(in: .whitespaces)
+            guard let colon = line.firstIndex(of: ":") else { continue }
+            let label = line[..<colon].trimmingCharacters(in: .whitespaces).uppercased()
+            guard labels.contains(label) else { continue }
+            let value = line[line.index(after: colon)...]
+                .trimmingCharacters(in: CharacterSet(charactersIn: "-•· ").union(.whitespacesAndNewlines))
+            guard !value.isEmpty, value.uppercased() != "NONE" else { continue }
+            switch label {
+            case "LEAD":
+                content.lead = value
+            case "CONTEXT":
+                content.context = content.context.isEmpty ? value : content.context + " " + value
+            case "TODAY":
+                content.today = content.today.isEmpty ? value : content.today + " " + value
+            case "RELATED":
+                content.related.append(value)
+            default:
+                break
+            }
+        }
+        if content.related.count > 3 {
+            content.related = Array(content.related.prefix(3))
+        }
+        return content
     }
 
     static func parseChapterSummary(_ text: String) -> ChapterSummaryContent {

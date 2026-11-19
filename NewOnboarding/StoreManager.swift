@@ -46,6 +46,8 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     
     // Callbacks
     var onPurchaseSuccess: (() -> Void)?
+    /// Fired when the purchase is verified, before the short success loader / toast.
+    var onPurchaseVerified: (() -> Void)?
     var onPurchaseFailure: ((String) -> Void)?
     var onRestoreSuccess: (() -> Void)?
     var onRestoreFailed: (() -> Void)?
@@ -1241,24 +1243,38 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
                 App_Protocol.delegateReader?.paymentStatus()
                 App_Protocol.DelegateSlideCard?.paymentStatus()
                 ImageAppProtocol.ImageTxtEditDelegate?.CheckPay()
-                // Same toast as Pro paywall — show on every successful purchase path.
-                self.showPurchaseToast()
-                self.onPurchaseSuccess?()
+                // Brief loader, then "Purchased Successfully" toast (paywall trigger + other StoreManager buys).
+                self.presentPurchaseSuccessAfterLoader()
             }
         })
     }
     
     // MARK: - Helper Methods
 
+    /// Shows a short centered loader, then the success toast and `onPurchaseSuccess`.
+    private func presentPurchaseSuccessAfterLoader() {
+        onPurchaseVerified?()
+        let host = purchaseToastHost()
+        host?.makeToastActivity(.center)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            host?.hideToastActivity()
+            self?.showPurchaseToast()
+            self?.onPurchaseSuccess?()
+        }
+    }
+
     /// Matches BibleSubscriptionView Pro paywall success toast.
     private func showPurchaseToast() {
+        purchaseToastHost()?.makeToast("Purchased Successfully", duration: 2.0, position: .top)
+    }
+
+    private func purchaseToastHost() -> UIView? {
         let windows = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
-        let window = OnboardingAuthManager.topViewController()?.view.window
+        return OnboardingAuthManager.topViewController()?.view
             ?? windows.first(where: { $0.isKeyWindow })
             ?? windows.first
-        window?.makeToast("Purchased Successfully", duration: 2.0, position: .top)
     }
     
     private func calculateOriginalPrices() {

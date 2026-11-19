@@ -597,6 +597,45 @@ final class VerseExplanationView: UIView {
             return
         }
 
+        let parsed = VerseExplanationSheetLayout.parseVerseExplanation(text)
+        if parsed.isStructured {
+            if !parsed.lead.isEmpty {
+                let lead = VerseExplanationSheetLayout.makeLead(parsed.lead, colors: colors)
+                contentStack.addArrangedSubview(lead)
+                contentStack.setCustomSpacing(24, after: lead)
+            }
+            if !parsed.context.isEmpty {
+                let rule = VerseExplanationSheetLayout.makeSectionRule("In context", colors: colors)
+                contentStack.addArrangedSubview(rule)
+                contentStack.setCustomSpacing(11, after: rule)
+                let body = VerseExplanationSheetLayout.makeBody(parsed.context, colors: colors)
+                contentStack.addArrangedSubview(body)
+                contentStack.setCustomSpacing(24, after: body)
+            }
+            if !parsed.today.isEmpty {
+                let rule = VerseExplanationSheetLayout.makeSectionRule("What it means today", colors: colors)
+                contentStack.addArrangedSubview(rule)
+                contentStack.setCustomSpacing(11, after: rule)
+                let body = VerseExplanationSheetLayout.makeBody(parsed.today, colors: colors)
+                contentStack.addArrangedSubview(body)
+                contentStack.setCustomSpacing(24, after: body)
+            }
+            if !parsed.related.isEmpty {
+                let rule = VerseExplanationSheetLayout.makeSectionRule("Related verses", colors: colors)
+                contentStack.addArrangedSubview(rule)
+                contentStack.setCustomSpacing(11, after: rule)
+                let tags = VerseExplanationSheetLayout.makeRefTags(
+                    parsed.related,
+                    colors: colors,
+                    target: self,
+                    action: #selector(relatedRefTapped(_:))
+                )
+                contentStack.addArrangedSubview(tags)
+            }
+            return
+        }
+
+        // Fallback for older freeform replies still in cache / library.
         if !split.lead.isEmpty {
             let lead = VerseExplanationSheetLayout.makeLead(split.lead, colors: colors)
             contentStack.addArrangedSubview(lead)
@@ -727,6 +766,11 @@ final class VerseExplanationView: UIView {
         return parsed.isStructured ? parsed.plainText : explanationText
     }
 
+    private var displayExplanationText: String {
+        let parsed = VerseExplanationSheetLayout.parseVerseExplanation(explanationText)
+        return parsed.isStructured ? parsed.plainText : explanationText
+    }
+
     @objc private func relatedRefTapped(_ sender: UIButton) {
         guard let title = sender.title(for: .normal), !title.isEmpty else { return }
         inputAskAbout(title)
@@ -846,7 +890,7 @@ final class VerseExplanationView: UIView {
             makeToast("Copied successfully", duration: 2.0, position: .top)
             return
         }
-        UIPasteboard.general.string = "\(explanationText)\n\n\(verseText)\n\n\(verseReference.replacingOccurrences(of: "-", with: " "))\n\n\(APP_LINK)"
+        UIPasteboard.general.string = "\(displayExplanationText)\n\n\(verseText)\n\n\(verseReference.replacingOccurrences(of: "-", with: " "))\n\n\(APP_LINK)"
         makeToast("Copied successfully", duration: 2.0, position: .top)
     }
 
@@ -912,7 +956,7 @@ final class VerseExplanationView: UIView {
         }
         App_Protocol.delegateReader?.shared(
             VerseStr: "\(verseText)\n\n\(reference)",
-            Bookname: "Explanation\n\n\(explanationText)"
+            Bookname: "Explanation\n\n\(displayExplanationText)"
         )
     }
 }

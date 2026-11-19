@@ -54,10 +54,12 @@ struct OnboardingNotificationView: View {
                             .padding(.horizontal, 26)
                             .padding(.bottom, 16 * s)
 
-                        OnboardingPrimaryButton(title: "Keep Me Rooted") {
+                        OnboardingPrimaryButton(
+                            title: "Keep Me Rooted",
+                            isEnabled: (dailyVerseOn || journeyReminderOn) && !isSaving
+                        ) {
                             requestNotificationsThenContinue()
                         }
-                        .disabled(isSaving)
                         .padding(.horizontal, 26)
 
                         OnboardingGhostButton(title: "Maybe Later") {
@@ -117,13 +119,15 @@ struct OnboardingNotificationView: View {
                     scale: s,
                     title: "Today's Verse",
                     time: "8:00 AM",
-                    message: "\"\(OnboardingBibleVerse.text)\" · \(OnboardingBibleVerse.reference)"
+                    message: "\"\(OnboardingBibleVerse.text)\" · \(OnboardingBibleVerse.reference)",
+                    isEnabled: dailyVerseOn
                 )
                 NotificationPreviewCard(
                     scale: s,
                     title: "One step left today",
                     time: "8:00 PM",
-                    message: "Take a minute to reflect on today's verse."
+                    message: "Take a minute to reflect on today's verse.",
+                    isEnabled: journeyReminderOn
                 )
             }
             .padding(.horizontal, 26)
@@ -188,18 +192,21 @@ private struct NotificationPreviewCard: View {
     let title: String
     let time: String
     let message: String
+    var isEnabled: Bool = true
 
     var body: some View {
         HStack(alignment: .top, spacing: 12 * scale) {
             Image(systemName: "book.fill")
                 .font(.system(size: 16 * scale, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundColor(isEnabled ? .white : Color.white.opacity(0.35))
                 .frame(width: 36 * scale, height: 36 * scale)
                 .background(
                     RoundedRectangle(cornerRadius: 9 * scale, style: .continuous)
                         .fill(
                             LinearGradient(
-                                colors: [Color(hex: "3B82F6"), OnboardingTheme.primaryBlueDark],
+                                colors: isEnabled
+                                    ? [Color(hex: "3B82F6"), OnboardingTheme.primaryBlueDark]
+                                    : [Color.white.opacity(0.18), Color.white.opacity(0.10)],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
@@ -210,18 +217,18 @@ private struct NotificationPreviewCard: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text(title)
                         .font(.system(size: 14.5 * scale, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(isEnabled ? .white : Color.white.opacity(0.35))
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                     Spacer(minLength: 8)
                     Text(time)
                         .font(.system(size: 12 * scale))
-                        .foregroundColor(OnboardingTheme.dim)
+                        .foregroundColor(isEnabled ? OnboardingTheme.dim : Color.white.opacity(0.28))
                 }
                 Text(message)
                     .font(.system(size: 14 * scale))
                     .lineSpacing(2)
-                    .foregroundColor(Color.white.opacity(0.88))
+                    .foregroundColor(isEnabled ? Color.white.opacity(0.88) : Color.white.opacity(0.32))
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -230,12 +237,13 @@ private struct NotificationPreviewCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 20 * scale, style: .continuous)
-                .fill(Color.white.opacity(0.10))
+                .fill(Color.white.opacity(isEnabled ? 0.10 : 0.05))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 20 * scale, style: .continuous)
-                .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                .stroke(Color.white.opacity(isEnabled ? 0.16 : 0.08), lineWidth: 1)
         )
+        .animation(.easeInOut(duration: 0.2), value: isEnabled)
     }
 }
 
@@ -255,19 +263,19 @@ private struct NotificationToggleRow: View {
                 VStack(alignment: .leading, spacing: 6 * scale) {
                     Text(title)
                         .font(.system(size: 16 * scale, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(isOn ? .white : Color.white.opacity(0.35))
                     HStack(spacing: 8 * scale) {
                         Text(time)
                             .font(.system(size: 12.5 * scale, weight: .bold))
-                            .foregroundColor(OnboardingTheme.gold)
+                            .foregroundColor(isOn ? OnboardingTheme.gold : Color.white.opacity(0.28))
                             .padding(.horizontal, 11 * scale)
                             .padding(.vertical, 4 * scale)
-                            .background(Capsule().fill(OnboardingTheme.gold.opacity(0.12)))
-                            .overlay(Capsule().stroke(OnboardingTheme.gold.opacity(0.7), lineWidth: 1))
+                            .background(Capsule().fill(OnboardingTheme.gold.opacity(isOn ? 0.12 : 0.05)))
+                            .overlay(Capsule().stroke(OnboardingTheme.gold.opacity(isOn ? 0.7 : 0.25), lineWidth: 1))
                         if let note = note {
                             Text(note)
                                 .font(.system(size: 12 * scale))
-                                .foregroundColor(OnboardingTheme.dim)
+                                .foregroundColor(isOn ? OnboardingTheme.dim : Color.white.opacity(0.28))
                                 .lineLimit(2)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -279,6 +287,7 @@ private struct NotificationToggleRow: View {
                     .toggleStyle(OnboardingSwitchStyle())
             }
             .padding(.vertical, 16 * scale)
+            .animation(.easeInOut(duration: 0.2), value: isOn)
             if showDivider {
                 Rectangle()
                     .fill(Color.white.opacity(0.09))

@@ -107,8 +107,23 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   
   private let sectionTitles = ["NOTIFICATION", "FONT & THEME", "FEATURES", "ABOUT & SUPPORT"]
 
+  private var showsPremiumRow: Bool { PaywallTriggerGate.shared.showsSettingsPremiumRow }
+
+  /// When Go Premium is shown, it occupies table section 0; content sections shift by +1.
+  private func contentSection(for tableSection: Int) -> Int? {
+      if showsPremiumRow {
+          guard tableSection > 0 else { return nil }
+          return tableSection - 1
+      }
+      return tableSection
+  }
+
   func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         // First row of each section includes the title band above the card (same look as FEATURES / ABOUT).
+        // Go Premium at the top has no section title band.
+        if showsPremiumRow, indexPath.section == 0 {
+            return 56
+        }
         if indexPath.row == 0 {
             return 56 + SettingsTableCell.sectionTitleBand
         }
@@ -134,21 +149,23 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   }
 
   private func sectionTitle(for indexPath: IndexPath) -> String? {
-        guard indexPath.row == 0, indexPath.section < sectionTitles.count else { return nil }
-        if indexPath.section == 2 && !usesOldOnboarding { return nil }
-        return sectionTitles[indexPath.section]
+        guard indexPath.row == 0, let content = contentSection(for: indexPath.section),
+              content < sectionTitles.count else { return nil }
+        if content == 2 && !usesOldOnboarding { return nil }
+        return sectionTitles[content]
   }
   
   func numberOfSections(in tableView: UITableView) -> Int {
-          return 4
+          return showsPremiumRow ? 5 : 4
   }
   
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        switch section {
+        if showsPremiumRow, section == 0 { return 1 }
+        switch contentSection(for: section) {
         case 0: return 1
         case 1: return 2
         case 2: return usesOldOnboarding ? 1 : 0
-        case 3: return PaywallTriggerGate.shared.showsSettingsPremiumRow ? 7 : 6
+        case 3: return 6
         default: return 0
         }
     }
@@ -169,7 +186,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
   func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
       let night = Themecolor == BGNightMode
       let cell: SettingsTableCell
-      switch (indexPath.section, indexPath.row) {
+      if showsPremiumRow, indexPath.section == 0, indexPath.row == 0 {
+          cell = tableView.dequeueReusableCell(withIdentifier: "FeedBack", for: indexPath) as! SettingsTableCell
+          cell.Feedback?.text = "★  Go Premium"
+          styleRowTitle(cell.Feedback)
+          cell.applyCard(edge: cardEdge(for: indexPath, in: tableView), night: night, sectionTitle: nil)
+          return cell
+      }
+      switch (contentSection(for: indexPath.section), indexPath.row) {
       case (0, 0):
           cell = tableView.dequeueReusableCell(withIdentifier: "time", for: indexPath) as! SettingsTableCell
           cell.NotificationTime?.text = "Notification Mode"
@@ -212,10 +236,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
       case (3, 5):
           cell = tableView.dequeueReusableCell(withIdentifier: "Help", for: indexPath) as! SettingsTableCell
           styleRowTitle(cell.Help)
-      case (3, 6):
-          cell = tableView.dequeueReusableCell(withIdentifier: "FeedBack", for: indexPath) as! SettingsTableCell
-          cell.Feedback?.text = "★  Go Premium"
-          styleRowTitle(cell.Feedback)
       default:
           return UITableViewCell()
       }
@@ -227,7 +247,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
   func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
       self.SettingsTable.deselectRow(at: indexPath, animated: true)
-      switch (indexPath.section, indexPath.row) {
+      if showsPremiumRow, indexPath.section == 0, indexPath.row == 0 {
+          PaywallTriggerGate.shared.requestUserStarted("settings")
+          return
+      }
+      switch (contentSection(for: indexPath.section), indexPath.row) {
       case (0, 0):
           self.NotificationListVC()
       case (1, 0):
@@ -275,8 +299,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
           }
       case (3, 5):
           openHelpFAQ()
-      case (3, 6):
-          PaywallTriggerGate.shared.requestUserStarted("settings")
       default:
           break
       }

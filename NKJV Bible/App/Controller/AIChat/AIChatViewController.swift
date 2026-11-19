@@ -267,7 +267,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             .foregroundColor: grey,
             .font: UIFont.systemFont(ofSize: 13)
         ])
-        line.append(NSAttributedString(string: "Unlimited chat", attributes: [
+        line.append(NSAttributedString(string: "Unlimited with Premium", attributes: [
             .foregroundColor: link,
             .font: UIFont.systemFont(ofSize: 13),
             .underlineStyle: NSUnderlineStyle.single.rawValue
@@ -559,12 +559,34 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     /// Always false: Keep Ask (Explanation / Summary) suggestion rows above the composer, like Bible Companion.
     private var pinsVerseQuestionsUnderCard: Bool { false }
 
-    /// Nothing is pinned above the composer: starters live in the chat footer, follow-ups under each answer.
+    /// CONTINUE chips sit above the composer (not under the answer). Starters stay in the chat footer.
     private func refreshFollowUpSuggestions() {
         clearSuggestionStack()
-        suggestionContainer.isHidden = true
-        tableAboveSuggestionsConstraint?.isActive = false
-        tableAboveComposerConstraint?.isActive = true
+        let followUps = messages.last(where: { $0.role == .assistant })?.followUps ?? []
+        let showContinue = !followUps.isEmpty && !isSending && !showsLimitCard
+        if showContinue {
+            let ink3 = isNight
+                ? UIColor.white.withAlphaComponent(0.5)
+                : UIColor(red: 0.55, green: 0.58, blue: 0.63, alpha: 1)
+            let heading = UILabel()
+            heading.attributedText = NSAttributedString(
+                string: usesIndonesian ? "LANJUTKAN" : "CONTINUE",
+                attributes: [
+                    .font: UIFont.systemFont(ofSize: 10.5, weight: .bold),
+                    .kern: 1.3,
+                    .foregroundColor: ink3
+                ]
+            )
+            suggestionStack.addArrangedSubview(heading)
+            followUps.forEach { suggestionStack.addArrangedSubview(makeSuggestionChip(title: $0)) }
+            suggestionContainer.isHidden = false
+            tableAboveComposerConstraint?.isActive = false
+            tableAboveSuggestionsConstraint?.isActive = true
+        } else {
+            suggestionContainer.isHidden = true
+            tableAboveSuggestionsConstraint?.isActive = false
+            tableAboveComposerConstraint?.isActive = true
+        }
         installStarterFooterIfNeeded()
         view.setNeedsLayout()
     }
@@ -1560,14 +1582,14 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 }
 
-/// "ASK AI" label with a dot, shared by the waiting row and the answer.
+/// "Exploring Scripture..." label with a dot, shared by the waiting row and the answer.
 private func makeAIChatTag(accent: UIColor, indonesian: Bool) -> UIView {
     let dot = UIView()
     dot.translatesAutoresizingMaskIntoConstraints = false
     dot.backgroundColor = accent
     dot.layer.cornerRadius = 3
     let label = UILabel()
-    label.attributedText = NSAttributedString(string: indonesian ? "TANYA AI" : "ASK AI", attributes: [
+    label.attributedText = NSAttributedString(string: indonesian ? "Menjelajahi Kitab Suci..." : "Exploring Scripture...", attributes: [
         .font: UIFont.systemFont(ofSize: 10.5, weight: .bold),
         .kern: 1.4,
         .foregroundColor: accent
@@ -1583,7 +1605,7 @@ private func makeAIChatTag(accent: UIColor, indonesian: Bool) -> UIView {
     return row
 }
 
-/// "ASK AI" label with three bouncing dots while a reply loads.
+/// "Exploring Scripture..." label with three bouncing dots while a reply loads.
 private final class AIChatWaitingCell: UITableViewCell {
     static let reuseId = "AIChatWaitingCell"
 
@@ -1756,13 +1778,7 @@ private final class AIChatAnswerCell: UITableViewCell {
         actions.alignment = .center
         actions.spacing = 20
         stack.addArrangedSubview(actions)
-
-        guard !message.followUps.isEmpty else { return }
-        stack.setCustomSpacing(20, after: actions)
-        let rule = makeRule(indonesian ? "LANJUTKAN" : "CONTINUE", color: ink3)
-        stack.addArrangedSubview(rule)
-        stack.setCustomSpacing(12, after: rule)
-        stack.addArrangedSubview(makeChipRow(message.followUps, isNight: isNight))
+        // CONTINUE chips are shown above the composer, not under the answer.
     }
 
     private func makeLabel(_ text: String, font: UIFont, color: UIColor, lineSpacing: CGFloat) -> UILabel {

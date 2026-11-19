@@ -70,17 +70,17 @@ class ShimmerView: UIButton {
             let solid = UIColor(white: 1, alpha: 1).cgColor
             let clear = UIColor(white: 1, alpha: lowerAlpha).cgColor
         
-            gradient.colors     = [ solid, solid, clear, solid, solid, solid ]
-            gradient.locations  = [ 0,     0.40,   0.45,  0.49,  0.7,   1     ]
+            gradient.colors = [solid, solid, clear, solid, solid, solid]
+            gradient.locations = [0, 0.40, 0.45, 0.49, 0.7, 1.0]
 
-            let theAnimation : CABasicAnimation = CABasicAnimation(keyPath: "transform.translation.x")
+            let theAnimation = CABasicAnimation(keyPath: "transform.translation.x")
             theAnimation.duration = 2
             theAnimation.repeatCount = Float.infinity
             theAnimation.autoreverses = false
             theAnimation.isRemovedOnCompletion = false
             theAnimation.fillMode = CAMediaTimingFillMode.forwards
             theAnimation.fromValue = -view.frame.size.width * 2
-            theAnimation.toValue =  0
+            theAnimation.toValue = 0
             gradient.add(theAnimation, forKey: "animateLayer")
 
             view.layer.mask = gradient

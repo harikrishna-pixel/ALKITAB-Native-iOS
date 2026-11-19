@@ -47,13 +47,14 @@ struct Onboarding2: View {
                             )
                             .padding(.horizontal, 26)
                             .padding(.top, 8)
-
-                            OnboardingJourneyRail(activeIndex: 0)
-                                .padding(.horizontal, 26)
-                                .padding(.top, 20)
-                                .padding(.bottom, 20)
+                            .padding(.bottom, 8)
                         }
                     }
+
+                    OnboardingJourneyRail(activeIndex: 0)
+                        .padding(.horizontal, 26)
+                        .padding(.top, 12)
+                        .padding(.bottom, 16)
 
                     OnboardingPrimaryLink(title: "Continue", destination: Onboarding3())
                         .padding(.horizontal, 26)
@@ -111,13 +112,14 @@ struct BeforeOnboarding2: View {
                             )
                             .padding(.horizontal, 26)
                             .padding(.top, 8)
-
-                            OnboardingJourneyRail(activeIndex: 0)
-                                .padding(.horizontal, 26)
-                                .padding(.top, 20)
-                                .padding(.bottom, 20)
+                            .padding(.bottom, 8)
                         }
                     }
+
+                    OnboardingJourneyRail(activeIndex: 0)
+                        .padding(.horizontal, 26)
+                        .padding(.top, 12)
+                        .padding(.bottom, 16)
 
                     OnboardingPrimaryLink(title: "Continue", destination: Onboarding3())
                         .padding(.horizontal, 26)

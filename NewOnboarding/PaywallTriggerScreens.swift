@@ -261,6 +261,12 @@ private final class PaywallTriggerModel: ObservableObject {
             self.loading = false
         }
         store.setupProducts()
+        store.onPurchaseVerified = { [weak self] in
+            // App Store sheet cleared the loader — show Processing again until the success toast.
+            self?.restoring = false
+            self?.buying = true
+            self?.loading = true
+        }
         store.onPurchaseSuccess = { [weak self] in
             self?.stopLoading()
             UserDefaults.standard.set(true, forKey: "PremiumPayViewed")

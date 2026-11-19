@@ -27,7 +27,7 @@ final class OpenAIExplanationService {
     ) -> URLSessionTask? {
         let language = responseLanguageCode.isEmpty ? "en" : responseLanguageCode
         let cacheKey = makeKey(
-            kind: "explain",
+            kind: "explain_structured_v1",
             reference: verseReference,
             bibleVersion: bibleVersion,
             language: language
@@ -38,13 +38,21 @@ final class OpenAIExplanationService {
         }
 
         let prompt = """
-        You are a helpful Bible study assistant. Provide a clear, faithful, and concise explanation of the following verse.
+        You are a helpful Bible study assistant. Explain the following verse for a Bible reading app.
 
         Translation: \(bibleVersion)
         Verse reference: \(verseReference)
         Verse text: \(verseText)
 
-        Respond in \(language) only. Do not use markdown or asterisks. Do not add a title or heading — give the explanation directly.
+        Reply only with these labeled lines, each on its own line:
+        LEAD: one short sentence summarizing what the verse says.
+        CONTEXT: 1–2 short sentences of biblical context for this verse.
+        TODAY: 1–2 short sentences on what it means for life today.
+        RELATED: Book chapter:verse
+        RELATED: Book chapter:verse
+        RELATED: Book chapter:verse
+        (Exactly 3 RELATED lines. Use English book names, e.g. Genesis 1:27. Do not repeat \(verseReference).)
+        Keep the labels LEAD, CONTEXT, TODAY and RELATED in English. Write the text after each label in \(language) only. Do not use markdown or asterisks.
         """
         return OpenAIChatService.shared.send(input: prompt) { [weak self] result in
             if case .success(let text) = result {
