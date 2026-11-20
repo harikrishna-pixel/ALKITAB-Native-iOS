@@ -537,15 +537,8 @@ private struct PaywallTriggerRoot: View {
 
     private func finishOnboarding() {
         UserDefaults.standard.set(true, forKey: "PremiumPayViewed")
-        OnboardingProgress.markCompleted()
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let nav = window.rootViewController as? UINavigationController else {
-            closeModal()
-            return
-        }
-        let reader = kStoryboardMainIphone.instantiateViewController(withIdentifier: "ReaderViewController") as! ReaderViewController
-        nav.setViewControllers([reader], animated: true)
+        // Hard redirect to Home/Reader so Exit paywall cannot remain after purchase OK.
+        UIKitNavigationHelper.navigateToReaderViewController()
     }
 
     private func chapterLine(_ book: String) -> String {
@@ -1574,10 +1567,10 @@ private struct TriggerPlans: View {
                             .padding(.top, compact ? 150 : max(56, geo.size.height * 0.08) + contentDown + 32)
 
                             if pricePhase == .ready {
-                            planCard(index: 0, title: "1 Year Premium", detail: "Ad-free + unlimited AI study", extra: TriggerPrices.perMonth(model.year), price: model.year, badge: "Best value")
+                            planCard(index: 1, title: "1 Month Premium", detail: "Ad-free + unlimited AI study", extra: "", price: model.month, badge: "")
                                 .padding(.top, compact ? 40 : max(40, geo.size.height * 0.06))
                                 .shadow(color: Color.black.opacity(0.15), radius: 6, y: 3)
-                            planCard(index: 1, title: "1 Month Premium", detail: "Ad-free + unlimited AI study", extra: "", price: model.month, badge: "")
+                            planCard(index: 0, title: "1 Year Premium", detail: "Ad-free + unlimited AI study", extra: TriggerPrices.perMonth(model.year), price: model.year, badge: "Best value")
                                 .padding(.top, 10)
                             planCard(index: 2, title: "Lifetime Ad-Free", detail: "One payment · no AI", extra: "", price: model.life, badge: "")
                                 .padding(.top, 10)

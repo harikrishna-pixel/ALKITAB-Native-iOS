@@ -225,7 +225,10 @@ enum VerseExplanationSheetLayout {
 
     static func makeSectionRule(_ title: String, colors: Colors) -> UIView {
         // HTML `.part`: label 10.5 / weight 750 / letter-spacing .13em, gap 11, hair line.
+        // Use a plain container (not HStack with a 1pt line) so the row height follows the
+        // label — an HStack + 1pt line was collapsing to ~1pt and clipping headings in My Library.
         let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
         label.attributedText = NSAttributedString(string: title.uppercased(), attributes: [
             .font: UIFont.systemFont(ofSize: 10.5, weight: .bold),
             .kern: 1.37,
@@ -233,16 +236,26 @@ enum VerseExplanationSheetLayout {
         ])
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.setContentCompressionResistancePriority(.required, for: .horizontal)
+        label.setContentHuggingPriority(.required, for: .vertical)
+        label.setContentCompressionResistancePriority(.required, for: .vertical)
 
         let line = UIView()
         line.translatesAutoresizingMaskIntoConstraints = false
         line.backgroundColor = colors.hair
-        line.heightAnchor.constraint(equalToConstant: 1).isActive = true
 
-        let row = UIStackView(arrangedSubviews: [label, line])
-        row.axis = .horizontal
-        row.alignment = .center
-        row.spacing = 11
+        let row = UIView()
+        row.addSubview(label)
+        row.addSubview(line)
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+            label.topAnchor.constraint(equalTo: row.topAnchor),
+            label.bottomAnchor.constraint(equalTo: row.bottomAnchor),
+
+            line.leadingAnchor.constraint(equalTo: label.trailingAnchor, constant: 11),
+            line.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            line.centerYAnchor.constraint(equalTo: label.centerYAnchor),
+            line.heightAnchor.constraint(equalToConstant: 1)
+        ])
         return row
     }
 

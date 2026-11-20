@@ -41,8 +41,7 @@ final class ExplanationLibraryCell: UICollectionViewCell {
     private let referenceLabel = UILabel()
     private let verseLabel = UILabel()
     private let divider = UIView()
-    private let explanationTitleLabel = UILabel()
-    private let explanationBodyLabel = UILabel()
+    private let contentStack = UIStackView()
     private var explanationBottomConstraint: NSLayoutConstraint?
     private var verseBottomCollapsedConstraint: NSLayoutConstraint?
     private var dividerBelowVerseConstraint: NSLayoutConstraint?
@@ -82,22 +81,6 @@ final class ExplanationLibraryCell: UICollectionViewCell {
         verseLabel.numberOfLines = 2
         verseLabel.isHidden = isExpanded
 
-        explanationTitleLabel.text = "Summary"
-        explanationTitleLabel.font = verseFont ?? .systemFont(ofSize: 15)
-        explanationTitleLabel.textColor = isNight ? UIColor.white.withAlphaComponent(0.55) : UIColor(white: 0.45, alpha: 1)
-
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.lineSpacing = 4
-        paragraph.paragraphSpacing = 6
-        explanationBodyLabel.attributedText = NSAttributedString(
-            string: explanation,
-            attributes: [
-                .font: bodyFont ?? UIFont.systemFont(ofSize: 14),
-                .foregroundColor: isNight ? UIColor.white.withAlphaComponent(0.92) : UIColor(red: 0.14, green: 0.16, blue: 0.22, alpha: 1),
-                .paragraphStyle: paragraph
-            ]
-        )
-
         let symbolConfig = UIImage.SymbolConfiguration(pointSize: Self.actionIconPointSize, weight: .semibold)
         chevronImageView.image = UIImage(systemName: isExpanded ? "chevron.up" : "chevron.down", withConfiguration: symbolConfig)?.withRenderingMode(.alwaysTemplate)
         chevronImageView.tintColor = isExpanded ? themeColor : (isNight ? UIColor.white.withAlphaComponent(0.7) : UIColor(white: 0.35, alpha: 1))
@@ -116,9 +99,18 @@ final class ExplanationLibraryCell: UICollectionViewCell {
         divider.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.12) : UIColor(red: 0.82, green: 0.88, blue: 0.96, alpha: 1)
 
         divider.isHidden = !isExpanded
-        explanationTitleLabel.isHidden = !isExpanded
-        explanationBodyLabel.isHidden = !isExpanded
+        contentStack.isHidden = !isExpanded
+        contentStack.arrangedSubviews.forEach {
+            contentStack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
         if isExpanded {
+            fillStructuredContent(
+                explanation: explanation,
+                themeColor: themeColor,
+                isNight: isNight,
+                bodyFont: bodyFont ?? .systemFont(ofSize: 14)
+            )
             verseBottomCollapsedConstraint?.isActive = false
             dividerBelowVerseConstraint?.isActive = false
             dividerBelowHeaderConstraint?.isActive = true
@@ -154,20 +146,251 @@ final class ExplanationLibraryCell: UICollectionViewCell {
         var height: CGFloat = 8 + 12 + Self.actionCircleSize + 8 + (isExpanded ? 0 : verseHeight) + 14 + 8
 
         if isExpanded {
-            let paragraph = NSMutableParagraphStyle()
-            paragraph.lineSpacing = 4
-            paragraph.paragraphSpacing = 6
-            let bodyHeight = ceil((explanation as NSString).boundingRect(
-                with: CGSize(width: contentWidth, height: .greatestFiniteMagnitude),
-                options: [.usesLineFragmentOrigin, .usesFontLeading],
-                attributes: [.font: bodyFont, .paragraphStyle: paragraph],
-                context: nil
-            ).height)
-            // divider + title + body gaps (replaces simple bottom pad already counted partially)
-            height += 12 + 1 + 12 + 18 + 8 + bodyHeight + 4
+            height += 12 + 1 + 12
+            height += structuredContentHeight(
+                explanation: explanation,
+                width: contentWidth,
+                bodyFont: bodyFont
+            )
+            // Extra room so section headings / theme chips are not clipped by clipsToBounds.
+            height += 16
         }
 
         return height
+    }
+
+    private func fillStructuredContent(
+        explanation: String,
+        themeColor: UIColor,
+        isNight: Bool,
+        bodyFont: UIFont
+    ) {
+        let colors = VerseExplanationSheetLayout.colors(theme: isNight ? BGNightMode : themeColor)
+        let summaryTitleColor = isNight
+            ? UIColor.white.withAlphaComponent(0.55)
+            : UIColor(white: 0.45, alpha: 1)
+
+        // Chapter summaries first — LEAD alone must not be treated as a verse explanation.
+        let chapterParsed = VerseExplanationSheetLayout.parseChapterSummary(explanation)
+        if Self.hasChapterStructure(chapterParsed) {
+            appendChapterSections(chapterParsed, colors: colors, summaryTitleColor: summaryTitleColor)
+            return
+        }
+
+        let verseParsed = VerseExplanationSheetLayout.parseVerseExplanation(explanation)
+        if verseParsed.isStructured || (!verseParsed.lead.isEmpty && !verseParsed.related.isEmpty) {
+            appendVerseSections(verseParsed, colors: colors, summaryTitleColor: summaryTitleColor)
+            return
+        }
+
+        // Older freeform saves — keep a plain Summary block.
+        let title = summaryTitleLabel(color: summaryTitleColor)
+        contentStack.addArrangedSubview(title)
+        contentStack.setCustomSpacing(8, after: title)
+        let body = plainBodyLabel(explanation, font: bodyFont, color: colors.ink)
+        contentStack.addArrangedSubview(body)
+    }
+
+    private static func hasChapterStructure(_ parsed: VerseExplanationSheetLayout.ChapterSummaryContent) -> Bool {
+        parsed.isStructured
+            || !parsed.movements.isEmpty
+            || !parsed.keys.isEmpty
+            || !parsed.themes.isEmpty
+    }
+
+    private func appendVerseSections(
+        _ parsed: VerseExplanationSheetLayout.VerseExplanationContent,
+        colors: VerseExplanationSheetLayout.Colors,
+        summaryTitleColor: UIColor
+    ) {
+        if !parsed.lead.isEmpty {
+            let title = summaryTitleLabel(color: summaryTitleColor)
+            contentStack.addArrangedSubview(title)
+            contentStack.setCustomSpacing(8, after: title)
+            let lead = VerseExplanationSheetLayout.makeBody(parsed.lead, colors: colors)
+            // Lead under Summary reads a bit stronger than section body.
+            if let attributed = lead.attributedText {
+                let mutable = NSMutableAttributedString(attributedString: attributed)
+                mutable.addAttribute(.foregroundColor, value: colors.ink, range: NSRange(location: 0, length: mutable.length))
+                lead.attributedText = mutable
+            }
+            contentStack.addArrangedSubview(lead)
+            contentStack.setCustomSpacing(18, after: lead)
+        }
+        if !parsed.context.isEmpty {
+            let rule = VerseExplanationSheetLayout.makeSectionRule("In context", colors: colors)
+            contentStack.addArrangedSubview(rule)
+            contentStack.setCustomSpacing(10, after: rule)
+            let body = VerseExplanationSheetLayout.makeBody(parsed.context, colors: colors)
+            contentStack.addArrangedSubview(body)
+            contentStack.setCustomSpacing(18, after: body)
+        }
+        if !parsed.today.isEmpty {
+            let rule = VerseExplanationSheetLayout.makeSectionRule("What it means today", colors: colors)
+            contentStack.addArrangedSubview(rule)
+            contentStack.setCustomSpacing(10, after: rule)
+            let body = VerseExplanationSheetLayout.makeBody(parsed.today, colors: colors)
+            contentStack.addArrangedSubview(body)
+            contentStack.setCustomSpacing(18, after: body)
+        }
+        if !parsed.related.isEmpty {
+            let rule = VerseExplanationSheetLayout.makeSectionRule("Related verses", colors: colors)
+            contentStack.addArrangedSubview(rule)
+            contentStack.setCustomSpacing(10, after: rule)
+            let tags = VerseExplanationSheetLayout.makeRefTags(
+                parsed.related,
+                colors: colors,
+                target: self,
+                action: #selector(relatedPillTapped)
+            )
+            contentStack.addArrangedSubview(tags)
+        }
+    }
+
+    private func appendChapterSections(
+        _ parsed: VerseExplanationSheetLayout.ChapterSummaryContent,
+        colors: VerseExplanationSheetLayout.Colors,
+        summaryTitleColor: UIColor
+    ) {
+        if !parsed.lead.isEmpty {
+            let title = summaryTitleLabel(color: summaryTitleColor)
+            contentStack.addArrangedSubview(title)
+            contentStack.setCustomSpacing(8, after: title)
+            let lead = VerseExplanationSheetLayout.makeBody(parsed.lead, colors: colors)
+            contentStack.addArrangedSubview(lead)
+            contentStack.setCustomSpacing(18, after: lead)
+        }
+        if !parsed.movements.isEmpty {
+            let rule = VerseExplanationSheetLayout.makeSectionRule("Movements", colors: colors)
+            contentStack.addArrangedSubview(rule)
+            contentStack.setCustomSpacing(10, after: rule)
+            for (index, move) in parsed.movements.enumerated() {
+                let row = VerseExplanationSheetLayout.makeMovementRow(
+                    index: index + 1,
+                    title: move.title,
+                    detail: move.detail,
+                    colors: colors,
+                    showDivider: index < parsed.movements.count - 1
+                )
+                contentStack.addArrangedSubview(row)
+            }
+            if let last = contentStack.arrangedSubviews.last {
+                contentStack.setCustomSpacing(18, after: last)
+            }
+        }
+        if !parsed.keys.isEmpty {
+            let rule = VerseExplanationSheetLayout.makeSectionRule("Key verses", colors: colors)
+            contentStack.addArrangedSubview(rule)
+            contentStack.setCustomSpacing(10, after: rule)
+            let tags = VerseExplanationSheetLayout.makeRefTags(
+                parsed.keys,
+                colors: colors,
+                target: self,
+                action: #selector(relatedPillTapped)
+            )
+            contentStack.addArrangedSubview(tags)
+            contentStack.setCustomSpacing(18, after: tags)
+        }
+        if !parsed.themes.isEmpty {
+            let rule = VerseExplanationSheetLayout.makeSectionRule("Themes", colors: colors)
+            contentStack.addArrangedSubview(rule)
+            contentStack.setCustomSpacing(10, after: rule)
+            contentStack.addArrangedSubview(VerseExplanationSheetLayout.makeThemeTags(parsed.themes, colors: colors))
+        }
+    }
+
+    private func summaryTitleLabel(color: UIColor) -> UILabel {
+        let label = UILabel()
+        label.text = "Summary"
+        label.font = .systemFont(ofSize: 15, weight: .semibold)
+        label.textColor = color
+        return label
+    }
+
+    private func plainBodyLabel(_ text: String, font: UIFont, color: UIColor) -> UILabel {
+        let label = UILabel()
+        label.numberOfLines = 0
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineSpacing = 4
+        paragraph.paragraphSpacing = 6
+        label.attributedText = NSAttributedString(string: text, attributes: [
+            .font: font,
+            .foregroundColor: color,
+            .paragraphStyle: paragraph
+        ])
+        return label
+    }
+
+    @objc private func relatedPillTapped() {
+        // Display-only chips in My Library.
+    }
+
+    private static func structuredContentHeight(
+        explanation: String,
+        width: CGFloat,
+        bodyFont: UIFont
+    ) -> CGFloat {
+        let bodyStyle = NSMutableParagraphStyle()
+        bodyStyle.lineSpacing = 5
+
+        func textHeight(_ text: String, font: UIFont, style: NSParagraphStyle? = nil) -> CGFloat {
+            var attrs: [NSAttributedString.Key: Any] = [.font: font]
+            if let style = style { attrs[.paragraphStyle] = style }
+            return ceil((text as NSString).boundingRect(
+                with: CGSize(width: width, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                attributes: attrs,
+                context: nil
+            ).height)
+        }
+
+        let chapterParsed = VerseExplanationSheetLayout.parseChapterSummary(explanation)
+        if hasChapterStructure(chapterParsed) {
+            var h: CGFloat = 0
+            if !chapterParsed.lead.isEmpty {
+                h += 18 + 8 + textHeight(chapterParsed.lead, font: .systemFont(ofSize: 15), style: bodyStyle) + 18
+            }
+            if !chapterParsed.movements.isEmpty {
+                h += 18 + 10
+                for move in chapterParsed.movements {
+                    h += 12 + textHeight(move.title, font: .systemFont(ofSize: 14, weight: .semibold))
+                    if !move.detail.isEmpty {
+                        h += 2 + textHeight(move.detail, font: .systemFont(ofSize: 13.4), style: bodyStyle)
+                    }
+                    h += 18
+                }
+            }
+            if !chapterParsed.keys.isEmpty { h += 18 + 10 + 40 + 18 }
+            if !chapterParsed.themes.isEmpty {
+                // Themes can wrap to multiple rows of chips.
+                let rows = max(1, Int(ceil(Double(chapterParsed.themes.count) / 2.0)))
+                h += 18 + 10 + CGFloat(rows) * 36
+            }
+            return h
+        }
+
+        let verseParsed = VerseExplanationSheetLayout.parseVerseExplanation(explanation)
+        if verseParsed.isStructured || (!verseParsed.lead.isEmpty && !verseParsed.related.isEmpty) {
+            var h: CGFloat = 0
+            if !verseParsed.lead.isEmpty {
+                h += 18 + 8 + textHeight(verseParsed.lead, font: .systemFont(ofSize: 15), style: bodyStyle) + 18
+            }
+            if !verseParsed.context.isEmpty {
+                h += 18 + 10 + textHeight(verseParsed.context, font: .systemFont(ofSize: 15), style: bodyStyle) + 18
+            }
+            if !verseParsed.today.isEmpty {
+                h += 18 + 10 + textHeight(verseParsed.today, font: .systemFont(ofSize: 15), style: bodyStyle) + 18
+            }
+            if !verseParsed.related.isEmpty {
+                h += 18 + 10 + 40
+            }
+            return h
+        }
+
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineSpacing = 4
+        paragraph.paragraphSpacing = 6
+        return 18 + 8 + textHeight(explanation, font: bodyFont, style: paragraph)
     }
 
     private func setupUI() {
@@ -216,16 +439,13 @@ final class ExplanationLibraryCell: UICollectionViewCell {
         divider.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(divider)
 
-        explanationTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        explanationTitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        cardView.addSubview(explanationTitleLabel)
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        contentStack.axis = .vertical
+        contentStack.alignment = .fill
+        contentStack.spacing = 0
+        cardView.addSubview(contentStack)
 
-        explanationBodyLabel.translatesAutoresizingMaskIntoConstraints = false
-        explanationBodyLabel.numberOfLines = 0
-        explanationBodyLabel.textAlignment = .left
-        cardView.addSubview(explanationBodyLabel)
-
-        let explanationBottom = explanationBodyLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -14)
+        let explanationBottom = contentStack.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -14)
         explanationBottomConstraint = explanationBottom
         let verseBottomCollapsed = verseLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -14)
         verseBottomCollapsedConstraint = verseBottomCollapsed
@@ -279,13 +499,9 @@ final class ExplanationLibraryCell: UICollectionViewCell {
             divider.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
             divider.heightAnchor.constraint(equalToConstant: 1),
 
-            explanationTitleLabel.topAnchor.constraint(equalTo: divider.bottomAnchor, constant: 12),
-            explanationTitleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 14),
-            explanationTitleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
-
-            explanationBodyLabel.topAnchor.constraint(equalTo: explanationTitleLabel.bottomAnchor, constant: 8),
-            explanationBodyLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 14),
-            explanationBodyLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
+            contentStack.topAnchor.constraint(equalTo: divider.bottomAnchor, constant: 12),
+            contentStack.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 14),
+            contentStack.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
 
             verseBottomCollapsed
         ])

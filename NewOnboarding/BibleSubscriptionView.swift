@@ -271,16 +271,24 @@ struct BibleSubscriptionView: View {
         
         storeManager.onPurchaseSuccess = { [self] in
             clearPurchaseLoading()
+            let fromExitOffer = showExitOffer
             exitOfferTimerTask?.cancel()
             exitOfferTimerTask = nil
-            showExitOffer = false
+            // Keep Exit UI up until Home replaces the stack — clearing it early flashes the main paywall.
             clearExitOfferData()
             // Toast is shown by StoreManager on every successful purchase.
             PaywallProcessHUD.didClosePaywall = false
             // iPad needs longer for the App Store sheet to leave before the paywall closes.
             let delay: TimeInterval = UIDevice.current.userInterfaceIdiom == .pad ? 2.0 : 1.0
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.closePaywallAfterRestore()
+                // Exit purchase: always replace stack with Home/Reader (do not leave Exit on screen).
+                if fromExitOffer {
+                    UserDefaults.standard.set(true, forKey: "PremiumPayViewed")
+                    UIKitNavigationHelper.navigateToReaderViewController()
+                } else {
+                    self.showExitOffer = false
+                    self.closePaywallAfterRestore()
+                }
             }
         }
         

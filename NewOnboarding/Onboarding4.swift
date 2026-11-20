@@ -46,6 +46,46 @@ struct Onboarding4: View {
         return prefix + "…"
     }
 
+    /// Parse LEAD/CONTEXT/TODAY so labels never show under "In context".
+    private static func displaySections(from raw: String?) -> (context: String?, today: String?) {
+        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return (nil, nil)
+        }
+        let parsed = VerseExplanationSheetLayout.parseVerseExplanation(raw)
+        if !parsed.lead.isEmpty || !parsed.context.isEmpty || !parsed.today.isEmpty {
+            let contextBody: String?
+            if !parsed.context.isEmpty {
+                contextBody = mediumBody(parsed.context)
+            } else if !parsed.lead.isEmpty {
+                contextBody = mediumBody(parsed.lead)
+            } else {
+                contextBody = nil
+            }
+            let todayBody = parsed.today.isEmpty ? nil : mediumBody(parsed.today)
+            return (contextBody, todayBody)
+        }
+        return (mediumBody(stripExplanationLabels(raw)), nil)
+    }
+
+    private static func stripExplanationLabels(_ text: String) -> String {
+        text.components(separatedBy: .newlines)
+            .compactMap { line -> String? in
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.isEmpty else { return nil }
+                let upper = trimmed.uppercased()
+                for label in ["LEAD", "CONTEXT", "TODAY", "RELATED"] {
+                    let prefix = "\(label):"
+                    if upper.hasPrefix(prefix) {
+                        let value = trimmed.dropFirst(prefix.count)
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        return value.isEmpty ? nil : value
+                    }
+                }
+                return trimmed
+            }
+            .joined(separator: " ")
+    }
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -224,12 +264,14 @@ struct Onboarding4: View {
                     .padding(17)
                 } else {
                     // Always use structured box: In context + yellow quote + today (referral layout).
+                    // Parse LEAD/CONTEXT/TODAY so "LEAD:" never appears under In context.
+                    let sections = Self.displaySections(from: aiExplanation)
                     OnboardingExplainTyping(
                         contextTitle: Self.contextTitle,
-                        contextText: Self.mediumBody(aiExplanation) ?? Self.contextText,
+                        contextText: sections.context ?? Self.contextText,
                         quoteText: Self.quoteLine(revealedVerse),
                         todayTitle: Self.todayTitle,
-                        todayText: Self.todayText
+                        todayText: sections.today ?? Self.todayText
                     )
                     .padding(17)
                 }

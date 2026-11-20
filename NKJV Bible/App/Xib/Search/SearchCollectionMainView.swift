@@ -95,6 +95,19 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
            }
         
     }
+
+    /// Refresh verse-search rows in place (avoids re-inflating the nib on every keystroke).
+    func updateVerseSearchResults(_ results: [String], query: String) {
+        SearchTxt = results
+        Searchstring = query
+        coreTitle = "search_PH"
+        let hasResults = !results.isEmpty
+        PlaceHolderImg.isHidden = hasResults
+        AlertLbl.isHidden = hasResults
+        SearchCollectionVu.isHidden = !hasResults
+        SearchCollectionVu.collectionViewLayout.invalidateLayout()
+        SearchCollectionVu.reloadData()
+    }
     
     
 

@@ -254,7 +254,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     private func refreshFreeCount() {
-        // Paid users: no line under the composer (iPhone and iPad).
+        // Monthly / Yearly unlimited: no line under the composer (iPhone and iPad).
         if AIUsageLimiter.shared.hasUnlimitedPlan {
             freeCountLabel.attributedText = nil
             return
@@ -263,20 +263,28 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         let noun = left > 1 ? "messages" : "message"
         let grey = isNight ? UIColor.white.withAlphaComponent(0.55) : UIColor(white: 0.45, alpha: 1)
         let link = isNight ? UIColor.white : themeColor
-        let line = NSMutableAttributedString(string: "\(left) \(noun) available today. ", attributes: [
+        let line = NSMutableAttributedString(string: "\(left) \(noun) available today.", attributes: [
             .foregroundColor: grey,
             .font: UIFont.systemFont(ofSize: 13)
         ])
-        line.append(NSAttributedString(string: "Unlimited with Premium", attributes: [
-            .foregroundColor: link,
-            .font: UIFont.systemFont(ofSize: 13),
-            .underlineStyle: NSUnderlineStyle.single.rawValue
-        ]))
+        // Lifetime / Exit already owns premium — don't offer Main Paywall again.
+        if !AIUsageLimiter.shared.ownsLifetimeAccess {
+            line.append(NSAttributedString(string: " ", attributes: [
+                .foregroundColor: grey,
+                .font: UIFont.systemFont(ofSize: 13)
+            ]))
+            line.append(NSAttributedString(string: "Unlimited with Premium", attributes: [
+                .foregroundColor: link,
+                .font: UIFont.systemFont(ofSize: 13),
+                .underlineStyle: NSUnderlineStyle.single.rawValue
+            ]))
+        }
         freeCountLabel.attributedText = line
     }
 
     @objc private func freeCountTapped() {
         guard !AIUsageLimiter.shared.hasUnlimitedPlan else { return }
+        guard !AIUsageLimiter.shared.ownsLifetimeAccess else { return }
         view.endEditing(true)
         AIUsageLimiter.shared.presentPlansPaywall()
     }
@@ -565,16 +573,15 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         let followUps = messages.last(where: { $0.role == .assistant })?.followUps ?? []
         let showContinue = !followUps.isEmpty && !isSending && !showsLimitCard
         if showContinue {
-            let ink3 = isNight
-                ? UIColor.white.withAlphaComponent(0.5)
-                : UIColor(red: 0.55, green: 0.58, blue: 0.63, alpha: 1)
+            // Match THE PASSAGE / WHY IT MATTERS title color (theme / teal), not gray body chrome.
+            let titleColor = isNight ? UIColor.white.withAlphaComponent(0.85) : themeColor
             let heading = UILabel()
             heading.attributedText = NSAttributedString(
                 string: usesIndonesian ? "LANJUTKAN" : "CONTINUE",
                 attributes: [
                     .font: UIFont.systemFont(ofSize: 10.5, weight: .bold),
                     .kern: 1.3,
-                    .foregroundColor: ink3
+                    .foregroundColor: titleColor
                 ]
             )
             suggestionStack.addArrangedSubview(heading)
@@ -764,16 +771,6 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         message.textAlignment = .center
         message.numberOfLines = 0
 
-        let unlimited = UIButton(type: .system)
-        unlimited.setTitle("Go unlimited", for: .normal)
-        unlimited.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        unlimited.setTitleColor(isNight ? BGNightMode : .white, for: .normal)
-        unlimited.backgroundColor = accent
-        unlimited.layer.cornerRadius = 14
-        unlimited.translatesAutoresizingMaskIntoConstraints = false
-        unlimited.heightAnchor.constraint(equalToConstant: 50).isActive = true
-        unlimited.addTarget(self, action: #selector(limitCardUnlimitedTapped), for: .touchUpInside)
-
         let later = UIButton(type: .system)
         later.setTitle("Maybe tomorrow", for: .normal)
         later.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
@@ -782,14 +779,34 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         later.heightAnchor.constraint(equalToConstant: 40).isActive = true
         later.addTarget(self, action: #selector(limitCardLaterTapped), for: .touchUpInside)
 
-        let stack = UIStackView(arrangedSubviews: [iconBox, title, message, unlimited, later])
+        // Lifetime / Exit already owns premium — don't offer Main Paywall again.
+        var arranged: [UIView] = [iconBox, title, message]
+        var unlimitedButton: UIButton?
+        if !AIUsageLimiter.shared.ownsLifetimeAccess {
+            let unlimited = UIButton(type: .system)
+            unlimited.setTitle("Go unlimited", for: .normal)
+            unlimited.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+            unlimited.setTitleColor(isNight ? BGNightMode : .white, for: .normal)
+            unlimited.backgroundColor = accent
+            unlimited.layer.cornerRadius = 14
+            unlimited.translatesAutoresizingMaskIntoConstraints = false
+            unlimited.heightAnchor.constraint(equalToConstant: 50).isActive = true
+            unlimited.addTarget(self, action: #selector(limitCardUnlimitedTapped), for: .touchUpInside)
+            unlimitedButton = unlimited
+            arranged.append(unlimited)
+        }
+        arranged.append(later)
+
+        let stack = UIStackView(arrangedSubviews: arranged)
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.axis = .vertical
         stack.alignment = .center
         stack.spacing = 8
         stack.setCustomSpacing(16, after: iconBox)
         stack.setCustomSpacing(22, after: message)
-        stack.setCustomSpacing(6, after: unlimited)
+        if let unlimited = unlimitedButton {
+            stack.setCustomSpacing(6, after: unlimited)
+        }
         card.addSubview(stack)
 
         let widthConstraint = footer.widthAnchor.constraint(equalToConstant: width)
@@ -811,9 +828,11 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             icon.centerYAnchor.constraint(equalTo: iconBox.centerYAnchor),
 
             title.widthAnchor.constraint(equalTo: stack.widthAnchor),
-            message.widthAnchor.constraint(equalTo: stack.widthAnchor),
-            unlimited.widthAnchor.constraint(equalTo: stack.widthAnchor)
+            message.widthAnchor.constraint(equalTo: stack.widthAnchor)
         ])
+        if let unlimited = unlimitedButton {
+            unlimited.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
+        }
         let height = footer.systemLayoutSizeFitting(
             CGSize(width: width, height: 0),
             withHorizontalFittingPriority: .required,
@@ -970,7 +989,14 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     private func installContextHeaderIfNeeded() {
-        guard let context = launchContext, tableView.tableHeaderView == nil, view.bounds.width > 0 else { return }
+        guard let context = launchContext, view.bounds.width > 0 else { return }
+        // Chapter Summary greeting is first-open only; drop it once chat has started / answer exists.
+        let showGreeting = context.isChapterSummary && messages.isEmpty
+        if tableView.tableHeaderView != nil, contextHeaderShowsGreeting == showGreeting {
+            return
+        }
+        contextHeaderShowsGreeting = showGreeting
+        tableView.tableHeaderView = nil
         let header = makeContextHeader(context)
         let width = view.bounds.width
         let widthConstraint = header.widthAnchor.constraint(equalToConstant: width)
@@ -1036,7 +1062,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
                 titleLabel.centerYAnchor.constraint(equalTo: card.centerYAnchor)
             ])
 
-            if messages.isEmpty {
+            if contextHeaderShowsGreeting == true {
                 let avatar = UIView()
                 avatar.translatesAutoresizingMaskIntoConstraints = false
                 avatar.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.12) : themeColor.withAlphaComponent(0.12)
@@ -1461,6 +1487,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     private func reloadChatAndScrollToBottom(animated: Bool) {
+        installContextHeaderIfNeeded()
         tableView.reloadData()
         scrollToBottom(animated: animated)
     }
@@ -1747,7 +1774,7 @@ private final class AIChatAnswerCell: UITableViewCell {
             stack.setCustomSpacing(20, after: lead)
 
             if let verse = answer.verse, !verse.isEmpty {
-                let rule = makeRule(indonesian ? "AYAT" : "THE PASSAGE", color: ink3)
+                let rule = makeRule(indonesian ? "AYAT" : "THE PASSAGE", color: accent)
                 stack.addArrangedSubview(rule)
                 stack.setCustomSpacing(12, after: rule)
                 let quote = makeQuote(verse: verse, reference: answer.reference, citeColor: ink3)
@@ -1755,7 +1782,7 @@ private final class AIChatAnswerCell: UITableViewCell {
                 stack.setCustomSpacing(20, after: quote)
             }
 
-            let rule = makeRule(indonesian ? "MENGAPA INI PENTING" : "WHY IT MATTERS", color: ink3)
+            let rule = makeRule(indonesian ? "MENGAPA INI PENTING" : "WHY IT MATTERS", color: accent)
             stack.addArrangedSubview(rule)
             stack.setCustomSpacing(12, after: rule)
             for (index, point) in answer.points.enumerated() {

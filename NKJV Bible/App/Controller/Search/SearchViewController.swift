@@ -71,6 +71,14 @@ class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDa
         spinner.translatesAutoresizingMaskIntoConstraints = false
         return spinner
     }()
+    private var searchDebounceWork: DispatchWorkItem?
+    private var searchGeneration = 0
+    /// Cached verse corpus for the current testament/book/language filters.
+    private var cachedSearchCorpus: [String]?
+    private var cachedSearchCorpusKey: String = ""
+    private let searchWorkQueue = DispatchQueue(label: "com.alkitab.verseSearch", qos: .userInitiated)
+    /// Cap live-typing results so collection layout stays responsive.
+    private let liveSearchResultLimit = 200
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -108,12 +116,22 @@ class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDa
         
         let config = IQBarButtonItemConfiguration(title: "Search", action: #selector(self.doneAction(_:)))
         self.SearchTxt.addKeyboardToolbar(withTarget: self, titleText: nil , rightBarButtonConfiguration: config, previousBarButtonConfiguration: nil, nextBarButtonConfiguration: nil)
+        self.SearchTxt.addTarget(self, action: #selector(searchTextChanged), for: .editingChanged)
         
         
         self.PositionTOBook()
         self.SearchViewCreate()
         self.setupSearchSpinner(theme: Themecolor)
         
+    }
+
+    @objc private func searchTextChanged() {
+        searchDebounceWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.Search(fromTyping: true)
+        }
+        searchDebounceWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
     }
 
     private func setupSearchSpinner(theme: UIColor) {
@@ -125,14 +143,16 @@ class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDa
         ])
     }
 
-    private func setSearchLoading(_ loading: Bool) {
+    private func setSearchLoading(_ loading: Bool, lockField: Bool) {
         if loading {
             searchSpinner.startAnimating()
             view.bringSubviewToFront(searchSpinner)
         } else {
             searchSpinner.stopAnimating()
         }
-        SearchTxt.isEnabled = !loading
+        if lockField {
+            SearchTxt.isEnabled = !loading
+        }
         Book.isUserInteractionEnabled = !loading
         Testament.isUserInteractionEnabled = !loading
     }
@@ -140,7 +160,8 @@ class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDa
     
 
     @objc func doneAction(_ sender : UITextField!) {
-        self.Search()
+        searchDebounceWork?.cancel()
+        self.Search(fromTyping: false)
     }
     
 
@@ -241,7 +262,8 @@ func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
     }
     tableView.deselectRow(at: indexPath, animated: true)
     
-    self.Search()
+    self.invalidateSearchCorpusCache()
+    self.Search(fromTyping: false)
     BookHeight.constant = (isIpad ? 40:34)
     TestamentHeight.constant = (isIpad ? 40:34)
 }
@@ -270,8 +292,8 @@ func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
     }
     
     
-    func CollecrtionNibinit() {
-        if self.SearchTxt.text!.count >= 3 {
+    func CollecrtionNibinit(showToast: Bool = true) {
+        if showToast, self.SearchTxt.text!.count >= 3 {
             // BUG FIX 7: OLD CODE - Always showed "Results :X" even when X=0 (confusing message)
             // self.view.makeToast(NSLocalizedString("Results :\(self.arraySearchList.count)", comment: ""), duration: 1.0, position: .bottom)
             // Problem: User sees "Results :0" instead of clear "No results found" message
@@ -289,15 +311,18 @@ func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
     
     
     func SearchViewCreate(){
-        self.SearchCollectionMVC = SearchCollectionMainView.fromNib(named: "SearchCollectionMainView")
-        if self.SearchTxt.text! == "" {
-            self.SearchCollectionMVC!.SearchTxt = []
-        } else {
-            self.SearchCollectionMVC!.SearchTxt = self.arraySearchList
+        let query = self.SearchTxt.text ?? ""
+        let results = (query.isEmpty ? [] : self.arraySearchList)
+        if let existing = self.SearchCollectionMVC, existing.superview === self.SearchListFrame {
+            existing.updateVerseSearchResults(results, query: query)
+            return
         }
+        self.SearchCollectionMVC?.removeFromSuperview()
+        self.SearchCollectionMVC = SearchCollectionMainView.fromNib(named: "SearchCollectionMainView")
+        self.SearchCollectionMVC!.SearchTxt = results
         self.SearchCollectionMVC!.frame = self.SearchListFrame!.bounds
         self.SearchCollectionMVC!.coreTitle = "search_PH"
-        self.SearchCollectionMVC!.Searchstring = self.SearchTxt.text!
+        self.SearchCollectionMVC!.Searchstring = query
         self.SearchCollectionMVC!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         self.SearchListFrame!.addSubview(self.SearchCollectionMVC!)
         self.SearchListFrame!.backgroundColor! = UIColor.clear
@@ -352,6 +377,19 @@ func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 // MARK:- INIT Search
 @available(iOS 13.4, *)
 extension  SearchViewController {
+
+    private func invalidateSearchCorpusCache() {
+        cachedSearchCorpus = nil
+        cachedSearchCorpusKey = ""
+        SearchedList.removeAll(keepingCapacity: false)
+    }
+
+    private func currentSearchCorpusKey() -> String {
+        let language = UserDefaults.standard.string(forKey: "SelectedLanguage") ?? "101"
+        let testament = TestamentLbl.text ?? ""
+        let book = BookLbl.text ?? ""
+        return "\(language)|\(testament)|\(book)"
+    }
 
     func SearchBookText()  {
         
@@ -436,10 +474,12 @@ extension  SearchViewController {
         self.Bibledata = try! Data(contentsOf: fileURL)
         self.BibleBookList = try! PropertyListSerialization.propertyList(from: self.Bibledata!, options: [], format: nil) as! Array<String>
         
+        self.BibleBookListSeperated.removeAll(keepingCapacity: true)
         for i in 0 ..< self.BibleBookList.count {
             let seperate_Array = self.BibleBookList[i].components(separatedBy: "-")
             self.BibleBookListSeperated.append(seperate_Array[0])
         }
+        invalidateSearchCorpusCache()
     }
 }
 
@@ -450,39 +490,75 @@ extension  SearchViewController {
 
  
     @IBAction func Search_Verse(_ sender: Any) {
-        self.Search()
+        searchDebounceWork?.cancel()
+        self.Search(fromTyping: false)
     }
     
-    func Search() {
+    func Search(fromTyping: Bool = false) {
         DispatchQueue.main.async {
-            self.SearchTxt.resignFirstResponder()
-            self.SearchCollectionMVC?.removeFromSuperview()
+            if !fromTyping {
+                self.SearchTxt.resignFirstResponder()
+            }
             let query = self.SearchTxt.text ?? ""
             if query.count >= 3 {
-                self.setSearchLoading(true)
-                DispatchQueue.global(qos: .userInitiated).async {
-                    self.arraySearchList.removeAll()
-                    self.SearchBookText()
+                self.searchGeneration += 1
+                let generation = self.searchGeneration
+                self.setSearchLoading(true, lockField: !fromTyping)
+
+                let cacheKey = self.currentSearchCorpusKey()
+                let cachedCorpus = (cacheKey == self.cachedSearchCorpusKey) ? self.cachedSearchCorpus : nil
+                let resultLimit: Int? = fromTyping ? self.liveSearchResultLimit : nil
+
+                self.searchWorkQueue.async {
+                    guard generation == self.searchGeneration else { return }
+
+                    let corpus: [String]
+                    if let cachedCorpus = cachedCorpus {
+                        corpus = cachedCorpus
+                    } else {
+                        self.SearchBookText()
+                        corpus = self.SearchedList
+                    }
+
                     var matched: [String] = []
-                    for i in 0 ..< self.SearchedList.count {
-                        let verse = self.SearchedList[i].components(separatedBy: "_")[0]
+                    matched.reserveCapacity(min(resultLimit ?? 256, corpus.count))
+                    for item in corpus {
+                        let verse = item.components(separatedBy: "_")[0]
                         if verse.localizedCaseInsensitiveContains(query) {
-                            matched.append(self.SearchedList[i])
+                            matched.append(item)
                         } else if verse.contains(query) {
-                            matched.append(verse)
+                            matched.append(item)
+                        } else {
+                            continue
+                        }
+                        if let resultLimit = resultLimit, matched.count >= resultLimit {
+                            break
                         }
                     }
+
                     DispatchQueue.main.async {
+                        if cachedCorpus == nil, self.currentSearchCorpusKey() == cacheKey {
+                            self.cachedSearchCorpus = corpus
+                            self.cachedSearchCorpusKey = cacheKey
+                            self.SearchedList = corpus
+                        }
+                        guard generation == self.searchGeneration else { return }
                         self.arraySearchList = matched
-                        self.setSearchLoading(false)
-                        self.CollecrtionNibinit()
+                        self.setSearchLoading(false, lockField: !fromTyping)
+                        self.CollecrtionNibinit(showToast: !fromTyping)
                     }
                 }
             } else if query.count > 0 {
-                self.view.makeToast("Incorrect word ", duration: 2.0, position: .top)
-                self.CollecrtionNibinit()
+                self.searchGeneration += 1
+                self.arraySearchList = []
+                if !fromTyping {
+                    self.view.makeToast("Incorrect word ", duration: 2.0, position: .top)
+                }
+                self.CollecrtionNibinit(showToast: !fromTyping)
             } else {
-                self.CollecrtionNibinit()
+                self.searchGeneration += 1
+                self.arraySearchList = []
+                self.CollecrtionNibinit(showToast: !fromTyping)
             }
         }
     }

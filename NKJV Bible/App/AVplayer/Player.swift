@@ -210,15 +210,32 @@ extension ReaderViewController: AVplayerProtocol {
         guard !ChapterPlaybackContinue.inProgress else { return }
         ChapterPlaybackContinue.inProgress = true
         timer?.invalidate()
+        // Keep the process awake across the brief silent gap between chapters (critical when the screen is off).
+        var bgTask = UIBackgroundTaskIdentifier.invalid
+        bgTask = UIApplication.shared.beginBackgroundTask(withName: "ContinueChapterAudio") {
+            if bgTask != .invalid {
+                UIApplication.shared.endBackgroundTask(bgTask)
+                bgTask = .invalid
+            }
+        }
+        AudioPlayerService.sharedInstance.setupAudioSession()
         ViewInit()
         if UserDefaults.standard.string(forKey: "Shuffle") == "true" {
             AVplayOn()
+            endChapterContinueBackgroundTask(&bgTask)
         } else {
-            AutoNext(resumePlayback: true)
+            AutoNext(resumePlayback: true, backgroundTask: &bgTask)
         }
         // Keep the guard up briefly so a duplicate end event cannot start a second overlapping stream.
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             ChapterPlaybackContinue.inProgress = false
+        }
+    }
+
+    private func endChapterContinueBackgroundTask(_ bgTask: inout UIBackgroundTaskIdentifier) {
+        if bgTask != .invalid {
+            UIApplication.shared.endBackgroundTask(bgTask)
+            bgTask = .invalid
         }
     }
     
@@ -312,27 +329,44 @@ extension ReaderViewController: AVplayerProtocol {
 
     
     func AutoNext(resumePlayback: Bool = false) {
+        var unusedTask = UIBackgroundTaskIdentifier.invalid
+        AutoNext(resumePlayback: resumePlayback, backgroundTask: &unusedTask)
+    }
+
+    func AutoNext(resumePlayback: Bool, backgroundTask: inout UIBackgroundTaskIdentifier) {
         if self.Pageindex >= 0 {
             self.NextView.zoomIn()
             // only advance if not at last chapter
             if self.Pageindex < self.pagecount {
                 self.nextPreviousconfig()
-                self.NextPageMove(resumePlayback: resumePlayback)
+                self.NextPageMove(resumePlayback: resumePlayback, backgroundTask: &backgroundTask)
                 BookURL.sharedInstance.bookURL(BookNo: String(self.Pageindex))
                 self.changeStatus()
-                self.StopAv()
+                // Do not StopAv when auto-continuing: tearing down the session while the screen is
+                // off lets iOS suspend before the next chapter's AVplayOn runs (seen on iPhone 12).
+                if !resumePlayback {
+                    self.StopAv()
+                }
                 self.updateNavButtons()
             } else {
                 ChapterPlaybackContinue.inProgress = false
+                endChapterContinueBackgroundTask(&backgroundTask)
                 self.view.makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .top)
                 self.updateNavButtons()
             }
+        } else {
+            endChapterContinueBackgroundTask(&backgroundTask)
         }
     }
     
     
     
     func NextPageMove(resumePlayback: Bool = false) {
+        var unusedTask = UIBackgroundTaskIdentifier.invalid
+        NextPageMove(resumePlayback: resumePlayback, backgroundTask: &unusedTask)
+    }
+
+    func NextPageMove(resumePlayback: Bool, backgroundTask: inout UIBackgroundTaskIdentifier) {
         
         print("self.pagecount :",self.pagecount)
 
@@ -340,16 +374,40 @@ extension ReaderViewController: AVplayerProtocol {
             self.playStatus = false
             self.Pageindex = self.Pageindex+1
             UserDefaults.standard.set(UserDefaults.standard.integer(forKey: "BookChapter")+1, forKey: "BookChapter")
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
+            let task = backgroundTask
+            backgroundTask = .invalid
+            DispatchQueue.main.async {
+                // Start next MP3 first while still background-eligible, then refresh the reader UI.
+                if resumePlayback {
+                    AudioPlayerService.sharedInstance.setupAudioSession()
+                    self.currentTimeacu = 0
+                    self.AVplayOn()
+                }
                 App_Protocol.delegateReaderSource?.ReloadFont(ChapterNo:UserDefaults.standard.integer(forKey: "BookChapter"))
                 App_Protocol.delegateReader?.mainContainer()
                 if resumePlayback {
-                    self.AVplayOn()
+                    // mainContainer resets player UI via ViewInit — ensure playback stays requested.
+                    self.playStatus = true
+                    AudioPlayerService.sharedInstance.chapterWantsPlayback = true
+                    let rate = AudioPlayerService.sharedInstance.player?.rate ?? 0
+                    if rate <= 0 {
+                        AudioPlayerService.sharedInstance.setupAudioSession()
+                        self.currentTimeacu = 0
+                        self.AVplayOn()
+                    } else {
+                        self.PlayPause(ImageName: "pausePlayer")
+                        self.timer?.invalidate()
+                        self.AVstartTimer()
+                    }
+                }
+                if task != .invalid {
+                    UIApplication.shared.endBackgroundTask(task)
                 }
             }
             self.AVTitleText.text = String(format: "\(UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName)-\(self.Pageindex)")
         } else {
             ChapterPlaybackContinue.inProgress = false
+            endChapterContinueBackgroundTask(&backgroundTask)
             // at last chapter
             self.view.makeToast("Book finished. Choose the next book to play.", duration: 2.0, position: .top)
         }

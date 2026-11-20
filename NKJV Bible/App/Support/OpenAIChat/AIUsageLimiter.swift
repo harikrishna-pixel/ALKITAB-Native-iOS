@@ -56,6 +56,8 @@ final class AIUsageLimiter {
 
     /// Access granted but not yet charged; charged in `commit` once the result succeeds.
     private var pending: [AIUsageFeature: Payment] = [:]
+    /// Last successful charge per feature — used to hide "free used" upsell after a credit spend.
+    private var lastCommitted: [AIUsageFeature: Payment] = [:]
     /// The chat limit sheet has already been shown. Later sends can spend credits.
     private var chatUpsellShown = false
 
@@ -76,9 +78,21 @@ final class AIUsageLimiter {
     var hasUnlimitedPlan: Bool {
         if LegacyPaidAppService.shared.isLegacyPaidAppUser { return true }
         guard PaymentHistory.sharedInstance.hasActivePurchase() else { return false }
+        return !ownsLifetimeAccess
+    }
+
+    /// Lifetime / Exit-offer one-time purchase — already owns premium; do not open Main Paywall again.
+    var ownsLifetimeAccess: Bool {
+        if UserDefaults.standard.bool(forKey: "HasLifetimePurchase") { return true }
         let paymentId = UserDefaults.standard.string(forKey: "PaymentId") ?? ""
-        let isLifetime = !SUBSCRIPTIONID_LifeTime.isEmpty && paymentId == SUBSCRIPTIONID_LifeTime
-        return !isLifetime
+        guard !paymentId.isEmpty else { return false }
+        if !SUBSCRIPTIONID_LifeTime.isEmpty, paymentId == SUBSCRIPTIONID_LifeTime { return true }
+        if !SUBSCRIPTIONID_ExitOffer.isEmpty, paymentId == SUBSCRIPTIONID_ExitOffer { return true }
+        if paymentId == FallbackIAPConstants.lifetimeProductID || paymentId == FallbackIAPConstants.exitOfferProductID {
+            return true
+        }
+        let lower = paymentId.lowercased()
+        return lower.contains("lifetime") || lower.contains("exit")
     }
 
     func freeUsesLeft(_ feature: AIUsageFeature) -> Int {
@@ -166,6 +180,7 @@ final class AIUsageLimiter {
 
     func commit(_ feature: AIUsageFeature) {
         guard let payment = pending.removeValue(forKey: feature) else { return }
+        lastCommitted[feature] = payment
         switch payment {
         case .unlimited:
             break
@@ -175,6 +190,12 @@ final class AIUsageLimiter {
             _ = ChallengeWallet.spend(cost)
         }
         NotificationCenter.default.post(name: Self.usageChanged, object: nil, userInfo: ["feature": feature.rawValue])
+    }
+
+    /// True only when the latest successful access for `feature` consumed today's free use (not credits / unlimited).
+    func lastAccessWasFree(_ feature: AIUsageFeature) -> Bool {
+        if case .free = lastCommitted[feature] { return true }
+        return false
     }
 
     // MARK: Daily counter
@@ -342,6 +363,11 @@ final class AIUsageLimiter {
     func presentPlansPaywall() {
         DispatchQueue.main.async {
             guard let top = OnboardingAuthManager.topViewController() else { return }
+            // Exit / Lifetime already purchased — Main Paywall only shows "You Already Own Lifetime".
+            if self.ownsLifetimeAccess {
+                top.view.makeToast("You already have Lifetime access.", duration: 2.0, position: .top)
+                return
+            }
             guard NetworkManager.sharedInstance.isConnectedToInternet(),
                   PaywallTriggerPresenter.showMainPlans(from: top) else {
                 top.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)

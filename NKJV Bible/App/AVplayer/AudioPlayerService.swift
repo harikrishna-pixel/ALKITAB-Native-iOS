@@ -164,10 +164,17 @@ class AudioPlayerService  {
             player = AVPlayer(playerItem: item)
         }
 
-        DispatchQueue.main.async { [weak self] in
+        // Activate session and play immediately so a background chapter handoff is not lost
+        // waiting on a deferred main-queue block after the previous track ended.
+        let start: () -> Void = { [weak self] in
             guard let self = self, generation == self.streamGeneration else { return }
-            self.playAudios()
             self.setupAudioSession()
+            self.playAudios()
+        }
+        if Thread.isMainThread {
+            start()
+        } else {
+            DispatchQueue.main.async(execute: start)
         }
     }
     

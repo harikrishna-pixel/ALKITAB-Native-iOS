@@ -23,9 +23,11 @@ extension AIUsageLimiter {
         case .aiChat:
             return "\(left) of \(limit) daily free AI messages remaining"
         case .explanation:
-            // Toast copy under Get Explanation (e.g. "1 free explanation available").
-            return left == 1 ? "1 free explanation available" : "\(left) free explanations available"
+            // When free is used, AIRemainingLineView shows the "used · Get unlimited" upsell instead.
+            guard left > 0 else { return nil }
+            return "\(left) free explanation left today"
         case .chapterSummary:
+            guard left > 0 else { return nil }
             return compact ? "\(left) free summary left today" : "\(left) of \(limit) free chapter summary remaining today"
         case .quiz:
             return "\(left) of \(limit) free quiz generation remaining today"
@@ -167,13 +169,84 @@ final class AIRemainingLineView: UIView {
     }
 
     func refresh(tint: UIColor, textColor: UIColor) {
-        let text = AIUsageLimiter.shared.remainingText(feature, compact: compact)
-        isHidden = text == nil
-        label.text = text
-        label.textColor = textColor
         boltView.tintColor = tint
         bar.fillColor = tint
         bar.fraction = AIUsageLimiter.shared.remainingFraction(feature)
+
+        guard !AIUsageLimiter.shared.hasUnlimitedPlan else {
+            isHidden = true
+            isUserInteractionEnabled = false
+            return
+        }
+
+        // Free daily use already spent — show "Today's free … used · Get unlimited" (tappable).
+        // Lifetime / Exit already owns premium — no Main Paywall upsell.
+        if (feature == .explanation || feature == .chapterSummary),
+           AIUsageLimiter.shared.freeUsesLeft(feature) == 0 {
+            isHidden = false
+            let muted = UIColor(white: 0.55, alpha: 1)
+            if AIUsageLimiter.shared.ownsLifetimeAccess {
+                isUserInteractionEnabled = false
+                label.attributedText = nil
+                label.text = AIFreeUsedUpsellCopy.prefix(for: feature)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: " ·"))
+                label.textColor = muted
+            } else {
+                isUserInteractionEnabled = true
+                label.attributedText = AIFreeUsedUpsellCopy.attributed(
+                    feature: feature,
+                    fontSize: label.font.pointSize,
+                    muted: muted,
+                    link: tint
+                )
+                label.textColor = nil
+                ensureUpsellTap()
+            }
+            return
+        }
+
+        isUserInteractionEnabled = false
+        let text = AIUsageLimiter.shared.remainingText(feature, compact: compact)
+        isHidden = text == nil
+        label.attributedText = nil
+        label.text = text
+        label.textColor = textColor
+    }
+
+    private func ensureUpsellTap() {
+        if gestureRecognizers?.contains(where: { $0 is UITapGestureRecognizer }) == true { return }
+        let tap = UITapGestureRecognizer(target: self, action: #selector(openUnlimitedPaywall))
+        addGestureRecognizer(tap)
+    }
+
+    @objc private func openUnlimitedPaywall() {
+        AIUsageLimiter.shared.presentPlansPaywall()
+    }
+}
+
+/// Shared copy for Get Explanation / Get Summary free-used upsell.
+enum AIFreeUsedUpsellCopy {
+    static func prefix(for feature: AIUsageFeature) -> String {
+        feature == .chapterSummary
+            ? "Today's free summary used · "
+            : "Today's free explanation used · "
+    }
+
+    static let link = "Get unlimited"
+
+    static func attributed(feature: AIUsageFeature, fontSize: CGFloat, muted: UIColor, link: UIColor) -> NSAttributedString {
+        let prefix = Self.prefix(for: feature)
+        let full = prefix + Self.link
+        let result = NSMutableAttributedString(string: full)
+        result.addAttributes([
+            .font: UIFont.systemFont(ofSize: fontSize, weight: .regular),
+            .foregroundColor: muted
+        ], range: NSRange(location: 0, length: (prefix as NSString).length))
+        result.addAttributes([
+            .font: UIFont.systemFont(ofSize: fontSize, weight: .semibold),
+            .foregroundColor: link
+        ], range: NSRange(location: (prefix as NSString).length, length: (Self.link as NSString).length))
+        return result
     }
 }
 

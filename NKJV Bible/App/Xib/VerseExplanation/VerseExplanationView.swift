@@ -50,6 +50,8 @@ final class VerseExplanationView: UIView {
     private let footerDivider = UIView()
     private let askPrimaryButton = UIButton(type: .system)
     private let actionStack = UIStackView()
+    private let freeUsedUpsellLabel = UILabel()
+    private var freeUsedUpsellHeight: NSLayoutConstraint?
     private var footerIconHolders: [UIView] = []
     private var footerImageViews: [UIImageView] = []
     private var footerLabels: [UILabel] = []
@@ -204,6 +206,14 @@ final class VerseExplanationView: UIView {
         setActionsEnabled(false)
         refreshAskPrimaryTitle()
 
+        freeUsedUpsellLabel.translatesAutoresizingMaskIntoConstraints = false
+        freeUsedUpsellLabel.textAlignment = .center
+        freeUsedUpsellLabel.numberOfLines = 1
+        freeUsedUpsellLabel.isHidden = true
+        freeUsedUpsellLabel.isUserInteractionEnabled = true
+        freeUsedUpsellLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(freeUsedUpsellTapped)))
+        footerContainer.addSubview(freeUsedUpsellLabel)
+
         cardBottomConstraint = cardView.bottomAnchor.constraint(equalTo: bottomAnchor)
 
         // HTML `.sheet { top: 92px; bottom: 0 }` with `.sbody { flex:1; overflow-y:auto }`.
@@ -279,13 +289,50 @@ final class VerseExplanationView: UIView {
             actionStack.topAnchor.constraint(equalTo: askPrimaryButton.bottomAnchor, constant: usesOldOnboarding ? 6 : 14),
             actionStack.leadingAnchor.constraint(equalTo: footerContainer.leadingAnchor, constant: 8),
             actionStack.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor, constant: -8),
-            actionStack.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -sheetBottomInset),
-            actionStack.heightAnchor.constraint(equalToConstant: 68)
+            actionStack.heightAnchor.constraint(equalToConstant: 68),
+
+            freeUsedUpsellLabel.topAnchor.constraint(equalTo: actionStack.bottomAnchor, constant: 2),
+            freeUsedUpsellLabel.leadingAnchor.constraint(equalTo: footerContainer.leadingAnchor, constant: 16),
+            freeUsedUpsellLabel.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor, constant: -16),
+            freeUsedUpsellLabel.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -sheetBottomInset)
         ])
+
+        let upsellHeight = freeUsedUpsellLabel.heightAnchor.constraint(equalToConstant: 0)
+        upsellHeight.isActive = true
+        freeUsedUpsellHeight = upsellHeight
 
         if !usesOldOnboarding {
             askPrimaryButton.heightAnchor.constraint(equalToConstant: 0).isActive = true
         }
+    }
+
+    @objc private func freeUsedUpsellTapped() {
+        AIUsageLimiter.shared.presentPlansPaywall()
+    }
+
+    /// Footer line after a free daily explanation/summary — hidden for credit-funded or unlimited access.
+    private func refreshFreeUsedUpsell() {
+        let feature: AIUsageFeature = isSummaryContent ? .chapterSummary : .explanation
+        let show = !lastResultFromCache
+            && displayMode != .saved
+            && !AIUsageLimiter.shared.hasUnlimitedPlan
+            && !AIUsageLimiter.shared.ownsLifetimeAccess
+            && AIUsageLimiter.shared.lastAccessWasFree(feature)
+        freeUsedUpsellLabel.isHidden = !show
+        freeUsedUpsellHeight?.constant = show ? 18 : 0
+        guard show else {
+            freeUsedUpsellLabel.attributedText = nil
+            return
+        }
+        let night = themeColor == BGNightMode
+        let muted = night ? UIColor.white.withAlphaComponent(0.55) : UIColor(white: 0.55, alpha: 1)
+        let link = night ? UIColor.white : themeColor
+        freeUsedUpsellLabel.attributedText = AIFreeUsedUpsellCopy.attributed(
+            feature: feature,
+            fontSize: 12,
+            muted: muted,
+            link: link
+        )
     }
 
     private func refreshAskPrimaryTitle() {
@@ -553,6 +600,8 @@ final class VerseExplanationView: UIView {
         footerDivider.isHidden = false
         footerContainer.isHidden = false
         setActionsEnabled(false)
+        freeUsedUpsellLabel.isHidden = true
+        freeUsedUpsellHeight?.constant = 0
         loadingIndicator.startAnimating()
         loadingLabel.text = displayMode == .chapterSummary ? "Getting chapter summary…" : "Getting explanation…"
         loadingLabel.isHidden = false
@@ -569,6 +618,7 @@ final class VerseExplanationView: UIView {
         footerContainer.isHidden = false
         setActionsEnabled(true)
         renderStructuredContent(text)
+        refreshFreeUsedUpsell()
         scrollView.isScrollEnabled = true
         scrollView.showsVerticalScrollIndicator = true
         scrollView.flashScrollIndicators()

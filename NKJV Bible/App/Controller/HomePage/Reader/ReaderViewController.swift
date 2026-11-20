@@ -600,7 +600,11 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         let fileName = String(format: "%@_%@", UserDefaults.standard.string(forKey: "SelectedLanguage")!,UserDefaults.standard.string(forKey: "BookurlForAudio")!.replacingOccurrences(of: "/", with: ":"))
         
         self.ViewInit()
-        self.StopAv()
+        // While auto-continuing to the next chapter, do not StopAv here — that tears down the
+        // audio session and can suspend the app when minimized (iPhone 12) before AVplayOn runs.
+        if !ChapterPlaybackContinue.inProgress {
+            self.StopAv()
+        }
         
         
     }

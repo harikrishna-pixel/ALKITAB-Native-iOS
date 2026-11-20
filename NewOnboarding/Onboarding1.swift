@@ -302,10 +302,28 @@ struct UIKitNavigationHelper {
         OnboardingProgress.markCompleted()
 
         DispatchQueue.main.async {
-            guard let navigationController = topNavigationController() else { return }
-            let storyboard = UIStoryboard(name: "Main", bundle: nil)
-            if let readerVC = storyboard.instantiateViewController(withIdentifier: "ReaderViewController") as? ReaderViewController {
-                navigationController.pushViewController(readerVC, animated: true)
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let window = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first,
+                  let root = window.rootViewController else { return }
+
+            let replaceWithReader = {
+                let storyboard = UIStoryboard(name: "Main", bundle: nil)
+                guard let readerVC = storyboard.instantiateViewController(withIdentifier: "ReaderViewController") as? ReaderViewController else { return }
+                // No animation — animated replace flashed Intermediate/paywall content (Exit → Home glitch).
+                if let nav = root as? UINavigationController {
+                    nav.setViewControllers([readerVC], animated: false)
+                } else if let nav = root.navigationController {
+                    nav.setViewControllers([readerVC], animated: false)
+                }
+            }
+
+            // Clear any presented sheet/modal (paywall host / StoreKit leftover) so Exit cannot stay on top.
+            if root.presentedViewController != nil {
+                root.dismiss(animated: false) {
+                    DispatchQueue.main.async(execute: replaceWithReader)
+                }
+            } else {
+                replaceWithReader()
             }
         }
     }
