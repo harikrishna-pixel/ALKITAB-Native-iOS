@@ -131,10 +131,13 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
         }
     }
 
-    /// "1 of 1 free summary left today" under Get Summary. Hidden for unlimited plans.
+    /// "1 of 1 free summary left today" under Get Summary. Hidden for unlimited / Lifetime plans.
     func updateSummaryRemaining(visible: Bool) {
         guard let summaryButton = SummaryButton, let content = summaryButton.superview else { return }
-        if summaryRemaining == nil && visible {
+        let show = visible
+            && !AIUsageLimiter.shared.hasUnlimitedPlan
+            && !AIUsageLimiter.shared.ownsLifetimeAccess
+        if summaryRemaining == nil && show {
             let line = AIRemainingLineView(feature: .chapterSummary, fontSize: 10, compact: true, barHeight: 2)
             line.translatesAutoresizingMaskIntoConstraints = false
             content.addSubview(line)
@@ -147,7 +150,7 @@ class AdFrameCollectionViewCell: UICollectionViewCell {
             summaryRemaining = line
         }
         guard let line = summaryRemaining else { return }
-        guard visible else {
+        guard show else {
             line.isHidden = true
             return
         }

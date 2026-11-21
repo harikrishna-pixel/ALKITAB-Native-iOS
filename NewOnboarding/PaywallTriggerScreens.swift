@@ -523,8 +523,6 @@ private struct PaywallTriggerRoot: View {
         if onboarding {
             // Always show the exit offer; it shows its own loading / no-internet / retry price states.
             showExit = true
-        } else if onboarding {
-            finishOnboarding()
         } else {
             closeModal()
         }
@@ -537,7 +535,7 @@ private struct PaywallTriggerRoot: View {
 
     private func finishOnboarding() {
         UserDefaults.standard.set(true, forKey: "PremiumPayViewed")
-        // Hard redirect to Home/Reader so Exit paywall cannot remain after purchase OK.
+        // Hard redirect to Home/Reader so Exit paywall cannot remain.
         UIKitNavigationHelper.navigateToReaderViewController()
     }
 
@@ -2025,15 +2023,16 @@ private struct TriggerExitOffer: View {
 
     var body: some View {
         GeometryReader { geo in
-            // iPad: keep content high + pin X to top-trailing. Phone layout unchanged.
+            // iPad: window safe area (GeometryReader is 0 under ignoresSafeArea). Phone unchanged.
             let topPad = isPad
-                ? max(geo.safeAreaInsets.top, 16)
+                ? max(geo.safeAreaInsets.top, closeTopInset) + 12
                 : max(geo.safeAreaInsets.top, closeTopInset)
             let bottomPad = max(geo.safeAreaInsets.bottom, closeBottomInset)
-            // iPad: the night sky fills the whole screen (no empty dark band under it).
             let bgHeight = max(geo.size.height, 1)
-            let cardTop = isPad ? 28 : max(56, geo.size.height * 0.08)
-            let contentWidth = isPad ? min(geo.size.width, 560) : geo.size.width
+            // iPad: spread stack through the sky (less empty dune). Phone keeps referral gap.
+            let cardTop = isPad ? max(28, geo.size.height * 0.035) : max(56, geo.size.height * 0.08)
+            let contentWidth = isPad ? min(geo.size.width * 0.72, 640) : geo.size.width
+            let padGap = isPad ? max(18, geo.size.height * 0.028) : 0
 
             ZStack(alignment: .top) {
                 Color(hex: "070E1E")
@@ -2050,9 +2049,9 @@ private struct TriggerExitOffer: View {
 
                         VStack(spacing: 0) {
                             if isPad {
-                                // Room for the fixed top-trailing X only — no extra empty band.
+                                // Clear status bar + fixed X (34pt) so title never sits under system icons.
                                 Color.clear
-                                    .frame(height: topPad + 36)
+                                    .frame(height: topPad + 40)
                             } else {
                                 HStack {
                                     Spacer()
@@ -2062,80 +2061,69 @@ private struct TriggerExitOffer: View {
                                 .padding(.trailing, -6)
                             }
 
+                            if isPad { Spacer(minLength: padGap) }
+
                             Text("A ONE-TIME LIFETIME OPTION")
-                                .font(.system(size: 11, weight: .heavy))
+                                .font(.system(size: isPad ? 12 : 11, weight: .heavy))
                                 .kerning(1.1)
                                 .foregroundColor(Color(hex: "F7D57C"))
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 7)
+                                .padding(.horizontal, isPad ? 16 : 14)
+                                .padding(.vertical, isPad ? 8 : 7)
                                 .overlay(Capsule().stroke(Color(hex: "F7D57C"), lineWidth: 1))
                                 .padding(.top, isPad ? 0 : 10)
 
-                            VStack(spacing: 0) {
+                            VStack(spacing: isPad ? 2 : 0) {
                                 Text("Read ad-free,")
                                     .foregroundColor(.white)
                                 Text("for good")
                                     .foregroundColor(Color(hex: "F7D57C"))
+                                if isPad {
+                                    Capsule()
+                                        .fill(Color(hex: "F7D57C"))
+                                        .frame(width: 54, height: 3)
+                                        .padding(.top, 4)
+                                }
                             }
-                            .font(.system(size: isPad ? 38 : 34, weight: .bold, design: .serif))
+                            .font(.system(size: isPad ? 42 : 34, weight: .bold, design: .serif))
                             .multilineTextAlignment(.center)
-                            .padding(.top, isPad ? 10 : 14)
+                            .padding(.top, isPad ? 8 : 14)
 
                             Text("Pay once. No renewals. Yours to keep.")
-                                .font(.system(size: 15))
+                                .font(.system(size: isPad ? 16 : 15))
                                 .foregroundColor(Color(hex: "B9C6DE"))
-                                .padding(.top, 10)
+                                .padding(.top, isPad ? 8 : 10)
+
+                            if isPad { Spacer(minLength: padGap) }
 
                             if exitPhase == .ready {
-                            HStack(alignment: .center, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Lifetime")
-                                        .font(.system(size: 22, weight: .bold))
-                                        .foregroundColor(Color(hex: "12315C"))
-                                    Text("Ad-free reading · no AI")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(Color(hex: "5E7194"))
+                            Group {
+                                if isPad {
+                                    exitPriceCardPad
+                                } else {
+                                    exitPriceCardPhone
                                 }
-                                Spacer(minLength: 8)
-                                VStack(alignment: .trailing, spacing: 1) {
-                                    if showsOldPrice {
-                                        Text(model.life)
-                                            .font(.system(size: 13, weight: .semibold))
-                                            .strikethrough()
-                                            .foregroundColor(Color(hex: "8AA0C2"))
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.7)
-                                    }
-                                    Text(salePrice)
-                                        .font(.system(size: 32, weight: .heavy))
-                                        .foregroundColor(Color(hex: "C9862A"))
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.6)
-                                    Text("Special price")
-                                        .font(.system(size: 13, weight: .bold))
-                                        .foregroundColor(Color(hex: "C9862A"))
-                                }
-                                .layoutPriority(1)
                             }
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 16)
-                            .background(RoundedRectangle(cornerRadius: 18).fill(LinearGradient(colors: [Color.white, Color(hex: "F6EDD6")], startPoint: .top, endPoint: .bottom)))
-                            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color(hex: "E8B64C"), lineWidth: 1.5))
-                            // Referral gap under subtitle — card a bit lower (phone). Tighter on iPad.
                             .padding(.top, cardTop)
                             } else {
                                 exitStatusCard
                                     .padding(.top, cardTop)
                             }
 
-                            VStack(alignment: .leading, spacing: 12) {
-                                exitLine("One payment, no renewals")
-                                exitLine("No banners or interstitial ads")
-                                exitLine("Restore anytime with your Apple ID")
+                            if isPad {
+                                exitFeatureListPad
+                                    .padding(.top, 16)
+                            } else {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    exitLine("One payment, no renewals")
+                                    exitLine("No banners or interstitial ads")
+                                    exitLine("Restore anytime with your Apple ID")
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.top, 14)
+                                .padding(.leading, 8)
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 14)
-                            .padding(.leading, 8)
+
+                            if isPad { Spacer(minLength: padGap) }
 
                             Button(action: {
                                 guard NetworkManager.sharedInstance.isConnectedToInternet() else {
@@ -2145,23 +2133,23 @@ private struct TriggerExitOffer: View {
                                 model.buy(SUBSCRIPTIONID_ExitOffer.isEmpty ? SUBSCRIPTIONID_LifeTime : SUBSCRIPTIONID_ExitOffer)
                             }) {
                                 Text(exitPhase == .loading || exitPhase == .retrying ? "Loading price..." : "Get Lifetime Access")
-                                    .font(.system(size: 17, weight: .bold))
+                                    .font(.system(size: isPad ? 18 : 17, weight: .bold))
                                     .foregroundColor(Color(hex: "1B2536"))
                                     .frame(maxWidth: .infinity)
-                                    .frame(height: 56)
+                                    .frame(height: isPad ? 58 : 56)
                                     .background(RoundedRectangle(cornerRadius: 16).fill(LinearGradient(colors: [Color(hex: "F7D57C"), Color(hex: "D9A23A")], startPoint: .leading, endPoint: .trailing)))
                                     .opacity(exitPhase == .ready ? 1 : 0.55)
                             }
                             .buttonStyle(PlainButtonStyle())
                             .disabled(model.buying || salePrice.isEmpty || exitPhase != .ready)
                             .shadow(color: Color(hex: "F7D57C").opacity(0.35), radius: 14, y: 6)
-                            .padding(.top, 16)
+                            .padding(.top, isPad ? 18 : 16)
 
                             Text("One-time purchase. Nothing renews. Ad-free only; does not include AI.")
-                                .font(.system(size: 12))
+                                .font(.system(size: isPad ? 13 : 12))
                                 .foregroundColor(Color(hex: "8FA0BF"))
                                 .multilineTextAlignment(.center)
-                                .padding(.top, 10)
+                                .padding(.top, isPad ? 10 : 10)
 
                             HStack(spacing: 6) {
                                 Button("Restore Purchases", action: onRestore)
@@ -2170,19 +2158,21 @@ private struct TriggerExitOffer: View {
                                 Text("·")
                                 Button("Privacy") { legal(PrivacyURL) }
                             }
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: isPad ? 13 : 12, weight: .semibold))
                             .foregroundColor(Color(hex: "B9C6DE"))
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                             .buttonStyle(PlainButtonStyle())
-                            .padding(.top, 12)
-                            .padding(.bottom, bottomPad + 8)
+                            .padding(.top, isPad ? 12 : 12)
+                            .padding(.bottom, bottomPad + (isPad ? 24 : 8))
+
+                            if isPad { Spacer(minLength: padGap) }
                         }
-                        .padding(.horizontal, isPad ? 32 : 24)
+                        .padding(.horizontal, isPad ? 40 : 24)
                         .frame(width: contentWidth, alignment: .top)
                         .frame(maxWidth: .infinity, alignment: .top)
-                        // iPad only: centre the offer on the full-screen background. Phone keeps minHeight 0.
-                        .frame(minHeight: isPad ? geo.size.height : 0, alignment: .center)
+                        // iPad: fill sky height so Spacers absorb blank dune. Phone unchanged.
+                        .frame(minHeight: isPad ? geo.size.height : 0, alignment: isPad ? .top : .center)
                     }
                 }
 
@@ -2192,13 +2182,131 @@ private struct TriggerExitOffer: View {
                         exitCloseButton
                     }
                     .padding(.top, topPad)
-                    .padding(.trailing, 20)
+                    .padding(.trailing, 24)
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
             .clipped()
         }
         .ignoresSafeArea()
+    }
+
+    /// Phone price card — unchanged from prior Exit Offer layout.
+    private var exitPriceCardPhone: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Lifetime")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(Color(hex: "12315C"))
+                Text("Ad-free reading · no AI")
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "5E7194"))
+            }
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 1) {
+                if showsOldPrice {
+                    Text(model.life)
+                        .font(.system(size: 13, weight: .semibold))
+                        .strikethrough()
+                        .foregroundColor(Color(hex: "8AA0C2"))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+                Text(salePrice)
+                    .font(.system(size: 32, weight: .heavy))
+                    .foregroundColor(Color(hex: "C9862A"))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Text("Special price")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(Color(hex: "C9862A"))
+            }
+            .layoutPriority(1)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(RoundedRectangle(cornerRadius: 18).fill(LinearGradient(colors: [Color.white, Color(hex: "F6EDD6")], startPoint: .top, endPoint: .bottom)))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color(hex: "E8B64C"), lineWidth: 1.5))
+    }
+
+    /// iPad brand card: gold divider + special-price pill, denser padding.
+    private var exitPriceCardPad: some View {
+        HStack(alignment: .center, spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Lifetime")
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundColor(Color(hex: "12315C"))
+                Text("Ad-free reading · no AI")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(hex: "5E7194"))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Rectangle()
+                .fill(Color(hex: "E8B64C").opacity(0.85))
+                .frame(width: 1.5, height: 56)
+                .padding(.horizontal, 18)
+
+            VStack(alignment: .trailing, spacing: 4) {
+                if showsOldPrice {
+                    Text(model.life)
+                        .font(.system(size: 14, weight: .semibold))
+                        .strikethrough()
+                        .foregroundColor(Color(hex: "8AA0C2"))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+                Text(salePrice)
+                    .font(.system(size: 34, weight: .heavy))
+                    .foregroundColor(Color(hex: "C9862A"))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Text("Special price")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(Color(hex: "C9862A"))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Capsule().stroke(Color(hex: "E8B64C"), lineWidth: 1))
+            }
+            .layoutPriority(1)
+        }
+        .padding(.horizontal, 22)
+        .padding(.vertical, 18)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(LinearGradient(colors: [Color.white, Color(hex: "F6EDD6")], startPoint: .top, endPoint: .bottom))
+                .shadow(color: Color.black.opacity(0.18), radius: 16, y: 8)
+        )
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color(hex: "E8B64C"), lineWidth: 1.5))
+    }
+
+    private var exitFeatureListPad: some View {
+        VStack(spacing: 0) {
+            exitFeatureRowPad("One payment, no renewals", showDivider: true)
+            exitFeatureRowPad("No banners or interstitial ads", showDivider: true)
+            exitFeatureRowPad("Restore anytime with your Apple ID", showDivider: false)
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private func exitFeatureRowPad(_ text: String, showDivider: Bool) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "F7D57C"))
+                Text(text)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Color(hex: "DCE7F8"))
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 11)
+            if showDivider {
+                Rectangle()
+                    .fill(Color.white.opacity(0.12))
+                    .frame(height: 1)
+            }
+        }
     }
 
     private var exitCloseButton: some View {
@@ -2222,7 +2330,8 @@ private struct TriggerExitOffer: View {
             .first { $0.isKeyWindow }
         let inset = window?.safeAreaInsets.top ?? 0
         if inset > 0 { return inset }
-        return UIDevice.current.userInterfaceIdiom == .pad ? 24 : 54
+        // iPad status bar ~20–24; keep X clearly under battery / Wi‑Fi.
+        return UIDevice.current.userInterfaceIdiom == .pad ? 36 : 54
     }
 
     private var closeBottomInset: CGFloat {

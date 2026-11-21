@@ -1,4 +1,4 @@
-//
+
 //  SearchViewController.swift
 //  NKJV Bible
 //
@@ -8,7 +8,7 @@
 import UIKit
 import IQKeyboardManager
 
-class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDataSource,SearchDelegate {
+class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, SearchDelegate, UIGestureRecognizerDelegate {
     
     
 
@@ -117,12 +117,22 @@ class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDa
         let config = IQBarButtonItemConfiguration(title: "Search", action: #selector(self.doneAction(_:)))
         self.SearchTxt.addKeyboardToolbar(withTarget: self, titleText: nil , rightBarButtonConfiguration: config, previousBarButtonConfiguration: nil, nextBarButtonConfiguration: nil)
         self.SearchTxt.addTarget(self, action: #selector(searchTextChanged), for: .editingChanged)
-        
+
+        // Tap results / outside the search field closes the keyboard (Search button still works as before).
+        let dismissTap = UITapGestureRecognizer(target: self, action: #selector(dismissSearchKeyboard))
+        dismissTap.cancelsTouchesInView = false
+        dismissTap.delegate = self
+        view.addGestureRecognizer(dismissTap)
         
         self.PositionTOBook()
         self.SearchViewCreate()
         self.setupSearchSpinner(theme: Themecolor)
         
+    }
+
+    @objc private func dismissSearchKeyboard() {
+        guard SearchTxt.isFirstResponder else { return }
+        SearchTxt.resignFirstResponder()
     }
 
     @objc private func searchTextChanged() {
@@ -315,6 +325,7 @@ func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let results = (query.isEmpty ? [] : self.arraySearchList)
         if let existing = self.SearchCollectionMVC, existing.superview === self.SearchListFrame {
             existing.updateVerseSearchResults(results, query: query)
+            existing.SearchCollectionVu?.keyboardDismissMode = .onDrag
             return
         }
         self.SearchCollectionMVC?.removeFromSuperview()
@@ -324,6 +335,7 @@ func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         self.SearchCollectionMVC!.coreTitle = "search_PH"
         self.SearchCollectionMVC!.Searchstring = query
         self.SearchCollectionMVC!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        self.SearchCollectionMVC!.SearchCollectionVu?.keyboardDismissMode = .onDrag
         self.SearchListFrame!.addSubview(self.SearchCollectionMVC!)
         self.SearchListFrame!.backgroundColor! = UIColor.clear
     }
@@ -331,7 +343,7 @@ func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
     
     
     func popupvuew(SelectedVerse:String) {
-        
+        SearchTxt.resignFirstResponder()
         self.myView = UIView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height))
         self.view.addSubview(self.myView!)
         self.PopupMenuView = PopupMenu.fromNib(named: "PopupMenu")
@@ -480,6 +492,14 @@ extension  SearchViewController {
             self.BibleBookListSeperated.append(seperate_Array[0])
         }
         invalidateSearchCorpusCache()
+    }
+
+    /// Keep the keyboard when the user taps the search field / search bar itself.
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        guard let touched = touch.view else { return true }
+        if touched === SearchTxt || touched.isDescendant(of: SearchTxt) { return false }
+        if touched.isDescendant(of: Searchbar) { return false }
+        return true
     }
 }
 

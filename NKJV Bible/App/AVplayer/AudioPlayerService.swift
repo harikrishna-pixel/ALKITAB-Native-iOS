@@ -229,6 +229,9 @@ class AudioPlayerService  {
         nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = item.asset.duration.seconds
         let rate = player?.rate ?? 0
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = rate
+        if let artwork = NowPlayingArtwork.mediaItem() {
+            nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
+        }
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
         MPNowPlayingInfoCenter.default().playbackState = rate > 0 ? .playing : .paused
@@ -328,5 +331,48 @@ class AudioPlayerService  {
     
     }
     
+}
+
+/// Lock Screen / Control Center artwork from the current App Icon (updates when the logo asset changes).
+enum NowPlayingArtwork {
+    private static var cached: MPMediaItemArtwork?
+
+    static func mediaItem() -> MPMediaItemArtwork? {
+        if let cached { return cached }
+        guard let image = appIconImage() else { return nil }
+        let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+        cached = artwork
+        return artwork
+    }
+
+    private static func appIconImage() -> UIImage? {
+        if let image = iconFromInfoPlist() { return image }
+        // Generated icon names from the AppIcon asset catalog after build.
+        for name in ["AppIcon60x60", "AppIcon76x76", "AppIcon83x83", "AppIcon"] {
+            if let image = UIImage(named: name) { return image }
+        }
+        for resource in ["AppIcon60x60@2x", "AppIcon60x60@3x", "AppIcon76x76@2x~ipad"] {
+            if let url = Bundle.main.url(forResource: resource, withExtension: "png"),
+               let image = UIImage(contentsOfFile: url.path) {
+                return image
+            }
+        }
+        return nil
+    }
+
+    private static func iconFromInfoPlist() -> UIImage? {
+        for key in ["CFBundleIcons", "CFBundleIcons~ipad"] {
+            guard let icons = Bundle.main.object(forInfoDictionaryKey: key) as? [String: Any],
+                  let primary = icons["CFBundlePrimaryIcon"] as? [String: Any],
+                  let files = primary["CFBundleIconFiles"] as? [String] else { continue }
+            for name in files.reversed() {
+                let trimmed = name.replacingOccurrences(of: ".png", with: "")
+                if let image = UIImage(named: trimmed) ?? UIImage(named: name) {
+                    return image
+                }
+            }
+        }
+        return nil
+    }
 }
 

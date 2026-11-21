@@ -700,14 +700,8 @@ struct BibleSubscriptionView: View {
 
         let host = visiblePaywallController()
         if isPresentedFromOnboarding {
-            OnboardingProgress.markCompleted()
-            let readerVC = kStoryboardMainIphone.instantiateViewController(withIdentifier: "ReaderViewController") as! ReaderViewController
-            let nav = host?.navigationController ?? keyNavigationController()
-            if let nav = nav {
-                nav.setViewControllers([readerVC], animated: true)
-                return
-            }
-            performNavigationToReaderWithHome()
+            // Same hard Home redirect as Exit Close (animated stack replace caused the glitch).
+            UIKitNavigationHelper.navigateToReaderViewController()
             return
         }
 
@@ -801,10 +795,10 @@ struct BibleSubscriptionView: View {
                     topVC = presented
                 }
                 
-                // If there's a presented view controller, dismiss it first
+                // If there's a presented view controller, dismiss it first — no delay (delay caused Exit → Home glitch).
                 if topVC != rootVC {
                     topVC.dismiss(animated: false) {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        DispatchQueue.main.async {
                             self.performNavigationToReaderWithHome()
                         }
                     }
@@ -815,48 +809,22 @@ struct BibleSubscriptionView: View {
             performNavigationToReaderWithHome()
         } else {
             // Coming from ReaderVC or SlideCard - just dismiss smoothly
-            // OLD CODE: Dismiss without proper animation caused abrupt transition
-            
-            // NEW CODE: Use smooth default animation for dismiss
             if let dismissHandler = dismissHandler {
-                // Use custom dismiss handler with smooth animation
                 dismissHandler()
-            } else {
-                // Fallback: dismiss the hosting controller with smooth animation
-                if let rootVC = window.rootViewController {
-                    var topVC = rootVC
-                    while let presented = topVC.presentedViewController {
-                        topVC = presented
-                    }
-                    
-                    // Use default smooth animation (slide down)
-                    topVC.dismiss(animated: true, completion: nil)
+            } else if let rootVC = window.rootViewController {
+                var topVC = rootVC
+                while let presented = topVC.presentedViewController {
+                    topVC = presented
                 }
+                // Mid-session paywall: keep the normal slide-down dismiss.
+                topVC.dismiss(animated: true, completion: nil)
             }
         }
     }
     
     private func performNavigationToReaderWithHome() {
-        OnboardingProgress.markCompleted()
-
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first else {
-            return
-        }
-        
-        let readerVC = kStoryboardMainIphone.instantiateViewController(withIdentifier: "ReaderViewController") as! ReaderViewController
-        
-        if let navController = window.rootViewController as? UINavigationController {
-            // OLD CODE: Navigation showed ReaderSourceViewController briefly before home
-            // The issue was that ReaderVC's viewDidLoad sets up default view (daily verse)
-            // before we could call CallHomeView(), causing a flicker
-            
-            // NEW CODE: Set view controllers without animation
-            // The ReaderVC's viewDidLoad already handles showing home by default
-            // (it sets SelectedTab = "0" and calls CallHomeView())
-            // So we don't need to do anything extra here
-            navController.setViewControllers([readerVC], animated: false)
-        }
+        // One shared path — full window root replace (no stack flash).
+        UIKitNavigationHelper.navigateToReaderViewController()
     }
     
     // MARK: - Exit Offer First Install Logic

@@ -74,7 +74,9 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     private var explanationRemainingTop: NSLayoutConstraint?
     private var explanationRemainingHeightConstraint: NSLayoutConstraint?
     private var explanationRemainingExtraHeight: CGFloat {
-        AIUsageLimiter.shared.hasUnlimitedPlan ? 0 : Self.explanationRemainingGap + Self.explanationRemainingHeight
+        (AIUsageLimiter.shared.hasUnlimitedPlan || AIUsageLimiter.shared.ownsLifetimeAccess)
+            ? 0
+            : Self.explanationRemainingGap + Self.explanationRemainingHeight
     }
     
     var SelectedColor:Int = -1
@@ -395,7 +397,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
 
     private func refreshExplanationRemaining() {
         guard let remaining = explanationRemainingView else { return }
-        let shows = !AIUsageLimiter.shared.hasUnlimitedPlan
+        let shows = !AIUsageLimiter.shared.hasUnlimitedPlan && !AIUsageLimiter.shared.ownsLifetimeAccess
         explanationRemainingTop?.constant = shows ? Self.explanationRemainingGap : 0
         explanationRemainingHeightConstraint?.constant = shows ? Self.explanationRemainingHeight : 0
         let tint = Themecolor ?? PrimaryColor

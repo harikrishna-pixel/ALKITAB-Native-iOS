@@ -2,3 +2,4 @@
 NewOnboarding/AuthHubSecrets.swift
 NewOnboarding/AuthHub.env
 Secrets.swift
+DerivedDataBuild/

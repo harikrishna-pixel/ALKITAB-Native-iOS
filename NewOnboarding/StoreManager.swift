@@ -1251,19 +1251,27 @@ class StoreManager: NSObject, ObservableObject, SKProductsRequestDelegate, SKPay
     
     // MARK: - Helper Methods
 
-    /// Shows a short centered loader, then the success toast and `onPurchaseSuccess`.
+    /// Shows a short centered loader, then success UI and `onPurchaseSuccess`.
     private func presentPurchaseSuccessAfterLoader() {
         onPurchaseVerified?()
+        let boughtId = productID
+        let showPlanCard = PremiumActivatedPresenter.kind(for: boughtId) != nil
         let host = purchaseToastHost()
         host?.makeToastActivity(.center)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             host?.hideToastActivity()
-            self?.showPurchaseToast()
-            self?.onPurchaseSuccess?()
+            if showPlanCard {
+                // Navigate Home (onboarding) / dismiss paywall first, then plan success card.
+                self?.onPurchaseSuccess?()
+                PremiumActivatedPresenter.presentAfterPurchase(productId: boughtId)
+            } else {
+                self?.showPurchaseToast()
+                self?.onPurchaseSuccess?()
+            }
         }
     }
 
-    /// Matches BibleSubscriptionView Pro paywall success toast.
+    /// Non Month/Year/Lifetime/Exit buys keep the short success toast.
     private func showPurchaseToast() {
         purchaseToastHost()?.makeToast("Purchased Successfully", duration: 2.0, position: .top)
     }

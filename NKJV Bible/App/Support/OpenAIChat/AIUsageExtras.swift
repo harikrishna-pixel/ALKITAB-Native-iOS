@@ -14,9 +14,9 @@ import Toast_Swift
 
 extension AIUsageLimiter {
 
-    /// "1 of 1 free explanation remaining today". Nil for unlimited plans.
+    /// "1 of 1 free explanation remaining today". Nil for unlimited plans and Lifetime / Exit (no free-limit UI).
     func remainingText(_ feature: AIUsageFeature, compact: Bool = false) -> String? {
-        guard !hasUnlimitedPlan else { return nil }
+        guard !hasUnlimitedPlan, !ownsLifetimeAccess else { return nil }
         let left = freeUsesLeft(feature)
         let limit = feature.dailyFreeLimit
         switch feature {
@@ -173,35 +173,27 @@ final class AIRemainingLineView: UIView {
         bar.fillColor = tint
         bar.fraction = AIUsageLimiter.shared.remainingFraction(feature)
 
-        guard !AIUsageLimiter.shared.hasUnlimitedPlan else {
+        guard !AIUsageLimiter.shared.hasUnlimitedPlan,
+              !AIUsageLimiter.shared.ownsLifetimeAccess else {
             isHidden = true
             isUserInteractionEnabled = false
             return
         }
 
         // Free daily use already spent — show "Today's free … used · Get unlimited" (tappable).
-        // Lifetime / Exit already owns premium — no Main Paywall upsell.
         if (feature == .explanation || feature == .chapterSummary),
            AIUsageLimiter.shared.freeUsesLeft(feature) == 0 {
             isHidden = false
+            isUserInteractionEnabled = true
             let muted = UIColor(white: 0.55, alpha: 1)
-            if AIUsageLimiter.shared.ownsLifetimeAccess {
-                isUserInteractionEnabled = false
-                label.attributedText = nil
-                label.text = AIFreeUsedUpsellCopy.prefix(for: feature)
-                    .trimmingCharacters(in: CharacterSet(charactersIn: " ·"))
-                label.textColor = muted
-            } else {
-                isUserInteractionEnabled = true
-                label.attributedText = AIFreeUsedUpsellCopy.attributed(
-                    feature: feature,
-                    fontSize: label.font.pointSize,
-                    muted: muted,
-                    link: tint
-                )
-                label.textColor = nil
-                ensureUpsellTap()
-            }
+            label.attributedText = AIFreeUsedUpsellCopy.attributed(
+                feature: feature,
+                fontSize: label.font.pointSize,
+                muted: muted,
+                link: tint
+            )
+            label.textColor = nil
+            ensureUpsellTap()
             return
         }
 
@@ -593,6 +585,116 @@ private struct AIDisclaimerView: View {
 
 // MARK: - Use credits pop-up
 
+/// One-time notice after Exit / Lifetime purchase when the user first opens an AI feature.
+enum LifetimeAIAccessNotice {
+    private static let shownKey = "LifetimeAIAccessNoticeShown"
+    private static var isPresenting = false
+    private static var pendingThen: (() -> Void)?
+
+    static var shouldShow: Bool {
+        AIUsageLimiter.shared.ownsLifetimeAccess
+            && !UserDefaults.standard.bool(forKey: shownKey)
+    }
+
+    /// Shows the Lifetime plan card once, then runs `then`. Safe to call from any AI entry.
+    static func presentIfNeeded(then: @escaping () -> Void = {}) {
+        DispatchQueue.main.async {
+            guard shouldShow else {
+                then()
+                return
+            }
+            if isPresenting {
+                let previous = pendingThen
+                pendingThen = {
+                    previous?()
+                    then()
+                }
+                return
+            }
+            guard let top = OnboardingAuthManager.topViewController() else {
+                then()
+                return
+            }
+            if top.presentedViewController != nil {
+                then()
+                return
+            }
+            isPresenting = true
+            weak var hostRef: UIViewController?
+            let finish: () -> Void = {
+                UserDefaults.standard.set(true, forKey: shownKey)
+                isPresenting = false
+                let chained = pendingThen
+                pendingThen = nil
+                let run = {
+                    then()
+                    chained?()
+                }
+                guard let host = hostRef else {
+                    run()
+                    return
+                }
+                host.dismiss(animated: true) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: run)
+                }
+            }
+            let host = UIHostingController(rootView: LifetimeAIAccessNoticeView(onGotIt: finish))
+            host.modalPresentationStyle = .overFullScreen
+            host.modalTransitionStyle = .crossDissolve
+            host.view.backgroundColor = .clear
+            hostRef = host
+            top.view.endEditing(true)
+            top.present(host, animated: true)
+        }
+    }
+}
+
+private struct LifetimeAIAccessNoticeView: View {
+    var onGotIt: () -> Void
+    private let accent = Color(hex: "1C46B2")
+    private let ink = Color(hex: "12315C")
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.28)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                Text("You’re on the Lifetime Plan!")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(accent)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("Enjoy an ad-free Bible reading experience with Lifetime access. AI-powered features use credits.")
+                    .font(.system(size: 15))
+                    .foregroundColor(ink)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 14)
+
+                Button(action: onGotIt) {
+                    Text("Got it")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(accent))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.top, 22)
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 26)
+            .padding(.bottom, 20)
+            .frame(maxWidth: 360)
+            .background(RoundedRectangle(cornerRadius: 22).fill(Color.white))
+            .shadow(color: Color.black.opacity(0.14), radius: 18, x: 0, y: 8)
+            .padding(.horizontal, 28)
+        }
+    }
+}
+
 /// "Use 20 credits?" card shown after today's free use is gone and the wallet has enough credits.
 enum AICreditsOffer {
 
@@ -899,6 +1001,7 @@ enum AIFeatureReminder {
         guard card == nil,
               UserDefaults.standard.string(forKey: dayKey) != today,
               !limiter.hasUnlimitedPlan,
+              !limiter.ownsLifetimeAccess,
               limiter.freeUsesLeft(.explanation) > 0 else { return }
         UserDefaults.standard.set(today, forKey: dayKey)
 

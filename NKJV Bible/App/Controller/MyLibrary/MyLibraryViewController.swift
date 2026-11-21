@@ -89,7 +89,7 @@ class MyLibraryViewController: UIViewController, MyLibraryDelegate, UIGestureRec
         
         self.status = PHPhotoLibrary.authorizationStatus()
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLibraryBannerSafeArea()
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
                 
         let savedTab = UserDefaults.standard.integer(forKey: selectedTabKey)
@@ -114,6 +114,39 @@ class MyLibraryViewController: UIViewController, MyLibraryDelegate, UIGestureRec
         
         
         
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLibraryBannerSafeArea()
+    }
+
+    /// Live top inset — frozen `StatusbarHeight` is often 0 and shrinks notch banners to 70.
+    private var libraryTopInset: CGFloat {
+        if view.safeAreaInsets.top > 0 { return view.safeAreaInsets.top }
+        if let w = view.window, w.safeAreaInsets.top > 0 { return w.safeAreaInsets.top }
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+        return (windows.first(where: { $0.isKeyWindow }) ?? windows.first)?.safeAreaInsets.top ?? 0
+    }
+
+    /// Same bands as Reader (90 / 70 / iPad 80); notch / Island get top + room for the title.
+    private var libraryBannerHeight: CGFloat {
+        if UIDevice.current.userInterfaceIdiom == .pad { return 80 }
+        let top = libraryTopInset
+        if top > 30 { return max(90, top + 46) }
+        if top > 0 { return 70 }
+        return 90
+    }
+
+    private func applyLibraryBannerSafeArea() {
+        let height = libraryBannerHeight
+        guard abs(BannerConstrain.constant - height) > 0.5 else { return }
+        UIView.performWithoutAnimation {
+            BannerConstrain.constant = height
+            view.layoutIfNeeded()
+        }
     }
     
     

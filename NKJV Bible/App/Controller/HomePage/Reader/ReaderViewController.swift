@@ -227,8 +227,8 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         AVswitch.addTarget(self, action: #selector(onSliderValChanged(slider:event:)), for: [.valueChanged, .touchDragInside, .touchDragOutside, .touchUpInside, .touchUpOutside])
         
         self.PageConfig()
-        self.BannerConstrain.constant = FrameConstrains // (StatusbarHeight > 30 ? 90:70)
-        self.BottomMenyConstrain.constant = StatusbarHeight
+        // Old FrameConstrains / bottom-inset chrome — values come from live safe area (all devices).
+        applyReaderChromeSafeArea()
         
         
         self.SpeakVu.ViewShadow(20, color: .gray)
@@ -307,6 +307,8 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     }
     
     override func viewDidAppear(_ animated: Bool) {
+        // Safe area is reliable once on-screen (fixes Exit → Home chrome on all devices).
+        applyReaderChromeSafeArea()
         PaywallTriggerGate.shared.flush()
 
         
@@ -372,6 +374,69 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         balanceReaderHeaderIcons()
+        applyReaderChromeSafeArea()
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyReaderChromeSafeArea()
+    }
+
+    /// Live top inset. Global `StatusbarHeight` is frozen at launch (often 0) and breaks all devices.
+    private var readerTopInset: CGFloat {
+        if view.safeAreaInsets.top > 0 { return view.safeAreaInsets.top }
+        return readerKeyWindowInsets.top
+    }
+
+    /// Live bottom (home indicator) inset — never use status-bar / top height here.
+    private var readerBottomInset: CGFloat {
+        if view.safeAreaInsets.bottom > 0 { return view.safeAreaInsets.bottom }
+        return readerKeyWindowInsets.bottom
+    }
+
+    private var readerKeyWindowInsets: UIEdgeInsets {
+        if let w = view.window { return w.safeAreaInsets }
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+        return (windows.first(where: { $0.isKeyWindow }) ?? windows.first)?.safeAreaInsets ?? .zero
+    }
+
+    /// Same bands as old `FrameConstrains` (90 / 70 / iPad 80), with a floor so Dynamic Island
+    /// / notch devices never leave the header row under the status bar (icons are bottom-pinned).
+    private var readerBannerHeight: CGFloat {
+        if UIDevice.current.userInterfaceIdiom == .pad { return 80 }
+        let top = readerTopInset
+        if top > 30 { return max(90, top + 46) }
+        if top > 0 { return 70 }
+        return 90
+    }
+
+    /// Bottom tab inset: live home-indicator. Old `BottomMenyConstrain = StatusbarHeight` used the
+    /// TOP inset and floated the tab on every notched phone.
+    private var readerTabBottomInset: CGFloat {
+        let bottom = readerBottomInset
+        if bottom > 0 { return bottom }
+        return readerTopInset > 30 ? 34 : 20
+    }
+
+    /// Apply top + bottom chrome from live safe area. No animation (avoids Exit → Home jump).
+    private func applyReaderChromeSafeArea() {
+        let banner = readerBannerHeight
+        let bottom = readerTabBottomInset
+        let needsBanner = abs(BannerConstrain.constant - banner) > 0.5
+        let needsBottom = BottomMenyConstrain.constant >= 0 && abs(BottomMenyConstrain.constant - bottom) > 0.5
+        guard needsBanner || needsBottom else { return }
+        UIView.performWithoutAnimation {
+            if needsBanner { BannerConstrain.constant = banner }
+            if needsBottom {
+                BottomMenyConstrain.constant = bottom
+                if isAudioPlayerOpen {
+                    PLayerConstrain.constant = openPlayerBottomConstant()
+                }
+            }
+            view.layoutIfNeeded()
+        }
     }
 
     /// Places the reading header on one line: book, then chapter beside it, search and night mode on the right.
@@ -581,7 +646,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         }
         
         self.topBannerConstant.constant = 0.0
-        self.BottomMenyConstrain.constant = StatusbarHeight
+        self.BottomMenyConstrain.constant = readerTabBottomInset
         self.VeresViewBottom.constant = -72.0
         
         
@@ -612,7 +677,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     
     
     func hideBottomMenu(Status:Bool)  {
-        self.BottomMenyConstrain.constant =  Status ? -70:StatusbarHeight
+        self.BottomMenyConstrain.constant = Status ? -70 : readerTabBottomInset
     }
     
     func PageConfig() {
@@ -1055,7 +1120,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     /// Show top + bottom chrome only. Does not open/close Speak/Audio or the audio player.
     func showBottomChrome() {
         (App_Protocol.delegateReaderSource as? ReaderSourceViewController)?.resetScrollChromeHiddenState()
-        ConstrainChange(Top: 0.0, bottom: StatusbarHeight)
+        ConstrainChange(Top: 0.0, bottom: readerTabBottomInset)
     }
 
     /// Keeps the chapter above the audio player, with a gap, whenever that player is open.
@@ -2240,15 +2305,20 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         // No animation — Mark as Read / Get Summary must not slide or jump at chapter bottom.
         let resting = (Top < 0.0 ? 0.0 : -72.0)
         self.verseBottomWithoutPlayer = resting
+        // Showing chrome: use live bottom inset (callers may still pass frozen StatusbarHeight).
+        let resolvedBottom = bottom < 0 ? bottom : readerTabBottomInset
         UIView.performWithoutAnimation {
             self.topBannerConstant.constant = Top
-            self.BottomMenyConstrain.constant = bottom
+            self.BottomMenyConstrain.constant = resolvedBottom
+            if Top >= 0 {
+                self.BannerConstrain.constant = self.readerBannerHeight
+            }
             // Keep open audio player stacked above the tab bar when chrome shows/hides.
             if self.isAudioPlayerOpen {
                 self.PLayerConstrain.constant = self.openPlayerBottomConstant()
             }
             self.VeresViewBottom.constant = self.verseContentBottom(resting: resting)
-            self.MenuConstrain.constant = bottom >= 20 ? 20 : 0
+            self.MenuConstrain.constant = resolvedBottom >= 20 ? 20 : 0
             self.view.layoutIfNeeded()
         }
     }

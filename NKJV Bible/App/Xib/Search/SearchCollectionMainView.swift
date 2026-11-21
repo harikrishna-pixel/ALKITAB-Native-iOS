@@ -442,6 +442,12 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        // Keyword search: tap verse → open Reader on that verse (no bottom popup).
+        // ⋯ MenuBtn alone still opens PopupMenu via CallMenu.
+        if SearchTxt.count != 0, indexPath.row < SearchTxt.count {
+            openSearchResultVerse(SearchTxt[indexPath.row])
+            return
+        }
         guard coreTitle == "Explanations", corevalueReverced.count > indexPath.row else { return }
         let previous = expandedExplanationIndex
         if previous == indexPath.row {
@@ -456,6 +462,18 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
         collectionView.performBatchUpdates({
             collectionView.reloadItems(at: paths)
         }, completion: nil)
+    }
+
+    /// Same destination as PopupMenu “Read”, without showing the bottom sheet.
+    private func openSearchResultVerse(_ item: String) {
+        let parts = item.components(separatedBy: "_")
+        guard parts.count > 1 else { return }
+        let bookRef = parts[1].replacingOccurrences(of: "-", with: ":")
+        UserDefaults.standard.set(bookRef, forKey: "readdata")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            App_Protocol.delegateReaderSource?.navigateToSelectedVerse()
+        }
+        App_Protocol.delegateSearch?.navigateMainClass()
     }
     
     

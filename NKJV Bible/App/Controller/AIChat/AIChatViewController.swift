@@ -170,6 +170,8 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     private let backButton = UIButton(type: .system)
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let emptyStateView = UIView()
+    /// Fixed bottom bar: CONTINUE chips + composer. Does not scroll with the chat.
+    private let bottomChrome = UIView()
     private let suggestionContainer = UIView()
     private let suggestionStack = UIStackView()
     private let composerContainer = UIView()
@@ -181,9 +183,6 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     private var bannerHeightConstraint: NSLayoutConstraint?
     private var composerBottomConstraint: NSLayoutConstraint?
     private var inputHeightConstraint: NSLayoutConstraint?
-    private var suggestionTrailingConstraint: NSLayoutConstraint?
-    private var tableAboveSuggestionsConstraint: NSLayoutConstraint?
-    private var tableAboveComposerConstraint: NSLayoutConstraint?
     private var verseSuggestionFooterWidth: CGFloat = 0
     private var contextHeaderShowsGreeting: Bool?
     private var starterFooter: UIView?
@@ -224,6 +223,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         IQKeyboardManager.shared().isEnabled = false
         refreshSendLock()
         restoreChatLayout()
+        LifetimeAIAccessNotice.presentIfNeeded()
     }
 
     @objc private func appDidBecomeActive() {
@@ -254,8 +254,8 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     private func refreshFreeCount() {
-        // Monthly / Yearly unlimited: no line under the composer (iPhone and iPad).
-        if AIUsageLimiter.shared.hasUnlimitedPlan {
+        // Monthly / Yearly unlimited, or Lifetime / Exit: no free-limit line under the composer.
+        if AIUsageLimiter.shared.hasUnlimitedPlan || AIUsageLimiter.shared.ownsLifetimeAccess {
             freeCountLabel.attributedText = nil
             return
         }
@@ -263,22 +263,15 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         let noun = left > 1 ? "messages" : "message"
         let grey = isNight ? UIColor.white.withAlphaComponent(0.55) : UIColor(white: 0.45, alpha: 1)
         let link = isNight ? UIColor.white : themeColor
-        let line = NSMutableAttributedString(string: "\(left) \(noun) available today.", attributes: [
+        let line = NSMutableAttributedString(string: "\(left) \(noun) available today. ", attributes: [
             .foregroundColor: grey,
             .font: UIFont.systemFont(ofSize: 13)
         ])
-        // Lifetime / Exit already owns premium — don't offer Main Paywall again.
-        if !AIUsageLimiter.shared.ownsLifetimeAccess {
-            line.append(NSAttributedString(string: " ", attributes: [
-                .foregroundColor: grey,
-                .font: UIFont.systemFont(ofSize: 13)
-            ]))
-            line.append(NSAttributedString(string: "Unlimited with Premium", attributes: [
-                .foregroundColor: link,
-                .font: UIFont.systemFont(ofSize: 13),
-                .underlineStyle: NSUnderlineStyle.single.rawValue
-            ]))
-        }
+        line.append(NSAttributedString(string: "Unlimited with Premium", attributes: [
+            .foregroundColor: link,
+            .font: UIFont.systemFont(ofSize: 13),
+            .underlineStyle: NSUnderlineStyle.single.rawValue
+        ]))
         freeCountLabel.attributedText = line
     }
 
@@ -337,19 +330,31 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         tableView.register(AIChatAnswerCell.self, forCellReuseIdentifier: AIChatAnswerCell.reuseId)
         view.addSubview(tableView)
 
+        bottomChrome.translatesAutoresizingMaskIntoConstraints = false
+        bottomChrome.backgroundColor = isNight ? DarkModeColor : .white
+        view.addSubview(bottomChrome)
+
+        let chromeStack = UIStackView()
+        chromeStack.translatesAutoresizingMaskIntoConstraints = false
+        chromeStack.axis = .vertical
+        chromeStack.alignment = .fill
+        chromeStack.spacing = 0
+        bottomChrome.addSubview(chromeStack)
+
         suggestionContainer.translatesAutoresizingMaskIntoConstraints = false
-        suggestionContainer.backgroundColor = .clear
-        view.addSubview(suggestionContainer)
+        suggestionContainer.backgroundColor = isNight ? DarkModeColor : .white
+        // Hidden arranged views collapse in a stack — CONTINUE stays out of the scroll view.
+        chromeStack.addArrangedSubview(suggestionContainer)
 
         suggestionStack.translatesAutoresizingMaskIntoConstraints = false
         suggestionStack.axis = .vertical
-        suggestionStack.alignment = .leading
+        suggestionStack.alignment = .fill
         suggestionStack.spacing = 10
         suggestionContainer.addSubview(suggestionStack)
 
         composerContainer.translatesAutoresizingMaskIntoConstraints = false
         composerContainer.backgroundColor = isNight ? DarkModeColor : .white
-        view.addSubview(composerContainer)
+        chromeStack.addArrangedSubview(composerContainer)
 
         let composerLine = UIView()
         composerLine.translatesAutoresizingMaskIntoConstraints = false
@@ -396,13 +401,8 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
 
         let bannerHeight: CGFloat = StatusbarHeight > 30 ? 90 : 70
         bannerHeightConstraint = bannerView.heightAnchor.constraint(equalToConstant: bannerHeight)
-        composerBottomConstraint = composerContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        composerBottomConstraint = bottomChrome.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         inputHeightConstraint = inputTextView.heightAnchor.constraint(equalToConstant: 40)
-        let tableAboveSuggestions = tableView.bottomAnchor.constraint(equalTo: suggestionContainer.topAnchor)
-        tableAboveSuggestionsConstraint = tableAboveSuggestions
-        let tableAboveComposer = tableView.bottomAnchor.constraint(equalTo: composerContainer.topAnchor)
-        tableAboveComposer.isActive = false
-        tableAboveComposerConstraint = tableAboveComposer
 
         NSLayoutConstraint.activate([
             bannerView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -425,9 +425,19 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             backButton.widthAnchor.constraint(equalToConstant: 75),
             backButton.heightAnchor.constraint(equalToConstant: 44),
 
-            composerContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            composerContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            bottomChrome.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            bottomChrome.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             composerBottomConstraint!,
+
+            chromeStack.topAnchor.constraint(equalTo: bottomChrome.topAnchor),
+            chromeStack.leadingAnchor.constraint(equalTo: bottomChrome.leadingAnchor),
+            chromeStack.trailingAnchor.constraint(equalTo: bottomChrome.trailingAnchor),
+            chromeStack.bottomAnchor.constraint(equalTo: bottomChrome.bottomAnchor),
+
+            suggestionStack.topAnchor.constraint(equalTo: suggestionContainer.topAnchor, constant: 8),
+            suggestionStack.leadingAnchor.constraint(equalTo: suggestionContainer.leadingAnchor, constant: 16),
+            suggestionStack.trailingAnchor.constraint(equalTo: suggestionContainer.trailingAnchor, constant: -16),
+            suggestionStack.bottomAnchor.constraint(equalTo: suggestionContainer.bottomAnchor, constant: -8),
 
             composerLine.topAnchor.constraint(equalTo: composerContainer.topAnchor),
             composerLine.leadingAnchor.constraint(equalTo: composerContainer.leadingAnchor),
@@ -455,40 +465,16 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             tableView.topAnchor.constraint(equalTo: bannerView.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableAboveSuggestions,
+            tableView.bottomAnchor.constraint(equalTo: bottomChrome.topAnchor),
 
-            suggestionContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            suggestionContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            suggestionContainer.bottomAnchor.constraint(equalTo: composerContainer.topAnchor),
-
-            suggestionStack.topAnchor.constraint(equalTo: suggestionContainer.topAnchor, constant: 8),
-            suggestionStack.leadingAnchor.constraint(equalTo: suggestionContainer.leadingAnchor, constant: 16),
-            suggestionStack.trailingAnchor.constraint(lessThanOrEqualTo: suggestionContainer.trailingAnchor, constant: -16),
-            suggestionStack.bottomAnchor.constraint(equalTo: suggestionContainer.bottomAnchor, constant: -8),
-            {
-                let constraint = suggestionStack.trailingAnchor.constraint(lessThanOrEqualTo: suggestionContainer.trailingAnchor, constant: -16)
-                suggestionTrailingConstraint = constraint
-                return constraint
-            }(),
             emptyStateView.topAnchor.constraint(equalTo: bannerView.bottomAnchor),
             emptyStateView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             emptyStateView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            emptyStateView.bottomAnchor.constraint(equalTo: suggestionContainer.topAnchor)
+            emptyStateView.bottomAnchor.constraint(equalTo: bottomChrome.topAnchor)
         ])
 
         refreshFollowUpSuggestions()
-        view.bringSubviewToFront(suggestionContainer)
-        if launchContext != nil {
-            suggestionTrailingConstraint?.isActive = false
-            let filled = suggestionStack.trailingAnchor.constraint(equalTo: suggestionContainer.trailingAnchor, constant: -16)
-            filled.isActive = true
-            suggestionTrailingConstraint = filled
-            suggestionStack.alignment = .fill
-        }
-
-        refreshFollowUpSuggestions()
-        view.bringSubviewToFront(suggestionContainer)
-        view.bringSubviewToFront(composerContainer)
+        view.bringSubviewToFront(bottomChrome)
         emptyStateView.isHidden = true
     }
 
@@ -553,13 +539,15 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     private func makeSuggestionChip(title: String) -> UIButton {
         let button = UIButton(type: .system)
         button.setTitle(title, for: .normal)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .medium)
         button.titleLabel?.numberOfLines = 2
-        button.titleLabel?.textAlignment = .left
+        button.titleLabel?.lineBreakMode = .byWordWrapping
+        button.titleLabel?.textAlignment = .center
+        button.contentHorizontalAlignment = .center
         button.setTitleColor(isNight ? .white : themeColor, for: .normal)
         button.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.08) : themeColor.withAlphaComponent(0.08)
         button.layer.cornerRadius = 18
-        button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
+        button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 12, bottom: 10, right: 12)
         button.addTarget(self, action: #selector(suggestionTapped(_:)), for: .touchUpInside)
         return button
     }
@@ -567,33 +555,11 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     /// Always false: Keep Ask (Explanation / Summary) suggestion rows above the composer, like Bible Companion.
     private var pinsVerseQuestionsUnderCard: Bool { false }
 
-    /// CONTINUE chips sit above the composer (not under the answer). Starters stay in the chat footer.
+    /// CONTINUE chips live in the answer cell and scroll with the chat. This only refreshes starter footer chrome.
     private func refreshFollowUpSuggestions() {
         clearSuggestionStack()
-        let followUps = messages.last(where: { $0.role == .assistant })?.followUps ?? []
-        let showContinue = !followUps.isEmpty && !isSending && !showsLimitCard
-        if showContinue {
-            // Match THE PASSAGE / WHY IT MATTERS title color (theme / teal), not gray body chrome.
-            let titleColor = isNight ? UIColor.white.withAlphaComponent(0.85) : themeColor
-            let heading = UILabel()
-            heading.attributedText = NSAttributedString(
-                string: usesIndonesian ? "LANJUTKAN" : "CONTINUE",
-                attributes: [
-                    .font: UIFont.systemFont(ofSize: 10.5, weight: .bold),
-                    .kern: 1.3,
-                    .foregroundColor: titleColor
-                ]
-            )
-            suggestionStack.addArrangedSubview(heading)
-            followUps.forEach { suggestionStack.addArrangedSubview(makeSuggestionChip(title: $0)) }
-            suggestionContainer.isHidden = false
-            tableAboveComposerConstraint?.isActive = false
-            tableAboveSuggestionsConstraint?.isActive = true
-        } else {
-            suggestionContainer.isHidden = true
-            tableAboveSuggestionsConstraint?.isActive = false
-            tableAboveComposerConstraint?.isActive = true
-        }
+        suggestionContainer.isHidden = true
+        view.bringSubviewToFront(bottomChrome)
         installStarterFooterIfNeeded()
         view.setNeedsLayout()
     }
@@ -1609,7 +1575,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
     }
 }
 
-/// "Exploring Scripture..." label with a dot, shared by the waiting row and the answer.
+/// "Exploring Scripture..." label with a dot — used while the reply is loading.
 private func makeAIChatTag(accent: UIColor, indonesian: Bool) -> UIView {
     let dot = UIView()
     dot.translatesAutoresizingMaskIntoConstraints = false
@@ -1763,11 +1729,7 @@ private final class AIChatAnswerCell: UITableViewCell {
         let ink3 = isNight ? UIColor.white.withAlphaComponent(0.5) : UIColor(red: 0.55, green: 0.58, blue: 0.63, alpha: 1)
         hair = isNight ? UIColor.white.withAlphaComponent(0.14) : UIColor(red: 0.9, green: 0.915, blue: 0.94, alpha: 1)
 
-        let tag = makeAIChatTag(accent: accent, indonesian: indonesian)
-        let tagRow = UIStackView(arrangedSubviews: [tag, UIView()])
-        stack.addArrangedSubview(tagRow)
-        stack.setCustomSpacing(10, after: tagRow)
-
+        // "Exploring Scripture..." stays on the waiting cell only — not on finished answers.
         if let answer = message.answer {
             let lead = makeLabel(answer.lead, font: .systemFont(ofSize: 17, weight: .semibold), color: ink, lineSpacing: 3)
             stack.addArrangedSubview(lead)
@@ -1805,7 +1767,41 @@ private final class AIChatAnswerCell: UITableViewCell {
         actions.alignment = .center
         actions.spacing = 20
         stack.addArrangedSubview(actions)
-        // CONTINUE chips are shown above the composer, not under the answer.
+
+        // CONTINUE scrolls with the answer (not pinned above the composer).
+        let followUps = message.followUps.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        if !followUps.isEmpty {
+            stack.setCustomSpacing(20, after: actions)
+            let rule = makeRule("CONTINUE", color: accent)
+            stack.addArrangedSubview(rule)
+            stack.setCustomSpacing(12, after: rule)
+            stack.addArrangedSubview(makeContinueChips(followUps, isNight: isNight))
+        }
+    }
+
+    /// Side-by-side continue pills (same look as the Ask AI reference).
+    private func makeContinueChips(_ titles: [String], isNight: Bool) -> UIView {
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.alignment = .fill
+        row.distribution = .fillEqually
+        row.spacing = 8
+        titles.prefix(2).forEach { title in
+            let chip = UIButton(type: .system)
+            chip.setTitle(title, for: .normal)
+            chip.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+            chip.titleLabel?.numberOfLines = 2
+            chip.titleLabel?.lineBreakMode = .byWordWrapping
+            chip.titleLabel?.textAlignment = .center
+            chip.contentHorizontalAlignment = .center
+            chip.setTitleColor(ink, for: .normal)
+            chip.backgroundColor = isNight ? UIColor.white.withAlphaComponent(0.08) : accent.withAlphaComponent(0.08)
+            chip.layer.cornerRadius = 18
+            chip.contentEdgeInsets = UIEdgeInsets(top: 10, left: 12, bottom: 10, right: 12)
+            chip.addTarget(self, action: #selector(chipTapped(_:)), for: .touchUpInside)
+            row.addArrangedSubview(chip)
+        }
+        return row
     }
 
     private func makeLabel(_ text: String, font: UIFont, color: UIColor, lineSpacing: CGFloat) -> UILabel {

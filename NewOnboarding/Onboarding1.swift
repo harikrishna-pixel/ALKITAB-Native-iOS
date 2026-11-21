@@ -286,10 +286,13 @@ struct UIKitNavigationHelper {
 
                 if PaywallTriggerGate.shared.isEnabled {
                     let hostingController = UIHostingController(rootView: PaywallTriggerOnboardingView())
+                    // Match paywall navy so host never flashes system white under Exit/Plans.
+                    hostingController.view.backgroundColor = UIColor(red: 0.03, green: 0.05, blue: 0.12, alpha: 1)
                     navigationController.pushViewController(hostingController, animated: true)
                 } else {
                     let subscriptionView = BibleSubscriptionView()
                     let hostingController = UIHostingController(rootView: subscriptionView)
+                    hostingController.view.backgroundColor = UIColor(red: 0.008, green: 0.106, blue: 0.251, alpha: 1)
                     navigationController.pushViewController(hostingController, animated: true)
                 }
             } else {
@@ -303,27 +306,35 @@ struct UIKitNavigationHelper {
 
         DispatchQueue.main.async {
             guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                  let window = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first,
-                  let root = window.rootViewController else { return }
+                  let window = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first else { return }
 
-            let replaceWithReader = {
-                let storyboard = UIStoryboard(name: "Main", bundle: nil)
-                guard let readerVC = storyboard.instantiateViewController(withIdentifier: "ReaderViewController") as? ReaderViewController else { return }
-                // No animation — animated replace flashed Intermediate/paywall content (Exit → Home glitch).
-                if let nav = root as? UINavigationController {
-                    nav.setViewControllers([readerVC], animated: false)
-                } else if let nav = root.navigationController {
-                    nav.setViewControllers([readerVC], animated: false)
+            // Match chrome so Exit → Home does not flash a white/empty frame.
+            let theme = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
+            let bg = (theme == BGNightMode ? DarkModeColor : theme)
+            window.backgroundColor = bg
+
+            let installReader = {
+                // Full window root replace — setViewControllers on the old onboarding stack
+                // briefly flashed paywall/onboarding underneath (Exit Close → Home glitch).
+                // Do not touch readerVC.view / nav.view before attach (that forces zero-inset layout).
+                let readerVC = kStoryboardMainIphone.instantiateViewController(withIdentifier: "ReaderViewController") as! ReaderViewController
+                let nav = UINavigationController(rootViewController: readerVC)
+                nav.isNavigationBarHidden = true
+                // Disable UIKit’s default root-swap fade (that was the remaining glitch).
+                UIView.performWithoutAnimation {
+                    window.rootViewController = nav
+                    window.makeKeyAndVisible()
+                    window.layoutIfNeeded()
                 }
             }
 
-            // Clear any presented sheet/modal (paywall host / StoreKit leftover) so Exit cannot stay on top.
-            if root.presentedViewController != nil {
+            // Dismiss any modal first (StoreKit / presented host), then swap root.
+            if let root = window.rootViewController, root.presentedViewController != nil {
                 root.dismiss(animated: false) {
-                    DispatchQueue.main.async(execute: replaceWithReader)
+                    DispatchQueue.main.async(execute: installReader)
                 }
             } else {
-                replaceWithReader()
+                installReader()
             }
         }
     }

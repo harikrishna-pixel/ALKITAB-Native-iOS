@@ -161,9 +161,24 @@ final class AIUsageLimiter {
             }
             return
         }
+        // Exit / Lifetime: one-time plan notice, then continue (credits still apply; no free-limit UI).
+        if ownsLifetimeAccess && LifetimeAIAccessNotice.shouldShow {
+            LifetimeAIAccessNotice.presentIfNeeded { [weak self] in
+                self?.requestAccess(feature, units: units, from: host, onGranted: grant)
+            }
+            return
+        }
         if !feature.chargesCredits || hasUnlimitedPlan {
             pending[feature] = .unlimited
             DispatchQueue.main.async(execute: grant)
+            return
+        }
+        // Lifetime / Exit: no daily free AI — ask credits only.
+        if ownsLifetimeAccess {
+            let cost = feature.creditCost * max(1, units)
+            DispatchQueue.main.async {
+                self.offerCreditsOrToast(feature, cost: cost, onGranted: grant)
+            }
             return
         }
         if freeUsesLeft(feature) > 0 {
@@ -224,15 +239,26 @@ final class AIUsageLimiter {
         case .aiChat: kind = "AI chat"
         default: kind = "explanation"
         }
+        let lifetime = ownsLifetimeAccess
         guard ChallengeWallet.coins >= cost else {
-            OnboardingAuthManager.topViewController()?.view.makeToast("You've used today's free \(kind).", duration: 2.0, position: .top)
+            if lifetime {
+                InsufficientCreditsPresenter.present(balance: ChallengeWallet.coins, creditCost: cost)
+            } else {
+                OnboardingAuthManager.topViewController()?.view.makeToast(
+                    "You've used today's free \(kind).",
+                    duration: 2.0,
+                    position: .top
+                )
+            }
             return
         }
         AICreditsOffer.present(
             title: "Use \(cost) credits?",
-            message: "Today's free \(kind) is used. You have \(ChallengeWallet.coins) credits.",
+            message: lifetime
+                ? "AI features use credits. You have \(ChallengeWallet.coins) credits."
+                : "Today's free \(kind) is used. You have \(ChallengeWallet.coins) credits.",
             creditsTitle: "Use \(cost) Credits",
-            showUnlimited: !PaymentHistory.sharedInstance.hasActivePurchase(),
+            showUnlimited: !lifetime && !PaymentHistory.sharedInstance.hasActivePurchase(),
             onUnlimited: { [weak self] in
                 // Chat, explanation, and summary all open the main plans paywall (no "Please try again later").
                 self?.presentPlansPaywall()

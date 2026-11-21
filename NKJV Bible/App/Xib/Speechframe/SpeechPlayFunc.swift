@@ -30,6 +30,9 @@ class SpeechPlayFunc: NSObject {
     func setupNowPlaying() {
         var nowPlayingInfo = [String : Any]()
         nowPlayingInfo[MPMediaItemPropertyTitle] = UserDefaults.standard.string(forKey: "BookName")
+        if let artwork = NowPlayingArtwork.mediaItem() {
+            nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
+        }
 
         // Set the metadata
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
