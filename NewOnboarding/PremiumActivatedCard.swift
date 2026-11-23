@@ -3,7 +3,7 @@
 //  NKJV Bible
 //
 //  Success card after Month/Year (Premium) or Lifetime/Exit (Lifetime) purchase.
-//  Same bg + bible + crown assets; content changes by plan.
+//  Matches referral layouts on phone + iPad: content height, white border, no overflow.
 //
 
 import SwiftUI
@@ -39,7 +39,6 @@ enum PremiumActivatedPresenter {
     /// Call after purchase success + any Home redirect.
     static func presentAfterPurchase(productId: String) {
         guard let kind = kind(for: productId) else { return }
-        // Let onboarding paywall → Home finish first.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
             presentNow(kind: kind)
         }
@@ -64,7 +63,6 @@ enum PremiumActivatedPresenter {
         DispatchQueue.main.async {
             defer { isPresenting = false }
             if kind == .lifetime {
-                // Lifetime card already shown after purchase — skip the later AI-entry notice.
                 UserDefaults.standard.set(true, forKey: "LifetimeAIAccessNoticeShown")
             }
             OnboardingAuthManager.topViewController()?.dismiss(animated: true)
@@ -72,178 +70,199 @@ enum PremiumActivatedPresenter {
     }
 }
 
-/// Shared shell (exact card bg + crown + bible). Content depends on `kind`.
+/// Shared shell. Content depends on `kind`. Height fits content so crown/CTA never clip.
 struct PremiumActivatedCard: View {
     var kind: PremiumActivatedKind = .monthYear
     var onContinue: () -> Void
 
-    private let titleBlue = Color(hex: "1A46C7")
+    private let titleBlue = Color(hex: "0B2E8A")
     private let bodyInk = Color(hex: "1C2A44")
     private let subInk = Color(hex: "2F3D56")
-    private let checkYellow = Color(hex: "F5C518")
-    private let buttonTop = Color(hex: "2F6BFF")
-    private let buttonBottom = Color(hex: "1B4FD8")
+    private let checkYellow = Color(hex: "FACC15")
+    private let ctaBlue = Color(hex: "0B46C1")
+    private let headerTop = Color(hex: "1A46C7")
+    private let headerBottom = Color(hex: "0D3AA8")
+    private let bodyFill = Color(hex: "FFFDF9")
     private let aiBox = Color(hex: "EEF0FF")
     private let aiStroke = Color(hex: "C9CFFF")
+    private let corner: CGFloat = 30
 
     var body: some View {
         GeometryReader { geo in
-            let width = min(geo.size.width - horizontalPad(geo), maxCardWidth(geo))
-            let height = min(width * (kind == .lifetime ? 1.36 : 1.40), geo.size.height - verticalPad(geo))
+            let width = cardWidth(for: geo)
+            let s = max(0.92, min(width / 340, 1.35))
 
             ZStack {
-                Color.black.opacity(0.48)
+                Color.black.opacity(0.45)
                     .ignoresSafeArea()
 
-                card(width: width, height: height)
-                    .frame(width: width, height: height)
+                card(scale: s)
+                    .frame(width: width)
+                    .padding(.horizontal, horizontalInset(geo))
+                    .padding(.vertical, max(geo.safeAreaInsets.top, geo.safeAreaInsets.bottom, 24))
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
     }
 
-    private func horizontalPad(_ geo: GeometryProxy) -> CGFloat {
-        geo.size.width >= 768 ? 120 : 32
+    private func horizontalInset(_ geo: GeometryProxy) -> CGFloat {
+        geo.size.width >= 768 ? max(geo.size.width * 0.16, 48) : max(geo.size.width * 0.06, 18)
     }
 
-    private func verticalPad(_ geo: GeometryProxy) -> CGFloat {
-        geo.size.width >= 768 ? 80 : 48
-    }
-
-    private func maxCardWidth(_ geo: GeometryProxy) -> CGFloat {
-        if geo.size.width >= 1024 { return 400 }
-        if geo.size.width >= 768 { return 380 }
-        return 340
-    }
-
-    private func card(width: CGFloat, height: CGFloat) -> some View {
-        let s = width / 340
-        let headerShare: CGFloat = kind == .lifetime ? 0.42 : 0.40
-
-        return ZStack {
-            Image("premium_activated_card_bg")
-                .resizable()
-                .scaledToFill()
-                // Crop baked-in white frame from the asset edge.
-                .scaleEffect(1.035)
-                .frame(width: width, height: height)
-                .clipped()
-
-            VStack(spacing: 0) {
-                headerBlock(scale: s)
-                    .frame(height: height * headerShare)
-
-                Group {
-                    if kind == .lifetime {
-                        lifetimeBody(scale: s)
-                    } else {
-                        monthYearBody(scale: s)
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(.horizontal, kind == .lifetime ? 20 * s : 24 * s)
-                .padding(.top, kind == .lifetime ? 4 * s : 6 * s)
-                .padding(.bottom, 20 * s)
-            }
+    private func cardWidth(for geo: GeometryProxy) -> CGFloat {
+        let usable = geo.size.width - horizontalInset(geo) * 2
+        if geo.size.width >= 1024 {
+            return min(usable, 520)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 26 * s, style: .continuous))
-        // No white border — shadow only (both Premium + Lifetime).
-        .shadow(color: Color.black.opacity(0.28), radius: 22 * s, y: 10 * s)
+        if geo.size.width >= 768 {
+            return min(usable, 500)
+        }
+        return min(usable, 360)
+    }
+
+    private func card(scale s: CGFloat) -> some View {
+        let content = VStack(spacing: 0) {
+            headerBlock(scale: s)
+
+            Group {
+                if kind == .lifetime {
+                    lifetimeBody(scale: s)
+                } else {
+                    monthYearBody(scale: s)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .background(bodyFill)
+        }
+
+        return content
+            .background(bodyFill)
+            .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: corner, style: .continuous)
+                    .stroke(Color.white, lineWidth: 2)
+            )
+            .shadow(color: Color.black.opacity(0.28), radius: 24, y: 12)
     }
 
     private func headerBlock(scale s: CGFloat) -> some View {
-        VStack(spacing: kind == .lifetime ? 4 * s : 2 * s) {
-            Image("premium_activated_crown")
-                .resizable()
-                .scaledToFit()
-                .frame(width: kind == .lifetime ? 78 * s : 92 * s,
-                       height: kind == .lifetime ? 40 * s : 48 * s)
-                .padding(.top, kind == .lifetime ? 10 * s : 12 * s)
+        let headerH: CGFloat = kind == .lifetime ? 188 * s : 200 * s
+        let bibleW: CGFloat = kind == .lifetime ? 150 * s : 156 * s
+        let bibleH: CGFloat = kind == .lifetime ? 86 * s : 90 * s
 
-            if kind == .lifetime {
-                Text("Congratulations!")
-                    .font(.system(size: 28 * s, weight: .bold, design: .serif))
-                    .foregroundColor(.white)
-                    .shadow(color: Color.black.opacity(0.18), radius: 2, y: 1)
+        return ZStack(alignment: .bottom) {
+            LinearGradient(
+                colors: [headerTop, headerBottom],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .clipShape(PremiumHeaderWave())
 
-                Text("You're on the Lifetime Plan!")
-                    .font(.system(size: 15 * s, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.95))
-                    .padding(.top, 2 * s)
-            } else {
-                Text("Premium Activated!")
-                    .font(.system(size: 26 * s, weight: .bold).italic())
-                    .foregroundColor(.white)
-                    .shadow(color: Color.black.opacity(0.18), radius: 2, y: 1)
-                    .padding(.top, 2 * s)
+            VStack(spacing: 0) {
+                Image("premium_activated_crown")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: kind == .lifetime ? 82 * s : 88 * s,
+                           height: kind == .lifetime ? 42 * s : 46 * s)
+                    .padding(.top, 18 * s)
+
+                if kind == .lifetime {
+                    Text("Congratulations!")
+                        .font(.system(size: 28 * s, weight: .bold, design: .serif))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 6 * s)
+
+                    Text("You're on the Lifetime Plan!")
+                        .font(.system(size: 15 * s, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.96))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 6 * s)
+                        .padding(.horizontal, 12 * s)
+                } else {
+                    Text("Premium Activated!")
+                        .font(.system(size: 26 * s, weight: .bold).italic())
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 8 * s)
+                }
+
+                Spacer(minLength: 8 * s)
             }
-
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, bibleH * 0.42)
 
             Image("premium_activated_bible")
                 .resizable()
                 .scaledToFit()
-                .frame(width: kind == .lifetime ? 140 * s : 148 * s,
-                       height: kind == .lifetime ? 80 * s : 84 * s)
-                .offset(y: kind == .lifetime ? 22 * s : 24 * s)
+                .frame(width: bibleW, height: bibleH)
+                .offset(y: bibleH * 0.28)
         }
-        .frame(maxWidth: .infinity)
+        .frame(height: headerH)
+        .clipped()
     }
 
     private func monthYearBody(scale s: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .center, spacing: 0) {
             Text("You're on a Premium Plan!")
                 .font(.system(size: 20 * s, weight: .bold))
                 .foregroundColor(titleBlue)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 30 * s)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 36 * s)
 
             Text("Enjoy unlimited access to all AI study features.")
-                .font(.system(size: 14 * s, weight: .regular))
+                .font(.system(size: 14.5 * s, weight: .regular))
                 .foregroundColor(subInk)
-                .padding(.top, 6 * s)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 8 * s)
+                .padding(.horizontal, 4 * s)
 
             Rectangle()
                 .fill(Color(hex: "E6ECF5"))
                 .frame(height: 1)
-                .padding(.top, 14 * s)
+                .padding(.top, 16 * s)
 
             VStack(alignment: .leading, spacing: 14 * s) {
                 featureRow("Unlimited AI chat", scale: s)
                 featureRow("Unlimited verse explanations and chapter summaries", scale: s)
                 featureRow("Ad-free Bible reading", scale: s)
             }
-            .padding(.top, 14 * s)
+            .padding(.top, 16 * s)
 
-            ctaButton(title: "Continue Exploring", scale: s)
-                .padding(.top, 18 * s)
-
-            Spacer(minLength: 0)
+            ctaButton(title: "Continue Exploring", scale: s, widthFraction: 1)
+                .padding(.top, 20 * s)
+                .padding(.bottom, 26 * s)
         }
+        .padding(.horizontal, 24 * s)
     }
 
     private func lifetimeBody(scale s: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .center, spacing: 0) {
             Text("Welcome to Lifetime Access!")
-                .font(.system(size: 19 * s, weight: .bold))
+                .font(.system(size: 20 * s, weight: .bold))
                 .foregroundColor(titleBlue)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 28 * s)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 36 * s)
 
             Text("Enjoy an ad-free Bible reading experience.")
-                .font(.system(size: 13.5 * s, weight: .regular))
+                .font(.system(size: 14.5 * s, weight: .regular))
                 .foregroundColor(subInk)
-                .padding(.top, 6 * s)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 8 * s)
 
             aiCreditsBox(scale: s)
-                .padding(.top, 14 * s)
-
-            // Fixed gap like referral — do not stretch empty white on iPad.
-            ctaButton(title: "Got it", scale: s)
                 .padding(.top, 16 * s)
 
-            Spacer(minLength: 0)
+            ctaButton(title: "Continue Exploring", scale: s, widthFraction: 0.62)
+                .padding(.top, 20 * s)
+                .padding(.bottom, 26 * s)
         }
+        .padding(.horizontal, 22 * s)
     }
 
     private func aiCreditsBox(scale s: CGFloat) -> some View {
@@ -251,7 +270,7 @@ struct PremiumActivatedCard: View {
             ZStack {
                 Circle()
                     .fill(Color(hex: "E4E7FF"))
-                    .frame(width: 38 * s, height: 38 * s)
+                    .frame(width: 40 * s, height: 40 * s)
                 Image(systemName: "sparkles")
                     .font(.system(size: 15 * s, weight: .semibold))
                     .foregroundColor(Color(hex: "6B5CFF"))
@@ -261,10 +280,9 @@ struct PremiumActivatedCard: View {
                 Text("AI Features Access")
                     .font(.system(size: 14 * s, weight: .bold))
                     .foregroundColor(titleBlue)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text("Verse Explanation, Chapter Summary & Bible Companion")
-                    .font(.system(size: 11 * s, weight: .medium))
+                    .font(.system(size: 11.5 * s, weight: .medium))
                     .foregroundColor(Color(hex: "4A5A8C"))
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -273,7 +291,7 @@ struct PremiumActivatedCard: View {
 
             Rectangle()
                 .fill(aiStroke)
-                .frame(width: 1, height: 40 * s)
+                .frame(width: 1, height: 42 * s)
                 .padding(.horizontal, 10 * s)
 
             VStack(spacing: 1 * s) {
@@ -284,10 +302,10 @@ struct PremiumActivatedCard: View {
                     .font(.system(size: 10 * s, weight: .semibold))
                     .foregroundColor(Color(hex: "5A6BB0"))
             }
-            .frame(width: 56 * s, height: 48 * s)
+            .frame(width: 58 * s, height: 50 * s)
             .background(
                 RoundedRectangle(cornerRadius: 12 * s, style: .continuous)
-                    .fill(Color(hex: "E8EBFF"))
+                    .fill(Color(hex: "DDE5FF"))
             )
         }
         .padding(.leading, 12 * s)
@@ -299,24 +317,22 @@ struct PremiumActivatedCard: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16 * s, style: .continuous)
-                .stroke(aiStroke, lineWidth: 1)
+                .stroke(Color(hex: "E5E7EB"), lineWidth: 1)
         )
     }
 
-    private func ctaButton(title: String, scale s: CGFloat) -> some View {
+    private func ctaButton(title: String, scale s: CGFloat, widthFraction: CGFloat) -> some View {
         Button(action: onContinue) {
             Text(title)
-                .font(.system(size: 16 * s, weight: .bold))
+                .font(.system(size: 16.5 * s, weight: .bold))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 52 * s)
-                .background(
-                    Capsule().fill(
-                        LinearGradient(colors: [buttonTop, buttonBottom], startPoint: .top, endPoint: .bottom)
-                    )
-                )
+                .background(Capsule().fill(ctaBlue))
         }
         .buttonStyle(PlainButtonStyle())
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, widthFraction >= 1 ? 0 : (1 - widthFraction) * 80 * s)
     }
 
     private func featureRow(_ text: String, scale s: CGFloat) -> some View {
@@ -327,16 +343,47 @@ struct PremiumActivatedCard: View {
                     .frame(width: 24 * s, height: 24 * s)
                 Image(systemName: "checkmark")
                     .font(.system(size: 12 * s, weight: .bold))
-                    .foregroundColor(.black)
+                    .foregroundColor(Color(hex: "0B2E8A"))
             }
             .padding(.top, 1 * s)
 
             Text(text)
                 .font(.system(size: 15 * s, weight: .medium))
                 .foregroundColor(bodyInk)
+                .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 2 * s)
             Spacer(minLength: 0)
         }
+    }
+}
+
+/// Soft double-hump wave under the blue header (matches card_bg curve without stretching the PNG).
+private struct PremiumHeaderWave: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width
+        let h = rect.height
+        let waveY = h * 0.78
+        path.move(to: CGPoint(x: 0, y: 0))
+        path.addLine(to: CGPoint(x: w, y: 0))
+        path.addLine(to: CGPoint(x: w, y: waveY))
+        path.addCurve(
+            to: CGPoint(x: w * 0.72, y: h * 0.88),
+            control1: CGPoint(x: w * 0.92, y: waveY),
+            control2: CGPoint(x: w * 0.84, y: h * 0.88)
+        )
+        path.addCurve(
+            to: CGPoint(x: w * 0.28, y: h * 0.88),
+            control1: CGPoint(x: w * 0.58, y: h * 0.98),
+            control2: CGPoint(x: w * 0.42, y: h * 0.98)
+        )
+        path.addCurve(
+            to: CGPoint(x: 0, y: waveY),
+            control1: CGPoint(x: w * 0.16, y: h * 0.88),
+            control2: CGPoint(x: w * 0.08, y: waveY)
+        )
+        path.closeSubpath()
+        return path
     }
 }

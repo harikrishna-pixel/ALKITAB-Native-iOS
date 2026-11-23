@@ -224,7 +224,13 @@ extension ReaderViewController: AVplayerProtocol {
             AVplayOn()
             endChapterContinueBackgroundTask(&bgTask)
         } else {
-            AutoNext(resumePlayback: true, backgroundTask: &bgTask)
+            // Stop at chapter end — do not auto-play the next chapter.
+            AudioPlayerService.sharedInstance.chapterWantsPlayback = false
+            AudioPlayerService.sharedInstance.player?.pause()
+            playStatus = false
+            PlaybackAdHold.cancelResume()
+            PlayPause(ImageName: "Play")
+            endChapterContinueBackgroundTask(&bgTask)
         }
         // Keep the guard up briefly so a duplicate end event cannot start a second overlapping stream.
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {

@@ -603,6 +603,8 @@
 		A1B2C3D42F46A10100000001 /* OnboardingShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000011 /* OnboardingShared.swift */; };
 		A1B2C3D42F46A10100000061 /* PremiumActivatedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000060 /* PremiumActivatedCard.swift */; };
 		A1B2C3D42F46A10100000071 /* InsufficientCreditsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000070 /* InsufficientCreditsCard.swift */; };
+		A1B2C3D42F46A10100000081 /* BeforeYouContinueCreditsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000080 /* BeforeYouContinueCreditsCard.swift */; };
+		A1B2C3D42F46A10100000092 /* DailyLimitReachedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000090 /* DailyLimitReachedCard.swift */; };
 		A1B2C3D42F46A10100000002 /* Onboarding5.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000012 /* Onboarding5.swift */; };
 		A1B2C3D42F46A10100000003 /* OnboardingNotificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */; };
 		A1B2C3D42F46A10100000004 /* OnboardingCreateAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000014 /* OnboardingCreateAccountView.swift */; };
@@ -1316,6 +1318,8 @@
 		A1B2C3D42F46A10100000011 /* OnboardingShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingShared.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000060 /* PremiumActivatedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumActivatedCard.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000070 /* InsufficientCreditsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsufficientCreditsCard.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000080 /* BeforeYouContinueCreditsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeforeYouContinueCreditsCard.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A10100000090 /* DailyLimitReachedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyLimitReachedCard.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000012 /* Onboarding5.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding5.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingNotificationView.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000014 /* OnboardingCreateAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCreateAccountView.swift; sourceTree = "<group>"; };
@@ -3620,6 +3624,8 @@
 				A1B2C3D42F46A10100000011 /* OnboardingShared.swift */,
 				A1B2C3D42F46A10100000060 /* PremiumActivatedCard.swift */,
 				A1B2C3D42F46A10100000070 /* InsufficientCreditsCard.swift */,
+				A1B2C3D42F46A10100000080 /* BeforeYouContinueCreditsCard.swift */,
+				A1B2C3D42F46A10100000090 /* DailyLimitReachedCard.swift */,
 				6F9FDDE02EEFFEDD00CE0114 /* BibleSubscriptionView.swift */,
 				A1B2C3D42F46A10100000050 /* PaywallTriggerScreens.swift */,
 				6F9FDDE22EEFFF2400CE0114 /* StoreManager.swift */,
@@ -4458,6 +4464,8 @@
 				A1B2C3D42F46A10100000001 /* OnboardingShared.swift in Sources */,
 				A1B2C3D42F46A10100000061 /* PremiumActivatedCard.swift in Sources */,
 				A1B2C3D42F46A10100000071 /* InsufficientCreditsCard.swift in Sources */,
+				A1B2C3D42F46A10100000081 /* BeforeYouContinueCreditsCard.swift in Sources */,
+				A1B2C3D42F46A10100000092 /* DailyLimitReachedCard.swift in Sources */,
 				A1B2C3D42F46A10100000002 /* Onboarding5.swift in Sources */,
 				A1B2C3D42F46A10100000003 /* OnboardingNotificationView.swift in Sources */,
 				A1B2C3D42F46A10100000026 /* OnboardingNotificationScheduler.swift in Sources */,

@@ -992,7 +992,11 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
             if NextOrprevious == true {
                 print("End speech 1")
                 NextOrprevious = false
-                if self.AudioBibleList.count <= self.Index+1 {
+                // After a skip, keep reading the rest of the chapter (same as normal verse advance).
+                if self.Playstatus && self.Index >= 0 && self.Index < self.AudioBibleList.count - 1 {
+                    self.Index = self.Index + 1
+                    self.PlayOrder(TIntexIncrement: self.Index + 1)
+                } else if self.AudioBibleList.count <= self.Index + 1 {
                     self.StopSpeeking()
                 }
             } else if self.ChangeVoice {
@@ -1021,13 +1025,13 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
                 // if UserDefaults.standard.bool(forKey: "ShuffleVerse") && self.SettingConsstrain.constant == 80 {
                 // Problem: Repeat only worked when settings menu was at position 80, not always
                 
-                // Repeat restarts this chapter. Otherwise keep playing the next chapter.
+                // Repeat restarts this chapter. Otherwise stop at chapter end (no auto next chapter).
                 if Playstatus {
                     if UserDefaults.standard.bool(forKey: "ShuffleVerse") {
                         self.Index = 0
                         self.PlayOrder(TIntexIncrement: 1)
                     } else {
-                        self.playNextChapter()
+                        self.StopSpeeking()
                     }
                 }
             }
@@ -1051,7 +1055,8 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
             Index = 0
             PlayOrder(TIntexIncrement: 1)
         } else {
-            playNextChapter()
+            // Stop at chapter end — do not auto-advance.
+            StopSpeeking()
         }
     }
 

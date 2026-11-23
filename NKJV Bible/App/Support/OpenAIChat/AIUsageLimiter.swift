@@ -173,11 +173,11 @@ final class AIUsageLimiter {
             DispatchQueue.main.async(execute: grant)
             return
         }
-        // Lifetime / Exit: no daily free AI — ask credits only.
+        // Lifetime / Exit: no daily free AI — first-time notice, then spend credits (no every-time confirm).
         if ownsLifetimeAccess {
             let cost = feature.creditCost * max(1, units)
             DispatchQueue.main.async {
-                self.offerCreditsOrToast(feature, cost: cost, onGranted: grant)
+                self.offerLifetimeCredits(feature, cost: cost, onGranted: grant)
             }
             return
         }
@@ -231,6 +231,24 @@ final class AIUsageLimiter {
 
     // MARK: Alerts
 
+    /// Lifetime / Exit: show “Before You Continue” once, then spend credits without the every-time confirm.
+    private func offerLifetimeCredits(_ feature: AIUsageFeature, cost: Int, onGranted: @escaping () -> Void) {
+        let spendOrInsufficient = { [weak self] in
+            guard let self = self else { return }
+            guard ChallengeWallet.coins >= cost else {
+                InsufficientCreditsPresenter.present(balance: ChallengeWallet.coins, creditCost: cost)
+                return
+            }
+            self.pending[feature] = .credits(cost)
+            onGranted()
+        }
+        if BeforeYouContinueCreditsNotice.shouldShow {
+            BeforeYouContinueCreditsNotice.present(creditCost: cost, onContinue: spendOrInsufficient)
+        } else {
+            spendOrInsufficient()
+        }
+    }
+
     /// The trigger sheet stays closed for 30 minutes. Offer credits, or say the free use is gone.
     private func offerCreditsOrToast(_ feature: AIUsageFeature, cost: Int, onGranted: @escaping () -> Void) {
         let kind: String
@@ -239,28 +257,20 @@ final class AIUsageLimiter {
         case .aiChat: kind = "AI chat"
         default: kind = "explanation"
         }
-        let lifetime = ownsLifetimeAccess
         guard ChallengeWallet.coins >= cost else {
-            if lifetime {
-                InsufficientCreditsPresenter.present(balance: ChallengeWallet.coins, creditCost: cost)
-            } else {
-                OnboardingAuthManager.topViewController()?.view.makeToast(
-                    "You've used today's free \(kind).",
-                    duration: 2.0,
-                    position: .top
-                )
-            }
+            OnboardingAuthManager.topViewController()?.view.makeToast(
+                "You've used today's free \(kind).",
+                duration: 2.0,
+                position: .top
+            )
             return
         }
-        AICreditsOffer.present(
-            title: "Use \(cost) credits?",
-            message: lifetime
-                ? "AI features use credits. You have \(ChallengeWallet.coins) credits."
-                : "Today's free \(kind) is used. You have \(ChallengeWallet.coins) credits.",
-            creditsTitle: "Use \(cost) Credits",
-            showUnlimited: !lifetime && !PaymentHistory.sharedInstance.hasActivePurchase(),
+        DailyLimitReachedPresenter.present(
+            feature: feature,
+            creditCost: cost,
+            balance: ChallengeWallet.coins,
+            showUnlimited: !PaymentHistory.sharedInstance.hasActivePurchase(),
             onUnlimited: { [weak self] in
-                // Chat, explanation, and summary all open the main plans paywall (no "Please try again later").
                 self?.presentPlansPaywall()
             },
             onUseCredits: { [weak self] in
