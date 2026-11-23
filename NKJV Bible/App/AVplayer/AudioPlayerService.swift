@@ -300,7 +300,8 @@ class AudioPlayerService  {
         }
         seekGeneration += 1
         let generation = seekGeneration
-        let wasPlaying = player.rate > 0 || player.timeControlStatus == .playing
+        // Mid-chapter seek: keep going if chapter wants playback (rate may already be 0 while seeking).
+        let wasPlaying = chapterWantsPlayback || player.rate > 0 || player.timeControlStatus == .playing
         // Pausing first, or seeking with a tight tolerance, sends these chapter files back to the start.
         player.currentItem?.cancelPendingSeeks()
         setupNowPlaying(elapsed: target)
@@ -309,6 +310,7 @@ class AudioPlayerService  {
             DispatchQueue.main.async {
                 guard let self = self, generation == self.seekGeneration else { return }
                 if wasPlaying {
+                    self.chapterWantsPlayback = true
                     player.play()
                 }
                 let landed = player.currentTime().seconds

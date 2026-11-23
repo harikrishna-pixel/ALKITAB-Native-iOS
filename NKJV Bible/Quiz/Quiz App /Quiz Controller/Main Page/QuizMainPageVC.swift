@@ -219,7 +219,7 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
         self.FreeTxt.textColor = Themecolor
         self.Hinttxt.textColor = Themecolor
         
-        self.WatchAdlbl.text = "Watch an Ad to get \(rewardCoins) free coins "
+        self.WatchAdlbl.text = "Watch an Ad to get \(rewardCoins) free credits "
         
         self.LifeView.layer.cornerRadius = self.LifeView.frame.height/2
         self.LifeView.layer.borderWidth = 1
@@ -627,7 +627,7 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
          }
      }
      func CollectCoin() {
-         self.view.makeToast("Coins added to your wallet", duration: 2.0, position: .top)
+         self.view.makeToast("Credits added to your wallet", duration: 2.0, position: .top)
          
          UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+rewardCoins, forKey: "WalletMoney")
          self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"

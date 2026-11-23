@@ -449,8 +449,8 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
     func NextString() {
         self.Index = self.Index+1
         NextOrprevious = true
-        if self.Index > AudioBibleList.count {
-            self.Index = AudioBibleList.count-1
+        if self.Index >= AudioBibleList.count {
+            self.Index = max(0, AudioBibleList.count-1)
         }
         self.PlayOrder(TIntexIncrement: self.Index+1)
     }
@@ -943,7 +943,8 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
     
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         if isStartingNextChapter || pausedForAd { return }
-        if let current = synth.myUtterance, utterance !== current { return }
+        // Ignore cancelled/stale finishes (e.g. skip stopSpeaking). Only the live utterance may advance.
+        guard let current = synth.myUtterance, utterance === current else { return }
         
         // VOICE CHANGE FIX: Handle voice change - prevent ANY verse advancement
         if isChangingVoice {
@@ -1104,12 +1105,17 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
     
     func PlayOrder(TIntexIncrement:Int) {
         if TIntexIncrement > 0 && TIntexIncrement <= AudioBibleList.count {
-            synth.synth.stopSpeaking(at: .immediate)
+            // Drop current utterance first so stopSpeaking's didFinish is ignored (keeps mid-chapter skip playing).
             self.synth.myUtterance = nil
+            synth.synth.stopSpeaking(at: .immediate)
             let SpeechText = String(format: "%@",AudioBibleList[self.Index])
             self.Verse.text = SpeechText
             if Playstatus {
                 self.PlayTS(SpeechText)
+                // Skip flag only blocks the cancelled utterance; clear so this verse ends via normal continue.
+                if NextOrprevious {
+                    NextOrprevious = false
+                }
             }
             self.VerseTitle.text = "\(BookName) \(BookIndex!) - \(Index+1)/\(AudioBibleList.count)"
         }

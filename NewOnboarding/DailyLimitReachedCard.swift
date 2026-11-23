@@ -116,17 +116,23 @@ struct DailyLimitReachedCard: View {
                     Text("You still have")
                         .font(.system(size: 16))
                         .foregroundColor(bodyInk)
+                        .lineLimit(1)
                     Text("\(balance) credits")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(pillInk)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background(Capsule().fill(softBlue))
                     Text("to continue.")
                         .font(.system(size: 16))
                         .foregroundColor(bodyInk)
+                        .lineLimit(1)
                 }
                 .padding(.top, 10)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
                 .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 12) {

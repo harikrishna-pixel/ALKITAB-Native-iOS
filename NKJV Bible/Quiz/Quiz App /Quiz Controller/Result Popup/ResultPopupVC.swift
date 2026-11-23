@@ -108,7 +108,7 @@ class ResultPopupVC: UIViewController, ResultProtocol {
         
         self.Coins.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
         self.ContinueBtn.backgroundColor = Themecolor
-        self.TryAgainPopupLbl.text =  "Would you like to Try Again by spending \(tryAgainCoins) coins?"
+        self.TryAgainPopupLbl.text =  "Would you like to Try Again by spending \(tryAgainCoins) credits?"
         
         
         for i in 0 ..< Blank.count {

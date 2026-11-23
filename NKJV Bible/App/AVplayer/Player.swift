@@ -499,7 +499,8 @@ extension ReaderViewController: AVplayerProtocol {
     func seekAudio(to seconds: Double) {
         guard seconds.isFinite, AudioPlayerService.sharedInstance.player != nil else { return }
         let player = AudioPlayerService.sharedInstance.player
-        let wasPlaying = playStatus && ((player?.rate ?? 0) > 0)
+        // Mid-chapter seek must keep playing if the user was listening (rate may already be 0 during seek).
+        let wasPlaying = playStatus
         let origin = player?.currentTime().seconds ?? 0
         isUserInteractingWithSlider = true
         ForwardSeekHold.originTime = origin.isFinite ? origin : nil
@@ -517,7 +518,8 @@ extension ReaderViewController: AVplayerProtocol {
             } else {
                 self.showSeekPosition(seconds)
             }
-            if wasPlaying, (AudioPlayerService.sharedInstance.player?.rate ?? 0) == 0 {
+            if wasPlaying {
+                AudioPlayerService.sharedInstance.chapterWantsPlayback = true
                 AudioPlayerService.sharedInstance.player?.play()
             }
         }
@@ -605,7 +607,7 @@ extension ReaderViewController: AVplayerProtocol {
                                            
                                            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+3.0) {
                                                if self.progressView.value <= 30 && self.progressView.value > 0 {
-                                                   self.view.makeToast("Poor Network Connection", duration: 2.0, position: .top)
+                                                   self.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
                                                    AF.cancelAllRequests()
                                                    self.playStatus = false
                                                    self.LoaderImg.isHidden = true
@@ -625,11 +627,16 @@ extension ReaderViewController: AVplayerProtocol {
                                                if String(format: "010%02i",self.Pageindex) == items {
                                                    self.DownloadesArray = self.DownloadesArray.filter { !DownloadedFile.shared.DownloadedArray().contains($0) }
                                                }
-                                            if self.playStatus == true {
+                                            let downloadOK = response.error == nil && response.fileURL != nil
+                                            if downloadOK, self.playStatus == true {
                                                 self.view.makeToast("\(self.Downloadfilename) Audio Downloaded", duration: 2.0, position: .top)
                                                 self.AVplayOn()
-                                            } else {
-                                                
+                                            } else if !downloadOK, self.playStatus == true {
+                                                // Failed/slow download — do not show "Audio Downloaded".
+                                                self.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
+                                                self.playStatus = false
+                                                self.LoaderImg.isHidden = true
+                                                self.PlayPause(ImageName: "Play")
                                             }
                                             self.Downloadfilename = ""
                                             self.DownloadesArray.removeAll()
@@ -641,7 +648,7 @@ extension ReaderViewController: AVplayerProtocol {
                   self.view.makeToast("Downloading is in progress", duration: 2.0, position: .top)
               }
          } else {
-          self.view.makeToast("No internet connection", duration: 2.0, position: .top)
+          self.view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
         }
     }
     

@@ -80,7 +80,7 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
             self.GiftCardFrameHeight.constant = ScreenWidth/1.2
             self.GiftCardFramewidth.constant = ScreenWidth/1.2
             
-            self.CoinsTxt.text =  "Collect \(self.coins) Coins"
+            self.CoinsTxt.text =  "Collect \(self.coins) Credits"
             self.ButtonAnimation()
             
             if UserDefaults.standard.integer(forKey: "CardCount") == 0 && TimeConvert.sharedInstance.ConvertSeconds(toDate: UserDefaults.standard.string(forKey: "CardAdTime") ?? Date().string(format: "MM/dd/yy HH:mm:ss")) <= 0 {
@@ -124,7 +124,7 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
         if CardType == "" {
             UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+coins, forKey: "WalletMoney")
             self.CardSaver(cardCoins: coins, cartType: "CoinCard")
-            self.view.makeToast("Coins claimed successfully!", duration: 2.0, position: .top)
+            self.view.makeToast("Credits claimed successfully!", duration: 2.0, position: .top)
             
         } else {
             self.CardSaver(cardCoins: 0, cartType: CardType)

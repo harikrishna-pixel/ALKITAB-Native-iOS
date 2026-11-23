@@ -4812,7 +4812,7 @@
                                                 </constraints>
                                                 <attributedString key="attributedText">
                                                     <fragment>
-                                                        <string key="content">Kindly note: We offer you access to watch reward ads to boost your wallet coins while playing our quiz, even if you are subscribed to the Ad-free version.</string>
+                                                        <string key="content">Kindly note: We offer you access to watch reward ads to boost your wallet credits while playing our quiz, even if you are subscribed to the Ad-free version.</string>
                                                         <attributes>
                                                             <color key="NSColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                                             <font key="NSFont" metaFont="cellTitle"/>
@@ -7575,7 +7575,7 @@
                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="xD3-C5-inU">
                                                 <rect key="frame" x="20" y="1122" width="353" height="15"/>
                                                 <subviews>
-                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Earn Bible Coins For Sharing!" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hPE-Bn-MEw">
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Earn Bible Credits For Sharing!" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hPE-Bn-MEw">
                                                         <rect key="frame" x="83.666666666666686" y="0.66666666666674246" width="186" height="14"/>
                                                         <fontDescription key="fontDescription" name="CeraPro-Regular" family="Cera Pro" pointSize="14"/>
                                                         <nil key="textColor"/>
@@ -7663,7 +7663,7 @@
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" usesAttributedText="YES" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="rBa-cT-Rcr">
                                                 <rect key="frame" x="20" y="77" width="313" height="21"/>
                                                 <attributedString key="attributedText">
-                                                    <fragment content="You have earned 20 Coins!">
+                                                    <fragment content="You have earned 20 Credits!">
                                                         <attributes>
                                                             <font key="NSFont" size="18" name="Chalkboard"/>
                                                             <paragraphStyle key="NSParagraphStyle" alignment="center" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>

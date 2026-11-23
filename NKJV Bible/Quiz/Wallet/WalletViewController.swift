@@ -154,7 +154,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
               
               self.TimeCell = (self.WalletViewTableView.dequeueReusableCell(withIdentifier: "freeCoins") as! TimerCell?)
               self.TimeCell.AdTime.addTarget(self, action: #selector(CallFreeCoin), for: .touchUpInside)
-              self.TimeCell.FreeCoinLbl.text = "\(freeCoins) coins"
+              self.TimeCell.FreeCoinLbl.text = "\(freeCoins) credits"
               self.TimeCell.FreeCoinsVu.backgroundColor = Themecolor
               return self.TimeCell!
                             
@@ -162,7 +162,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
               
               self.WalletTableCell = (self.WalletViewTableView.dequeueReusableCell(withIdentifier: "watchAd") as! WalletCell?)
               self.WalletTableCell.WatchAd.addTarget(self, action: #selector(CallInterstitialAd), for: .touchUpInside)
-              self.WalletTableCell.RewardCoinLbl.text = "\(rewardCoins) coins"
+              self.WalletTableCell.RewardCoinLbl.text = "\(rewardCoins) credits"
               self.WalletTableCell.WatchAdVu.backgroundColor = Themecolor
               
               return self.WalletTableCell!
@@ -180,7 +180,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
               self.WalletTableCell = (self.WalletViewTableView.dequeueReusableCell(withIdentifier: "WalletMoney") as! WalletCell?)
               let packIndex = indexPath.row < shownPackIndexes.count ? shownPackIndexes[indexPath.row] : indexPath.row
               let coinCount = packIndex < Coins.count ? Coins[packIndex] : 0
-              self.WalletTableCell.coinTxt.text = "\(coinCount) Coins"
+              self.WalletTableCell.coinTxt.text = "\(coinCount) Credits"
               
                   self.WalletTableCell.CoinPayBtn.setTitle(PayList[indexPath.row], for: .normal)
                   self.WalletTableCell.PayList.isHidden = true
@@ -257,7 +257,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
             let date = Date().addingTimeInterval(15 * 60)
             UserDefaults.standard.setValue(date.string(format: "MM/dd/yy HH:mm:ss"), forKey: "FreeAds")
             UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+freeCoins, forKey: "WalletMoney")
-            self.view.makeToast("Coins claimed successfully!", duration: 2.0, position: .top)
+            self.view.makeToast("Credits claimed successfully!", duration: 2.0, position: .top)
             
         } else {
             var adtime = UserDefaults.standard.string(forKey: "FreeAds")!
@@ -269,7 +269,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
                 UserDefaults.standard.setValue(date.string(format: "MM/dd/yy HH:mm:ss"), forKey: "FreeAds")
                 
                 UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+freeCoins, forKey: "WalletMoney")
-                self.view.makeToast("Coins claimed successfully!", duration: 2.0, position: .top)
+                self.view.makeToast("Credits claimed successfully!", duration: 2.0, position: .top)
             } else {
                 self.ClimeAlert.isHidden = false
                 print("FreeAds :",UserDefaults.standard.string(forKey: "FreeAds")!)

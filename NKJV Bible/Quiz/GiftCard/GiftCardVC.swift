@@ -178,7 +178,7 @@ extension GiftCardVC {
                 
                 cell.ViewFramewidth.constant =  (self.GiftCardCV.bounds.width/2)-10
                 cell.ViewFrameHeight.constant =  (self.GiftCardCV.bounds.width/2)-10
-                cell.CoinLbl.text = "Collected \(coins[self.CellIndexpath].components(separatedBy: "_")[0]) Coins"
+                cell.CoinLbl.text = "Collected \(coins[self.CellIndexpath].components(separatedBy: "_")[0]) Credits"
                 
                 return cell
             }
@@ -226,7 +226,7 @@ extension GiftCardVC {
 //                UserDefaults.standard.setValue(date.string(format: "HH:mm:ss"), forKey: "CardAdTime")
                 
             } else {
-                let alert = UIAlertController(title: "Alert", message: "Coins already claimed!", preferredStyle: UIAlertController.Style.alert)
+                let alert = UIAlertController(title: "Alert", message: "Credits already claimed!", preferredStyle: UIAlertController.Style.alert)
                 alert.addAction(UIAlertAction(title: "Ok", style: UIAlertAction.Style.default, handler: nil))
                 self.present(alert, animated: true, completion: nil)
             }
