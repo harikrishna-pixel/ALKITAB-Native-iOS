@@ -325,28 +325,14 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
         showPurchasedQuizNoteIfNeeded()
     }
 
-    /// Paid users see the reward-ad note once, the first time a quiz question is on screen.
+    /// Paid users see the shared Kindly Note once, the first time a quiz question is on screen.
     private func showPurchasedQuizNoteIfNeeded() {
-        guard !UserDefaults.standard.bool(forKey: "PayNote") else { return }
-        guard hasPurchasedQuizAccess() else { return }
-        PayNote.isHidden = false
-        view.bringSubviewToFront(PayNote)
+        PayNote.isHidden = true
+        KindlyNoteCreditsNotice.presentIfNeeded(surface: .quiz)
     }
 
     private func hasPurchasedQuizAccess() -> Bool {
-        if PaymentHistory.sharedInstance.hasActivePurchase() { return true }
-        if LegacyPaidAppService.shared.isLegacyPaidAppUser { return true }
-        if PaymentHistory.sharedInstance.paymentInfo() == false && ADS_TYPE != 0 { return true }
-        let paymentId = UserDefaults.standard.string(forKey: "PaymentId") ?? ""
-        let lower = paymentId.lowercased()
-        if !lower.isEmpty && lower.contains("lifetime") { return true }
-        let ids = [
-            SUBSCRIPTIONID_LifeTime,
-            SUBSCRIPTIONID_ExitOffer,
-            FallbackIAPConstants.lifetimeProductID,
-            FallbackIAPConstants.exitOfferProductID
-        ]
-        return ids.contains { !$0.isEmpty && $0.caseInsensitiveCompare(paymentId) == .orderedSame }
+        KindlyNoteCreditsNotice.hasPurchasedAccess()
     }
     
 

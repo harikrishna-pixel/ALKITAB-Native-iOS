@@ -2,7 +2,8 @@
 //  BeforeYouContinueCreditsCard.swift
 //  NKJV Bible
 //
-//  First-time AI credits notice after Lifetime / Exit purchase.
+//  AI credits notice after Lifetime / Exit purchase.
+//  Keeps showing until the user checks "Don't show this again" and taps Got it.
 //
 
 import SwiftUI
@@ -21,7 +22,7 @@ enum BeforeYouContinueCreditsNotice {
         UserDefaults.standard.set(true, forKey: shownKey)
     }
 
-    /// Presents once. `onContinue` runs after Got it (then credits spend / feature open).
+    /// Presents until dismissed with "Don't show this again". `onContinue` runs after Got it.
     static func present(creditCost: Int = 20, onContinue: @escaping () -> Void) {
         DispatchQueue.main.async {
             guard shouldShow else {
@@ -40,8 +41,8 @@ enum BeforeYouContinueCreditsNotice {
             isPresenting = true
 
             weak var hostRef: UIViewController?
-            let finish: (_ proceed: Bool) -> Void = { proceed in
-                if proceed {
+            let finish: (_ proceed: Bool, _ dontShowAgain: Bool) -> Void = { proceed, dontShowAgain in
+                if proceed && dontShowAgain {
                     markShown()
                 }
                 isPresenting = false
@@ -57,8 +58,8 @@ enum BeforeYouContinueCreditsNotice {
 
             let host = UIHostingController(rootView: BeforeYouContinueCreditsCard(
                 creditCost: creditCost,
-                onClose: { finish(false) },
-                onGotIt: { finish(true) }
+                onClose: { finish(false, false) },
+                onGotIt: { dontShowAgain in finish(true, dontShowAgain) }
             ))
             host.modalPresentationStyle = .overFullScreen
             host.modalTransitionStyle = .crossDissolve
@@ -73,7 +74,7 @@ enum BeforeYouContinueCreditsNotice {
 struct BeforeYouContinueCreditsCard: View {
     var creditCost: Int = 20
     var onClose: () -> Void
-    var onGotIt: () -> Void
+    var onGotIt: (_ dontShowAgain: Bool) -> Void
 
     @State private var dontShowAgain = false
 
@@ -158,7 +159,7 @@ struct BeforeYouContinueCreditsCard: View {
                 .buttonStyle(PlainButtonStyle())
                 .padding(.top, 18)
 
-                Button(action: onGotIt) {
+                Button(action: { onGotIt(dontShowAgain) }) {
                     Text("Got it")
                         .font(.system(size: 17, weight: .bold))
                         .foregroundColor(.white)

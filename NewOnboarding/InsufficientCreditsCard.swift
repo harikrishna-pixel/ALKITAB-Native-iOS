@@ -14,8 +14,10 @@ enum InsufficientCreditsPresenter {
     static func present(balance: Int = ChallengeWallet.coins, creditCost: Int = 20) {
         DispatchQueue.main.async {
             guard !isPresenting else { return }
-            guard let top = OnboardingAuthManager.topViewController() else { return }
-            if top.presentedViewController != nil { return }
+            guard var presenter = OnboardingAuthManager.topViewController() else { return }
+            while let shown = presenter.presentedViewController {
+                presenter = shown
+            }
             isPresenting = true
 
             weak var hostRef: UIViewController?
@@ -43,8 +45,8 @@ enum InsufficientCreditsPresenter {
             host.modalTransitionStyle = .crossDissolve
             host.view.backgroundColor = .clear
             hostRef = host
-            top.view.endEditing(true)
-            top.present(host, animated: true)
+            presenter.view.endEditing(true)
+            presenter.present(host, animated: true)
         }
     }
 }

@@ -24,7 +24,9 @@ class SubscriptionPopup: UIView {
         
         
         PaymentHistory.sharedInstance.Getpayment(completion: {
-            if UserDefaults.standard.string(forKey: "PaymentId") ?? "" == SUBSCRIPTIONID_LifeTime {
+            let paymentId = UserDefaults.standard.string(forKey: "PaymentId") ?? ""
+            // Month/Year PaymentId must win over an older Lifetime still on the Apple receipt.
+            if Self.isLifetimePaymentId(paymentId) {
                 self.SubscriptionText.text = "Lifetime subscription Successful!\n Have endless access forever!"
             } else {
                 let info = PaymentHistory.sharedInstance.subscriptionDaysLeft()
@@ -76,6 +78,18 @@ class SubscriptionPopup: UIView {
             App_Protocol.delegateReader?.CloseView()
         }
         
+    }
+
+    /// Lifetime / Exit only — not Month or Year.
+    private static func isLifetimePaymentId(_ paymentId: String) -> Bool {
+        guard !paymentId.isEmpty else { return false }
+        if !SUBSCRIPTIONID_LifeTime.isEmpty, paymentId == SUBSCRIPTIONID_LifeTime { return true }
+        if !SUBSCRIPTIONID_ExitOffer.isEmpty, paymentId == SUBSCRIPTIONID_ExitOffer { return true }
+        if paymentId == FallbackIAPConstants.lifetimeProductID || paymentId == FallbackIAPConstants.exitOfferProductID {
+            return true
+        }
+        let lower = paymentId.lowercased()
+        return lower.contains("lifetime") || lower.contains("exit")
     }
     
 }

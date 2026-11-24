@@ -235,6 +235,13 @@ class PaymentHistory: NSObject {
             }
             return
         }
+        // Keep an active Month/Year PaymentId. An older Lifetime still on the receipt must not
+        // overwrite it (Subscription info / AI would flip back to Lifetime after a Yearly buy).
+        let savedId = UserDefaults.standard.string(forKey: "PaymentId") ?? ""
+        if best.lifetime, isRenewingPlanId(savedId), storedRenewingPlanStillActive() {
+            NotificationCenter.default.post(name: Notification.Name("ReloadTable"), object: nil)
+            return
+        }
         self.product_id = best.productId
         self.TransactionId = best.transactionId
         self.StartDate = ""
@@ -246,6 +253,30 @@ class PaymentHistory: NSObject {
         }
         self.saveEndDAte()
         NotificationCenter.default.post(name: Notification.Name("ReloadTable"), object: nil)
+    }
+
+    private func isRenewingPlanId(_ productId: String) -> Bool {
+        guard !productId.isEmpty else { return false }
+        if isMonthlyPlan(productId) || isYearlyPlan(productId) { return true }
+        let lower = productId.lowercased()
+        if lower.contains("lifetime") || lower.contains("exit") { return false }
+        return lower.contains("oneyear") || lower.contains("1year")
+            || lower.contains("onemonth") || lower.contains("sixmonth")
+            || lower.contains("month")
+    }
+
+    /// Expiry-based active check only (ignores HasLifetimePurchase) so Lifetime on the receipt
+    /// cannot make us think a wiped Month/Year row is still valid.
+    private func storedRenewingPlanStillActive() -> Bool {
+        let stamp = UserDefaults.standard.double(forKey: "SubscriptionExpiryGMT")
+        if stamp > 0 {
+            return Date().timeIntervalSince1970 <= stamp
+        }
+        let date = CoreDataModel.sharedInstance.GetEndDate(entity: CDPaymentdateAPI)
+        guard !date.isEmpty else { return false }
+        let expiryDay = Calendar.current.startOfDay(for: GetReceptKey.shared.convertData(date: date))
+        let today = Calendar.current.startOfDay(for: Date())
+        return expiryDay >= today
     }
 
     private func receiptEntries(from result: Dictionary<String, AnyObject>) -> [[String: AnyObject]] {

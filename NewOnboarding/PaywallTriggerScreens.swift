@@ -1615,7 +1615,15 @@ private struct TriggerPlans: View {
                             }
                             TriggerLegalRow(onRestore: { model.restore() })
                                 .padding(.top, 10)
-                                .padding(.bottom, bottomInset + 8)
+                            Button(action: onClose) {
+                                Text("Continue Free Version")
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(Color(hex: "B9C6DE").opacity(0.95))
+                                    .underline()
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(.top, 14)
+                            .padding(.bottom, bottomInset + 8)
                         }
                         .padding(.horizontal, 22)
                         .frame(minHeight: isPad ? geo.size.height : nil, alignment: .top)
@@ -2164,6 +2172,15 @@ private struct TriggerExitOffer: View {
                             .minimumScaleFactor(0.7)
                             .buttonStyle(PlainButtonStyle())
                             .padding(.top, isPad ? 12 : 12)
+
+                            Button(action: onClose) {
+                                Text("Continue Free Version")
+                                    .font(.system(size: isPad ? 15 : 14, weight: .regular))
+                                    .foregroundColor(Color(hex: "B9C6DE").opacity(0.95))
+                                    .underline()
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(.top, isPad ? 14 : 12)
                             .padding(.bottom, bottomPad + (isPad ? 24 : 8))
 
                             if isPad { Spacer(minLength: padGap) }
@@ -2370,12 +2387,23 @@ enum PaywallOwnedPlanGuard {
 
     private static var isChecking = false
     private static weak var hud: UIView?
+    /// After the user closes the owned-plan alert once, do not show it again for the same pair this session.
+    private static var dismissedAlertKeys = Set<String>()
+
+    private static func alertKey(owned: Plan, trying: Plan) -> String {
+        "\(owned)-\(trying)"
+    }
 
     /// Calls `onProceed` when the user may buy. Shows the alert instead when a plan is already active.
     static func check(store: StoreManager, trying: Plan, onProceed: @escaping () -> Void, onRestore: @escaping () -> Void) {
         guard !isChecking else { return }
         if let saved = savedLastPlan() {
             if let expiry = saved.expiry, saved.kind != .lifetime, expiry.timeIntervalSinceNow < 0 {
+                onProceed()
+                return
+            }
+            let key = alertKey(owned: saved.kind, trying: trying)
+            if dismissedAlertKeys.contains(key) {
                 onProceed()
                 return
             }
@@ -2395,6 +2423,11 @@ enum PaywallOwnedPlanGuard {
             if let found = lastStorePlan(from: plans) {
                 let expiry = found.kind == .lifetime ? nil : storePlanExpiry(kind: found.kind, purchasedAt: found.purchasedAt)
                 if let expiry = expiry, expiry.timeIntervalSinceNow < 0 {
+                    onProceed()
+                    return
+                }
+                let key = alertKey(owned: found.kind, trying: trying)
+                if dismissedAlertKeys.contains(key) {
                     onProceed()
                     return
                 }
@@ -2527,12 +2560,21 @@ enum PaywallOwnedPlanGuard {
             message = "Your last plan is \(planName(owned)). Purchasing another plan will create an additional charge."
         }
 
+        let key = alertKey(owned: owned, trying: trying)
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Close", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Restore My Current Plan", style: .default) { _ in onRestore() })
+        alert.addAction(UIAlertAction(title: "Close", style: .cancel) { _ in
+            dismissedAlertKeys.insert(key)
+        })
+        alert.addAction(UIAlertAction(title: "Restore My Current Plan", style: .default) { _ in
+            dismissedAlertKeys.insert(key)
+            onRestore()
+        })
         if ownedLifetime && !tryingLifetime {
             let addLabel = tryingYear ? "Add 1 Year Plan" : "Add 1 Month Plan"
-            alert.addAction(UIAlertAction(title: addLabel, style: .default) { _ in onProceed() })
+            alert.addAction(UIAlertAction(title: addLabel, style: .default) { _ in
+                dismissedAlertKeys.insert(key)
+                onProceed()
+            })
         }
         DispatchQueue.main.async {
             OnboardingAuthManager.topViewController()?.present(alert, animated: true)

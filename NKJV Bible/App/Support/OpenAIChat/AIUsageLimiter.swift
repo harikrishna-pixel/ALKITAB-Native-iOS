@@ -65,8 +65,6 @@ final class AIUsageLimiter {
         chatUpsellShown = true
     }
 
-    private static let limitUsesCreditsCardOrToast = true
-
     static let chatCreditsAdded = Notification.Name("AIUsageChatCreditsAdded")
 
     func noteChatCreditsAdded(_ amount: Int) {
@@ -82,9 +80,13 @@ final class AIUsageLimiter {
     }
 
     /// Lifetime / Exit-offer one-time purchase — already owns premium; do not open Main Paywall again.
+    /// Active Month / Year `PaymentId` wins over an older Lifetime still on the same Apple receipt.
     var ownsLifetimeAccess: Bool {
-        if UserDefaults.standard.bool(forKey: "HasLifetimePurchase") { return true }
         let paymentId = UserDefaults.standard.string(forKey: "PaymentId") ?? ""
+        if Self.isActiveMonthOrYearPaymentId(paymentId) {
+            return false
+        }
+        if UserDefaults.standard.bool(forKey: "HasLifetimePurchase") { return true }
         guard !paymentId.isEmpty else { return false }
         if !SUBSCRIPTIONID_LifeTime.isEmpty, paymentId == SUBSCRIPTIONID_LifeTime { return true }
         if !SUBSCRIPTIONID_ExitOffer.isEmpty, paymentId == SUBSCRIPTIONID_ExitOffer { return true }
@@ -93,6 +95,21 @@ final class AIUsageLimiter {
         }
         let lower = paymentId.lowercased()
         return lower.contains("lifetime") || lower.contains("exit")
+    }
+
+    /// True when `PaymentId` is the Monthly or Yearly auto-renew product.
+    private static func isActiveMonthOrYearPaymentId(_ paymentId: String) -> Bool {
+        guard !paymentId.isEmpty else { return false }
+        if !SUBSCRIPTIONID_OneYear.isEmpty, paymentId == SUBSCRIPTIONID_OneYear { return true }
+        if !SUBSCRIPTIONID_Six_month.isEmpty, paymentId == SUBSCRIPTIONID_Six_month { return true }
+        if paymentId == FallbackIAPConstants.oneYearProductID || paymentId == FallbackIAPConstants.oneMonthProductID {
+            return true
+        }
+        let lower = paymentId.lowercased()
+        if lower.contains("lifetime") || lower.contains("exit") { return false }
+        return lower.contains("oneyear") || lower.contains("1year")
+            || lower.contains("onemonth") || lower.contains("sixmonth")
+            || (lower.contains("month") && !lower.contains("lifetime"))
     }
 
     func freeUsesLeft(_ feature: AIUsageFeature) -> Int {
@@ -249,131 +266,98 @@ final class AIUsageLimiter {
         }
     }
 
-    /// The trigger sheet stays closed for 30 minutes. Offer credits, or say the free use is gone.
-    private func offerCreditsOrToast(_ feature: AIUsageFeature, cost: Int, onGranted: @escaping () -> Void) {
-        let kind: String
-        switch feature {
-        case .chapterSummary: kind = "chapter summary"
-        case .aiChat: kind = "AI chat"
-        default: kind = "explanation"
-        }
-        guard ChallengeWallet.coins >= cost else {
-            OnboardingAuthManager.topViewController()?.view.makeToast(
-                "You've used today's free \(kind).",
-                duration: 2.0,
-                position: .top
-            )
-            return
-        }
-        DailyLimitReachedPresenter.present(
-            feature: feature,
-            creditCost: cost,
-            balance: ChallengeWallet.coins,
-            showUnlimited: !PaymentHistory.sharedInstance.hasActivePurchase(),
-            onUnlimited: { [weak self] in
-                self?.presentPlansPaywall()
-            },
-            onUseCredits: { [weak self] in
-                self?.pending[feature] = .credits(cost)
-                onGranted()
-            }
-        )
+    private func freeLimitPaywallKey(_ feature: AIUsageFeature) -> String {
+        "AIFreeLimitPaywallShown_\(feature.rawValue)"
     }
 
-    private func presentLimitReachedAlert(_ feature: AIUsageFeature, cost: Int, from host: UIViewController?, onGranted: @escaping () -> Void) {
-        // AI chat: no trigger sheet. Enough credits shows the "Use 20 credits?" card; the chat screen shows its own limit card otherwise.
+    private func freeLimitDailyCardKey(_ feature: AIUsageFeature) -> String {
+        "AIFreeLimitDailyCardShown_\(feature.rawValue)"
+    }
+
+    private func paywallTriggerName(for feature: AIUsageFeature) -> String {
         if feature == .aiChat {
-            if hasUnlimitedPlan {
-                pending[feature] = .unlimited
+            return ChallengeWallet.coins <= 0 ? "chatCredits" : "chatLimit"
+        }
+        return "aiExplain"
+    }
+
+    /// Free users after daily free uses: (1) paywall once → (2) Daily Limit card once → (3) Insufficient Credits / spend.
+    private func presentLimitReachedAlert(_ feature: AIUsageFeature, cost: Int, from host: UIViewController?, onGranted: @escaping () -> Void) {
+        if feature == .quiz {
+            presentQuizLimitAlert(cost: cost, from: host, onGranted: onGranted)
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            guard let self = self else { return }
+            App_Protocol.delegateReader?.CloseMenu()
+
+            if self.hasUnlimitedPlan {
+                self.pending[feature] = .unlimited
                 onGranted()
                 return
             }
-            offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
-            return
-        }
-        if PaywallTriggerGate.shared.isEnabled && feature != .quiz {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-                guard let self = self else { return }
-                App_Protocol.delegateReader?.CloseMenu()
-                // After free chats are used, always show the chat paywall again.
-                // Do not auto-grant on dismiss (even if credits are available).
-                // A plan bought moments ago may now count as unlimited — open the feature.
-                if self.hasUnlimitedPlan {
-                    self.pending[feature] = .unlimited
-                    onGranted()
+
+            // 1) Paywall trigger — first time only (no chain into Daily Limit on dismiss).
+            if PaywallTriggerGate.shared.isEnabled,
+               !UserDefaults.standard.bool(forKey: self.freeLimitPaywallKey(feature)) {
+                let trigger = self.paywallTriggerName(for: feature)
+                if PaywallTriggerPresenter.canPresent(trigger),
+                   PaywallTriggerGate.shared.requestUserStarted(trigger) {
+                    UserDefaults.standard.set(true, forKey: self.freeLimitPaywallKey(feature))
                     return
-                }
-                // Limit over (Chat, Get Explanation, Get Summary): each feature has its own trigger sheet (first time,
-                // then again after 7 active days). After it closes, or when it is not due, enough credits shows the
-                // "Use 20 credits?" card, otherwise a toast. Set to false to bring the old shared trigger sheets back.
-                if Self.limitUsesCreditsCardOrToast {
-                    let triggerName = feature == .aiChat
-                        ? (ChallengeWallet.coins <= 0 ? "chatCredits" : "chatLimit")
-                        : "aiExplain"
-                    let opened = PaywallTriggerGate.shared.requestFeatureLimitSheet(feature: feature.rawValue, trigger: triggerName, onClosed: { [weak self] in
-                        guard let self = self else { return }
-                        // Let the sheet finish closing before the credits card or toast.
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-                            if self.hasUnlimitedPlan {
-                                self.pending[feature] = .unlimited
-                                onGranted()
-                                return
-                            }
-                            self.offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
-                        }
-                    })
-                    if !opened {
-                        self.offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
-                    }
-                    return
-                }
-                if feature == .aiChat {
-                    let name = ChallengeWallet.coins <= 0 ? "chatCredits" : "chatLimit"
-                    if !PaywallTriggerGate.shared.requestUserStarted(name) {
-                        self.offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
-                    }
-                    return
-                }
-                // Explanation / summary: the trigger sheet shows on every tap. Closing it offers credits, or the toast.
-                let shown = PaywallTriggerGate.shared.requestAILimitSheet(onClosed: { [weak self] in
-                    guard let self = self else { return }
-                    // Let the sheet finish closing before the credits card or toast.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-                        if self.hasUnlimitedPlan {
-                            self.pending[feature] = .unlimited
-                            onGranted()
-                            return
-                        }
-                        OnboardingAuthManager.topViewController()?.view.makeToast(PaywallTriggerGate.aiInsightsToast, duration: 2.0, position: .top)
-                    }
-                })
-                // Purchased users (e.g. Lifetime, no AI) never get the sheet — never leave the tap with no response.
-                if !shown {
-                    self.offerCreditsOrToast(feature, cost: cost, onGranted: onGranted)
                 }
             }
-            return
+
+            // 3) Credits over → Insufficient Credits → Wallet.
+            guard ChallengeWallet.coins >= cost else {
+                InsufficientCreditsPresenter.present(balance: ChallengeWallet.coins, creditCost: cost)
+                return
+            }
+
+            // 2) Daily Limit Reached card — once only (while still free / not unlimited).
+            if !UserDefaults.standard.bool(forKey: self.freeLimitDailyCardKey(feature)) {
+                UserDefaults.standard.set(true, forKey: self.freeLimitDailyCardKey(feature))
+                DailyLimitReachedPresenter.present(
+                    feature: feature,
+                    creditCost: cost,
+                    balance: ChallengeWallet.coins,
+                    showUnlimited: !PaymentHistory.sharedInstance.hasActivePurchase(),
+                    onUnlimited: { [weak self] in
+                        self?.presentPlansPaywall()
+                    },
+                    onUseCredits: { [weak self] in
+                        self?.pending[feature] = .credits(cost)
+                        onGranted()
+                    }
+                )
+                return
+            }
+
+            // Later taps with enough credits: spend without showing the card again.
+            self.pending[feature] = .credits(cost)
+            onGranted()
         }
+    }
+
+    private func presentQuizLimitAlert(cost: Int, from host: UIViewController?, onGranted: @escaping () -> Void) {
         guard let presenter = host ?? OnboardingAuthManager.topViewController() else { return }
         if presenter.presentedViewController is UIAlertController { return }
 
-        let freeText = feature.dailyFreeLimit == 1 ? "free \(feature.title)" : "\(feature.dailyFreeLimit) free \(feature.title) uses"
+        let freeText = AIUsageFeature.quiz.dailyFreeLimit == 1
+            ? "free \(AIUsageFeature.quiz.title)"
+            : "\(AIUsageFeature.quiz.dailyFreeLimit) free \(AIUsageFeature.quiz.title) uses"
         let message = "You've used today's \(freeText). Use \(cost) credits (you have \(ChallengeWallet.coins)) or get unlimited with a plan."
 
         let alert = UIAlertController(title: "Daily Free Limit Reached", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Use \(cost) Credits", style: .default) { [weak self] _ in
-            // The alert is still closing. Opening the Wallet on it freezes the screen.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                 App_Protocol.delegateReader?.CloseMenu()
                 guard ChallengeWallet.coins >= cost else {
-                    if feature == .aiChat && PaywallTriggerGate.shared.isEnabled {
-                        PaywallTriggerGate.shared.requestUserStarted("chatCredits")
-                        return
-                    }
                     ChallengeWallet.openWalletScreen()
                     return
                 }
-                self?.pending[feature] = .credits(cost)
+                self?.pending[.quiz] = .credits(cost)
                 onGranted()
             }
         })

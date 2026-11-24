@@ -26,7 +26,7 @@ class AdmobManager : NSObject {
     private var pendingRewardedAttempts = 0
     /// Avoid back-to-back interstitials (e.g. verse action then Mark as Read).
     private var lastInterstitialShownAt: TimeInterval = 0
-    private let interstitialMinInterval: TimeInterval = 120
+    private let interstitialMinInterval: TimeInterval = 180
 
      
 }

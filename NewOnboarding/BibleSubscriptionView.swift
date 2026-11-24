@@ -344,6 +344,10 @@ struct BibleSubscriptionView: View {
             return
         }
         if let owned = savedLastPlan() {
+            if PaywallOwnedAlertMemory.wasDismissed(owned: owned.kind, trying: planSelection.plan) {
+                beginSelectedPurchase()
+                return
+            }
             showOwnedPlanAfterLoading(owned: owned.kind, expiry: owned.expiry)
             return
         }
@@ -361,6 +365,10 @@ struct BibleSubscriptionView: View {
                 return
             }
             if let found = lastStorePlan(from: plans) {
+                if PaywallOwnedAlertMemory.wasDismissed(owned: found.kind, trying: planSelection.plan) {
+                    beginSelectedPurchase()
+                    return
+                }
                 presentAlreadyOwnedPlan(
                     owned: found.kind,
                     expiry: found.kind == .lifetime ? nil : storePlanExpiry(kind: found.kind, purchasedAt: found.purchasedAt),
@@ -548,13 +556,17 @@ struct BibleSubscriptionView: View {
 
         let hideAdd = !ownedLifetime || tryingLifetime
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Close", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Close", style: .cancel) { _ in
+            PaywallOwnedAlertMemory.markDismissed(owned: owned, trying: trying)
+        })
         alert.addAction(UIAlertAction(title: "Restore My Current Plan", style: .default) { [self] _ in
+            PaywallOwnedAlertMemory.markDismissed(owned: owned, trying: trying)
             beginRestore()
         })
         if !hideAdd {
             let addLabel = tryingYear ? "Add 1 Year Plan" : "Add 1 Month Plan"
             alert.addAction(UIAlertAction(title: addLabel, style: .default) { [self] _ in
+                PaywallOwnedAlertMemory.markDismissed(owned: owned, trying: trying)
                 beginSelectedPurchase()
             })
         }
@@ -1084,12 +1096,13 @@ private struct PaywallScrollStackView: View {
 
     private var continueFreeButton: some View {
         Button(action: onContinueFree) {
-            Text(OnboardingLocale.text(id: "Lanjut dengan versi gratis", en: "Continue with Free version"))
-                .font(.system(size: isPad ? 15 : 14, weight: .semibold))
-                .foregroundColor(.white.opacity(0.92))
+            Text(OnboardingLocale.text(id: "Lanjut Versi Gratis", en: "Continue Free Version"))
+                .font(.system(size: isPad ? 15 : 14, weight: .regular))
+                .foregroundColor(.white.opacity(0.75))
+                .underline()
         }
         .buttonStyle(PlainButtonStyle())
-        .padding(.top, 6)
+        .padding(.top, 10)
         .padding(.bottom, footerBottomPadding)
     }
 
@@ -1841,6 +1854,23 @@ enum SubscriptionPlan: Equatable {
     case lifetime
 }
 
+/// Session memory so the "already own a plan" alert is not shown again and again.
+private enum PaywallOwnedAlertMemory {
+    private static var dismissed = Set<String>()
+
+    private static func key(owned: PaywallOwnedKind, trying: SubscriptionPlan) -> String {
+        "\(owned)-\(trying)"
+    }
+
+    static func wasDismissed(owned: PaywallOwnedKind, trying: SubscriptionPlan) -> Bool {
+        dismissed.contains(key(owned: owned, trying: trying))
+    }
+
+    static func markDismissed(owned: PaywallOwnedKind, trying: SubscriptionPlan) {
+        dismissed.insert(key(owned: owned, trying: trying))
+    }
+}
+
 private enum PaywallOwnedKind {
     case month
     case year
@@ -1954,10 +1984,12 @@ struct ExitOfferView: View {
                     }
 
                     Button(action: onDismiss) {
-                        Text("Continue Free")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(.white.opacity(0.55))
+                        Text("Continue Free Version")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.white.opacity(0.7))
+                            .underline()
                     }
+                    .buttonStyle(PlainButtonStyle())
                     .padding(.bottom, 8)
                 }
                 .padding(24)

@@ -96,6 +96,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
                 self.Callapi(i:0)
             }
         }
+        KindlyNoteCreditsNotice.presentIfNeeded(surface: .wallet)
     }
     
     

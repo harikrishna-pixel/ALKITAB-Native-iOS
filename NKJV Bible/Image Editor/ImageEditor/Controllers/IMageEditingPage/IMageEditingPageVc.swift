@@ -171,7 +171,8 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
     
     
     @IBAction func BlurVu_Action(_ sender: Any) {
-         BlurVu.isHidden = false
+        // Watermark tap → latest plans paywall over the editor (skip old Buy Premium blur sheet).
+        openLatestPaywallOverEditor()
     }
     
     @IBAction func Cancel_Action(_ sender: Any) {
@@ -190,26 +191,32 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
     
     
     @IBAction func Payment_Action(_ sender: Any) {
-        if NetworkManager.sharedInstance.isConnectedToInternet() {
-            if #available(iOS 15.0, *) {
-                var swiftUIView = BibleSubscriptionView(isPresentedFromOnboarding: false)
-                swiftUIView.dismissHandler = { [weak self] in
-                    self?.dismiss(animated: true) {
-                        self?.CheckPay()
-                    }
+        openLatestPaywallOverEditor()
+    }
+
+    /// Current IAP screen (`BibleSubscriptionView`) presented over the editor.
+    private func openLatestPaywallOverEditor() {
+        BlurVu.isHidden = true
+        guard NetworkManager.sharedInstance.isConnectedToInternet() else {
+            view.makeToast("No internet connection", duration: 2.0, position: .top)
+            return
+        }
+        if #available(iOS 15.0, *) {
+            var swiftUIView = BibleSubscriptionView(isPresentedFromOnboarding: false)
+            swiftUIView.dismissHandler = { [weak self] in
+                self?.dismiss(animated: true) {
+                    self?.CheckPay()
                 }
-                let hostingController = UIHostingController(rootView: swiftUIView)
-                hostingController.modalPresentationStyle = .fullScreen
-                self.present(hostingController, animated: true, completion: nil)
-            } else {
-                let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "SubscrbViewController") as! SubscrbViewController
-                vc.modalPresentationStyle = .overCurrentContext
-                vc.modalTransitionStyle = .crossDissolve
-                vc.presentVu = true
-                self.present(vc, animated: true, completion: nil)
             }
+            let hostingController = UIHostingController(rootView: swiftUIView)
+            hostingController.modalPresentationStyle = .fullScreen
+            present(hostingController, animated: true, completion: nil)
         } else {
-            self.view.makeToast("No internet connection", duration: 2.0, position: .top)
+            let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "SubscrbViewController") as! SubscrbViewController
+            vc.modalPresentationStyle = .overCurrentContext
+            vc.modalTransitionStyle = .crossDissolve
+            vc.presentVu = true
+            present(vc, animated: true, completion: nil)
         }
     }
     

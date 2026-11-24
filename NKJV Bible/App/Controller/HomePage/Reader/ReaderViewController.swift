@@ -919,7 +919,7 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
     func CallAds() {
         
         if PaymentHistory.sharedInstance.paymentInfo() {
-            if  LastClickCount  == 5 {
+            if  LastClickCount  == 20 {
                 LastClickCount = 0
                 UserDefaults.standard.set(LastClickCount, forKey: "LastClickCount")
                 self.IndestrialAd()

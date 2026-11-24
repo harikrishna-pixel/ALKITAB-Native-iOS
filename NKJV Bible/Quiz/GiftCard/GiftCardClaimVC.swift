@@ -7,6 +7,7 @@
 
 import UIKit
 import CoreData
+import SwiftUI
 
 class GiftCardClaimVC: UIViewController, CardProtocol {
 
@@ -38,6 +39,7 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
     @IBOutlet weak var CoinsTxt: UILabel!
     var AdEnable = false
     private var scratchAdTimeout: DispatchWorkItem?
+    private var congratsHost: GiftCardCongratsHost?
     
     var CoinCards:[Any] = [20,30,40,50,60,70,80,90]
     var coins:Int = 0
@@ -118,63 +120,81 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
         
     
     @IBAction func Claim_Answer(_ sender: UIButton) {
+        claimCredits()
+    }
+
+    private func claimCredits() {
         self.TapCarVu.isHidden = true
-        sender.isEnabled = false
-        
+
         if CardType == "" {
             UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+coins, forKey: "WalletMoney")
             self.CardSaver(cardCoins: coins, cartType: "CoinCard")
             self.view.makeToast("Credits claimed successfully!", duration: 2.0, position: .top)
-            
         } else {
             self.CardSaver(cardCoins: 0, cartType: CardType)
         }
         App_Protocol.CardShowdelegate?.ReloadList()
-
         self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
-        
+
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.8) {
-//            self.dismiss(animated: true, completion: nil)
             self.navigationController?.popViewController(animated: true)
         }
     }
-    
-    
+
     @IBAction func CardClick_Action(_ sender: Any) {
         self.TapCarVu.isHidden = true
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.5) {
-                self.AdLoader.isHidden = true
-                self.swipeImage.setImage(UIImage(named: "CoinPic.png"), for: .normal)
-                if UserDefaults.standard.bool(forKey: "ToneSwitch") {
-                    QuizClickSound.shared.CardCollectSound()
-                }
-                UIView.transition(with: self.SwipeView, duration: 0.6, options: .transitionFlipFromLeft,  animations: {
-                    self.swipeImage.isHidden = true
-                    self.ClimeButtonVu.isHidden = false
-                    self.AdVu.isHidden = false
-                })
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.5) {
+            self.AdLoader.isHidden = true
+            self.swipeImage.setImage(UIImage(named: "CoinPic.png"), for: .normal)
+            if UserDefaults.standard.bool(forKey: "ToneSwitch") {
+                QuizClickSound.shared.CardCollectSound()
             }
-//        }
+            UIView.transition(with: self.SwipeView, duration: 0.6, options: .transitionFlipFromLeft, animations: {
+                self.swipeImage.isHidden = true
+                self.ClimeButtonVu.isHidden = true
+                self.AdVu.isHidden = true
+                self.SubView.isHidden = true
+                self.SwipeView.isHidden = true
+            }) { _ in
+                self.showCongratsUI()
+            }
+        }
     }
-    
-    
-    
-    
-    
-    
+
+    private func showCongratsUI() {
+        congratsHost?.removeFromSuperview()
+        view.backgroundColor = UIColor(red: 0.91, green: 0.91, blue: 0.91, alpha: 1)
+        InnerBack?.isHidden = true
+        SwipeView?.isHidden = true
+        let host = GiftCardCongratsHost(credits: coins)
+        host.translatesAutoresizingMaskIntoConstraints = false
+        host.onDoubleAd = { [weak self] in
+            self?.AdClick_Action(UIButton())
+        }
+        host.onClaim = { [weak self] in
+            self?.claimCredits()
+        }
+        view.addSubview(host)
+        NSLayoutConstraint.activate([
+            host.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            host.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            host.topAnchor.constraint(equalTo: BannerVu.bottomAnchor),
+            host.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        congratsHost = host
+        view.bringSubviewToFront(host)
+        view.bringSubviewToFront(AlertVu)
+    }
+
     @IBAction func AdClick_Action(_ sender: Any) {
-        
         if NetworkManager.sharedInstance.isConnectedToInternet() {
-            
             self.ClimeButtonVu.isHidden = true
-            self.ButtonLoader.isHidden = false
+            self.ButtonLoader.isHidden = true
+            congratsHost?.update(credits: coins, isLoadingAd: true)
             AdmobManager.shared.IronSource_Reward_ShowAds(vw: self, RewardAd: "Scratch")
-            self.ClimeButtonVu.isHidden = false
-            // Ads are off for testing, so the shared ad wait never starts. Keep that same wait, then stop the spinner.
             if ADS_DISABLED_FOR_TESTING {
                 scheduleScratchAdTimeout()
             }
-            
         } else {
             self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }
@@ -185,8 +205,9 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
     private func scheduleScratchAdTimeout() {
         scratchAdTimeout?.cancel()
         let work = DispatchWorkItem { [weak self] in
-            guard let self = self, self.ButtonLoader.isHidden == false else { return }
+            guard let self = self else { return }
             self.ButtonLoader.isHidden = true
+            self.congratsHost?.update(credits: self.coins, isLoadingAd: false)
             self.view.makeToast("Ad is not available", duration: 2.0, position: .top)
         }
         scratchAdTimeout = work
@@ -197,15 +218,7 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
     func AdNotAvailable() {
         scratchAdTimeout?.cancel()
         self.ButtonLoader.isHidden = true
-        
-//        UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+self.coins, forKey: "WalletMoney")
-//        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+1.0) {
-////            self.CardSaver(cardCoins: self.coins, cartType: "CoinCard")
-////            App_Protocol.CardShowdelegate?.ReloadList()
-////            self.AlertVu.isHidden = false
-////            self.dismiss(animated: true, completion: nil)
-//        }
-        
+        congratsHost?.update(credits: coins, isLoadingAd: false)
     }
     
     
@@ -215,11 +228,14 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
             UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+(self.coins*2), forKey: "WalletMoney")
             self.ButtonLoader.isHidden = true
+            self.congratsHost?.update(credits: self.coins * 2, isLoadingAd: false)
+            self.congratsHost?.isHidden = true
             self.CardSaver(cardCoins: self.coins*2, cartType: "CoinCard")
             self.ClimeButtonVu.isHidden = true
             self.AdLoader.isHidden = true
             self.AlertVu.isHidden = false
             App_Protocol.CardShowdelegate?.ReloadList()
+            self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
         }
         
     }

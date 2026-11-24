@@ -31,8 +31,10 @@ enum DailyLimitReachedPresenter {
                         onUnlimited: @escaping () -> Void,
                         onUseCredits: @escaping () -> Void) {
         DispatchQueue.main.async {
-            guard let top = OnboardingAuthManager.topViewController() else { return }
-            if top.presentedViewController != nil { return }
+            guard var presenter = OnboardingAuthManager.topViewController() else { return }
+            while let shown = presenter.presentedViewController {
+                presenter = shown
+            }
 
             weak var hostRef: UIViewController?
             let close: (_ then: (() -> Void)?) -> Void = { then in
@@ -59,8 +61,8 @@ enum DailyLimitReachedPresenter {
             host.modalTransitionStyle = .crossDissolve
             host.view.backgroundColor = .clear
             hostRef = host
-            top.view.endEditing(true)
-            top.present(host, animated: true)
+            presenter.view.endEditing(true)
+            presenter.present(host, animated: true)
         }
     }
 }

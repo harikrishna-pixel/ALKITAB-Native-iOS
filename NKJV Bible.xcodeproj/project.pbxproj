@@ -604,6 +604,8 @@
 		A1B2C3D42F46A10100000061 /* PremiumActivatedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000060 /* PremiumActivatedCard.swift */; };
 		A1B2C3D42F46A10100000071 /* InsufficientCreditsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000070 /* InsufficientCreditsCard.swift */; };
 		A1B2C3D42F46A10100000081 /* BeforeYouContinueCreditsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000080 /* BeforeYouContinueCreditsCard.swift */; };
+		A1B2C3D42F46A101000000A1 /* KindlyNoteCreditsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A101000000A0 /* KindlyNoteCreditsCard.swift */; };
+		A1B2C3D42F46A101000000B1 /* GiftCardCongratsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A101000000B0 /* GiftCardCongratsView.swift */; };
 		A1B2C3D42F46A10100000092 /* DailyLimitReachedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000090 /* DailyLimitReachedCard.swift */; };
 		A1B2C3D42F46A10100000002 /* Onboarding5.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000012 /* Onboarding5.swift */; };
 		A1B2C3D42F46A10100000003 /* OnboardingNotificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */; };
@@ -1319,6 +1321,8 @@
 		A1B2C3D42F46A10100000060 /* PremiumActivatedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumActivatedCard.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000070 /* InsufficientCreditsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsufficientCreditsCard.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000080 /* BeforeYouContinueCreditsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeforeYouContinueCreditsCard.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A101000000A0 /* KindlyNoteCreditsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KindlyNoteCreditsCard.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A101000000B0 /* GiftCardCongratsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GiftCardCongratsView.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000090 /* DailyLimitReachedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyLimitReachedCard.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000012 /* Onboarding5.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding5.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingNotificationView.swift; sourceTree = "<group>"; };
@@ -2564,6 +2568,7 @@
 			children = (
 				017C393C2A40401C004C64FA /* gift-card-1.png */,
 				017C393D2A40401C004C64FA /* GiftCardClaimVC.swift */,
+				A1B2C3D42F46A101000000B0 /* GiftCardCongratsView.swift */,
 				017C393E2A40401C004C64FA /* GiftCardCC.swift */,
 				017C393F2A40401C004C64FA /* gift-card.png */,
 				017C39402A40401C004C64FA /* GiftCardVC.swift */,
@@ -3625,6 +3630,7 @@
 				A1B2C3D42F46A10100000060 /* PremiumActivatedCard.swift */,
 				A1B2C3D42F46A10100000070 /* InsufficientCreditsCard.swift */,
 				A1B2C3D42F46A10100000080 /* BeforeYouContinueCreditsCard.swift */,
+				A1B2C3D42F46A101000000A0 /* KindlyNoteCreditsCard.swift */,
 				A1B2C3D42F46A10100000090 /* DailyLimitReachedCard.swift */,
 				6F9FDDE02EEFFEDD00CE0114 /* BibleSubscriptionView.swift */,
 				A1B2C3D42F46A10100000050 /* PaywallTriggerScreens.swift */,
@@ -4465,6 +4471,8 @@
 				A1B2C3D42F46A10100000061 /* PremiumActivatedCard.swift in Sources */,
 				A1B2C3D42F46A10100000071 /* InsufficientCreditsCard.swift in Sources */,
 				A1B2C3D42F46A10100000081 /* BeforeYouContinueCreditsCard.swift in Sources */,
+				A1B2C3D42F46A101000000A1 /* KindlyNoteCreditsCard.swift in Sources */,
+				A1B2C3D42F46A101000000B1 /* GiftCardCongratsView.swift in Sources */,
 				A1B2C3D42F46A10100000092 /* DailyLimitReachedCard.swift in Sources */,
 				A1B2C3D42F46A10100000002 /* Onboarding5.swift in Sources */,
 				A1B2C3D42F46A10100000003 /* OnboardingNotificationView.swift in Sources */,

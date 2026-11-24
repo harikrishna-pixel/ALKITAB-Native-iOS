@@ -663,19 +663,9 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             && ChallengeWallet.coins < AIUsageFeature.aiChat.creditCost
     }
 
+    /// Disabled: free-limit upsell uses paywall / Daily Limit / Insufficient Credits popups instead.
     private func showLimitCard() {
-        view.endEditing(true)
-        guard !showsLimitCard else {
-            scrollToLimitCard()
-            return
-        }
-        showsLimitCard = true
-        tableView.tableFooterView = nil
-        starterFooter = nil
-        starterFooterWidth = 0
-        limitCardFooterWidth = 0
-        installLimitCardIfNeeded()
-        scrollToLimitCard()
+        // No-op — do not show "That's today's free messages" in the chat footer.
     }
 
     private func hideLimitCard() {
@@ -1356,8 +1346,14 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         }
 
         if isOutOfFreeChatsAndCredits {
-            showLimitCard()
-            return
+            // Lifetime / Exit: Insufficient Credits → Wallet. Free users continue into the 1→2→3 limiter flow.
+            if AIUsageLimiter.shared.ownsLifetimeAccess {
+                InsufficientCreditsPresenter.present(
+                    balance: ChallengeWallet.coins,
+                    creditCost: AIUsageFeature.aiChat.creditCost
+                )
+                return
+            }
         }
 
         AIUsageLimiter.shared.requestAccess(.aiChat, from: self) { [weak self] in
