@@ -2442,8 +2442,8 @@ final class PaywallTriggerGate {
         let count = interstitialsToday() + 1
         defaults.set(today, forKey: adDayKey)
         defaults.set(count, forKey: adCountKey)
-        let key = "ad.3." + today
-        guard count >= 3, !negativeThisSession, !hasShown(key) else { return }
+        let key = "ad.20." + today
+        guard count >= 20, !negativeThisSession, !hasShown(key) else { return }
         if defaults.double(forKey: "PaywallTriggerAd3At") == 0 {
             defaults.set(Date().timeIntervalSince1970, forKey: "PaywallTriggerAd3At")
         }
@@ -2561,7 +2561,7 @@ final class PaywallTriggerGate {
             UserDefaults.standard.set(0, forKey: "PaywallTriggerAd3At")
         } else if adAt > 0 {
             let elapsed = Date().timeIntervalSince1970 - adAt
-            let key = "ad.3." + today
+            let key = "ad.20." + today
             if elapsed >= 60, !hasShown(key) {
                 showMilestone(key)
                 if hasShown(key) || openingMilestones.contains(key) {

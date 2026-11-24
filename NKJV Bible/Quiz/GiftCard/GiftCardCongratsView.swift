@@ -64,20 +64,32 @@ struct GiftCardCongratsCard: View {
     private let cardCream = Color(hex: "F6E9C8")
     private let screenBg = Color(hex: "E8E8E8")
 
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+
+    /// Phone keeps near-full width; iPad card stays closer to the previous phone size.
+    private var cardMaxSide: CGFloat? { isPad ? 420 : nil }
+    /// Shorter CTAs on both phone and iPad.
+    private var ctaMaxWidth: CGFloat { isPad ? 340 : 260 }
+    private var titleSize: CGFloat { isPad ? 34 : 30 }
+    private var collectSize: CGFloat { isPad ? 24 : 22 }
+    private var collectNumberSize: CGFloat { isPad ? 28 : 26 }
+
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: isPad ? 22 : 18) {
             card
             doubleButton
+                .frame(maxWidth: ctaMaxWidth)
             claimButton
+                .frame(maxWidth: ctaMaxWidth)
         }
-        .padding(.horizontal, 28)
+        .padding(.horizontal, isPad ? 48 : 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(screenBg.ignoresSafeArea())
     }
 
     private var card: some View {
         GeometryReader { geo in
-            let side = geo.size.width
+            let side = min(geo.size.width, cardMaxSide ?? geo.size.width)
             ZStack(alignment: .top) {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(cardCream)
@@ -86,14 +98,14 @@ struct GiftCardCongratsCard: View {
                 Image("GiftCardChest")
                     .resizable()
                     .scaledToFill()
-                    .scaleEffect(1.22)
+                    .scaleEffect(isPad ? 1.12 : 1.22)
                     .frame(width: side, height: side)
                     .clipped()
 
                 Text("Congratulations!")
-                    .font(.system(size: 26, weight: .bold))
+                    .font(.system(size: titleSize, weight: .bold))
                     .foregroundColor(titleBlue)
-                    .padding(.top, 14)
+                    .padding(.top, isPad ? 18 : 14)
 
                 VStack {
                     Spacer(minLength: 0)
@@ -101,32 +113,34 @@ struct GiftCardCongratsCard: View {
                         Image("GiftCardRibbon")
                             .resizable()
                             .scaledToFit()
-                            .frame(maxWidth: .infinity)
-                            .padding(.horizontal, 0)
+                            .frame(maxWidth: side * (isPad ? 0.92 : 1.0))
+                            .padding(.horizontal, isPad ? 10 : 0)
 
                         collectText
                             .offset(y: -2)
                     }
-                    .padding(.bottom, 4)
+                    .padding(.bottom, isPad ? 8 : 4)
                 }
             }
             .frame(width: side, height: side)
             .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .shadow(color: Color.black.opacity(0.16), radius: 12, y: 6)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
         .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: cardMaxSide ?? .infinity)
     }
 
     private var collectText: some View {
         HStack(spacing: 6) {
             Text("Collect")
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: collectSize, weight: .bold))
                 .foregroundColor(.white)
             Text("\(credits)")
-                .font(.system(size: 20, weight: .heavy))
+                .font(.system(size: collectNumberSize, weight: .heavy))
                 .foregroundColor(creditYellow)
             Text("Credits")
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: collectSize, weight: .bold))
                 .foregroundColor(.white)
         }
     }

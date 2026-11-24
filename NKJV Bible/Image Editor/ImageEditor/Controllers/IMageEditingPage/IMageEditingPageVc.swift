@@ -194,7 +194,7 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
         openLatestPaywallOverEditor()
     }
 
-    /// Current IAP screen (`BibleSubscriptionView`) presented over the editor.
+    /// Main plans paywall (`Know the Word Better` / TriggerPlans) over the editor.
     private func openLatestPaywallOverEditor() {
         BlurVu.isHidden = true
         guard NetworkManager.sharedInstance.isConnectedToInternet() else {
@@ -202,15 +202,11 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
             return
         }
         if #available(iOS 15.0, *) {
-            var swiftUIView = BibleSubscriptionView(isPresentedFromOnboarding: false)
-            swiftUIView.dismissHandler = { [weak self] in
-                self?.dismiss(animated: true) {
-                    self?.CheckPay()
-                }
+            if !PaywallTriggerPresenter.show(trigger: "settings", from: self, onClose: { [weak self] in
+                self?.CheckPay()
+            }) {
+                view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
             }
-            let hostingController = UIHostingController(rootView: swiftUIView)
-            hostingController.modalPresentationStyle = .fullScreen
-            present(hostingController, animated: true, completion: nil)
         } else {
             let vc = kStoryboardMainIphone.instantiateViewController(withIdentifier: "SubscrbViewController") as! SubscrbViewController
             vc.modalPresentationStyle = .overCurrentContext

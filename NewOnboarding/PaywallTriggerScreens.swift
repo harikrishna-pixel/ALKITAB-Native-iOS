@@ -63,7 +63,7 @@ enum PaywallTriggerScreen {
         case "streak.7": return .streak(7)
         case "streak.30": return .day30
         default:
-            if trigger.hasPrefix("ad.3") { return .adCard }
+            if trigger.hasPrefix("ad.20") || trigger.hasPrefix("ad.3") { return .adCard }
             if trigger.hasPrefix("book.") {
                 let name = String(trigger.dropFirst(5))
                 return name.isEmpty ? nil : .book(name)
