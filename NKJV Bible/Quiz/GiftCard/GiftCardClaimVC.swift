@@ -51,7 +51,7 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
         QuizProtocol.CardDelegate = self
         self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
 
         self.AdVu.backgroundColor = Themecolor

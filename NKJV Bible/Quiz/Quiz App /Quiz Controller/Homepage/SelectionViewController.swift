@@ -98,7 +98,7 @@ class SelectionViewController: UIViewController, QuizSelect {
         self.TitleLbl.textColor = self.Themecolor
         
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         self.BlankAlert.textColor = self.Themecolor
         
@@ -143,8 +143,14 @@ class SelectionViewController: UIViewController, QuizSelect {
      
 
     
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
         hideUnusedBackButton()
         self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
         

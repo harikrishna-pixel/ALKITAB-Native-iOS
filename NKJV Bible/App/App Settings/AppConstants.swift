@@ -196,7 +196,38 @@ let GradienColor2:UIColor = UIColor(red: 28.0 / 255.0, green: 70.0 / 255.0, blue
 
 // MARK: Statusbar height and device Height - width
 
+/// Frozen at process start — often 0 before the key window exists. Prefer `LiveBannerHeight(for:)`.
 let StatusbarHeight = UIApplication.shared.statusBarFrame.size.height
+
+/// Live top chrome height (matches Reader). Avoids Quiz headers sliding under Dynamic Island / notch.
+func LiveBannerHeight(for view: UIView) -> CGFloat {
+    if UIDevice.current.userInterfaceIdiom == .pad { return 80 }
+    let top: CGFloat
+    if view.safeAreaInsets.top > 0 {
+        top = view.safeAreaInsets.top
+    } else if let window = view.window {
+        top = window.safeAreaInsets.top
+    } else {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+        top = (windows.first(where: { $0.isKeyWindow }) ?? windows.first)?.safeAreaInsets.top ?? 0
+    }
+    if top > 30 { return max(90, top + 46) }
+    if top > 0 { return 70 }
+    // Insets not ready yet — use tall band; callers re-apply in viewSafeAreaInsetsDidChange.
+    return 90
+}
+
+extension UIViewController {
+    /// Updates a top banner height constraint from live safe-area insets.
+    func applyLiveBannerHeight(_ constraint: NSLayoutConstraint?) {
+        guard let constraint = constraint, isViewLoaded else { return }
+        let height = LiveBannerHeight(for: view)
+        guard abs(constraint.constant - height) > 0.5 else { return }
+        constraint.constant = height
+    }
+}
 
 let screenSize: CGSize = UIScreen.main.bounds.size
 let ScreenWidth = UIScreen.main.bounds.width

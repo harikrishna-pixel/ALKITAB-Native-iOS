@@ -183,7 +183,7 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
         
         if NetworkManager.sharedInstance.isConnectedToInternet() {
             self.AdloadView.isHidden = false
-            AdmobManager.shared.IronSource_Reward_ShowAds(vw: (UIApplication.shared.keyWindow?.rootViewController)!, RewardAd: "ImageWatermark")
+            AdmobManager.shared.IronSource_Reward_ShowAds(vw: self, RewardAd: "ImageWatermark")
         } else {
             self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }

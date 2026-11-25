@@ -34,7 +34,7 @@ class ScoreBoardVC: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         self.ScoreLbl.text = "Score \(Score)/\(QuestionCount)"
 

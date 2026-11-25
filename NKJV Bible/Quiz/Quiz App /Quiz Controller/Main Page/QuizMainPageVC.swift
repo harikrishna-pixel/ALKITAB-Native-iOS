@@ -148,6 +148,8 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
         
         // Apply the theme before the screen appears, so Play Again does not flash the default color.
         self.initQuiz()
+        // Warm rewarded before Try Again / free-credits so a tap can show faster.
+        AdmobManager.shared.IronSource_Reward_AdLoad()
          
     }
     
@@ -198,7 +200,7 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
                  
         MusicBgFile.sharedInstance.playSound()
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         
         self.Notetitle.textColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
@@ -394,7 +396,13 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
     }
 
     override func viewWillAppear(_ animated: Bool) {
+        applyLiveBannerHeight(BannerConstrain)
         self.WalletMoney.text =  "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
     }
     
 
@@ -608,10 +616,10 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
     
     
     func AdNotAvailable() {
-         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.5) {
-//             self.view.makeToast("Ad not Available", duration: 2.0, position: .center)
-         }
-     }
+        DispatchQueue.main.async {
+            self.view.makeToast("Ad is not available", duration: 2.0, position: .top)
+        }
+    }
      func CollectCoin() {
          self.view.makeToast("Credits added to your wallet", duration: 2.0, position: .top)
          
@@ -625,13 +633,8 @@ class QuizMainPageVC: UIViewController, QuizMainPagePC {
         self.FreeCoinFrame.isHidden = true
         
         if NetworkManager.sharedInstance.isConnectedToInternet() {
-
-            AdmobManager.shared.IronSource_Reward_ShowAds(vw: (UIApplication.shared.keyWindow?.rootViewController)!, RewardAd: "MainFreeCoins")
-//
-////            Coins added to your wallet
-//            UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+rewardCoins, forKey: "Coins")
-//            self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
-            
+            // Host = this quiz VC so wait / unavailable toasts show here immediately.
+            AdmobManager.shared.IronSource_Reward_ShowAds(vw: self, RewardAd: "MainFreeCoins")
         } else {
             self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }

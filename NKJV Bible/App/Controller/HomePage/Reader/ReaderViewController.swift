@@ -310,6 +310,10 @@ class ReaderViewController: UIViewController, ReaderDelegate, ProgressViewDelega
         // Safe area is reliable once on-screen (fixes Exit → Home chrome on all devices).
         applyReaderChromeSafeArea()
         PaywallTriggerGate.shared.flush()
+        // Inside the app: keep IronSource rewarded/interstitial warm for instant taps.
+        if PaymentHistory.sharedInstance.paymentInfo() {
+            AdmobManager.shared.prepareAdsForAppSession()
+        }
 
         
         if PaymentHistory.sharedInstance.paymentInfo() && self.AdShow {

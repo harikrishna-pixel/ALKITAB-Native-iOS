@@ -62,7 +62,7 @@ class QuizWalletVC: UIViewController, UITableViewDelegate, UITableViewDataSource
     override func viewDidLoad() {
         
         super.viewDidLoad()
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         
         self.WalletCoin.text =  "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"

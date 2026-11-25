@@ -24,11 +24,24 @@ class AdmobManager : NSObject {
     private var pendingRewardedShow = false
     private var pendingRewardedPollTimer: Timer?
     private var pendingRewardedAttempts = 0
+    /// Max poll ticks (0.5s each). Rewarded taps fail over in ~5s if still empty.
+    private var pendingRewardedMaxAttempts = 10
     /// Avoid back-to-back interstitials (e.g. verse action then Mark as Read).
     private var lastInterstitialShownAt: TimeInterval = 0
     private let interstitialMinInterval: TimeInterval = 180
 
-     
+    /// Call when the user is inside the main app. Warms IronSource rewarded + interstitial if empty.
+    func prepareAdsForAppSession() {
+        if ADS_DISABLED_FOR_TESTING { return }
+        let key = IRONSOURCE_KEY.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { return }
+        if !IronSource.hasRewardedVideo() {
+            IronSource_Reward_AdLoad()
+        }
+        if !IronSource.hasInterstitial() {
+            IronSource_Interstitial_AdLoad()
+        }
+    }
 }
     
 
@@ -200,6 +213,8 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
         // Reload immediately so the next 10th/20th/30th Verse Image trigger has an ad ready.
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.5) {
             self.IronSource_Interstitial_AdLoad()
+            // Shared close callback — also keep rewarded warm for Quiz Try Again / wallet.
+            self.IronSource_Reward_AdLoad()
         }
         
     }
@@ -242,6 +257,14 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
         // Do NOT clear pending here. IronSource reports "no ad" while a load is in progress;
         // cancelling immediately made Gift Card Skip always fail. Timeout poll handles final fail.
         print("has No Available Ad (ignored while pending=\(pendingRewardedShow))")
+        // When idle, retry load so the next Try Again / reward tap has a warmer chance.
+        guard !pendingRewardedShow else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            guard let self = self, !self.pendingRewardedShow else { return }
+            if !IronSource.hasRewardedVideo() {
+                self.IronSource_Reward_AdLoad()
+            }
+        }
     }
     
     func didReceiveReward(forPlacement placementInfo: ISPlacementInfo!, with adInfo: ISAdInfo!) {
@@ -297,6 +320,8 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
         } else {
             pendingRewardedShow = true
             pendingRewardedAttempts = 0
+            // Ready → show ASAP via poll; if still empty after ~5s → fallback condition.
+            pendingRewardedMaxAttempts = 10
             showAdWaitToastIfNeeded()
             IronSource_Reward_AdLoad()
             startPendingRewardedPoll()
@@ -330,8 +355,8 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
             if self.pendingRewardedAttempts % 6 == 0 {
                 self.IronSource_Reward_AdLoad()
             }
-            // Give up after ~15 seconds.
-            if self.pendingRewardedAttempts >= 30 {
+            // Give up after ~5s → notify callers (credits card / unavailable toast).
+            if self.pendingRewardedAttempts >= self.pendingRewardedMaxAttempts {
                 self.clearPendingRewardedShow()
                 DispatchQueue.main.async {
                     self.notifyRewardedAdNotAvailable()
@@ -352,8 +377,10 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
     private func showAdWaitToastIfNeeded() {
         switch RewardAd {
         case "Tryagain", "FreeCoins", "MainFreeCoins", "WatchAd", "Scratch", "ImageWatermark", "OpenCard", "SubscrbViewController", "PaywallTrigger":
+            let host = vc
             DispatchQueue.main.async {
-                self.visibleToastView()?.makeToast("Please wait for few secs..", duration: 2.0, position: .top)
+                // Prefer the screen that requested the ad so the toast appears immediately.
+                (host?.view ?? self.visibleToastView())?.makeToast("Please wait for few secs..", duration: 2.0, position: .top)
             }
         default:
             break
@@ -363,8 +390,9 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
     private func showAdUnavailableToastIfNeeded() {
         switch RewardAd {
         case "Tryagain", "FreeCoins", "MainFreeCoins", "WatchAd", "Scratch", "ImageWatermark", "OpenCard", "SubscrbViewController", "PaywallTrigger":
+            let host = vc
             DispatchQueue.main.async {
-                self.visibleToastView()?.makeToast("Ad is not available", duration: 2.0, position: .top)
+                (host?.view ?? self.visibleToastView())?.makeToast("Ad is not available", duration: 2.0, position: .top)
             }
         default:
             break
@@ -406,6 +434,10 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
             App_Protocol.UnituAdCallDelegate?.NoAdClosed()
         } else if RewardAd == "PaywallTrigger" {
             PaywallTriggerReward.onReward = nil
+        }
+        // Re-warm for the next tap (do not leave the pool empty after a miss).
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.IronSource_Reward_AdLoad()
         }
     }
     

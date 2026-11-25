@@ -27,7 +27,7 @@ class QuizSettingVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
         super.viewDidLoad()
         
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         // Switches don't navigate; suppress blue cell highlight flash on toggle/tap.
         self.QuizSettingsTable.allowsSelection = false

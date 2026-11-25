@@ -85,9 +85,14 @@ class ResultPopupVC: UIViewController, ResultProtocol {
         }
         
         QuizProtocol.ResultProtocoldelegate = self
+
+        // Warm rewarded before Try Again so a ready ad can show immediately on tap.
+        if !AnsStatus {
+            AdmobManager.shared.IronSource_Reward_AdLoad()
+        }
     
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         self.Answe_Status.textColor = Themecolor
         
@@ -172,7 +177,7 @@ class ResultPopupVC: UIViewController, ResultProtocol {
         
         
         if NetworkManager.sharedInstance.isConnectedToInternet() {
-            AdmobManager.shared.IronSource_Reward_ShowAds(vw: (UIApplication.shared.keyWindow?.rootViewController)!, RewardAd: "Tryagain")
+            AdmobManager.shared.IronSource_Reward_ShowAds(vw: self, RewardAd: "Tryagain")
             
         } else {
             self.TryAgainPopup.isHidden = false

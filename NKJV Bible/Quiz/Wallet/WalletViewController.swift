@@ -70,7 +70,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
         QuizProtocol.WalletProtocoldelegate = self
         
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         
         
@@ -217,7 +217,7 @@ class WalletViewController: UIViewController, UITableViewDelegate, UITableViewDa
     @objc func CallInterstitialAd(sender: UIButton!) {
         
         if NetworkManager.sharedInstance.isConnectedToInternet() {
-            AdmobManager.shared.IronSource_Reward_ShowAds(vw: (UIApplication.shared.keyWindow?.rootViewController)!, RewardAd: "FreeCoins")
+            AdmobManager.shared.IronSource_Reward_ShowAds(vw: self, RewardAd: "FreeCoins")
         } else {
             self.view.makeToast("No internet connection", duration: 2.0, position: .top)
         }

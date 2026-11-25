@@ -32,7 +32,7 @@ class GiftCardVC: UIViewController,  UICollectionViewDelegate, UICollectionViewD
 
         App_Protocol.CardShowdelegate = self
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         
         self.GiftCardCV.register(UINib(nibName: "CardView", bundle: nil), forCellWithReuseIdentifier: "CardView")

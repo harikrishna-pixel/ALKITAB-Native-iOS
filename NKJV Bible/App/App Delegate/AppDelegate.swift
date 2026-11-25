@@ -516,7 +516,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     print("   → Loading fallback or cached data...")
                     if API_Switch == "1" {
                         GetAppInfo.shared.loadFallbackOrCachedData()
-                        UnityAdClass.sharedInstance.initializeIfNeeded()
+                        // Same ad preload as success path so rewarded/interstitial still warm.
+                        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+3.5) {
+                            UnityAdClass.sharedInstance.initializeIfNeeded()
+                            AdmobManager.shared.IronSource_Interstitial_AdLoad()
+                            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.5) {
+                                AdmobManager.shared.IronSource_Reward_AdLoad()
+                            }
+                        }
                     }
                 }
             })
@@ -526,7 +533,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         print("   → Loading fallback or cached data...")
         if API_Switch == "1" {
             GetAppInfo.shared.loadFallbackOrCachedData()
+            // Preload when network returns later via normal show/load paths; still init Unity.
             UnityAdClass.sharedInstance.initializeIfNeeded()
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+3.5) {
+                AdmobManager.shared.IronSource_Interstitial_AdLoad()
+                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.5) {
+                    AdmobManager.shared.IronSource_Reward_AdLoad()
+                }
+            }
         }
     }
 }

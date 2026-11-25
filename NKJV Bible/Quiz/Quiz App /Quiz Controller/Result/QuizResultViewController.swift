@@ -41,7 +41,7 @@ class QuizResultViewController: UIViewController {
         super.viewDidLoad()
         
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         
         self.circleProgressView.progress = Double(Correct)/10
