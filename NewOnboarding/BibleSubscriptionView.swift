@@ -2167,8 +2167,8 @@ final class PaywallTriggerGate {
 
     private init() {}
 
-    /// Individual single-book app, on the current paywall. Pro onboarding never enters here.
-    var isEnabled: Bool { APP_TYPE == "1" && usesOldOnboarding }
+    /// Individual single-book or dual-book app, on the current paywall. Pro onboarding never enters here.
+    var isEnabled: Bool { (APP_TYPE == "1" || isDualBibleApp) && usesOldOnboarding }
 
     var showsSettingsPremiumRow: Bool { isEnabled && !isEntitled }
 

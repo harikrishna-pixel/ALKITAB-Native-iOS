@@ -171,8 +171,9 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
     
     
     @IBAction func BlurVu_Action(_ sender: Any) {
-        // Watermark tap → latest plans paywall over the editor (skip old Buy Premium blur sheet).
-        openLatestPaywallOverEditor()
+        // Watermark tap → Buy Premium / Free remove / Cancel sheet (storyboard BlurVu).
+        BlurVu.isHidden = false
+        view.bringSubviewToFront(BlurVu)
     }
     
     @IBAction func Cancel_Action(_ sender: Any) {
@@ -194,7 +195,7 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
         openLatestPaywallOverEditor()
     }
 
-    /// Main plans paywall (`Know the Word Better` / TriggerPlans) over the editor.
+    /// Main plans paywall (`Know the Word Better` / TriggerPlans) over the editor — never BibleSubscriptionView.
     private func openLatestPaywallOverEditor() {
         BlurVu.isHidden = true
         guard NetworkManager.sharedInstance.isConnectedToInternet() else {
@@ -202,9 +203,12 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
             return
         }
         if #available(iOS 15.0, *) {
-            if !PaywallTriggerPresenter.show(trigger: "settings", from: self, onClose: { [weak self] in
+            let host = OnboardingAuthManager.topViewController() ?? self
+            let opened = PaywallTriggerPresenter.show(trigger: "settings", from: host, onClose: { [weak self] in
                 self?.CheckPay()
-            }) {
+            }) || PaywallTriggerPresenter.showMainPlans(from: host)
+            if !opened {
+                StoreManager.preloadProducts()
                 view.makeToast("Please check your internet connection and try again", duration: 2.0, position: .top)
             }
         } else {

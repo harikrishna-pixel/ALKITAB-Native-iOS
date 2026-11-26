@@ -49,9 +49,12 @@ var TSDefaultlanguage = UserDefaults.standard.string(forKey: "text_to_speech_ide
 
 // MARK: - App type
 
-let APP_TYPE = "1"     // BIBLE WITH SINGLE BOOK
-//let APP_TYPE = "2"       // BIBLE WITH DUEL BOOK
-//let APP_TYPE = "3"     // BIBLE WITH MULTI BOOK
+let APP_TYPE = "1"     // BIBLE WITH SINGLE BOOK (individual / normal)
+//let APP_TYPE = "2"       // BIBLE WITH DUAL BOOK (two languages side by side)
+//let APP_TYPE = "3"     // BIBLE WITH DUAL BOOK (same dual behavior as "2")
+
+/// Dual reading + second-language pack. True for APP_TYPE "2" or "3".
+var isDualBibleApp: Bool { APP_TYPE == "2" || APP_TYPE == "3" }
 
 // "2" = new onboarding. Get Explanation and AI Chat stay hidden.
 // "1" = the earlier onboarding, then the old paywall. Get Explanation and AI Chat stay shown.

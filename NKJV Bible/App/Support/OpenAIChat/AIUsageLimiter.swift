@@ -172,11 +172,17 @@ final class AIUsageLimiter {
         // Keep onGranted alive across the disclaimer dismiss — do not rely on the caller's view staying around.
         let grant = onGranted
         if !AIDisclaimer.isAccepted {
-            AIDisclaimer.present {
-                // Singleton — always re-enter after Continue so the explanation/chat/summary/quiz opens.
-                AIUsageLimiter.shared.requestAccess(feature, units: units, from: host, onGranted: grant)
+            // Dual: Chat / explanation / chapter summary already show AIConsent —
+            // skip the default "About AI" disclaimer so only that sheet appears.
+            let dualUsesAIConsent = isDualBibleApp
+                && (feature == .aiChat || feature == .explanation || feature == .chapterSummary)
+            if !dualUsesAIConsent {
+                AIDisclaimer.present {
+                    // Singleton — always re-enter after Continue so the explanation/chat/summary/quiz opens.
+                    AIUsageLimiter.shared.requestAccess(feature, units: units, from: host, onGranted: grant)
+                }
+                return
             }
-            return
         }
         // Exit / Lifetime: one-time plan notice, then continue (credits still apply; no free-limit UI).
         if ownsLifetimeAccess && LifetimeAIAccessNotice.shouldShow {

@@ -221,7 +221,7 @@ class ReaderSourceViewController: UIViewController, UICollectionViewDelegate, UI
              
              cell.DotLine.addDashedLine()
             
-             if UserDefaults.standard.string(forKey: "SecondLanguage") ?? "" != ""  && APP_TYPE != "1" {
+             if UserDefaults.standard.string(forKey: "SecondLanguage") ?? "" != ""  && isDualBibleApp {
                  BibleTxt = "\n\n\(self.SecondBibleList.count > indexPath.row ? self.SecondBibleList[indexPath.row]:"")"
              }
              

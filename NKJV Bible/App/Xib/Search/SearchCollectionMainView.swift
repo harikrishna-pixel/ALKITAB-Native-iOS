@@ -157,7 +157,7 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
                 return CGSize(width: self.SearchCollectionVu.frame.width, height: height)
             }
 
-            let seperatedValue:Array<String> =  self.corevalueReverced[indexPath.row].components(separatedBy: "_")
+            let seperatedValue:Array<String> =  DualBibleHelper.libraryValues(self.corevalueReverced[indexPath.row].components(separatedBy: "_"))
             if seperatedValue[2] != ""  && coreTitle == "Notes" {
                 LineCount =  seperatedValue[3].lines()
                 LineNote =  seperatedValue[2].Notelines()
@@ -272,7 +272,7 @@ class SearchCollectionMainView: UIView, UICollectionViewDelegate, UICollectionVi
                 return cell
             }
 
-            let seperatedValue:Array<String> =  self.corevalueReverced[indexPath.row].components(separatedBy: "_")
+            let seperatedValue:Array<String> =  DualBibleHelper.libraryValues(self.corevalueReverced[indexPath.row].components(separatedBy: "_"))
 
             if seperatedValue[2] != ""  && coreTitle == "Notes" {
 

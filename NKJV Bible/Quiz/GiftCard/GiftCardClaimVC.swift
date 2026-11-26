@@ -229,11 +229,13 @@ class GiftCardClaimVC: UIViewController, CardProtocol {
             UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "WalletMoney")+(self.coins*2), forKey: "WalletMoney")
             self.ButtonLoader.isHidden = true
             self.congratsHost?.update(credits: self.coins * 2, isLoadingAd: false)
-            self.congratsHost?.isHidden = true
+            // Keep congrats / gift-card screen visible; Credits Collected sits on top with dim overlay.
+            self.congratsHost?.isHidden = false
             self.CardSaver(cardCoins: self.coins*2, cartType: "CoinCard")
             self.ClimeButtonVu.isHidden = true
             self.AdLoader.isHidden = true
             self.AlertVu.isHidden = false
+            self.view.bringSubviewToFront(self.AlertVu)
             App_Protocol.CardShowdelegate?.ReloadList()
             self.WalletMoney.text = "\(UserDefaults.standard.integer(forKey: "WalletMoney"))"
         }

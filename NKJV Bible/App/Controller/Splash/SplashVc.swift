@@ -35,6 +35,7 @@ class SplashVc: UIViewController, SplashDelegate {
         AppConstrains.shared.Constrains()
         App_Protocol.DelegateSplash = self
         configureSplashBranding()
+        showDualSplash()
         
         // MARK: - Preload IAP Products Early
         // Load fallback or cached data first, then preload products
@@ -67,6 +68,8 @@ class SplashVc: UIViewController, SplashDelegate {
             
         } else {
             BookApi.shared.GetBookCatagory()
+            // Returning dual-Bible installs often have 101 only; ensure 102 is present for reader dual verses.
+            SecondLanguage.ensureSecondLanguagePack()
             
             let notification_data = DailyVerseLanguageConversion.sharedInstance.DailyVerseLAst().components(separatedBy: "_")
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
@@ -252,9 +255,24 @@ class SplashVc: UIViewController, SplashDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 
+    /// Dual-Bible app: cover the original splash with the dual splash so only one splash is ever visible.
+    private func showDualSplash() {
+        guard isDualBibleApp else { return }
+        let splash = UIHostingController(rootView: DualSplashView())
+        addChild(splash)
+        splash.view.frame = view.bounds
+        splash.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(splash.view)
+        splash.didMove(toParent: self)
+    }
+
     private func presentOnboarding() {
         DispatchQueue.main.async {
-            if usesOldOnboarding {
+            if isDualBibleApp {
+                // Dual-Bible app: welcome, goal, explain a verse, reminders, then the paywall (splash already shown above).
+                let hostingController = UIHostingController(rootView: DualOnboardingRoot())
+                self.navigationController?.pushViewController(hostingController, animated: false)
+            } else if usesOldOnboarding {
                 let hostingController = UIHostingController(rootView: BeforeOnboarding1())
                 self.navigationController?.pushViewController(hostingController, animated: true)
             } else {
@@ -292,13 +310,31 @@ class SplashVc: UIViewController, SplashDelegate {
                     if progress == 1.0 {
                         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
                             
-                            if APP_TYPE == "2" && UserDefaults.standard.string(forKey: "SecondLanguage") ?? "" == "" {
-                                self.filePath = Bundle.main.url(forResource: "102", withExtension: "zip")!
+                            let unzippedLanguage = self.filePath.deletingPathExtension().lastPathComponent
+                            if unzippedLanguage == "102" {
                                 UserDefaults.standard.set("102", forKey: "SecondLanguage")
-                                self.defaultAppSelection()
                                 self.showFileInPath(Language: "102")
+                            }
+
+                            let needsSecondPack = isDualBibleApp &&
+                                !FileManager.default.fileExists(
+                                    atPath: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                                        .appendingPathComponent("102/audio.plist").path
+                                )
+
+                            if needsSecondPack, let secondZip = Bundle.main.url(forResource: "102", withExtension: "zip") {
+                                self.filePath = secondZip
+                                self.defaultAppSelection()
                             } else {
                                 UserDefaults.standard.set("101", forKey: "SelectedLanguage")
+                                if isDualBibleApp,
+                                   (UserDefaults.standard.string(forKey: "SecondLanguage") ?? "").isEmpty,
+                                   FileManager.default.fileExists(
+                                    atPath: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                                        .appendingPathComponent("102/audio.plist").path
+                                   ) {
+                                    UserDefaults.standard.set("102", forKey: "SecondLanguage")
+                                }
                                 self.showFileInPath(Language: "101")
                                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+0.2) {
                                     var AudioBibleName = BibleContent.sharedInstance.BookToPosition()[0]

@@ -89,6 +89,10 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     var BookName:String = ""
     var Pageindex:Int = -1
     var BookVerse:Array<String>?
+    /// Second language verse saved after the primary one (empty when dual is off).
+    private var dualSuffix: String { DualBibleHelper.suffix(forKey: "\(BookName)-\(Pageindex-1):\(VersePosition)") }
+    /// Same, with the second book name and reference, used for Copy and Share.
+    private var dualTitledSuffix: String { DualBibleHelper.titledSuffix(forKey: "\(BookName)-\(Pageindex-1):\(VersePosition)") }
     var Notetxt:String = ""
     var BookmarkStatus:String = ""
     var ColorCode:String = ""
@@ -492,7 +496,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
             if self.isAppliedHighlight(HighlightColors[indexPath.row]) {
                 self.SelectedColorCode = ""
                 self.SelectedColor = -1
-                CoreDataModel.sharedInstance.coreDataInsert(CDBookSavedInfo, bookVerse:"\(BookName)-\(Pageindex-1):\(VersePosition)" , color: "#000000", Verses: self.BookVerse![VersePosition-1])
+                CoreDataModel.sharedInstance.coreDataInsert(CDBookSavedInfo, bookVerse:"\(BookName)-\(Pageindex-1):\(VersePosition)" , color: "#000000", Verses: self.BookVerse![VersePosition-1] + dualSuffix)
                 // BUG FIX 2: OLD CODE - No toast message was shown when highlight was removed (caused confusion)
                 // (No toast message here before)
                 // BUG FIX 2: NEW CODE - Added toast message to confirm highlight removal
@@ -500,7 +504,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
             } else {
                 self.SelectedColorCode = "#\(HighlightColors[indexPath.row])"
                 
-                CoreDataModel.sharedInstance.coreDataInsert(CDBookSavedInfo, bookVerse:"\(BookName)-\(Pageindex-1):\(VersePosition)" , color: "#\(HighlightColors[self.SelectedColor])", Verses: self.BookVerse![VersePosition-1])
+                CoreDataModel.sharedInstance.coreDataInsert(CDBookSavedInfo, bookVerse:"\(BookName)-\(Pageindex-1):\(VersePosition)" , color: "#\(HighlightColors[self.SelectedColor])", Verses: self.BookVerse![VersePosition-1] + dualSuffix)
                 // BUG FIX 2: OLD CODE - No toast message was shown when highlight was saved (caused confusion)
                 // (No toast message here before)
                 // BUG FIX 2: NEW CODE - Added toast message to confirm highlight save
@@ -546,7 +550,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "OfferClick")+1, forKey: "OfferClick")
         
         if BookmarkStatus == "bookMarked" {
-            CoreDataModel.sharedInstance.coreDataInsertBookmarked(CDBookSavedInfo, bookVerse:"\(BookName)-\(Pageindex-1):\(VersePosition)" , Bookmark: "", Verses: self.BookVerse![VersePosition-1])
+            CoreDataModel.sharedInstance.coreDataInsertBookmarked(CDBookSavedInfo, bookVerse:"\(BookName)-\(Pageindex-1):\(VersePosition)" , Bookmark: "", Verses: self.BookVerse![VersePosition-1] + dualSuffix)
             
             
             
@@ -562,7 +566,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
         } else {
             
             BookmarkStatus = "bookMarked"
-            CoreDataModel.sharedInstance.coreDataInsertBookmarked(CDBookSavedInfo, bookVerse:"\(BookName)-\(Pageindex-1):\(VersePosition)" , Bookmark: "bookMarked", Verses: self.BookVerse![VersePosition-1])
+            CoreDataModel.sharedInstance.coreDataInsertBookmarked(CDBookSavedInfo, bookVerse:"\(BookName)-\(Pageindex-1):\(VersePosition)" , Bookmark: "bookMarked", Verses: self.BookVerse![VersePosition-1] + dualSuffix)
 
             
             UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Bookmark saved Successfully!!", duration: 2.0, position: .top)
@@ -583,7 +587,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     @IBAction func UnderlineAction(_ sender: Any) {
         UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "OfferClick")+1, forKey: "OfferClick")
         
-        CoreDataModel.sharedInstance.coreDataInsertUnderLine(CDBookSavedInfo, bookVerse: "\(BookName)-\(Pageindex-1):\(VersePosition)", Bookmark: "", Verses: self.BookVerse![VersePosition-1], Underlinestatus: (UnderlineStatus == "true" ? false:true))
+        CoreDataModel.sharedInstance.coreDataInsertUnderLine(CDBookSavedInfo, bookVerse: "\(BookName)-\(Pageindex-1):\(VersePosition)", Bookmark: "", Verses: self.BookVerse![VersePosition-1] + dualSuffix, Underlinestatus: (UnderlineStatus == "true" ? false:true))
                 
         UIApplication.shared.keyWindow?.rootViewController!.view.makeToast(UnderlineStatus == "true" ?  "Underline Removed Successfully!!" : "Verse Underlined Successfully!!", duration: 2.0, position: .top)
         
@@ -617,7 +621,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     @IBAction func CopyAction(_ sender: Any) {
         UserDefaults.standard.setValue(UserDefaults.standard.integer(forKey: "OfferClick")+1, forKey: "OfferClick")
         
-        UIPasteboard.general.string = "\(self.BookVerse![VersePosition-1]) \n\n      \(BookName)-\(Pageindex-1):\(VersePosition) \n\n \(APP_LINK)"
+        UIPasteboard.general.string = "\(self.BookVerse![VersePosition-1])\(dualTitledSuffix) \n\n      \(BookName)-\(Pageindex-1):\(VersePosition) \n\n \(APP_LINK)"
 
         UIApplication.shared.keyWindow?.rootViewController!.view.makeToast("Copied Successfully!!", duration: 2.0, position: .top)
         
@@ -659,7 +663,7 @@ class VersesMenu: UIView, UICollectionViewDelegate, UICollectionViewDataSource, 
     
     
     @IBAction func ShareAction(_ sender: Any) {
-        App_Protocol.delegateReader?.shared(VerseStr: self.BookVerse![VersePosition-1], Bookname: "\(BookName)-\(Pageindex-1):\(VersePosition)")
+        App_Protocol.delegateReader?.shared(VerseStr: self.BookVerse![VersePosition-1] + dualTitledSuffix, Bookname: "\(BookName)-\(Pageindex-1):\(VersePosition)")
     }
     
     @IBAction func ExplainAction(_ sender: Any) {

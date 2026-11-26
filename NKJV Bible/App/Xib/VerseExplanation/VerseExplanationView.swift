@@ -490,6 +490,7 @@ final class VerseExplanationView: UIView {
     }
 
     private func requestExplanation() {
+        guard consentAllows(retry: { [weak self] in self?.requestExplanation() }) else { return }
         guard !isLoading else { return }
         guard !verseText.isEmpty else {
             showError("Please try again")
@@ -501,7 +502,9 @@ final class VerseExplanationView: UIView {
 
         fetchGeneration += 1
         let generation = fetchGeneration
-        let languageCode = UserDefaults.standard.string(forKey: "language_code") ?? language_code
+        let languageCode = isDualBibleApp
+            ? AIAnswerLanguage.selected.code.lowercased()
+            : (UserDefaults.standard.string(forKey: "language_code") ?? language_code)
         fetchTask?.cancel()
         let task = OpenAIExplanationService.shared.fetchExplanation(
             verseReference: verseReference,
@@ -547,7 +550,17 @@ final class VerseExplanationView: UIView {
         }
     }
 
+    /// Dual apps: ask for answer-language consent once before AI explanation/summary.
+    private func consentAllows(retry: @escaping () -> Void) -> Bool {
+        guard isDualBibleApp else { return true }
+        if AIAnswerLanguage.granted { return true }
+        guard let host = OnboardingAuthManager.topViewController() else { return true }
+        AIConsentPresenter.confirm(from: host, onAllow: retry, onDecline: {})
+        return false
+    }
+
     private func requestChapterSummary() {
+        guard consentAllows(retry: { [weak self] in self?.requestChapterSummary() }) else { return }
         guard !isLoading else { return }
         guard !verseText.isEmpty else {
             showError("Please try again")
@@ -559,7 +572,9 @@ final class VerseExplanationView: UIView {
 
         fetchGeneration += 1
         let generation = fetchGeneration
-        let languageCode = UserDefaults.standard.string(forKey: "language_code") ?? language_code
+        let languageCode = isDualBibleApp
+            ? AIAnswerLanguage.selected.code.lowercased()
+            : (UserDefaults.standard.string(forKey: "language_code") ?? language_code)
         fetchTask?.cancel()
         let task = OpenAIExplanationService.shared.fetchChapterSummary(
             chapterReference: screenTitle ?? verseReference.replacingOccurrences(of: "-", with: " "),

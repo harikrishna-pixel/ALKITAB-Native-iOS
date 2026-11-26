@@ -62,7 +62,7 @@ class SaveNotes: UIView, UITextViewDelegate {
     @IBAction func NotNow(_ sender: Any) {
 
         if self.NotNowBtn.titleLabel?.text ==  "Delete" {
-            CoreDataModel.sharedInstance.coreDataInsertNote(CDBookSavedInfo, bookVerse: "\(self.Bookname)-\(self.ChapterNo)", notes: "", Verses: self.VerseStr)
+            CoreDataModel.sharedInstance.coreDataInsertNote(CDBookSavedInfo, bookVerse: "\(self.Bookname)-\(self.ChapterNo)", notes: "", Verses: self.VerseStr + DualBibleHelper.suffix(forKey: "\(self.Bookname)-\(self.ChapterNo)"))
             App_Protocol.DelegateVersesMenuPopup?.ChangeNote(Notetxt: "", true)
             App_Protocol.delegateReaderSource?.ReloadBibleData(ChapterNo:UserDefaults.standard.integer(forKey: "BookChapter"))
         }
@@ -97,7 +97,7 @@ class SaveNotes: UIView, UITextViewDelegate {
             let isUpdate = (self.SaveBtn.titleLabel?.text == "Update")
             
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()) {
-                CoreDataModel.sharedInstance.coreDataInsertNote(CDBookSavedInfo, bookVerse: "\(self.Bookname)-\(self.ChapterNo)", notes: self.NoteTxtVu.text ?? "", Verses: self.VerseStr)
+                CoreDataModel.sharedInstance.coreDataInsertNote(CDBookSavedInfo, bookVerse: "\(self.Bookname)-\(self.ChapterNo)", notes: self.NoteTxtVu.text ?? "", Verses: self.VerseStr + DualBibleHelper.suffix(forKey: "\(self.Bookname)-\(self.ChapterNo)"))
                 
                 // Toast on a live view before dismissing notes (avoids toast-after-remove crash/stack).
                 let message = isUpdate ? "Update notes successfully" : "Notes Saved Successfully"

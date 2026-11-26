@@ -95,7 +95,7 @@ class PopupMenu: UIView {
             self.FrameHeightConstrain.constant = CGFloat(187 + Popupframetext.maxNumberOfLinesHome)
         } else {
             self.DeleteVu.isHidden = false
-            self.Popupframetext.text = " \(seperateArray[3])"
+            self.Popupframetext.text = " \(DualBibleHelper.libraryText(seperateArray[3], key: seperateArray[0]))"
             self.PopupframeBook.text = seperateArray[0].replacingOccurrences(of: "-", with: " ")
         }
         

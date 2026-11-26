@@ -166,6 +166,8 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
 
     private let bannerView = UIView()
     private let titleLabel = UILabel()
+    private let languageControl = UISegmentedControl()
+    private var didAskConsent = false
     private let backImageView = UIImageView()
     private let backButton = UIButton(type: .system)
     private let tableView = UITableView(frame: .zero, style: .plain)
@@ -208,6 +210,16 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         setupUI()
         setupKeyboardObservers()
         NotificationCenter.default.addObserver(self, selector: #selector(chatCreditsAdded(_:)), name: AIUsageLimiter.chatCreditsAdded, object: nil)
+        if isDualBibleApp {
+            applyAnswerLanguage()
+        }
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if isDualBibleApp {
+            presentConsentIfNeeded()
+        }
     }
 
     @objc private func chatCreditsAdded(_ note: Notification) {
@@ -221,9 +233,15 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         App_Protocol.delegateReader?.hideBottomMenu(Status: true)
         // AI Chat owns keyboard inset; disable global IQKeyboard so the whole screen does not shift/stack.
         IQKeyboardManager.shared().isEnabled = false
+        applyLiveBannerHeight(bannerHeightConstraint)
         refreshSendLock()
         restoreChatLayout()
         LifetimeAIAccessNotice.presentIfNeeded()
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(bannerHeightConstraint)
     }
 
     @objc private func appDidBecomeActive() {
@@ -233,6 +251,7 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
 
     /// Screenshot / system share UI can leave the composer off-screen and the system nav bar visible.
     private func restoreChatLayout() {
+        applyLiveBannerHeight(bannerHeightConstraint)
         navigationController?.setNavigationBarHidden(true, animated: false)
         if !inputTextView.isFirstResponder {
             composerBottomConstraint?.constant = 0
@@ -305,6 +324,15 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
         titleLabel.textColor = .white
         titleLabel.textAlignment = .center
         bannerView.addSubview(titleLabel)
+
+        languageControl.translatesAutoresizingMaskIntoConstraints = false
+        languageControl.selectedSegmentTintColor = .white
+        languageControl.backgroundColor = UIColor.white.withAlphaComponent(0.25)
+        languageControl.setTitleTextAttributes([.foregroundColor: UIColor.white, .font: UIFont.systemFont(ofSize: 13, weight: .semibold)], for: .normal)
+        languageControl.setTitleTextAttributes([.foregroundColor: themeColor, .font: UIFont.systemFont(ofSize: 13, weight: .bold)], for: .selected)
+        languageControl.addTarget(self, action: #selector(answerLanguageChanged), for: .valueChanged)
+        languageControl.isHidden = !isDualBibleApp
+        bannerView.addSubview(languageControl)
 
         backImageView.translatesAutoresizingMaskIntoConstraints = false
         backImageView.image = UIImage(named: "BackArrow")
@@ -399,8 +427,8 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
 
         setupEmptyState()
 
-        let bannerHeight: CGFloat = StatusbarHeight > 30 ? 90 : 70
-        bannerHeightConstraint = bannerView.heightAnchor.constraint(equalToConstant: bannerHeight)
+        // Live safe-area height — frozen StatusbarHeight puts ID/EN under the Dynamic Island.
+        bannerHeightConstraint = bannerView.heightAnchor.constraint(equalToConstant: LiveBannerHeight(for: view))
         composerBottomConstraint = bottomChrome.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         inputHeightConstraint = inputTextView.heightAnchor.constraint(equalToConstant: 40)
 
@@ -412,8 +440,13 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
 
             titleLabel.centerXAnchor.constraint(equalTo: bannerView.centerXAnchor),
             titleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: backImageView.trailingAnchor, constant: 8),
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: bannerView.trailingAnchor, constant: -16),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: languageControl.leadingAnchor, constant: -8),
             titleLabel.centerYAnchor.constraint(equalTo: backImageView.centerYAnchor),
+
+            languageControl.trailingAnchor.constraint(equalTo: bannerView.trailingAnchor, constant: -16),
+            languageControl.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+            languageControl.widthAnchor.constraint(greaterThanOrEqualToConstant: 88),
+            languageControl.heightAnchor.constraint(equalToConstant: 32),
 
             backImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             backImageView.bottomAnchor.constraint(equalTo: bannerView.bottomAnchor, constant: -15),
@@ -1485,7 +1518,11 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             if !context.sourceText.isEmpty {
                 lines.append("Text already shown to the user:\n\(context.sourceText)")
             }
-            lines.append("Stay on this passage. Answer in the same language as the user's question.")
+            if isDualBibleApp {
+                lines.append("Stay on this passage. Answer in \(AIAnswerLanguage.selected.name).")
+            } else {
+                lines.append("Stay on this passage. Answer in the same language as the user's question.")
+            }
         }
 
             lines.append("Conversation so far:")
@@ -1495,8 +1532,44 @@ final class AIChatViewController: UIViewController, UITableViewDataSource, UITab
             }
         }
 
+        if isDualBibleApp {
+            lines.append("Answer in \(AIAnswerLanguage.selected.name).")
+        }
         lines.append("User: \(latestUserText)")
         return lines.joined(separator: "\n")
+    }
+
+    private func applyAnswerLanguage() {
+        let options = AIAnswerLanguage.options()
+        languageControl.removeAllSegments()
+        for (index, option) in options.enumerated() {
+            languageControl.insertSegment(withTitle: option.short, at: index, animated: false)
+        }
+        languageControl.isHidden = !isDualBibleApp || options.count < 2
+        if let index = options.firstIndex(of: AIAnswerLanguage.selected) {
+            languageControl.selectedSegmentIndex = index
+        }
+    }
+
+    @objc private func answerLanguageChanged() {
+        let options = AIAnswerLanguage.options()
+        let index = languageControl.selectedSegmentIndex
+        guard options.indices.contains(index) else { return }
+        AIAnswerLanguage.select(options[index])
+    }
+
+    private func presentConsentIfNeeded() {
+        guard isDualBibleApp, !didAskConsent, !AIAnswerLanguage.granted else { return }
+        didAskConsent = true
+        AIConsentPresenter.confirm(from: self, onAllow: { [weak self] in
+            self?.applyAnswerLanguage()
+        }, onDecline: { [weak self] in
+            if let nav = self?.navigationController, nav.viewControllers.count > 1 {
+                nav.popViewController(animated: true)
+            } else {
+                self?.dismiss(animated: true)
+            }
+        })
     }
 
     private func refreshInputHeight() {

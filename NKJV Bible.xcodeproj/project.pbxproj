@@ -18,6 +18,9 @@
 		011F60BA2AC6F1910091BDDA /* more2.png in Resources */ = {isa = PBXBuildFile; fileRef = 011F60B72AC6F1910091BDDA /* more2.png */; };
 		011F60BB2AC6F1910091BDDA /* more3.png in Resources */ = {isa = PBXBuildFile; fileRef = 011F60B82AC6F1910091BDDA /* more3.png */; };
 		0120F5CD2C60F2E800603050 /* 101.zip in Resources */ = {isa = PBXBuildFile; fileRef = 0120F5CC2C60F2E800603050 /* 101.zip */; };
+		0120F5D12C60F2E800603050 /* 102.zip in Resources */ = {isa = PBXBuildFile; fileRef = 0120F5D02C60F2E800603050 /* 102.zip */; };
+		A1B2C3D42F46A1010000F0A1 /* DualOnboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A1010000F0A2 /* DualOnboarding.swift */; };
+		A1B2C3D42F46A1010000F0B1 /* AIConsentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A1010000F0B2 /* AIConsentView.swift */; };
 		0122719D2AB1974A00A096C1 /* DownloadAndLoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0122719C2AB1974A00A096C1 /* DownloadAndLoad.swift */; };
 		0128C0532C197B07002B4FD9 /* BookCategoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0128C04D2C197B07002B4FD9 /* BookCategoryViewController.swift */; };
 		0128C0542C197B07002B4FD9 /* BookCatagoryCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0128C04F2C197B07002B4FD9 /* BookCatagoryCell.swift */; };
@@ -730,6 +733,9 @@
 		011F60B72AC6F1910091BDDA /* more2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = more2.png; sourceTree = "<group>"; };
 		011F60B82AC6F1910091BDDA /* more3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = more3.png; sourceTree = "<group>"; };
 		0120F5CC2C60F2E800603050 /* 101.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = 101.zip; sourceTree = "<group>"; };
+		0120F5D02C60F2E800603050 /* 102.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = 102.zip; sourceTree = "<group>"; };
+		A1B2C3D42F46A1010000F0A2 /* DualOnboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualOnboarding.swift; sourceTree = "<group>"; };
+		A1B2C3D42F46A1010000F0B2 /* AIConsentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIConsentView.swift; sourceTree = "<group>"; };
 		0122719C2AB1974A00A096C1 /* DownloadAndLoad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadAndLoad.swift; sourceTree = "<group>"; };
 		0128C04D2C197B07002B4FD9 /* BookCategoryViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BookCategoryViewController.swift; sourceTree = "<group>"; };
 		0128C04F2C197B07002B4FD9 /* BookCatagoryCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BookCatagoryCell.swift; sourceTree = "<group>"; };
@@ -3250,6 +3256,7 @@
 			isa = PBXGroup;
 			children = (
 				0120F5CC2C60F2E800603050 /* 101.zip */,
+				0120F5D02C60F2E800603050 /* 102.zip */,
 			);
 			path = Zip;
 			sourceTree = "<group>";
@@ -3610,6 +3617,8 @@
 		6F9FDDD72EEFFE6000CE0114 /* NewOnboarding */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D42F46A1010000F0A2 /* DualOnboarding.swift */,
+				A1B2C3D42F46A1010000F0B2 /* AIConsentView.swift */,
 				6F9FDDD82EEFFEA600CE0114 /* Onboarding1.swift */,
 				6F9FDDD92EEFFEA600CE0114 /* Onboarding2.swift */,
 				6F9FDDDA2EEFFEA600CE0114 /* Onboarding3.swift */,
@@ -4120,6 +4129,7 @@
 				017C395D2A40401C004C64FA /* chat3.png in Resources */,
 				01448C582A936D030089349E /* Card Open.wav in Resources */,
 				0120F5CD2C60F2E800603050 /* 101.zip in Resources */,
+				0120F5D12C60F2E800603050 /* 102.zip in Resources */,
 				01904A28298BB2600076A423 /* rocket.png in Resources */,
 				01AB7539299A1CDD0034B1A8 /* L2.jpg in Resources */,
 				0144EF2C2A90CD530022EABF /* JUNGGLE.otf in Resources */,
@@ -4475,6 +4485,8 @@
 				A1B2C3D42F46A101000000B1 /* GiftCardCongratsView.swift in Sources */,
 				A1B2C3D42F46A10100000092 /* DailyLimitReachedCard.swift in Sources */,
 				A1B2C3D42F46A10100000002 /* Onboarding5.swift in Sources */,
+				A1B2C3D42F46A1010000F0A1 /* DualOnboarding.swift in Sources */,
+				A1B2C3D42F46A1010000F0B1 /* AIConsentView.swift in Sources */,
 				A1B2C3D42F46A10100000003 /* OnboardingNotificationView.swift in Sources */,
 				A1B2C3D42F46A10100000026 /* OnboardingNotificationScheduler.swift in Sources */,
 				A1B2C3D42F46A10100000004 /* OnboardingCreateAccountView.swift in Sources */,

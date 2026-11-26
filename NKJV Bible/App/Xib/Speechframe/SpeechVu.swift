@@ -148,7 +148,7 @@ class SpeechVu: UIView,UITableViewDelegate, UITableViewDataSource, AVSpeechSynth
             self.LangaugaTable.dataSource = self
             synth.synth.delegate = self
             
-            LanguageChangeVU.isHidden = (APP_TYPE == "1" ? true:false)
+            LanguageChangeVU.isHidden = !isDualBibleApp
                         
             self.BookIndexCount = BibleContent.sharedInstance.AudioBibleListCount(selecterBookName: self.BookName)
             
