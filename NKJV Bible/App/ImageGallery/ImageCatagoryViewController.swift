@@ -52,21 +52,25 @@ class ImageCatagoryViewController: UIViewController, UICollectionViewDelegate, U
 
         ImageGalleryViewModel.sharedInstance.ImageFromGallery(urlString: IMAGECATEGORY, params: parameters, completion: {(resultDictionary, error) -> () in
 
-            if resultDictionary != nil {
-                
-                let data = resultDictionary!["data"] as! Dictionary<String, AnyObject>
-                let img_list = data["category_list"]! as! Array<Dictionary<String, AnyObject>>
-                
-                
-                self.Gallerytitle = img_list.map { ($0["category_name"] as? String)! }
-                self.category_id = img_list.map { ($0["category_id"] as? String)! }
-                self.Gallary_Api = img_list.map { ($0["cat_thumb_img_url"] as? String)! }
-
-                
+            defer {
                 DispatchQueue.main.async {
-                    self.ImageList.reloadData()
-                    self.LoaderVu.isHidden = true
+                    self.LoaderVu?.isHidden = true
                 }
+            }
+
+            guard let resultDictionary = resultDictionary,
+                  let data = resultDictionary["data"] as? Dictionary<String, AnyObject>,
+                  let img_list = data["category_list"] as? Array<Dictionary<String, AnyObject>> else {
+                return
+            }
+
+            self.Gallerytitle = img_list.compactMap { $0["category_name"] as? String }
+            self.category_id = img_list.compactMap { $0["category_id"] as? String }
+            self.Gallary_Api = img_list.compactMap { $0["cat_thumb_img_url"] as? String }
+
+            DispatchQueue.main.async {
+                self.ImageList?.reloadData()
+                self.LoaderVu?.isHidden = true
             }
         })
         
@@ -76,7 +80,11 @@ class ImageCatagoryViewController: UIViewController, UICollectionViewDelegate, U
     
 
     @IBAction func Back(_ sender: Any) {
-        self.navigationController?.popViewController(animated: true)
+        if let nav = navigationController, nav.viewControllers.first != self {
+            nav.popViewController(animated: true)
+        } else {
+            dismiss(animated: true)
+        }
     }
     
     

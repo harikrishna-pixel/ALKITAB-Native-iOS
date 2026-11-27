@@ -126,7 +126,12 @@ class HomeController: UIViewController, UICollectionViewDelegate, UICollectionVi
 
     @objc private func openQuotesGallery() {
         let vc = kStoryboardImageGallery.instantiateViewController(withIdentifier: "ImageCatagoryViewController") as! ImageCatagoryViewController
-        let quotesId = quote_app_id.isEmpty ? (image_app_id.isEmpty ? FallbackAppConfigConstants.quoteAppId : image_app_id) : quote_app_id
+        // Match NIV Quotes: use image gallery app id (fallback 41).
+        let quotesId: String = {
+            if !image_app_id.isEmpty { return image_app_id }
+            if !quote_app_id.isEmpty { return quote_app_id }
+            return FallbackAppConfigConstants.imageAppId
+        }()
         vc.category = quotesId
         vc.TitleTxt = "Quotes"
         navigationController?.pushViewController(vc, animated: true)

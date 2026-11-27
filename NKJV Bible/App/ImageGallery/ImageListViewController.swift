@@ -67,30 +67,37 @@ class ImageListViewController: UIViewController, UICollectionViewDelegate, UICol
 
         ImageGalleryViewModel.sharedInstance.ImageFromGallery(urlString: Gallary_Api, params: parameters, completion: {(resultDictionary, error) -> () in
 
-            if resultDictionary != nil {
-
-                let data = resultDictionary!["data"] as! Dictionary<String, AnyObject>
-                let img_list = data["img_list"]! as! Array<Dictionary<String, AnyObject>>
-
-                self.SmallIconApi = img_list.map { ($0["image_url"] as? String)! }
-                self.originalApi = img_list.map { ($0["image_url"] as? String)! }
-                self.mediumApi = img_list.map { ($0["image_url"] as? String)! }
-
+            defer {
                 DispatchQueue.main.async {
-
-                    if PaymentHistory.sharedInstance.paymentInfoVerify() && GOOGLE_NATIVE_AD_ID != "" {
-                        for i in 0 ..< self.mediumApi.count {
-                            if (i != 0) && (i % 8 == 0) {
-                                self.ImageApi.append("ADS")
-                             }
-                            self.ImageApi.append(self.mediumApi[i])
-                        }
-                    } else {
-                        self.ImageApi = self.mediumApi
-                    }
-                    self.ImageList.reloadData()
-                    self.LoaderVu.isHidden = true
+                    self.LoaderVu?.isHidden = true
                 }
+            }
+
+            guard let resultDictionary = resultDictionary,
+                  let data = resultDictionary["data"] as? Dictionary<String, AnyObject>,
+                  let img_list = data["img_list"] as? Array<Dictionary<String, AnyObject>> else {
+                return
+            }
+
+            let urls = img_list.compactMap { $0["image_url"] as? String }
+            self.SmallIconApi = urls
+            self.originalApi = urls
+            self.mediumApi = urls
+
+            DispatchQueue.main.async {
+                if PaymentHistory.sharedInstance.paymentInfoVerify() && GOOGLE_NATIVE_AD_ID != "" {
+                    self.ImageApi.removeAll()
+                    for i in 0 ..< self.mediumApi.count {
+                        if (i != 0) && (i % 8 == 0) {
+                            self.ImageApi.append("ADS")
+                        }
+                        self.ImageApi.append(self.mediumApi[i])
+                    }
+                } else {
+                    self.ImageApi = self.mediumApi
+                }
+                self.ImageList?.reloadData()
+                self.LoaderVu?.isHidden = true
             }
         })        
         self.BannerTitle.text = Gallerytitle
@@ -109,7 +116,11 @@ class ImageListViewController: UIViewController, UICollectionViewDelegate, UICol
     
     
     @IBAction func Back(_ sender: Any) {
-        self.navigationController?.popViewController(animated: true)
+        if let nav = navigationController, nav.viewControllers.first != self {
+            nav.popViewController(animated: true)
+        } else {
+            dismiss(animated: true)
+        }
     }
     
     

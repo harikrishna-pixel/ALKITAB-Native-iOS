@@ -81,8 +81,62 @@ final class DailyJourneyHomeViewController: UIViewController {
             },
             onOpenAIFeature: { [weak self] feature in
                 self?.openAIFeature(feature)
+            },
+            onOpenWallpapers: { [weak self] in
+                self?.openWallpaperGallery()
+            },
+            onOpenQuotes: { [weak self] in
+                self?.openQuotesGallery()
             }
         )
+    }
+
+    private func openWallpaperGallery() {
+        guard let vc = makeGalleryCategoryVC() else {
+            presentingController().view.makeToast("Wallpapers unavailable", duration: 2.0, position: .top)
+            return
+        }
+        vc.category = wallpaper_cat_id.isEmpty ? FallbackAppConfigConstants.wallpaperCatId : wallpaper_cat_id
+        vc.TitleTxt = "Wallpapers"
+        pushFromHome(vc)
+    }
+
+    private func openQuotesGallery() {
+        guard let vc = makeGalleryCategoryVC() else {
+            presentingController().view.makeToast("Quotes unavailable", duration: 2.0, position: .top)
+            return
+        }
+        // Same as NIV Quotes entry: image gallery app id (fallback 41), not quote_app_id alone.
+        let quotesId: String = {
+            if !image_app_id.isEmpty { return image_app_id }
+            if !quote_app_id.isEmpty { return quote_app_id }
+            return FallbackAppConfigConstants.imageAppId
+        }()
+        vc.category = quotesId
+        vc.TitleTxt = "Quotes"
+        pushFromHome(vc)
+    }
+
+    private func makeGalleryCategoryVC() -> ImageCatagoryViewController? {
+        let storyboard = UIStoryboard(name: "ImageGallery", bundle: nil)
+        return storyboard.instantiateViewController(withIdentifier: "ImageCatagoryViewController") as? ImageCatagoryViewController
+    }
+
+    private func pushFromHome(_ vc: UIViewController) {
+        let presenter = presentingController()
+        if let nav = (presenter as? UINavigationController) ?? presenter.navigationController {
+            nav.pushViewController(vc, animated: true)
+        } else if let nav = navigationController {
+            nav.pushViewController(vc, animated: true)
+        } else if let reader = parent as? ReaderViewController, let nav = reader.navigationController {
+            nav.pushViewController(vc, animated: true)
+        } else {
+            // Daily Journey is embedded without a nav stack — present in a nav so Back works.
+            let nav = UINavigationController(rootViewController: vc)
+            nav.isNavigationBarHidden = true
+            nav.modalPresentationStyle = .fullScreen
+            presenter.present(nav, animated: true)
+        }
     }
 
     private func openAIFeature(_ feature: AIUsageFeature) {
