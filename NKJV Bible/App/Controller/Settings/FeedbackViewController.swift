@@ -32,7 +32,7 @@ class FeedbackViewController: UIViewController, WKUIDelegate {
         super.viewDidLoad()
         
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         
         self.LoaderView = (kStoryboardMainIphone.instantiateViewController(withIdentifier: "LoaderVc") as! LoaderVc)
@@ -63,6 +63,16 @@ class FeedbackViewController: UIViewController, WKUIDelegate {
             }
         }
     }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
     
 
     

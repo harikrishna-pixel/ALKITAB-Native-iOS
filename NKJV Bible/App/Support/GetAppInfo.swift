@@ -638,6 +638,20 @@ class GetAppInfo: NSObject {
         if UNITY_KEY.isEmpty && !hasCachedAPIData {
             UNITY_KEY = FallbackADConstants.unityKey
         }
+
+        // Google Mobile Ads unit IDs (API keys preferred; else test fallbacks).
+        func googleId(_ key: String, fallback: String) -> String {
+            let value = (UserDefaults.standard.string(forKey: key) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            return value.isEmpty ? fallback : value
+        }
+        GOOGLE_ADS_APP_OPEN = googleId("ads_google_openApp_id_ios", fallback: FallbackADConstants.googleAppOpenId)
+        GOOGLE_BANNER_ADS = googleId("ads_google_banner_id_ios", fallback: FallbackADConstants.googleBannerId)
+        GOOGLE_BANNER_ADS_ID2 = googleId("ads_google_banner_id2_ios", fallback: FallbackADConstants.googleBannerId)
+        GOOGLE_BANNER_ADS_ID3 = googleId("ads_google_banner_id3_ios", fallback: FallbackADConstants.googleBannerId)
+        GOOGLE_ADS_INTERSTITIAL_ID = googleId("ads_google_interstitial_id_ios", fallback: FallbackADConstants.googleInterstitialId)
+        GOOGLE_ADS_REWARDED = googleId("ads_google_reward_id_ios", fallback: FallbackADConstants.googleRewardedId)
+        GOOGLE_ADS_REWARDED_INTERSTITIAL_ID = googleId("ads_google_rewarded_interstitial_id_ios", fallback: FallbackADConstants.googleRewardedInterstitialId)
+        GOOGLE_NATIVE_AD_ID = UserDefaults.standard.string(forKey: "ads_google_native_id_ios") ?? ""
         
         
         ads_network_1_field_2_ios = UserDefaults.standard.string(forKey: "ads_network_1_field_2_ios") ?? ""

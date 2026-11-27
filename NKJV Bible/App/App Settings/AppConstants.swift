@@ -48,6 +48,10 @@ let APPMODE = "1"
 #endif
 
 
+// MARK: - Image Gallery APIs
+let IMAGEGALLERY_API = "https://savefbk.com/media_gallery/API/bible_app_v2/main_list/get_image_list_by_cat_id"
+let GET_IMAGE_CAT_LIST_BY_APP_ID = "https://savefbk.com/media_gallery/API/bible_app_v2/main_list/get_image_cat_list_by_app_id"
+let IMAGECATEGORY = "https://savefbk.com/media_gallery/API/bible_app_v2/main_list/get_image_cat_list_by_app_id"
 
 
 // MARK: - Audio text to speech Enable Disable
@@ -87,14 +91,16 @@ var APPNAME = "AMP Bible"
 var GOOGLE_ADS_DEVICE_ID = ""
 var GOOGLE_ADS_TYPE = "1"
 var ADS_DURATION = 3
-var GOOGLE_ADS_APP_OPEN = ""
-var GOOGLE_BANNER_ADS = ""
-var GOOGLE_BANNER_ADS_ID2 = ""
-var GOOGLE_BANNER_ADS_ID3 = ""
-var GOOGLE_ADS_INTERSTITIAL_ID = ""
-var GOOGLE_ADS_REWARDED = ""
-var GOOGLE_ADS_REWARDED_INTERSTITIAL_ID = ""
-var GOOGLE_NATIVE_AD_ID  = ""
+// Google Mobile Ads — API UserDefaults when set; else Google sample (test) unit IDs.
+// Sample App ID in Info.plist: ca-app-pub-3940256099942544~1458002511
+var GOOGLE_ADS_APP_OPEN = UserDefaults.standard.string(forKey: "ads_google_openApp_id_ios") ?? FallbackADConstants.googleAppOpenId
+var GOOGLE_BANNER_ADS = UserDefaults.standard.string(forKey: "ads_google_banner_id_ios") ?? FallbackADConstants.googleBannerId
+var GOOGLE_BANNER_ADS_ID2 = UserDefaults.standard.string(forKey: "ads_google_banner_id2_ios") ?? FallbackADConstants.googleBannerId
+var GOOGLE_BANNER_ADS_ID3 = UserDefaults.standard.string(forKey: "ads_google_banner_id3_ios") ?? FallbackADConstants.googleBannerId
+var GOOGLE_ADS_INTERSTITIAL_ID = UserDefaults.standard.string(forKey: "ads_google_interstitial_id_ios") ?? FallbackADConstants.googleInterstitialId
+var GOOGLE_ADS_REWARDED = UserDefaults.standard.string(forKey: "ads_google_reward_id_ios") ?? FallbackADConstants.googleRewardedId
+var GOOGLE_ADS_REWARDED_INTERSTITIAL_ID = UserDefaults.standard.string(forKey: "ads_google_rewarded_interstitial_id_ios") ?? FallbackADConstants.googleRewardedInterstitialId
+var GOOGLE_NATIVE_AD_ID = UserDefaults.standard.string(forKey: "ads_google_native_id_ios") ?? ""
 
 
 var sub_identifier_oneyear_value = ""
@@ -259,6 +265,7 @@ var OpenAdLoaded = true
 var kStoryboardMainIphone = UIStoryboard(name: "Main", bundle: nil)
 var kStoryboardQuizIphone = UIStoryboard(name: "QuizStoryboard", bundle: nil)
 var kStoryboardImageIphone = UIStoryboard(name: "ImageMain", bundle: nil)
+var kStoryboardImageGallery = UIStoryboard(name: "ImageGallery", bundle: nil)
 
 
 

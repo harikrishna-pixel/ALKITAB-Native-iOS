@@ -40,7 +40,8 @@ class AppConstrains: NSObject {
             PlayerSuvViewConstrain = 25.0
             
             isIpad = false
-            FrameConstrains = (StatusbarHeight > 30.0 ? 90.0:70.0)
+            // Prefer LiveBannerHeight(for:) at display time; keep a notch-safe default here.
+            FrameConstrains = 90.0
             kStoryboardMainIphone = UIStoryboard(name: "Main", bundle: nil)
         }
     }

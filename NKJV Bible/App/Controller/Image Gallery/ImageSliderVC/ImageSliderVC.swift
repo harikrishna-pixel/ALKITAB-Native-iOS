@@ -22,12 +22,22 @@ class ImageSliderVC: UIViewController, Imageslider {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         App_Protocol.Imagesliderdelegate = self
         
         self.SliderViewFrame()
         
     }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
 
     
 

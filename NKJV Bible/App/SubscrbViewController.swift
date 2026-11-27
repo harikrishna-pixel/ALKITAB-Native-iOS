@@ -160,7 +160,7 @@ class SubscrbViewController: UIViewController, UICollectionViewDelegate, UIColle
         
         self.Watch.layer.cornerRadius = 6
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         self.BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
 
         self.Watch.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
@@ -196,9 +196,17 @@ class SubscrbViewController: UIViewController, UICollectionViewDelegate, UIColle
         
         
     }
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
     
     
     override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+
         self.resetValue()
         
 //        if UserDefaults.standard.string(forKey: "PriceTag3") ?? "" == "" {

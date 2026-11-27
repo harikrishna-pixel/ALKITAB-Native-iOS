@@ -31,7 +31,7 @@ class MoreAppsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         self.MoreAppList!.register(UINib(nibName: "BookCell", bundle: nil), forCellWithReuseIdentifier: "BookCell")
         self.BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         
@@ -48,6 +48,16 @@ class MoreAppsViewController: UIViewController {
         
         self.ApiCall(Apiid: book_cat_id)
     }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
     
     
     @IBAction func Back(_ sender: Any) {

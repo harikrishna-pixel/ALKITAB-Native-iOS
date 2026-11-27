@@ -68,7 +68,13 @@ final class OpenChatViewController: UIViewController, UITableViewDataSource, UIT
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        applyLiveBannerHeight(bannerHeightConstraint)
         App_Protocol.delegateReader?.hideBottomMenu(Status: true)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(bannerHeightConstraint)
     }
 
     deinit {
@@ -190,8 +196,7 @@ final class OpenChatViewController: UIViewController, UITableViewDataSource, UIT
 
         setupEmptyState()
 
-        let bannerHeight: CGFloat = StatusbarHeight > 30 ? 90 : 70
-        bannerHeightConstraint = bannerView.heightAnchor.constraint(equalToConstant: bannerHeight)
+        bannerHeightConstraint = bannerView.heightAnchor.constraint(equalToConstant: LiveBannerHeight(for: view))
         composerBottomConstraint = composerContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         inputHeightConstraint = inputTextView.heightAnchor.constraint(equalToConstant: 40)
 

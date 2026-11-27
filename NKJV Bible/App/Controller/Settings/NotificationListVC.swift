@@ -27,7 +27,7 @@ class NotificationListVC: UIViewController, UITableViewDelegate, UITableViewData
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         SettingsTable.backgroundColor = UIColor(red: 0.95, green: 0.96, blue: 0.98, alpha: 1)
         SettingsTable.separatorStyle = .none
@@ -37,6 +37,16 @@ class NotificationListVC: UIViewController, UITableViewDelegate, UITableViewData
             self.SettingsTable.reloadData()
         }
     }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
     
     
     

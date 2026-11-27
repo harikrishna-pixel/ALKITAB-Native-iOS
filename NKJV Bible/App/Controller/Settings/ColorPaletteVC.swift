@@ -28,7 +28,7 @@ class ColorPaletteVC: UIViewController, UICollectionViewDelegate, UICollectionVi
         self.view.backgroundColor = (Themecolor == BGNightMode ? BGNightMode:.white)
         
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         
         BannerVu.backgroundColor = (self.Themecolor == BGNightMode ? DarkModeColor:self.Themecolor)
         
@@ -46,6 +46,16 @@ class ColorPaletteVC: UIViewController, UICollectionViewDelegate, UICollectionVi
             self.ColorLists.append((UserDefaults.standard.color(forKey: "AppThemeColor")?.toHexString())!)
         }
     }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
     
     
     // MARK: - Collection view Delegate

@@ -111,7 +111,7 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
         super.viewDidLoad()
         
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         ImageAppProtocol.ImageTxtEditDelegate  = self
         
         self.BottomMenu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
@@ -161,6 +161,16 @@ class IMageEditingPageVc: UIViewController, UICollectionViewDelegate, UICollecti
         }
         
     }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
       
 
     

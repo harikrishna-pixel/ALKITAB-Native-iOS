@@ -1,0 +1,6 @@
+framework module Pods_ALKITAB_Bible {
+  umbrella header "Pods-ALKITAB Bible-umbrella.h"
+
+  export *
+  module * { export * }
+}

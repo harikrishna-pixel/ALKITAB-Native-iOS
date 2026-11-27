@@ -35,7 +35,7 @@ class BookAdListViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         self.BookCatagory!.register(UINib(nibName: "BookCell", bundle: nil), forCellWithReuseIdentifier: "BookCell")
         applyExploreBooksHeader()
         
@@ -64,6 +64,16 @@ class BookAdListViewController: UIViewController {
         
         self.ApiCall(Apiid: book_cat_id)
     }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
     
     
     

@@ -89,7 +89,7 @@ class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDa
         
         
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         
         
         let Themecolor = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
@@ -129,6 +129,16 @@ class SearchViewController: UIViewController, UITableViewDelegate, UITableViewDa
         self.setupSearchSpinner(theme: Themecolor)
         
     }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
 
     @objc private func dismissSearchKeyboard() {
         guard SearchTxt.isFirstResponder else { return }

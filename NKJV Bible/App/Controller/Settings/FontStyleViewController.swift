@@ -44,7 +44,7 @@ class FontStyleViewController: UIViewController, UITableViewDelegate, UITableVie
         self.view.backgroundColor = (Themecolor == BGNightMode ? BGNightMode:.white)
         self.SelectedFont.textColor  = (Themecolor == BGNightMode ? .white:.darkGray)
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         
         
         self.FontViewTable.register(UINib(nibName: "FontCell", bundle: nil), forCellReuseIdentifier: "Font")
@@ -70,9 +70,15 @@ class FontStyleViewController: UIViewController, UITableViewDelegate, UITableVie
         // Load current values
         self.loadSettings()
     }
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
         
         // Reload settings each time view appears
         self.loadSettings()

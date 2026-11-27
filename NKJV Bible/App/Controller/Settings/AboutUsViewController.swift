@@ -29,12 +29,22 @@ class AboutUsViewController: UIViewController, Setting {
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
                            
         App_Protocol.SettingDelegate = self
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         
         ImageTint.sharedInstance.imageTintcolorMethod(img: self.AppLogo!, colorVu: UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor)
         
         applyAboutLayout(theme: Themecolor)
     }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
 
     private func applyAboutLayout(theme: UIColor) {
         guard let content = AppTitle.superview else { return }

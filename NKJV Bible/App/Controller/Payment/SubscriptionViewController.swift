@@ -58,7 +58,7 @@ class SubscriptionViewController: UIViewController,SKPaymentTransactionObserver,
         self.LoaderVu.isHidden = true
         
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         BannerVu.backgroundColor = (self.Themecolor == BGNightMode ? DarkModeColor:Themecolor)
         
         
@@ -75,6 +75,16 @@ class SubscriptionViewController: UIViewController,SKPaymentTransactionObserver,
         
         // Do any additional setup after loading the view.
     }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
     
     
     @IBAction func Back(_ sender: Any) {

@@ -35,7 +35,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
       super.viewDidLoad()
       App_Protocol.SettingDelegate = self
       
-      self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+      applyLiveBannerHeight(BannerConstrain)
       BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
       
       let page = settingsPageColor
@@ -53,6 +53,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
       self.SettingsTable.contentInset = UIEdgeInsets(top: 4, left: 0, bottom: 24, right: 0)
       
   }
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
   
   
   override func viewDidAppear(_ animated: Bool) {
@@ -64,8 +69,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
   
     override func viewWillAppear(_ animated: Bool) {
-            App_Protocol.delegateReader?.hideBottomMenu(Status: false)
-        }
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+        App_Protocol.delegateReader?.hideBottomMenu(Status: false)
+    }
     
     @IBAction func Back(_ sender: Any) {
          navigationController?.popViewController(animated: true)

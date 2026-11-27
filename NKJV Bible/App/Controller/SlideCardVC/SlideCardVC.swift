@@ -95,7 +95,7 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
         App_Protocol.DelegateSlideCard = self
         self.Config()
         self.setupPageControl()
-        self.BannerConstrain.constant = FrameConstrains //(StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         // Do any additional setup after loading the view.
         
         if  self.Themecolor.toHexString() == BGNightMode.toHexString() {
@@ -120,6 +120,16 @@ class SlideCardVC: UIViewController, UICollectionViewDelegate, UICollectionViewD
             AdmobManager.shared.IronSource_Interstitial_AdLoad()
         }
         
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
     }
     
     /// Larger, clearer bottom action icons/labels (UI only).

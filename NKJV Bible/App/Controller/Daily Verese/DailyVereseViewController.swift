@@ -49,13 +49,23 @@ class DailyVereseViewController: UIViewController, UICollectionViewDelegate, UIC
         
         
     }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
     
     
     func reloadDailyVerse() {
         
         
         BannerVu.backgroundColor = (Themecolor == BGNightMode ? DarkModeColor:Themecolor)
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         
         self.DailyVerseCollectionView!.register(UINib(nibName: "DailyVerseCell", bundle: nil), forCellWithReuseIdentifier: "DailyVerseCell")
         

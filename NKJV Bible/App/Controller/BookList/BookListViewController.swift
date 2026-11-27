@@ -50,7 +50,7 @@ class BookListViewController: UIViewController, UITableViewDelegate, UITableView
         self.TestamentSegment.setTitleTextAttributes([NSAttributedString.Key.font: font], for: .normal)
          
         
-        self.BannerConstrain.constant = (StatusbarHeight > 30 ? 90:70)
+        applyLiveBannerHeight(BannerConstrain)
         
         for item in self.AudioBibleName {
             if item.contains(UserDefaults.standard.string(forKey: "BookName") ?? DefaultBookName)  { getBook = item }
@@ -78,9 +78,15 @@ class BookListViewController: UIViewController, UITableViewDelegate, UITableView
         App_Protocol.delegateBook = self
         // Do any additional setup after loading the view.
     }
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(BannerConstrain)
+    }
+
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        applyLiveBannerHeight(BannerConstrain)
         let font = UIFont.systemFont(ofSize: BookCatagorytxtSize)
         TestamentSegment.setTitleTextAttributes([NSAttributedString.Key.font: font], for: .normal)
     }

@@ -133,7 +133,13 @@ struct FallbackADConstants {
     static let ironSourceKey = "19dd3f9fd"
     static let unityKey = "5268630"
     
-    // Note: Google Ads are not used in this project - removed from fallback constants
+    // Google Mobile Ads — Google sample (test) unit IDs until production IDs are provided
+    static let googleAppId = "ca-app-pub-3940256099942544~1458002511"
+    static let googleAppOpenId = "ca-app-pub-3940256099942544/5575463023"
+    static let googleBannerId = "ca-app-pub-3940256099942544/2934735716"
+    static let googleInterstitialId = "ca-app-pub-3940256099942544/4411468910"
+    static let googleRewardedId = "ca-app-pub-3940256099942544/1712485313"
+    static let googleRewardedInterstitialId = "ca-app-pub-3940256099942544/6978759866"
 }
 
 // MARK: - FALLBACK AUDIO MP3 BIBLE CONSTANTS

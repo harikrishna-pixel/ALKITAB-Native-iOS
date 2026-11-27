@@ -28,6 +28,7 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
     private let refreshControl = UIRefreshControl()
     private let emptyStateLabel = UILabel()
     private let activityIndicator = UIActivityIndicatorView(style: .large)
+    private var bannerHeightConstraint: NSLayoutConstraint?
 
     init() {
         self.isNight = (UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor) == BGNightMode
@@ -47,6 +48,7 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        applyLiveBannerHeight(bannerHeightConstraint)
         if !isEmbeddedTab {
             App_Protocol.delegateReader?.hideBottomMenu(Status: true)
         }
@@ -59,6 +61,11 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
         if !isEmbeddedTab && (isMovingFromParent || isBeingDismissed) {
             App_Protocol.delegateReader?.hideBottomMenu(Status: false)
         }
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyLiveBannerHeight(bannerHeightConstraint)
     }
 
     private func setupUI() {
@@ -121,13 +128,13 @@ final class PrayerWallViewController: UIViewController, UITableViewDataSource, U
         activityIndicator.color = isNight ? .white : themeColor
         view.addSubview(activityIndicator)
 
-        let bannerHeight: CGFloat = StatusbarHeight > 30 ? 90 : 70
+        bannerHeightConstraint = bannerView.heightAnchor.constraint(equalToConstant: LiveBannerHeight(for: view))
 
         NSLayoutConstraint.activate([
             bannerView.topAnchor.constraint(equalTo: view.topAnchor),
             bannerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bannerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            bannerView.heightAnchor.constraint(equalToConstant: bannerHeight),
+            bannerHeightConstraint!,
 
             titleLabel.centerXAnchor.constraint(equalTo: bannerView.centerXAnchor),
             titleLabel.bottomAnchor.constraint(equalTo: bannerView.bottomAnchor, constant: -15),
