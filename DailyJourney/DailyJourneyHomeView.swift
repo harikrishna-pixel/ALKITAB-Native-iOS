@@ -422,25 +422,30 @@ struct DailyJourneyHomeView: View {
 
     private func galleryEntryButton(title: String, subtitle: String, systemImage: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 36, height: 36)
                     .background(DailyJourneyTheme.color)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(Color(hex: "0B1B3A"))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                     Text(subtitle)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundColor(Color.black.opacity(0.4))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                 }
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(12)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(hex: "F7F8FC"))
             .cornerRadius(14)
