@@ -76,17 +76,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func sceneWillEnterForeground(_ scene: UIScene) {
         // Called as the scene transitions from the background to the foreground.
-        // Google App Open when returning from background (after first open).
-        if UserDefaults.standard.string(forKey: "AppOpenFirst") ?? "0" == "1" {
-            if PaymentHistory.sharedInstance.paymentInfo() && OpenAdLoaded {
-                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.3) {
-                    if let rootVC = UIApplication.shared.windows.first(where: { $0.isKeyWindow })?.rootViewController {
-                        AppOpenAdManager.shared.showAdIfAvailable(viewController: rootVC)
-                        OpenAdLoaded = false
-                    }
-                }
-            }
-        }
+        // Use this method to undo the changes made on entering the background.
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {
@@ -95,7 +85,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             MusicBgFile.sharedInstance.player?.pause()
         }
         
-        OpenAdLoaded = true
         
         // Called as the scene transitions from the foreground to the background.
         // Use this method to save data, release shared resources, and store enough scene-specific state information

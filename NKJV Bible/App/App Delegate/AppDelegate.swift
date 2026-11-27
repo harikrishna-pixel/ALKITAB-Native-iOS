@@ -500,9 +500,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
                         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+3.5) {
                                     UnityAdClass.sharedInstance.initializeIfNeeded()
-                                    GoogleMobileAdsSupport.shared.startIfNeeded()
                                     AdmobManager.shared.IronSource_Interstitial_AdLoad()
-                                    AppOpenAdManager.shared.loadAd()
                                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.5) {
                                     AdmobManager.shared.IronSource_Reward_AdLoad()
                                 }
@@ -521,9 +519,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                         // Same ad preload as success path so rewarded/interstitial still warm.
                         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+3.5) {
                             UnityAdClass.sharedInstance.initializeIfNeeded()
-                            GoogleMobileAdsSupport.shared.startIfNeeded()
                             AdmobManager.shared.IronSource_Interstitial_AdLoad()
-                            AppOpenAdManager.shared.loadAd()
                             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.5) {
                                 AdmobManager.shared.IronSource_Reward_AdLoad()
                             }
@@ -540,9 +536,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             // Preload when network returns later via normal show/load paths; still init Unity.
             UnityAdClass.sharedInstance.initializeIfNeeded()
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+3.5) {
-                GoogleMobileAdsSupport.shared.startIfNeeded()
                 AdmobManager.shared.IronSource_Interstitial_AdLoad()
-                AppOpenAdManager.shared.loadAd()
                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2.5) {
                     AdmobManager.shared.IronSource_Reward_AdLoad()
                 }

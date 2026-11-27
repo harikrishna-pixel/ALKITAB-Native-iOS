@@ -22,8 +22,6 @@ target 'ALKITAB Bible' do
     pod 'CircleProgressView', '~> 1.0'
     pod 'Flurry-iOS-SDK/FlurrySDK', '~> 12.1.1'
     pod 'IronSourceSDK'
-    # Pin 11.x — AppOpen/AdMob helpers still use GAD* APIs (12.x renamed them).
-    pod 'Google-Mobile-Ads-SDK', '~> 11.13'
 
     pod 'GoogleUserMessagingPlatform'
     

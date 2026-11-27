@@ -593,13 +593,6 @@
 		01PRW30729FBD2210006BD37 /* PrayerWallLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10729FBD2210006BD17 /* PrayerWallLoginView.swift */; };
 		01PRW30829FBD2210006BD38 /* PrayerBlockedUsersViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01PRW10829FBD2210006BD18 /* PrayerBlockedUsersViewController.swift */; };
 		01UNITYAD2B68D8000534964 /* UnityAdClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01UNITYAD2B68D7FF0534964 /* UnityAdClass.swift */; };
-		063E50912B3C935358C302D0 /* GoogleBannerAD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 902E90E99A9CB521E57AA6BC /* GoogleBannerAD.swift */; };
-		0AF0ADC6EF075E564476F535 /* Pods_ALKITAB_Bible.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EDBB28752B8863E0F132DD3 /* Pods_ALKITAB_Bible.framework */; };
-		15D9B96991E7F353EFFC483B /* ImageListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0387B85D2B83B97E36603C67 /* ImageListViewController.swift */; };
-		1650D7F876E6A78F06C77ABE /* WallpaperQuots.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE524494C96E9FBF324591B /* WallpaperQuots.swift */; };
-		4957F77F1BFEACCA8B247C4C /* ImageOpenCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65B546A28D509FE94DC14F7 /* ImageOpenCollectionViewCell.swift */; };
-		4F3EEA88ACC60E504E228CA3 /* CustomWallpaperAlbum.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0F062A07F551D92A7B0B2D4 /* CustomWallpaperAlbum.swift */; };
-		586233240F3B0E400466C00E /* GoogleMobileAdsSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA10EDD4C59F0162F84EE69A /* GoogleMobileAdsSupport.swift */; };
 		6F9FDDDC2EEFFEA600CE0114 /* Onboarding3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDDA2EEFFEA600CE0114 /* Onboarding3.swift */; };
 		6F9FDDDD2EEFFEA600CE0114 /* Onboarding4.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDDB2EEFFEA600CE0114 /* Onboarding4.swift */; };
 		6F9FDDDE2EEFFEA600CE0114 /* Onboarding2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDD92EEFFEA600CE0114 /* Onboarding2.swift */; };
@@ -607,9 +600,7 @@
 		6F9FDDE12EEFFEDD00CE0114 /* BibleSubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDE02EEFFEDD00CE0114 /* BibleSubscriptionView.swift */; };
 		6F9FDDE32EEFFF2400CE0114 /* StoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F9FDDE22EEFFF2400CE0114 /* StoreManager.swift */; };
 		6FC2A3B02F05260000E2331E /* BibleHiPromotionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FC2A3AE2F05260000E2331E /* BibleHiPromotionView.swift */; };
-		7C18C5F01F1DC15E43AF574A /* ImageGallery.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EF079C89D0DBC3200063B1A0 /* ImageGallery.storyboard */; };
-		7D471DCE519286F4C4D05941 /* ImageCatagoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AA8616F70904F6D53CBDD6 /* ImageCatagoryViewController.swift */; };
-		7D922890950410DBAE5B526B /* Image+Share.swift in Sources */ = {isa = PBXBuildFile; fileRef = 203055DA1420ECFB270B741E /* Image+Share.swift */; };
+		76E41308EE54E16A072C5F24 /* Pods_ALKITAB_Bible.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C4FFFE236ECAD3FD28CB970A /* Pods_ALKITAB_Bible.framework */; };
 		A1B2C3D42F46A10100000001 /* OnboardingShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000011 /* OnboardingShared.swift */; };
 		A1B2C3D42F46A10100000002 /* Onboarding5.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000012 /* Onboarding5.swift */; };
 		A1B2C3D42F46A10100000003 /* OnboardingNotificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */; };
@@ -654,9 +645,6 @@
 		B2C3D4E52F46B20100000008 /* StreakCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000018 /* StreakCalendarView.swift */; };
 		B2C3D4E52F46B20100000009 /* DailyVerseFullscreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B20100000019 /* DailyVerseFullscreenView.swift */; };
 		B2C3D4E52F46B2010000000A /* DailyVerseFullscreenViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E52F46B2010000001A /* DailyVerseFullscreenViewController.swift */; };
-		B3033BC4C822C68525D5D11F /* ImageCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A879A4F776B240242FDBF98C /* ImageCell.swift */; };
-		B60EC7A0FD37D6D53FB6D8CE /* CreateImageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E563FF4E5B7AF3EA8304E8E /* CreateImageViewController.swift */; };
-		BE0B31DC03B61A139A6F7243 /* AppOpenAdManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85E00FFF3B00139F9AD4DD7B /* AppOpenAdManager.swift */; };
 		C3D4E5F62F46C30100000001 /* ChallengeGameContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000011 /* ChallengeGameContent.swift */; };
 		C3D4E5F62F46C30100000002 /* ChallengeHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000012 /* ChallengeHubView.swift */; };
 		C3D4E5F62F46C30100000003 /* ChallengeHubViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F62F46C30100000013 /* ChallengeHubViewController.swift */; };
@@ -692,16 +680,11 @@
 		C4E5F6082F48E10100000004 /* ChallengeCreatorMoreScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6082F48E10100000014 /* ChallengeCreatorMoreScreens.swift */; };
 		C4E5F6092F48E20100000005 /* ChallengeQuizAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F6092F48E20100000015 /* ChallengeQuizAccess.swift */; };
 		C4E5F60A2F48E30100000006 /* ChallengeQuizProfilePhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F60A2F48E30100000016 /* ChallengeQuizProfilePhoto.swift */; };
-		C6AAA5D0F2C48FED1904FAE2 /* ImageGalleryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 257A25A7EFEB9DE345439B03 /* ImageGalleryModel.swift */; };
-		CDF14813096ECF372C87E7E1 /* PexelsApi.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB45D98FB3BD9DC3EBB1566D /* PexelsApi.swift */; };
-		D02B7A701A04D09625028D72 /* ImageGalleryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294E1B505CCB50EADC386ACF /* ImageGalleryViewModel.swift */; };
 		D42E2B172BF79432006D4D18 /* puzzal Notification in Resources */ = {isa = PBXBuildFile; fileRef = D42E2B162BF79432006D4D18 /* puzzal Notification */; };
 		D6E7F8092F49F60100000001 /* AIUsageLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */; };
 		D6E7F8092F49F60100000002 /* AIUsageExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E7F8092F49F60100000012 /* AIUsageExtras.swift */; };
-		DB135D1062AB96E4F09667CC /* CatagoryCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA72F86841AF1E06E7CC48C3 /* CatagoryCell.swift */; };
 		E7F1A0022F8B4C0100A1B001 /* streak_flame.gif in Resources */ = {isa = PBXBuildFile; fileRef = E7F1A0012F8B4C0100A1B001 /* streak_flame.gif */; };
 		E7F8091A2F4AF70100000001 /* LegacyPaidAppService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */; };
-		EF508B87A6F32D7CBB0FD637 /* CustomQuotesAlbum.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95DF3EB1D40514BA542A39F6 /* CustomQuotesAlbum.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1328,12 +1311,7 @@
 		01PRW10729FBD2210006BD17 /* PrayerWallLoginView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerWallLoginView.swift; sourceTree = "<group>"; };
 		01PRW10829FBD2210006BD18 /* PrayerBlockedUsersViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerBlockedUsersViewController.swift; sourceTree = "<group>"; };
 		01UNITYAD2B68D7FF0534964 /* UnityAdClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnityAdClass.swift; sourceTree = "<group>"; };
-		0387B85D2B83B97E36603C67 /* ImageListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ImageListViewController.swift; path = ImageListViewController.swift; sourceTree = "<group>"; };
-		203055DA1420ECFB270B741E /* Image+Share.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = "Image+Share.swift"; path = "Image+Share.swift"; sourceTree = "<group>"; };
-		257A25A7EFEB9DE345439B03 /* ImageGalleryModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ImageGalleryModel.swift; path = ImageGalleryModel.swift; sourceTree = "<group>"; };
-		294E1B505CCB50EADC386ACF /* ImageGalleryViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ImageGalleryViewModel.swift; path = ImageGalleryViewModel.swift; sourceTree = "<group>"; };
 		6415B4B174ADEF152243C01E /* Pods-NKJV Bible.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NKJV Bible.release.xcconfig"; path = "Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible.release.xcconfig"; sourceTree = "<group>"; };
-		6A54FE72CD4FF784C463F7DB /* Pods-ALKITAB Bible.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ALKITAB Bible.release.xcconfig"; path = "Target Support Files/Pods-ALKITAB Bible/Pods-ALKITAB Bible.release.xcconfig"; sourceTree = "<group>"; };
 		6F9FDDD82EEFFEA600CE0114 /* Onboarding1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding1.swift; sourceTree = "<group>"; };
 		6F9FDDD92EEFFEA600CE0114 /* Onboarding2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding2.swift; sourceTree = "<group>"; };
 		6F9FDDDA2EEFFEA600CE0114 /* Onboarding3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding3.swift; sourceTree = "<group>"; };
@@ -1341,11 +1319,7 @@
 		6F9FDDE02EEFFEDD00CE0114 /* BibleSubscriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BibleSubscriptionView.swift; sourceTree = "<group>"; };
 		6F9FDDE22EEFFF2400CE0114 /* StoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreManager.swift; sourceTree = "<group>"; };
 		6FC2A3AE2F05260000E2331E /* BibleHiPromotionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BibleHiPromotionView.swift; sourceTree = "<group>"; };
-		85E00FFF3B00139F9AD4DD7B /* AppOpenAdManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppOpenAdManager.swift; sourceTree = "<group>"; };
-		8E563FF4E5B7AF3EA8304E8E /* CreateImageViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CreateImageViewController.swift; path = CreateImageViewController.swift; sourceTree = "<group>"; };
-		8EDBB28752B8863E0F132DD3 /* Pods_ALKITAB_Bible.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ALKITAB_Bible.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		902E90E99A9CB521E57AA6BC /* GoogleBannerAD.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleBannerAD.swift; sourceTree = "<group>"; };
-		95DF3EB1D40514BA542A39F6 /* CustomQuotesAlbum.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CustomQuotesAlbum.swift; sourceTree = "<group>"; };
+		9CC65D375ED3C66339423471 /* Pods-ALKITAB Bible.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ALKITAB Bible.release.xcconfig"; path = "Target Support Files/Pods-ALKITAB Bible/Pods-ALKITAB Bible.release.xcconfig"; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000011 /* OnboardingShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingShared.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000012 /* Onboarding5.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding5.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A10100000013 /* OnboardingNotificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingNotificationView.swift; sourceTree = "<group>"; };
@@ -1369,10 +1343,6 @@
 		A1B2C3D42F46A1010000F0A2 /* DualOnboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualOnboarding.swift; sourceTree = "<group>"; };
 		A1B2C3D42F46A1010000F0B2 /* AIConsentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIConsentView.swift; sourceTree = "<group>"; };
 		A7E4C1B22F8D4A01B2000A01 /* ReaderMoreSheet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReaderMoreSheet.swift; sourceTree = "<group>"; };
-		A879A4F776B240242FDBF98C /* ImageCell.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ImageCell.swift; path = ImageCell.swift; sourceTree = "<group>"; };
-		AB45D98FB3BD9DC3EBB1566D /* PexelsApi.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PexelsApi.swift; path = PexelsApi.swift; sourceTree = "<group>"; };
-		AEFB3D66DC0B695AAF04993D /* Pods-ALKITAB Bible.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ALKITAB Bible.debug.xcconfig"; path = "Target Support Files/Pods-ALKITAB Bible/Pods-ALKITAB Bible.debug.xcconfig"; sourceTree = "<group>"; };
-		AFE524494C96E9FBF324591B /* WallpaperQuots.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WallpaperQuots.swift; sourceTree = "<group>"; };
 		B13B6D6A8DF1821F657CBFAA /* Pods-NKJV Bible.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NKJV Bible.debug.xcconfig"; path = "Target Support Files/Pods-NKJV Bible/Pods-NKJV Bible.debug.xcconfig"; sourceTree = "<group>"; };
 		B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		B1A3D237304AC9B100FD5D0C /* 1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 1.png; sourceTree = "<group>"; };
@@ -1394,7 +1364,6 @@
 		B2C3D4E52F46B20100000018 /* StreakCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakCalendarView.swift; sourceTree = "<group>"; };
 		B2C3D4E52F46B20100000019 /* DailyVerseFullscreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyVerseFullscreenView.swift; sourceTree = "<group>"; };
 		B2C3D4E52F46B2010000001A /* DailyVerseFullscreenViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyVerseFullscreenViewController.swift; sourceTree = "<group>"; };
-		BA10EDD4C59F0162F84EE69A /* GoogleMobileAdsSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleMobileAdsSupport.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000011 /* ChallengeGameContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeGameContent.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000012 /* ChallengeHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubView.swift; sourceTree = "<group>"; };
 		C3D4E5F62F46C30100000013 /* ChallengeHubViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeHubViewController.swift; sourceTree = "<group>"; };
@@ -1430,16 +1399,13 @@
 		C4E5F6082F48E10100000014 /* ChallengeCreatorMoreScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeCreatorMoreScreens.swift; sourceTree = "<group>"; };
 		C4E5F6092F48E20100000015 /* ChallengeQuizAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeQuizAccess.swift; sourceTree = "<group>"; };
 		C4E5F60A2F48E30100000016 /* ChallengeQuizProfilePhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeQuizProfilePhoto.swift; sourceTree = "<group>"; };
-		CA72F86841AF1E06E7CC48C3 /* CatagoryCell.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CatagoryCell.swift; path = CatagoryCell.swift; sourceTree = "<group>"; };
-		D0F062A07F551D92A7B0B2D4 /* CustomWallpaperAlbum.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CustomWallpaperAlbum.swift; sourceTree = "<group>"; };
+		C4FFFE236ECAD3FD28CB970A /* Pods_ALKITAB_Bible.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ALKITAB_Bible.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D42E2B162BF79432006D4D18 /* puzzal Notification */ = {isa = PBXFileReference; lastKnownFileType = file; path = "puzzal Notification"; sourceTree = "<group>"; };
-		D65B546A28D509FE94DC14F7 /* ImageOpenCollectionViewCell.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ImageOpenCollectionViewCell.swift; path = ImageOpenCollectionViewCell.swift; sourceTree = "<group>"; };
 		D6E7F8092F49F60100000011 /* AIUsageLimiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUsageLimiter.swift; sourceTree = "<group>"; };
 		D6E7F8092F49F60100000012 /* AIUsageExtras.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUsageExtras.swift; sourceTree = "<group>"; };
 		E7F1A0012F8B4C0100A1B001 /* streak_flame.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = streak_flame.gif; sourceTree = "<group>"; };
 		E7F8091A2F4AF70100000011 /* LegacyPaidAppService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyPaidAppService.swift; sourceTree = "<group>"; };
-		EF079C89D0DBC3200063B1A0 /* ImageGallery.storyboard */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file.storyboard; name = ImageGallery.storyboard; path = "NKJV Bible/App/Storyboard/Base.lproj/ImageGallery.storyboard"; sourceTree = SOURCE_ROOT; };
-		F7AA8616F70904F6D53CBDD6 /* ImageCatagoryViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ImageCatagoryViewController.swift; path = ImageCatagoryViewController.swift; sourceTree = "<group>"; };
+		FF2DAF3E7D2E85198E557349 /* Pods-ALKITAB Bible.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ALKITAB Bible.debug.xcconfig"; path = "Target Support Files/Pods-ALKITAB Bible/Pods-ALKITAB Bible.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -1467,7 +1433,7 @@
 				01547AD52F13E3240097A8E3 /* FirebaseAuth in Frameworks */,
 				A2G00A032F13E3240097A8E3 /* GoogleSignIn in Frameworks */,
 				01DAC3E229696079008D51BB /* AdSupport.framework in Frameworks */,
-				0AF0ADC6EF075E564476F535 /* Pods_ALKITAB_Bible.framework in Frameworks */,
+				76E41308EE54E16A072C5F24 /* Pods_ALKITAB_Bible.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1620,7 +1586,6 @@
 				019E319D2A95D00A0008EDC1 /* SettingAlert.swift */,
 				01A473932AB33F5100902C05 /* NotificationList_data.swift */,
 				014E99552AC18D8F004DECFC /* getConnection.swift */,
-				9FBADDA477D12FEE3CD33CDB /* ImageGallery */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -1628,7 +1593,6 @@
 		012A4AF82941F95B0068CF58 /* Storyboard */ = {
 			isa = PBXGroup;
 			children = (
-				EF079C89D0DBC3200063B1A0 /* ImageGallery.storyboard */,
 				01370BE22941E68C0042B718 /* Main.storyboard */,
 				01370BEA2941E68F0042B718 /* LaunchScreen.storyboard */,
 				01CA638F297E52F80030E93C /* MainIpad.storyboard */,
@@ -1691,9 +1655,6 @@
 				EFB127088675B0D9FB9CCA36 /* Frameworks */,
 				B18CE61D303DAE26001FA16C /* GoogleService-Info.plist */,
 				B1A3D240304AC9B100FD5D0C /* VerseBG Compressed */,
-				85E00FFF3B00139F9AD4DD7B /* AppOpenAdManager.swift */,
-				902E90E99A9CB521E57AA6BC /* GoogleBannerAD.swift */,
-				BA10EDD4C59F0162F84EE69A /* GoogleMobileAdsSupport.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1728,7 +1689,6 @@
 				01370BE52941E68C0042B718 /* NKJV_Bible.xcdatamodeld */,
 				01D6CCA52A4F0F9F0084C824 /* MenuImage.swift */,
 				01448C512A934C660089349E /* DownloadButton.swift */,
-				AFE524494C96E9FBF324591B /* WallpaperQuots.swift */,
 			);
 			path = "NKJV Bible";
 			sourceTree = "<group>";
@@ -3502,8 +3462,6 @@
 			isa = PBXGroup;
 			children = (
 				01D985CD29547C9500A14035 /* CustomPhotoAlbum.swift */,
-				95DF3EB1D40514BA542A39F6 /* CustomQuotesAlbum.swift */,
-				D0F062A07F551D92A7B0B2D4 /* CustomWallpaperAlbum.swift */,
 			);
 			path = "Photo Album";
 			sourceTree = "<group>";
@@ -3668,25 +3626,6 @@
 			path = PrayerWall;
 			sourceTree = "<group>";
 		};
-		139CA5AC042A2F0ACF70633F /* Model */ = {
-			isa = PBXGroup;
-			children = (
-				257A25A7EFEB9DE345439B03 /* ImageGalleryModel.swift */,
-				AB45D98FB3BD9DC3EBB1566D /* PexelsApi.swift */,
-			);
-			name = Model;
-			path = Model;
-			sourceTree = "<group>";
-		};
-		4D54B07DB240EE1A79FB594C /* ViewModel */ = {
-			isa = PBXGroup;
-			children = (
-				294E1B505CCB50EADC386ACF /* ImageGalleryViewModel.swift */,
-			);
-			name = ViewModel;
-			path = ViewModel;
-			sourceTree = "<group>";
-		};
 		6F9FDDD72EEFFE6000CE0114 /* NewOnboarding */ = {
 			isa = PBXGroup;
 			children = (
@@ -3727,23 +3666,6 @@
 				6FC2A3AE2F05260000E2331E /* BibleHiPromotionView.swift */,
 			);
 			path = BibleHiPromotion;
-			sourceTree = "<group>";
-		};
-		9FBADDA477D12FEE3CD33CDB /* ImageGallery */ = {
-			isa = PBXGroup;
-			children = (
-				139CA5AC042A2F0ACF70633F /* Model */,
-				4D54B07DB240EE1A79FB594C /* ViewModel */,
-				CA72F86841AF1E06E7CC48C3 /* CatagoryCell.swift */,
-				8E563FF4E5B7AF3EA8304E8E /* CreateImageViewController.swift */,
-				203055DA1420ECFB270B741E /* Image+Share.swift */,
-				F7AA8616F70904F6D53CBDD6 /* ImageCatagoryViewController.swift */,
-				A879A4F776B240242FDBF98C /* ImageCell.swift */,
-				0387B85D2B83B97E36603C67 /* ImageListViewController.swift */,
-				D65B546A28D509FE94DC14F7 /* ImageOpenCollectionViewCell.swift */,
-			);
-			name = ImageGallery;
-			path = ImageGallery;
 			sourceTree = "<group>";
 		};
 		B1A3D240304AC9B100FD5D0C /* VerseBG Compressed */ = {
@@ -3843,7 +3765,7 @@
 				01DAC3E129696078008D51BB /* AdSupport.framework */,
 				01EDFF8D2F1F19C600AA074B /* WidgetKit.framework */,
 				01EDFF8F2F1F19C600AA074B /* SwiftUI.framework */,
-				8EDBB28752B8863E0F132DD3 /* Pods_ALKITAB_Bible.framework */,
+				C4FFFE236ECAD3FD28CB970A /* Pods_ALKITAB_Bible.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -3853,8 +3775,8 @@
 			children = (
 				B13B6D6A8DF1821F657CBFAA /* Pods-NKJV Bible.debug.xcconfig */,
 				6415B4B174ADEF152243C01E /* Pods-NKJV Bible.release.xcconfig */,
-				AEFB3D66DC0B695AAF04993D /* Pods-ALKITAB Bible.debug.xcconfig */,
-				6A54FE72CD4FF784C463F7DB /* Pods-ALKITAB Bible.release.xcconfig */,
+				FF2DAF3E7D2E85198E557349 /* Pods-ALKITAB Bible.debug.xcconfig */,
+				9CC65D375ED3C66339423471 /* Pods-ALKITAB Bible.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -4315,7 +4237,6 @@
 				0144EEF02A90CD530022EABF /* right.png in Resources */,
 				0144EEF52A90CD530022EABF /* Sticker-17.png in Resources */,
 				0144EEFD2A90CD530022EABF /* Sticker-5.png in Resources */,
-				7C18C5F01F1DC15E43AF574A /* ImageGallery.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4749,22 +4670,6 @@
 				01E40B91295592B300A078CB /* TextAttribute.swift in Sources */,
 				01D822D1295FFF1D0076CF93 /* LoaderVc.swift in Sources */,
 				01342BEF2A8A0F8900608DB5 /* AdSplashViewController.swift in Sources */,
-				BE0B31DC03B61A139A6F7243 /* AppOpenAdManager.swift in Sources */,
-				063E50912B3C935358C302D0 /* GoogleBannerAD.swift in Sources */,
-				586233240F3B0E400466C00E /* GoogleMobileAdsSupport.swift in Sources */,
-				1650D7F876E6A78F06C77ABE /* WallpaperQuots.swift in Sources */,
-				DB135D1062AB96E4F09667CC /* CatagoryCell.swift in Sources */,
-				B60EC7A0FD37D6D53FB6D8CE /* CreateImageViewController.swift in Sources */,
-				7D922890950410DBAE5B526B /* Image+Share.swift in Sources */,
-				7D471DCE519286F4C4D05941 /* ImageCatagoryViewController.swift in Sources */,
-				B3033BC4C822C68525D5D11F /* ImageCell.swift in Sources */,
-				15D9B96991E7F353EFFC483B /* ImageListViewController.swift in Sources */,
-				4957F77F1BFEACCA8B247C4C /* ImageOpenCollectionViewCell.swift in Sources */,
-				C6AAA5D0F2C48FED1904FAE2 /* ImageGalleryModel.swift in Sources */,
-				CDF14813096ECF372C87E7E1 /* PexelsApi.swift in Sources */,
-				D02B7A701A04D09625028D72 /* ImageGalleryViewModel.swift in Sources */,
-				EF508B87A6F32D7CBB0FD637 /* CustomQuotesAlbum.swift in Sources */,
-				4F3EEA88ACC60E504E228CA3 /* CustomWallpaperAlbum.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4944,7 +4849,7 @@
 		};
 		01370BF12941E68F0042B718 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = AEFB3D66DC0B695AAF04993D /* Pods-ALKITAB Bible.debug.xcconfig */;
+			baseConfigurationReference = FF2DAF3E7D2E85198E557349 /* Pods-ALKITAB Bible.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -4988,7 +4893,7 @@
 		};
 		01370BF22941E68F0042B718 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 6A54FE72CD4FF784C463F7DB /* Pods-ALKITAB Bible.release.xcconfig */;
+			baseConfigurationReference = 9CC65D375ED3C66339423471 /* Pods-ALKITAB Bible.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

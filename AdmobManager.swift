@@ -31,67 +31,16 @@ class AdmobManager : NSObject {
     private let interstitialMinInterval: TimeInterval = 180
 
     /// Call when the user is inside the main app. Warms IronSource rewarded + interstitial if empty.
-    /// If IronSource key is missing, warm Google AdMob instead.
     func prepareAdsForAppSession() {
         if ADS_DISABLED_FOR_TESTING { return }
         let key = IRONSOURCE_KEY.trimmingCharacters(in: .whitespacesAndNewlines)
-        if key.isEmpty {
-            GoogleMobileAdsSupport.shared.startIfNeeded()
-            return
-        }
-        GoogleMobileAdsSupport.shared.startIfNeeded()
+        guard !key.isEmpty else { return }
         if !IronSource.hasRewardedVideo() {
             IronSource_Reward_AdLoad()
         }
         if !IronSource.hasInterstitial() {
             IronSource_Interstitial_AdLoad()
         }
-    }
-
-    private var ironSourceKeyReady: Bool {
-        !IRONSOURCE_KEY.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    /// Deliver the same reward callbacks used by IronSource `didReceiveReward`.
-    fileprivate func deliverRewardedSuccess() {
-        if RewardAd == "OpenCard" {
-            UserDefaults.standard.setValue(Date().string(format: "MM/dd/yy HH:mm:ss"), forKey: "CardAdTime")
-        }
-        if RewardAd == "Tryagain" {
-            QuizProtocol.ResultProtocoldelegate?.NavigateBack()
-        } else if RewardAd == "FreeCoins" {
-            QuizProtocol.WalletProtocoldelegate?.CollectCoin()
-        } else if RewardAd == "MainFreeCoins" {
-            QuizProtocol.QuizMaindelegate?.CollectCoin()
-        } else if RewardAd == "WatchAd" {
-            App_Protocol.UnituAdCallDelegate?.AdDidClosed()
-        } else if RewardAd == "Scratch" {
-            QuizProtocol.CardDelegate?.CollectCoin()
-        } else if RewardAd == "ImageWatermark" {
-            ImageAppProtocol.ImageTxtEditDelegate?.CollectCoin()
-        } else if RewardAd == "OpenCard" {
-            App_Protocol.CardShowdelegate?.cardNavigate()
-        } else if RewardAd == "SubscrbViewController" {
-            App_Protocol.UnituAdCallDelegate?.AdDidClosed()
-        } else if RewardAd == "PaywallTrigger" {
-            PaywallTriggerReward.deliver()
-        }
-    }
-
-    /// Try AdMob rewarded when IronSource has no fill. Returns true if AdMob presentation started.
-    fileprivate func tryShowAdMobRewardedFallback() -> Bool {
-        guard GoogleMobileAdsSupport.shared.hasUsableAdMobIds, let host = vc else { return false }
-        return GoogleMobileAdsSupport.shared.showRewarded(from: host, onReward: { [weak self] in
-            self?.deliverRewardedSuccess()
-            if self?.ironSourceKeyReady == true {
-                self?.IronSource_Reward_AdLoad()
-            }
-        })
-    }
-
-    fileprivate func tryShowAdMobInterstitialFallback() -> Bool {
-        guard GoogleMobileAdsSupport.shared.hasUsableAdMobIds, let host = vc else { return false }
-        return GoogleMobileAdsSupport.shared.showInterstitial(from: host)
     }
 }
     
@@ -104,18 +53,12 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
     
     func IronSource_Interstitial_AdLoad() {
         if ADS_DISABLED_FOR_TESTING { return }
-        if !ironSourceKeyReady {
-            GoogleMobileAdsSupport.shared.startIfNeeded()
-            GoogleMobileAdsSupport.shared.loadInterstitial()
-            return
-        }
         IronSource.setLevelPlayInterstitialDelegate(self)
         IronSource.initWithAppKey(IRONSOURCE_KEY, delegate: self)
         IronSource.initWithAppKey(IRONSOURCE_KEY, adUnits:[IS_INTERSTITIAL])
         DispatchQueue.main.async {
             IronSource.loadInterstitial()
         }
-        GoogleMobileAdsSupport.shared.startIfNeeded()
     }
     
     
@@ -126,13 +69,6 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
             return
         }
         vc = vw
-        if !ironSourceKeyReady {
-            pendingInterstitialShow = false
-            if tryShowAdMobInterstitialFallback() {
-                markInterstitialShown()
-            }
-            return
-        }
         if IronSource.hasInterstitial() {
             pendingInterstitialShow = false
             DispatchQueue.main.async {
@@ -146,13 +82,7 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
             IronSource_Interstitial_AdLoad()
         } else {
             pendingInterstitialShow = false
-            // Immediate miss → try AdMob, then warm IronSource for next time.
-            if !tryShowAdMobInterstitialFallback() {
-                IronSource_Interstitial_AdLoad()
-            } else {
-                markInterstitialShown()
-                IronSource_Interstitial_AdLoad()
-            }
+            IronSource_Interstitial_AdLoad()
         }
     }
 
@@ -181,12 +111,7 @@ extension AdmobManager: LevelPlayInterstitialDelegate {
     }
     
     func didFailToLoadWithError(_ error: Error!) {
-        let wasPending = pendingInterstitialShow
         pendingInterstitialShow = false
-        if wasPending, tryShowAdMobInterstitialFallback() {
-            markInterstitialShown()
-            return
-        }
         var dispatchAfter = DispatchTimeInterval.seconds(ADS_DURATION*60)
         showAdUnavailableToastIfNeeded()
         
@@ -312,18 +237,12 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
     
     func IronSource_Reward_AdLoad() { 
         if ADS_DISABLED_FOR_TESTING { return }
-        if !ironSourceKeyReady {
-            GoogleMobileAdsSupport.shared.startIfNeeded()
-            GoogleMobileAdsSupport.shared.loadRewarded()
-            return
-        }
         IronSource.setLevelPlayRewardedVideoDelegate(self)
         IronSource.initWithAppKey(IRONSOURCE_KEY, delegate: self)
         IronSource.initWithAppKey(IRONSOURCE_KEY, adUnits:[IS_REWARDED_VIDEO])
         DispatchQueue.main.async {
             IronSource.loadRewardedVideo()
         }
-        GoogleMobileAdsSupport.shared.startIfNeeded()
     }
     
     
@@ -391,13 +310,6 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
         if ADS_DISABLED_FOR_TESTING { return }
         self.RewardAd = RewardAd
         vc = vw
-        if !ironSourceKeyReady {
-            clearPendingRewardedShow()
-            if !tryShowAdMobRewardedFallback() {
-                notifyRewardedAdNotAvailable()
-            }
-            return
-        }
         // Ready → show now. Not ready → keep intent, load, poll until ready or timeout.
         if IronSource.hasRewardedVideo() {
             clearPendingRewardedShow()
@@ -408,7 +320,7 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
         } else {
             pendingRewardedShow = true
             pendingRewardedAttempts = 0
-            // Ready → show ASAP via poll; if still empty after ~5s → AdMob fallback.
+            // Ready → show ASAP via poll; if still empty after ~5s → fallback condition.
             pendingRewardedMaxAttempts = 10
             showAdWaitToastIfNeeded()
             IronSource_Reward_AdLoad()
@@ -443,13 +355,11 @@ extension AdmobManager: ISInitializationDelegate, LevelPlayRewardedVideoDelegate
             if self.pendingRewardedAttempts % 6 == 0 {
                 self.IronSource_Reward_AdLoad()
             }
-            // Give up after ~5s → AdMob fallback, then notify callers if that also misses.
+            // Give up after ~5s → notify callers (credits card / unavailable toast).
             if self.pendingRewardedAttempts >= self.pendingRewardedMaxAttempts {
                 self.clearPendingRewardedShow()
                 DispatchQueue.main.async {
-                    if !self.tryShowAdMobRewardedFallback() {
-                        self.notifyRewardedAdNotAvailable()
-                    }
+                    self.notifyRewardedAdNotAvailable()
                 }
             }
         }

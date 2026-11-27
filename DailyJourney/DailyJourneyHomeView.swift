@@ -37,8 +37,6 @@ struct DailyJourneyHomeView: View {
     var onOpenReflection: (DailyVerseSnapshot) -> Void
     var onPresentStreakComplete: () -> Void
     var onOpenAIFeature: (AIUsageFeature) -> Void
-    var onOpenWallpapers: () -> Void
-    var onOpenQuotes: () -> Void
 
     init(
         store: DailyJourneyStore = .shared,
@@ -50,9 +48,7 @@ struct DailyJourneyHomeView: View {
         onOpenMemoryChallenge: @escaping (DailyVerseSnapshot) -> Void = { _ in },
         onOpenReflection: @escaping (DailyVerseSnapshot) -> Void = { _ in },
         onPresentStreakComplete: @escaping () -> Void = {},
-        onOpenAIFeature: @escaping (AIUsageFeature) -> Void = { _ in },
-        onOpenWallpapers: @escaping () -> Void = {},
-        onOpenQuotes: @escaping () -> Void = {}
+        onOpenAIFeature: @escaping (AIUsageFeature) -> Void = { _ in }
     ) {
         self.store = store
         self.onContinueReading = onContinueReading
@@ -64,8 +60,6 @@ struct DailyJourneyHomeView: View {
         self.onOpenReflection = onOpenReflection
         self.onPresentStreakComplete = onPresentStreakComplete
         self.onOpenAIFeature = onOpenAIFeature
-        self.onOpenWallpapers = onOpenWallpapers
-        self.onOpenQuotes = onOpenQuotes
         _verse = State(initialValue: DailyVerseSnapshot.loadCurrent())
         _continueReading = State(initialValue: ContinueReadingSnapshot.loadCurrent())
     }
@@ -106,8 +100,6 @@ struct DailyJourneyHomeView: View {
                 AIHomeBanner(onOpen: onOpenAIFeature)
 
                 todaysVerseCard
-
-                wallpaperQuotesSection
 
                 journeySection
 
@@ -375,77 +367,6 @@ struct DailyJourneyHomeView: View {
         .background(Color.white)
         .cornerRadius(20)
         .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
-    }
-
-    /// Gallery entry (NIV Wallpaper / Quotes) on the live Home tab.
-    private var showWallpapersEntry: Bool {
-        is_image_available == "1" || !wallpaper_cat_id.isEmpty
-    }
-
-    private var showQuotesEntry: Bool {
-        is_quote_available == "1" || !quote_app_id.isEmpty
-    }
-
-    @ViewBuilder
-    private var wallpaperQuotesSection: some View {
-        if showWallpapersEntry || showQuotesEntry {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("WALLPAPERS & QUOTES")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(Color.black.opacity(0.55))
-
-                HStack(spacing: 12) {
-                    if showWallpapersEntry {
-                        galleryEntryButton(
-                            title: "Wallpapers",
-                            subtitle: "Browse & save",
-                            systemImage: "photo.on.rectangle.angled",
-                            action: onOpenWallpapers
-                        )
-                    }
-                    if showQuotesEntry {
-                        galleryEntryButton(
-                            title: "Quotes",
-                            subtitle: "Inspiring images",
-                            systemImage: "quote.bubble.fill",
-                            action: onOpenQuotes
-                        )
-                    }
-                }
-            }
-            .padding(14)
-            .background(Color.white)
-            .cornerRadius(20)
-            .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
-        }
-    }
-
-    private func galleryEntryButton(title: String, subtitle: String, systemImage: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 40, height: 40)
-                    .background(DailyJourneyTheme.color)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(Color(hex: "0B1B3A"))
-                    Text(subtitle)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color.black.opacity(0.4))
-                }
-                Spacer(minLength: 0)
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(hex: "F7F8FC"))
-            .cornerRadius(14)
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 
     private var journeySection: some View {

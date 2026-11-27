@@ -69,72 +69,7 @@ class HomeController: UIViewController, UICollectionViewDelegate, UICollectionVi
             nc.addObserver(self, selector: #selector(self.appMovedToForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
             
             self.BGImage.image = UIImage(named: HomeVerseImage)
-            self.installWallpaperQuotesEntryButtonsIfNeeded()
         }
-    }
-
-    /// Additive Wallpaper / Quotes entry over the existing home wallpaper strip (no storyboard layout rewrite).
-    private func installWallpaperQuotesEntryButtonsIfNeeded() {
-        guard view.viewWithTag(91001) == nil else { return }
-        let stack = UIStackView()
-        stack.axis = .horizontal
-        stack.spacing = 8
-        stack.tag = 91001
-        stack.translatesAutoresizingMaskIntoConstraints = false
-
-        let theme = UserDefaults.standard.color(forKey: "AppThemeColor") ?? PrimaryColor
-
-        if is_image_available == "1" || !wallpaper_cat_id.isEmpty {
-            let wallpaperBtn = UIButton(type: .system)
-            wallpaperBtn.setTitle("Wallpapers", for: .normal)
-            wallpaperBtn.setTitleColor(.white, for: .normal)
-            wallpaperBtn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
-            wallpaperBtn.backgroundColor = theme
-            wallpaperBtn.layer.cornerRadius = 8
-            wallpaperBtn.contentEdgeInsets = UIEdgeInsets(top: 6, left: 10, bottom: 6, right: 10)
-            wallpaperBtn.addTarget(self, action: #selector(openWallpaperGallery), for: .touchUpInside)
-            stack.addArrangedSubview(wallpaperBtn)
-        }
-
-        if is_quote_available == "1" || !quote_app_id.isEmpty {
-            let quotesBtn = UIButton(type: .system)
-            quotesBtn.setTitle("Quotes", for: .normal)
-            quotesBtn.setTitleColor(.white, for: .normal)
-            quotesBtn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
-            quotesBtn.backgroundColor = theme
-            quotesBtn.layer.cornerRadius = 8
-            quotesBtn.contentEdgeInsets = UIEdgeInsets(top: 6, left: 10, bottom: 6, right: 10)
-            quotesBtn.addTarget(self, action: #selector(openQuotesGallery), for: .touchUpInside)
-            stack.addArrangedSubview(quotesBtn)
-        }
-
-        guard !stack.arrangedSubviews.isEmpty else { return }
-        let host: UIView = (WallpaperVu as UIView?) ?? view!
-        host.addSubview(stack)
-        NSLayoutConstraint.activate([
-            stack.trailingAnchor.constraint(equalTo: host.trailingAnchor, constant: -8),
-            stack.topAnchor.constraint(equalTo: host.topAnchor, constant: 4)
-        ])
-    }
-
-    @objc private func openWallpaperGallery() {
-        let vc = kStoryboardImageGallery.instantiateViewController(withIdentifier: "ImageCatagoryViewController") as! ImageCatagoryViewController
-        vc.category = wallpaper_cat_id.isEmpty ? FallbackAppConfigConstants.wallpaperCatId : wallpaper_cat_id
-        vc.TitleTxt = "Wallpapers"
-        navigationController?.pushViewController(vc, animated: true)
-    }
-
-    @objc private func openQuotesGallery() {
-        let vc = kStoryboardImageGallery.instantiateViewController(withIdentifier: "ImageCatagoryViewController") as! ImageCatagoryViewController
-        // Match NIV Quotes: use image gallery app id (fallback 41).
-        let quotesId: String = {
-            if !image_app_id.isEmpty { return image_app_id }
-            if !quote_app_id.isEmpty { return quote_app_id }
-            return FallbackAppConfigConstants.imageAppId
-        }()
-        vc.category = quotesId
-        vc.TitleTxt = "Quotes"
-        navigationController?.pushViewController(vc, animated: true)
     }
     
     

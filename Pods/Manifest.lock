@@ -12,8 +12,6 @@ PODS:
   - Flurry-iOS-SDK/CrashReporter (12.1.4)
   - Flurry-iOS-SDK/FlurrySDK (12.1.4):
     - Flurry-iOS-SDK/CrashReporter
-  - Google-Mobile-Ads-SDK (11.13.0):
-    - GoogleUserMessagingPlatform (>= 1.1)
   - GoogleUserMessagingPlatform (2.4.0)
   - IQKeyboardManager (6.5.19)
   - IronSourceAdQualitySDK (9.9.0)
@@ -34,7 +32,6 @@ DEPENDENCIES:
   - CircleProgressView (~> 1.0)
   - FBSDKShareKit
   - Flurry-iOS-SDK/FlurrySDK (~> 12.1.1)
-  - Google-Mobile-Ads-SDK (~> 11.13)
   - GoogleUserMessagingPlatform
   - IQKeyboardManager
   - IronSourceSDK
@@ -53,7 +50,6 @@ SPEC REPOS:
     - FBSDKCoreKit_Basics
     - FBSDKShareKit
     - Flurry-iOS-SDK
-    - Google-Mobile-Ads-SDK
     - GoogleUserMessagingPlatform
     - IQKeyboardManager
     - IronSourceAdQualitySDK
@@ -73,7 +69,6 @@ SPEC CHECKSUMS:
   FBSDKCoreKit_Basics: d35c775aaf243a2d731dfae7be3a74b1987285ab
   FBSDKShareKit: e7ec3bed8e82dabc04e56f3cf44ef99a1864309e
   Flurry-iOS-SDK: 8e6d7d9323ad24da06f24943ed738e36039631e9
-  Google-Mobile-Ads-SDK: 14f57f2dc33532a24db288897e26494640810407
   GoogleUserMessagingPlatform: f131fa7978d2ba88d7426702b057c2cc318e6595
   IQKeyboardManager: c8665b3396bd0b79402b4c573eac345a31c7d485
   IronSourceAdQualitySDK: 8797f78661d72fc2bef00e8c1055047132dc7249
@@ -85,6 +80,6 @@ SPEC CHECKSUMS:
   UnityCoherenceLib: d9be08c5b9c2880cb220c7ecd643f97ebda422b7
   Zip: b3fef584b147b6e582b2256a9815c897d60ddc67
 
-PODFILE CHECKSUM: c8b03b459a04ee9577fe94894e6165d166f5a186
+PODFILE CHECKSUM: bb94560fdf2223414e533ea0d91bc2daa4a88cd8
 
 COCOAPODS: 1.16.2
